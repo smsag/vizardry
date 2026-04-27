@@ -40,12 +40,14 @@
   min-height: 80px;
 }
 
+/* Increased size and contrast vs original 0.65rem / --text-muted:
+   headers should be immediately scannable, not decorative */
 .vizardry-block-label {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  color: var(--text-normal);
   border-bottom: 1px solid var(--background-modifier-border);
   padding-bottom: 0.3rem;
   margin-bottom: 0.1rem;
@@ -60,6 +62,34 @@
 
 .vizardry-block-empty {
   color: var(--text-faint);
+  font-style: italic;
+}
+
+/* ── BMC group tinting ──
+   Infrastructure / Offering / Customers / Finances each get a
+   distinct background so the eye groups them without needing labels.
+   All values are Obsidian CSS variables — no hardcoded colours. */
+
+[data-framework="bmc"] .vizardry-block[data-area="kp"],
+[data-framework="bmc"] .vizardry-block[data-area="ka"],
+[data-framework="bmc"] .vizardry-block[data-area="kr"] {
+  background: var(--background-secondary);
+}
+
+/* Value Proposition is the structural centre of the BMC —
+   accent top border + distinct background make it the visual anchor */
+[data-framework="bmc"] .vizardry-block[data-area="vp"] {
+  background: var(--background-modifier-form-field);
+  border-top: 3px solid var(--interactive-accent);
+}
+
+[data-framework="bmc"] .vizardry-block[data-area="vp"] .vizardry-block-label {
+  color: var(--text-accent);
+}
+
+[data-framework="bmc"] .vizardry-block[data-area="co"],
+[data-framework="bmc"] .vizardry-block[data-area="rr"] {
+  background: var(--background-primary-alt);
 }
 
 /* ── Error state ── */
@@ -119,6 +149,11 @@
     cursor: pointer;
   }
 
+  .vzd-im-level {
+    margin-left: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
   .vizardry-nav-btn:disabled {
     opacity: 0.3;
     cursor: default;
@@ -132,24 +167,85 @@
   }
 }
 
-/* ── Impact Map ── */
+/* ══ Impact Map ══════════════════════════════════════════════════════
+   Vertical indented layout chosen over horizontal tree: Obsidian
+   panels vary widely in width, and horizontal trees require
+   horizontal scrolling on narrow sidebars and mobile.
+   Hierarchy is communicated through: background tint, left border
+   colour+weight, typography scale, and L-shaped branch lines.
+   ══════════════════════════════════════════════════════════════════ */
+
 .vzd-im-tree {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.vzd-im-goal,
-.vzd-im-actor,
-.vzd-im-impact,
-.vzd-im-deliverable {
+/* ── Goal: root node — largest visual weight ── */
+.vzd-im-goal {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 4px solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.8rem 1rem;
+}
+
+.vzd-im-goal .vzd-im-level-label {
+  color: var(--text-accent);
+  font-size: 0.7rem;
+}
+
+.vzd-im-goal .vzd-im-node-text {
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
+}
+
+/* ── Actor: second level ── */
+.vzd-im-actor {
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--text-muted);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+  padding: 0.6rem 0.75rem;
+}
+
+.vzd-im-actor .vzd-im-node-text {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+}
+
+/* ── Impact: third level ── */
+.vzd-im-impact {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
+  border-left: 2px solid var(--background-modifier-border-hover);
   border-radius: var(--radius-m);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   padding: 0.5rem 0.75rem;
 }
 
+/* ── Deliverable: leaf node — least visual weight ── */
+.vzd-im-deliverable {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 0.35rem 0.6rem;
+}
+
+.vzd-im-deliverable .vzd-im-level-label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+}
+
+.vzd-im-deliverable .vzd-im-node-text {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* ── Level indentation with L-shaped branch lines ──
+   border-left is the vertical trunk; ::before draws the
+   horizontal branch connecting each node to the trunk */
 .vzd-im-level {
   margin-top: 0.35rem;
   margin-left: 1.25rem;
@@ -158,8 +254,24 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  position: relative;
 }
 
+.vzd-im-level > * {
+  position: relative;
+}
+
+.vzd-im-level > *::before {
+  content: "";
+  position: absolute;
+  left: -1rem;
+  top: 1rem;
+  width: 0.75rem;
+  height: 2px;
+  background: var(--background-modifier-border);
+}
+
+/* ── Shared label style (overrides per-level above) ── */
 .vzd-im-level-label {
   display: block;
   font-size: 0.65rem;
@@ -176,4 +288,22 @@
   font-size: var(--font-ui-small);
   color: var(--text-normal);
   line-height: 1.45;
+}
+
+/* ── Empty placeholder shown when a level has no children ── */
+.vzd-im-empty-placeholder {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  font-style: italic;
+  padding: 0.3rem 0.5rem;
+}
+
+.vzd-im-empty-placeholder::before {
+  content: "";
+  position: absolute;
+  left: -1rem;
+  top: 0.75rem;
+  width: 0.75rem;
+  height: 2px;
+  background: var(--background-modifier-border);
 }

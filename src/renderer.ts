@@ -53,27 +53,36 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   goalEl.createEl("span", { cls: "vzd-im-level-label", text: "Goal" });
   goalEl.createEl("div", { cls: "vzd-im-node-text", text: map.goal });
 
-  if (map.actors.length === 0) return;
-
   const actorsWrap = tree.createEl("div", { cls: "vzd-im-level vzd-im-actors-wrap" });
+
+  if (map.actors.length === 0) {
+    actorsWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No actors defined" });
+    return;
+  }
 
   for (const actor of map.actors) {
     const actorEl = actorsWrap.createEl("div", { cls: "vzd-im-actor" });
     actorEl.createEl("span", { cls: "vzd-im-level-label", text: "Actor" });
     actorEl.createEl("div", { cls: "vzd-im-node-text", text: actor.name });
 
-    if (actor.impacts.length === 0) continue;
-
     const impactsWrap = actorEl.createEl("div", { cls: "vzd-im-level vzd-im-impacts-wrap" });
+
+    if (actor.impacts.length === 0) {
+      impactsWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No impacts defined" });
+      continue;
+    }
 
     for (const impact of actor.impacts) {
       const impactEl = impactsWrap.createEl("div", { cls: "vzd-im-impact" });
       impactEl.createEl("span", { cls: "vzd-im-level-label", text: "Impact" });
       impactEl.createEl("div", { cls: "vzd-im-node-text", text: impact.name });
 
-      if (impact.deliverables.length === 0) continue;
-
       const deliverablesWrap = impactEl.createEl("div", { cls: "vzd-im-level vzd-im-deliverables-wrap" });
+
+      if (impact.deliverables.length === 0) {
+        deliverablesWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No deliverables defined" });
+        continue;
+      }
 
       for (const deliverable of impact.deliverables) {
         const deliverableEl = deliverablesWrap.createEl("div", { cls: "vzd-im-deliverable" });
