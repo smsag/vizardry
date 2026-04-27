@@ -65,32 +65,6 @@
   font-style: italic;
 }
 
-/* ── BMC group tinting ──
-   Infrastructure / Offering / Customers / Finances each get a
-   distinct background so the eye groups them without needing labels.
-   All values are Obsidian CSS variables — no hardcoded colours. */
-
-[data-framework="bmc"] .vizardry-block[data-area="kp"],
-[data-framework="bmc"] .vizardry-block[data-area="ka"],
-[data-framework="bmc"] .vizardry-block[data-area="kr"] {
-  background: var(--background-secondary);
-}
-
-/* Value Proposition is the structural centre of the BMC —
-   accent top border + distinct background make it the visual anchor */
-[data-framework="bmc"] .vizardry-block[data-area="vp"] {
-  background: var(--background-modifier-form-field);
-  border-top: 3px solid var(--interactive-accent);
-}
-
-[data-framework="bmc"] .vizardry-block[data-area="vp"] .vizardry-block-label {
-  color: var(--text-accent);
-}
-
-[data-framework="bmc"] .vizardry-block[data-area="co"],
-[data-framework="bmc"] .vizardry-block[data-area="rr"] {
-  background: var(--background-primary-alt);
-}
 
 /* ── Error state ── */
 .vizardry-error {
