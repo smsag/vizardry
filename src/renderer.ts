@@ -1,4 +1,4 @@
-import { FrameworkDefinition } from "./types";
+import { FrameworkDefinition, ImpactMap } from "./types";
 
 export function renderCanvas(
   framework: FrameworkDefinition,
@@ -13,7 +13,8 @@ export function renderCanvas(
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);
-  grid.style.setProperty("--vzd-template-mobile", framework.gridTemplateMobile);
+  grid.style.setProperty("--vzd-columns", framework.gridColumns);
+  grid.style.setProperty("--vzd-rows", framework.gridRows);
 
   for (const blockDef of framework.blocks) {
     const block = grid.createEl("div", { cls: "vizardry-block" });
@@ -28,7 +29,6 @@ export function renderCanvas(
     if (content.trim() === "") {
       body.addClass("vizardry-block-empty");
     } else {
-      // Render newlines as <br> within each line; preserve line breaks
       const lines = content.split("\n");
       lines.forEach((line, idx) => {
         body.appendText(line);
@@ -37,8 +37,51 @@ export function renderCanvas(
     }
   }
 
-  // Mobile carousel state
   setupMobileCarousel(container, framework.blocks.length);
+}
+
+export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
+  container.addClass("vizardry-canvas");
+  container.setAttribute("data-framework", "impact");
+
+  const header = container.createEl("div", { cls: "vizardry-header" });
+  header.createEl("span", { text: "Impact Map", cls: "vizardry-title" });
+
+  const tree = container.createEl("div", { cls: "vzd-im-tree" });
+
+  const goalEl = tree.createEl("div", { cls: "vzd-im-goal" });
+  goalEl.createEl("span", { cls: "vzd-im-level-label", text: "Goal" });
+  goalEl.createEl("div", { cls: "vzd-im-node-text", text: map.goal });
+
+  if (map.actors.length === 0) return;
+
+  const actorsWrap = tree.createEl("div", { cls: "vzd-im-level vzd-im-actors-wrap" });
+
+  for (const actor of map.actors) {
+    const actorEl = actorsWrap.createEl("div", { cls: "vzd-im-actor" });
+    actorEl.createEl("span", { cls: "vzd-im-level-label", text: "Actor" });
+    actorEl.createEl("div", { cls: "vzd-im-node-text", text: actor.name });
+
+    if (actor.impacts.length === 0) continue;
+
+    const impactsWrap = actorEl.createEl("div", { cls: "vzd-im-level vzd-im-impacts-wrap" });
+
+    for (const impact of actor.impacts) {
+      const impactEl = impactsWrap.createEl("div", { cls: "vzd-im-impact" });
+      impactEl.createEl("span", { cls: "vzd-im-level-label", text: "Impact" });
+      impactEl.createEl("div", { cls: "vzd-im-node-text", text: impact.name });
+
+      if (impact.deliverables.length === 0) continue;
+
+      const deliverablesWrap = impactEl.createEl("div", { cls: "vzd-im-level vzd-im-deliverables-wrap" });
+
+      for (const deliverable of impact.deliverables) {
+        const deliverableEl = deliverablesWrap.createEl("div", { cls: "vzd-im-deliverable" });
+        deliverableEl.createEl("span", { cls: "vzd-im-level-label", text: "Deliverable" });
+        deliverableEl.createEl("div", { cls: "vzd-im-node-text", text: deliverable });
+      }
+    }
+  }
 }
 
 function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
@@ -62,7 +105,6 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   prev.addEventListener("click", () => { if (current > 0) { current--; update(); } });
   next.addEventListener("click", () => { if (current < blockCount - 1) { current++; update(); } });
 
-  // Touch swipe
   let touchStartX = 0;
   container.addEventListener("touchstart", (e) => {
     touchStartX = e.touches[0].clientX;

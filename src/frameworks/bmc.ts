@@ -8,17 +8,8 @@ export const BMC: FrameworkDefinition = {
     "kp kr vp ch cs"
     "co co co rr rr"
   `,
-  gridTemplateMobile: `
-    "cs"
-    "vp"
-    "cr"
-    "ch"
-    "ka"
-    "kr"
-    "kp"
-    "rr"
-    "co"
-  `,
+  gridColumns: "repeat(5, 1fr)",
+  gridRows: "1fr 1fr auto",
   blocks: [
     { key: "key_partners",         label: "Key Partners",         area: "kp" },
     { key: "key_activities",       label: "Key Activities",       area: "ka" },

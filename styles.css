@@ -22,8 +22,8 @@
 .vizardry-grid {
   display: grid;
   grid-template-areas: var(--vzd-template);
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: 1fr 1fr auto;
+  grid-template-columns: var(--vzd-columns);
+  grid-template-rows: var(--vzd-rows);
   gap: 0.5rem;
 }
 
@@ -130,4 +130,50 @@
     min-width: 3rem;
     text-align: center;
   }
+}
+
+/* ── Impact Map ── */
+.vzd-im-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.vzd-im-goal,
+.vzd-im-actor,
+.vzd-im-impact,
+.vzd-im-deliverable {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0.75rem;
+}
+
+.vzd-im-level {
+  margin-top: 0.35rem;
+  margin-left: 1.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vzd-im-level-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.vzd-im-node-text {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  line-height: 1.45;
 }

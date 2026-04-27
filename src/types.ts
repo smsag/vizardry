@@ -9,8 +9,32 @@ export interface FrameworkDefinition {
   label: string;
   blocks: BlockDefinition[];
   gridTemplate: string;
-  gridTemplateMobile: string;
+  gridColumns: string;
+  gridRows: string;
 }
+
+export interface ImpactDeliverable {
+  text: string;
+}
+
+export interface ImpactItem {
+  name: string;
+  deliverables: string[];
+}
+
+export interface ImpactActor {
+  name: string;
+  impacts: ImpactItem[];
+}
+
+export interface ImpactMap {
+  goal: string;
+  actors: ImpactActor[];
+}
+
+export type ImpactMapResult =
+  | { ok: true; data: ImpactMap }
+  | { ok: false; error: string };
 
 export interface BlockDefinition {
   key: string;

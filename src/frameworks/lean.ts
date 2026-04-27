@@ -8,17 +8,8 @@ export const LEAN: FrameworkDefinition = {
     "pr so uvp ua cs"
     "co co km rr rr"
   `,
-  gridTemplateMobile: `
-    "cs"
-    "uvp"
-    "pr"
-    "so"
-    "km"
-    "ch"
-    "ua"
-    "rr"
-    "co"
-  `,
+  gridColumns: "repeat(5, 1fr)",
+  gridRows: "1fr 1fr auto",
   blocks: [
     { key: "problem",                 label: "Problem",                  area: "pr" },
     { key: "solution",                label: "Solution",                 area: "so" },
