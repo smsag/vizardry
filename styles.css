@@ -7,7 +7,30 @@
 }
 
 .vizardry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 0.5rem;
+}
+
+.vizardry-present-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.vizardry-present-btn:hover {
+  color: var(--interactive-accent);
+}
+
+.vizardry-present-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .vizardry-title {
@@ -306,4 +329,114 @@
   width: 0.75rem;
   height: 2px;
   background: var(--background-modifier-border);
+}
+
+/* ══ Presentation overlay ════════════════════════════════════════════
+   Covers the full Obsidian window. On iOS screen mirroring this fills
+   the Apple TV output. Swipe down or tap ✕ to dismiss.
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-presentation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--background-primary);
+  display: flex;
+  flex-direction: column;
+  /* Respect iPhone notch / home indicator */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.vzd-presentation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.vzd-presentation-title {
+  font-size: var(--font-ui-large);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-normal);
+}
+
+.vzd-presentation-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.vzd-presentation-close:hover {
+  color: var(--text-normal);
+}
+
+.vzd-presentation-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.vzd-presentation-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Force grid layout regardless of viewport width (overrides mobile @media) */
+.vzd-presentation-wrap .vizardry-grid {
+  display: grid !important;
+  flex: 1;
+  min-height: 0;
+}
+
+/* All blocks visible — carousel state does not apply in presentation */
+.vzd-presentation-wrap .vizardry-block {
+  display: flex !important;
+}
+
+/* Hide carousel nav — not needed in presentation */
+.vzd-presentation-wrap .vizardry-nav {
+  display: none !important;
+}
+
+/* Larger type for TV readability */
+.vzd-presentation-wrap .vizardry-block-label {
+  font-size: 0.85rem;
+}
+
+.vzd-presentation-wrap .vizardry-block-body {
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+/* Impact Map — full width, scrollable */
+.vzd-presentation-wrap .vzd-im-tree {
+  width: 100%;
+}
+
+.vzd-presentation-wrap .vzd-im-goal .vzd-im-node-text {
+  font-size: var(--font-ui-larger);
+}
+
+.vzd-presentation-wrap .vzd-im-actor .vzd-im-node-text,
+.vzd-presentation-wrap .vzd-im-impact .vzd-im-node-text {
+  font-size: var(--font-ui-medium);
+}
+
+.vzd-presentation-wrap .vzd-im-deliverable .vzd-im-node-text {
+  font-size: var(--font-ui-small);
 }

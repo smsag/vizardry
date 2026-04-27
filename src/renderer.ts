@@ -13,6 +13,7 @@ export function renderCanvas(
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: framework.label, cls: "vizardry-title" });
+  addPresentButton(header, container, framework.label);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);
@@ -61,6 +62,7 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Impact Map", cls: "vizardry-title" });
+  addPresentButton(header, container, "Impact Map");
 
   const tree = container.createEl("div", { cls: "vzd-im-tree" });
 
@@ -106,6 +108,60 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
       }
     }
   }
+}
+
+function addPresentButton(header: HTMLElement, sourceContainer: HTMLElement, title: string): void {
+  const btn = header.createEl("button", { cls: "vizardry-present-btn" });
+  setIcon(btn, "expand");
+  btn.setAttribute("aria-label", "Present fullscreen");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openPresentation(sourceContainer, title);
+  });
+}
+
+function openPresentation(sourceContainer: HTMLElement, title: string): void {
+  const overlay = document.body.createEl("div", { cls: "vzd-presentation-overlay" });
+
+  // Header bar
+  const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
+  pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
+  const closeBtn = pHeader.createEl("button", { cls: "vzd-presentation-close" });
+  setIcon(closeBtn, "x");
+  closeBtn.setAttribute("aria-label", "Exit presentation");
+
+  // Content area
+  const wrap = overlay.createEl("div", { cls: "vzd-presentation-wrap" });
+
+  // Clone the rendered content (grid or tree), not the header/nav
+  const contentEl = sourceContainer.querySelector<HTMLElement>(".vizardry-grid, .vzd-im-tree");
+  if (contentEl) {
+    const clone = contentEl.cloneNode(true) as HTMLElement;
+    // Force all blocks visible — overrides mobile carousel display:none state
+    clone.querySelectorAll(".vizardry-block").forEach(b => b.classList.add("vizardry-block-active"));
+    wrap.appendChild(clone);
+  }
+
+  const dismiss = (): void => {
+    overlay.remove();
+    document.removeEventListener("keydown", onKeyDown);
+  };
+
+  closeBtn.addEventListener("click", dismiss);
+
+  const onKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") dismiss();
+  };
+  document.addEventListener("keydown", onKeyDown);
+
+  // Swipe down to dismiss on mobile
+  let touchStartY = 0;
+  overlay.addEventListener("touchstart", (e) => {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  overlay.addEventListener("touchend", (e) => {
+    if (e.changedTouches[0].clientY - touchStartY > 80) dismiss();
+  }, { passive: true });
 }
 
 function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
