@@ -43,5 +43,5 @@ export interface BlockDefinition {
 }
 
 export type ParseResult =
-  | { ok: true; data: Record<string, string> }
+  | { ok: true; data: Record<string, string>; links: Record<string, string> }
   | { ok: false; error: string };

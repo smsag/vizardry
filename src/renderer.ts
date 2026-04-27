@@ -1,9 +1,12 @@
+import { setIcon } from "obsidian";
 import { FrameworkDefinition, ImpactMap } from "./types";
 
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
-  container: HTMLElement
+  links: Record<string, string>,
+  container: HTMLElement,
+  navigateTo: (heading: string) => void
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", framework.id);
@@ -21,7 +24,19 @@ export function renderCanvas(
     block.style.gridArea = blockDef.area;
     block.setAttribute("data-area", blockDef.area);
 
-    block.createEl("div", { text: blockDef.label, cls: "vizardry-block-label" });
+    const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
+    labelRow.createEl("span", { text: blockDef.label, cls: "vizardry-block-label" });
+
+    const heading = links[blockDef.key];
+    if (heading) {
+      const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn" });
+      setIcon(linkBtn, "link");
+      linkBtn.setAttribute("aria-label", `Jump to: ${heading}`);
+      linkBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navigateTo(heading);
+      });
+    }
 
     const content = data[blockDef.key] ?? "";
     const body = block.createEl("div", { cls: "vizardry-block-body" });

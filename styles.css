@@ -40,6 +40,15 @@
   min-height: 80px;
 }
 
+.vizardry-block-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.1rem;
+}
+
 /* Increased size and contrast vs original 0.65rem / --text-muted:
    headers should be immediately scannable, not decorative */
 .vizardry-block-label {
@@ -48,9 +57,26 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-normal);
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.1rem;
+}
+
+.vizardry-block-link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.vizardry-block-link-btn:hover {
+  color: var(--interactive-accent);
+}
+
+.vizardry-block-link-btn svg {
+  width: 0.7rem;
+  height: 0.7rem;
 }
 
 .vizardry-block-body {

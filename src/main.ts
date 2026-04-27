@@ -25,13 +25,15 @@ export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {
     for (const [id, definition] of Object.entries(FRAMEWORKS)) {
       try {
-        this.registerMarkdownCodeBlockProcessor(id, (source, el) => {
+        this.registerMarkdownCodeBlockProcessor(id, (source, el, ctx) => {
           const result = parseFrameworkSource(source);
           if (!result.ok) {
             renderError(result.error, el);
             return;
           }
-          renderCanvas(definition, result.data, el);
+          renderCanvas(definition, result.data, result.links, el, (heading) => {
+            this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
+          });
         });
       } catch (err) {
         console.error(`Vizardry: failed to register processor for "${id}"`, err);
