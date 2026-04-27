@@ -3,7 +3,7 @@
   font-family: var(--font-interface);
   font-size: var(--font-ui-small);
   color: var(--text-normal);
-  margin: 1rem 0;
+  margin: 1rem 0 2rem;
 }
 
 .vizardry-header {
@@ -59,6 +59,7 @@
   padding: 0.6rem 0.75rem;
   display: flex;
   flex-direction: column;
+  align-content: start;
   gap: 0.35rem;
   min-height: 80px;
 }
@@ -73,20 +74,25 @@
 }
 
 /* Increased size and contrast vs original 0.65rem / --text-muted:
-   headers should be immediately scannable, not decorative */
+   headers should be immediately scannable, not decorative.
+   No-wrap prevents long labels (e.g. UNIQUE VALUE PROPOSITION) from
+   breaking the block header height across the row. */
 .vizardry-block-label {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .vizardry-block-link-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-faint);
+  color: var(--text-muted);
   padding: 0;
   display: flex;
   align-items: center;
@@ -168,8 +174,32 @@
     color: var(--text-normal);
     font-size: 1.25rem;
     line-height: 1;
-    padding: 0.15rem 0.6rem;
+    /* 44×44px minimum touch target (Apple HIG) */
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+  }
+
+  .vizardry-nav-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .vizardry-nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--background-modifier-border);
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .vizardry-nav-dot.is-active {
+    background: var(--text-muted);
   }
 
   .vzd-im-level {
@@ -182,12 +212,6 @@
     cursor: default;
   }
 
-  .vizardry-nav-indicator {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    min-width: 3rem;
-    text-align: center;
-  }
 }
 
 /* ══ Impact Map ══════════════════════════════════════════════════════
@@ -224,11 +248,11 @@
   font-weight: 600;
 }
 
-/* ── Actor: second level ── */
+/* ── Actor: second level — section-header weight ── */
 .vzd-im-actor {
-  background: var(--background-primary-alt);
+  background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid var(--text-muted);
+  border-left: 3px solid var(--interactive-accent);
   border-radius: var(--radius-m);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
   padding: 0.6rem 0.75rem;
@@ -239,11 +263,11 @@
   font-weight: 600;
 }
 
-/* ── Impact: third level ── */
+/* ── Impact: third level — list-item weight ── */
 .vzd-im-impact {
-  background: var(--background-primary);
+  background: var(--background-primary-alt);
   border: 1px solid var(--background-modifier-border);
-  border-left: 2px solid var(--background-modifier-border-hover);
+  border-left: 2px solid var(--text-faint);
   border-radius: var(--radius-m);
   padding: 0.5rem 0.75rem;
 }
@@ -257,8 +281,8 @@
 }
 
 .vzd-im-deliverable .vzd-im-level-label {
-  font-size: 0.6rem;
-  color: var(--text-faint);
+  font-size: 0.65rem;
+  color: var(--text-muted);
 }
 
 .vzd-im-deliverable .vzd-im-node-text {
@@ -291,7 +315,7 @@
   top: 1rem;
   width: 0.75rem;
   height: 2px;
-  background: var(--background-modifier-border);
+  background: var(--text-faint);
 }
 
 /* ── Shared label style (overrides per-level above) ── */

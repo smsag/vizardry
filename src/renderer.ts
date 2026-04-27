@@ -169,15 +169,18 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
 
   const nav = container.createEl("div", { cls: "vizardry-nav" });
   const prev = nav.createEl("button", { cls: "vizardry-nav-btn", text: "‹" });
-  const indicator = nav.createEl("span", { cls: "vizardry-nav-indicator" });
+
+  const dotsWrap = nav.createEl("div", { cls: "vizardry-nav-dots" });
+  const dots = Array.from({ length: blockCount }, () =>
+    dotsWrap.createEl("span", { cls: "vizardry-nav-dot" })
+  );
+
   const next = nav.createEl("button", { cls: "vizardry-nav-btn", text: "›" });
 
   function update(): void {
     const blocks = container.querySelectorAll<HTMLElement>(".vizardry-block");
-    blocks.forEach((b, i) => {
-      b.classList.toggle("vizardry-block-active", i === current);
-    });
-    indicator.textContent = `${current + 1} / ${blockCount}`;
+    blocks.forEach((b, i) => b.classList.toggle("vizardry-block-active", i === current));
+    dots.forEach((d, i) => d.classList.toggle("is-active", i === current));
     (prev as HTMLButtonElement).disabled = current === 0;
     (next as HTMLButtonElement).disabled = current === blockCount - 1;
   }
