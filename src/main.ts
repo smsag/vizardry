@@ -1,8 +1,9 @@
 import { Editor, MarkdownView, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
-import { renderCanvas, renderImpactMap, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE } from "./templates";
+import { parseStoryMap } from "./story";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE } from "./templates";
 import { CanvasInsertModal, FrameworkOption } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
@@ -25,7 +26,7 @@ const FRAMEWORKS: Record<string, FrameworkDefinition> = {
 
 export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {
-    // ── Register canvas renderers ──────────────────────────────────
+    // ── Register grid canvas renderers ─────────────────────────────
     for (const [id, definition] of Object.entries(FRAMEWORKS)) {
       try {
         this.registerMarkdownCodeBlockProcessor(id, (source, el, ctx) => {
@@ -40,14 +41,26 @@ export default class VizardryPlugin extends Plugin {
       }
     }
 
+    // ── Impact Map renderer ────────────────────────────────────────
     try {
-      this.registerMarkdownCodeBlockProcessor("impact", (source, el, ctx) => {
+      this.registerMarkdownCodeBlockProcessor("impact", (source, el, _ctx) => {
         const result = parseImpactMap(source);
         if (!result.ok) { renderError(result.error, el); return; }
         renderImpactMap(result.data, el);
       });
     } catch (err) {
       console.error('Vizardry: failed to register processor for "impact"', err);
+    }
+
+    // ── Story Map renderer ─────────────────────────────────────────
+    try {
+      this.registerMarkdownCodeBlockProcessor("story", (source, el, _ctx) => {
+        const result = parseStoryMap(source);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderStoryMap(result.data, el);
+      });
+    } catch (err) {
+      console.error('Vizardry: failed to register processor for "story"', err);
     }
 
     // ── Build framework options list (used by modal + commands) ────
@@ -62,6 +75,11 @@ export default class VizardryPlugin extends Plugin {
         label: "Impact Map",
         template: IMPACT_MAP_TEMPLATE,
       },
+      {
+        id: "story",
+        label: "User Story Map",
+        template: STORY_MAP_TEMPLATE,
+      },
     ];
 
     // ── Ribbon icon → opens insert modal ──────────────────────────
@@ -71,7 +89,7 @@ export default class VizardryPlugin extends Plugin {
       new CanvasInsertModal(this.app, view.editor, frameworkOptions).open();
     });
 
-    // ── Command: fuzzy modal (Option B) ───────────────────────────
+    // ── Command: fuzzy modal ───────────────────────────────────────
     this.addCommand({
       id: "insert-canvas",
       name: "Insert canvas…",
@@ -80,7 +98,7 @@ export default class VizardryPlugin extends Plugin {
       },
     });
 
-    // ── Commands: one per framework (Option C) ────────────────────
+    // ── Commands: one per framework ───────────────────────────────
     for (const option of frameworkOptions) {
       this.addCommand({
         id: `insert-${option.id}`,
@@ -103,7 +121,7 @@ export default class VizardryPlugin extends Plugin {
 
   onunload(): void {
     // Processor registrations are cleaned up automatically by Obsidian.
-    // DOM event listeners created via renderCanvas are attached to code block
-    // containers which Obsidian destroys with the view — no manual teardown needed.
+    // DOM event listeners are attached to code block containers which
+    // Obsidian destroys with the view — no manual teardown needed.
   }
 }

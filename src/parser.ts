@@ -1,5 +1,24 @@
 import { ParseResult } from "./types";
 
+/**
+ * Parses the `block: Label\n  content` syntax used by all grid frameworks.
+ *
+ * Syntax:
+ *   block: Label
+ *     Content line 1
+ *     Content line 2
+ *
+ *   _links:
+ *     Label: Heading text in this document
+ *
+ * Rules:
+ * - `block:` keyword followed by the block label (case-insensitive match at render time)
+ * - Content is indented below the block line — no `|` scalar needed
+ * - `_links:` section maps block labels to heading anchors
+ * - Lines starting with `#` are comments (ignored)
+ * - Unknown block labels are stored but silently ignored at render time
+ * - Blank lines between blocks are ignored
+ */
 export function parseFrameworkSource(source: string): ParseResult {
   const data: Record<string, string> = {};
   const links: Record<string, string> = {};
@@ -7,63 +26,75 @@ export function parseFrameworkSource(source: string): ParseResult {
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
+    const raw = lines[i];
+    const trimmed = raw.trim();
 
-    if (line.trim() === "" || line.trim().startsWith("#")) {
+    if (trimmed === "" || trimmed.startsWith("#")) {
       i++;
       continue;
     }
 
-    const keyValueMatch = line.match(/^([a-z_][a-z0-9_]*):\s*(.*)/);
-    if (!keyValueMatch) {
-      return { ok: false, error: `Line ${i + 1}: unexpected syntax — "${line.trim()}"` };
+    const indent = raw.search(/\S/);
+
+    if (indent > 0) {
+      return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
     }
 
-    const key = keyValueMatch[1];
-    const rest = keyValueMatch[2].trim();
-
-    if (key === "_links") {
-      // Nested key-value pairs at any indent level follow
-      i++;
-      while (i < lines.length) {
-        const nested = lines[i];
-        if (nested.trim() === "" || nested.trim().startsWith("#")) { i++; continue; }
-        if (nested.search(/\S/) === 0) break; // back to root level
-        const nestedMatch = nested.trim().match(/^([a-z_][a-z0-9_]*):\s*(.*)/);
-        if (!nestedMatch) {
-          return { ok: false, error: `Line ${i + 1}: invalid _links entry — "${nested.trim()}"` };
-        }
-        links[nestedMatch[1]] = nestedMatch[2].trim();
-        i++;
+    if (trimmed.startsWith("block:")) {
+      const label = trimmed.slice("block:".length).trim();
+      if (!label) {
+        return { ok: false, error: `Line ${i + 1}: "block:" requires a label` };
       }
-    } else if (rest === "|") {
-      // Block scalar: collect indented lines
-      const blockLines: string[] = [];
+      const key = label.toLowerCase();
+      const contentLines: string[] = [];
       i++;
-      let indent = -1;
+      let blockIndent = -1;
+
       while (i < lines.length) {
-        const blockLine = lines[i];
-        if (blockLine.trim() === "") {
-          blockLines.push("");
+        const blockRaw = lines[i];
+        const blockTrimmed = blockRaw.trim();
+
+        if (blockTrimmed === "" || blockTrimmed.startsWith("#")) {
+          if (blockIndent !== -1) contentLines.push("");
           i++;
           continue;
         }
-        const lineIndent = blockLine.match(/^(\s+)/)?.[1].length ?? 0;
-        if (indent === -1) {
-          if (lineIndent === 0) break;
-          indent = lineIndent;
-        }
-        if (lineIndent < indent) break;
-        blockLines.push(blockLine.slice(indent));
+
+        const lineIndent = blockRaw.search(/\S/);
+        if (lineIndent === 0) break; // back to root level
+        if (blockIndent === -1) blockIndent = lineIndent;
+        if (lineIndent < blockIndent) break;
+        contentLines.push(blockRaw.slice(blockIndent));
         i++;
       }
-      while (blockLines.length > 0 && blockLines[blockLines.length - 1].trim() === "") {
-        blockLines.pop();
+
+      // Strip trailing blank lines
+      while (contentLines.length > 0 && contentLines[contentLines.length - 1].trim() === "") {
+        contentLines.pop();
       }
-      data[key] = blockLines.join("\n");
-    } else {
-      data[key] = rest;
+
+      data[key] = contentLines.join("\n");
+
+    } else if (trimmed.startsWith("_links:")) {
       i++;
+      while (i < lines.length) {
+        const nested = lines[i];
+        const nestedTrimmed = nested.trim();
+        if (nestedTrimmed === "" || nestedTrimmed.startsWith("#")) { i++; continue; }
+        if (nested.search(/\S/) === 0) break; // back to root level
+
+        const colonIdx = nestedTrimmed.indexOf(":");
+        if (colonIdx === -1) {
+          return { ok: false, error: `Line ${i + 1}: invalid _links entry — "${nestedTrimmed}"` };
+        }
+        const linkLabel = nestedTrimmed.slice(0, colonIdx).trim().toLowerCase();
+        const linkTarget = nestedTrimmed.slice(colonIdx + 1).trim();
+        links[linkLabel] = linkTarget;
+        i++;
+      }
+
+    } else {
+      return { ok: false, error: `Line ${i + 1}: unexpected syntax — "${trimmed}". Use "block: Label"` };
     }
   }
 

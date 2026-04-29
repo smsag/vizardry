@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { FrameworkDefinition, ImpactMap } from "./types";
+import { FrameworkDefinition, ImpactMap, StoryMap } from "./types";
 
 export function renderCanvas(
   framework: FrameworkDefinition,
@@ -21,6 +21,9 @@ export function renderCanvas(
   grid.style.setProperty("--vzd-rows", framework.gridRows);
 
   for (const blockDef of framework.blocks) {
+    // All data and link lookups use the lowercased block label as key
+    const labelKey = blockDef.label.toLowerCase();
+
     const block = grid.createEl("div", { cls: "vizardry-block" });
     block.style.gridArea = blockDef.area;
     block.setAttribute("data-area", blockDef.area);
@@ -28,7 +31,7 @@ export function renderCanvas(
     const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
     labelRow.createEl("span", { text: blockDef.label, cls: "vizardry-block-label" });
 
-    const heading = links[blockDef.key];
+    const heading = links[labelKey];
     if (heading) {
       const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn" });
       setIcon(linkBtn, "link");
@@ -39,7 +42,7 @@ export function renderCanvas(
       });
     }
 
-    const content = data[blockDef.key] ?? "";
+    const content = data[labelKey] ?? "";
     const body = block.createEl("div", { cls: "vizardry-block-body" });
 
     if (content.trim() === "") {
@@ -110,6 +113,46 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   }
 }
 
+export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
+  container.addClass("vizardry-canvas");
+  container.setAttribute("data-framework", "story");
+
+  const header = container.createEl("div", { cls: "vizardry-header" });
+  header.createEl("span", { text: "User Story Map", cls: "vizardry-title" });
+  addPresentButton(header, container, "User Story Map");
+
+  const grid = container.createEl("div", { cls: "vzd-story-grid" });
+  grid.style.setProperty("--vzd-story-cols", String(map.backbone.length));
+
+  // Backbone header row — one cell per activity
+  for (const activity of map.backbone) {
+    grid.createEl("div", { cls: "vzd-story-backbone-item", text: activity });
+  }
+
+  // Slice rows
+  for (const slice of map.slices) {
+    // Full-width slice label spanning all columns
+    grid.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
+
+    // One cell per backbone activity (empty cell if not in this slice)
+    for (const activity of map.backbone) {
+      const key = activity.toLowerCase().trim();
+      const content = slice.cells[key] ?? "";
+      const cell = grid.createEl("div", { cls: "vzd-story-cell" });
+
+      if (content.trim() === "") {
+        cell.addClass("vzd-story-cell-empty");
+      } else {
+        const lines = content.split("\n");
+        lines.forEach((line, idx) => {
+          cell.appendText(line);
+          if (idx < lines.length - 1) cell.createEl("br");
+        });
+      }
+    }
+  }
+}
+
 function addPresentButton(header: HTMLElement, sourceContainer: HTMLElement, title: string): void {
   const btn = header.createEl("button", { cls: "vizardry-present-btn" });
   setIcon(btn, "expand");
@@ -133,8 +176,10 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   // Content area
   const wrap = overlay.createEl("div", { cls: "vzd-presentation-wrap" });
 
-  // Clone the rendered content (grid or tree), not the header/nav
-  const contentEl = sourceContainer.querySelector<HTMLElement>(".vizardry-grid, .vzd-im-tree");
+  // Clone the rendered content — grid canvas, impact map tree, or story map grid
+  const contentEl = sourceContainer.querySelector<HTMLElement>(
+    ".vizardry-grid, .vzd-im-tree, .vzd-story-grid"
+  );
   if (contentEl) {
     const clone = contentEl.cloneNode(true) as HTMLElement;
     // Force all blocks visible — overrides mobile carousel display:none state

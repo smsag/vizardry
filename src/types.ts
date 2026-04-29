@@ -1,9 +1,3 @@
-export interface FrameworkBlock {
-  key: string;
-  label: string;
-  content: string;
-}
-
 export interface FrameworkDefinition {
   id: string;
   label: string;
@@ -13,9 +7,16 @@ export interface FrameworkDefinition {
   gridRows: string;
 }
 
-export interface ImpactDeliverable {
-  text: string;
+export interface BlockDefinition {
+  label: string;
+  area: string;
 }
+
+export type ParseResult =
+  | { ok: true; data: Record<string, string>; links: Record<string, string> }
+  | { ok: false; error: string };
+
+// ── Impact Map ──────────────────────────────────────────────────────────────
 
 export interface ImpactItem {
   name: string;
@@ -36,12 +37,18 @@ export type ImpactMapResult =
   | { ok: true; data: ImpactMap }
   | { ok: false; error: string };
 
-export interface BlockDefinition {
-  key: string;
-  label: string;
-  area: string;
+// ── Story Map ───────────────────────────────────────────────────────────────
+
+export interface StoryMapSlice {
+  name: string;
+  cells: Record<string, string>; // backbone item (lowercased) → content
 }
 
-export type ParseResult =
-  | { ok: true; data: Record<string, string>; links: Record<string, string> }
+export interface StoryMap {
+  backbone: string[];
+  slices: StoryMapSlice[];
+}
+
+export type StoryMapResult =
+  | { ok: true; data: StoryMap }
   | { ok: false; error: string };

@@ -11,10 +11,10 @@ export const KATA: FrameworkDefinition = {
   gridColumns: "repeat(2, 1fr)",
   gridRows: "1fr auto 1fr",
   blocks: [
-    { key: "current_condition",  label: "Current Condition",  area: "cc" },
-    { key: "target_condition",   label: "Target Condition",   area: "tc" },
-    { key: "obstacles",          label: "Obstacles",          area: "ob" },
-    { key: "next_experiment",    label: "Next Experiment",    area: "ne" },
-    { key: "expected_outcome",   label: "Expected Outcome",   area: "eo" },
+    { label: "Current Condition", area: "cc" },
+    { label: "Target Condition",  area: "tc" },
+    { label: "Obstacles",         area: "ob" },
+    { label: "Next Experiment",   area: "ne" },
+    { label: "Expected Outcome",  area: "eo" },
   ],
 };

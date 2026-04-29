@@ -355,6 +355,86 @@
   background: var(--background-modifier-border);
 }
 
+/* ══ User Story Map ══════════════════════════════════════════════════
+   Grid layout: backbone items as column headers, slice labels as
+   full-width divider rows, story cards filling each cell.
+   The backbone column count is set via --vzd-story-cols at render time.
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-story-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--vzd-story-cols), 1fr);
+  gap: 0.5rem;
+}
+
+/* Backbone header items */
+.vzd-story-backbone-item {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-normal);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Slice label — spans full width as a release lane divider */
+.vzd-story-slice-label {
+  grid-column: 1 / -1;
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-normal);
+}
+
+/* Story card */
+.vzd-story-cell {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0.6rem;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  line-height: 1.45;
+  min-height: 48px;
+  white-space: pre-wrap;
+}
+
+.vzd-story-cell-empty {
+  background: transparent;
+  border: 1px dashed var(--background-modifier-border);
+  box-shadow: none;
+  color: var(--text-faint);
+}
+
+/* Presentation mode — full width */
+.vzd-presentation-wrap .vzd-story-grid {
+  width: 100%;
+}
+
+.vzd-presentation-wrap .vzd-story-backbone-item,
+.vzd-presentation-wrap .vzd-story-slice-label {
+  font-size: 0.85rem;
+}
+
+.vzd-presentation-wrap .vzd-story-cell {
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
 /* ══ Presentation overlay ════════════════════════════════════════════
    Covers the full Obsidian window. On iOS screen mirroring this fills
    the Apple TV output. Swipe down or tap ✕ to dismiss.
