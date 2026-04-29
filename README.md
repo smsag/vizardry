@@ -6,18 +6,16 @@ An [Obsidian](https://obsidian.md) plugin that renders product management framew
 
 ## How it works
 
-Write a fenced code block with the framework name as the language tag, fill in the blocks using `key: value` syntax, then switch to **Read View** to see the rendered canvas.
-
-Multi-line content uses YAML-style block scalars (`|`):
+Write a fenced code block with the framework name as the language tag. Use `block: Label` to define each section, with content indented below. Switch to **Read View** to see the rendered canvas. Edit View shows the raw text.
 
 ```
-key: Single line value
-
-key: |
-  First line
-  Second line
-  Third line
+block: Label
+  Content line 1
+  Content line 2
+  Content line 3
 ```
+
+Multi-line content needs no special syntax — just indent everything below the `block:` line.
 
 ---
 
@@ -33,6 +31,7 @@ key: |
 | ` ```kata ` | Product Kata | 2-column grid |
 | ` ```jobs ` | Jobs Canvas | 3-column grid |
 | ` ```impact ` | Impact Map | Hierarchical tree |
+| ` ```story ` | User Story Map | Backbone + slices grid |
 
 ---
 
@@ -56,116 +55,248 @@ On **mobile**, add any Vizardry command to the editor toolbar via Settings → M
 
 ~~~
 ```bmc
-key_partners: Suppliers, Logistics partners
-key_activities: Product development, Marketing
-key_resources: Team, Brand, Platform
-value_propositions: Save time and reduce cost
-customer_relationships: Self-service, Email support
-channels: App store, Website
-customer_segments: Small business owners
-cost_structure: Salaries, Hosting, Ads
-revenue_streams: Subscriptions, One-time licenses
+block: Key Partners
+  Suppliers, Logistics partners
+
+block: Key Activities
+  Product development, Marketing
+
+block: Key Resources
+  Team, Brand, Platform
+
+block: Value Propositions
+  Save time and reduce cost for small teams
+
+block: Customer Relationships
+  Self-service, Email support
+
+block: Channels
+  App store, Website, Word of mouth
+
+block: Customer Segments
+  Small business owners, Solo founders
+
+block: Cost Structure
+  Engineering salaries, Cloud hosting, Ads
+
+block: Revenue Streams
+  Monthly subscriptions, One-time licenses
 ```
 ~~~
+
+---
 
 ### Lean Canvas
 
 ~~~
 ```lean
-problem: Too many manual steps in daily workflow
-solution: One-click automation for common tasks
-unique_value_proposition: 10x faster than the status quo
-unfair_advantage: Proprietary dataset, 3-year head start
-customer_segments: Freelancers and solo founders
-key_metrics: DAU, activation rate, churn
-channels: Product Hunt, SEO, Word of mouth
-cost_structure: Engineering salaries, Cloud hosting
-revenue_streams: Monthly SaaS subscription
+block: Problem
+  Too many manual steps in the daily reporting workflow
+
+block: Solution
+  One-click automation for recurring tasks
+
+block: Unique Value Proposition
+  10× faster than the current status quo
+
+block: Unfair Advantage
+  Proprietary dataset and 3-year head start
+
+block: Customer Segments
+  Freelancers and solo founders
+
+block: Key Metrics
+  DAU, activation rate, monthly churn
+
+block: Channels
+  Product Hunt, SEO, Word of mouth
+
+block: Cost Structure
+  Engineering salaries, Cloud hosting
+
+block: Revenue Streams
+  Monthly SaaS subscription
 ```
 ~~~
+
+---
 
 ### Opportunity Canvas
 
 ~~~
 ```opportunity
-problem_opportunity: Manual reporting takes 4+ hours per week
-solution_ideas: Automated report generation, smart templates
-target_users: Operations managers, analysts
-user_outcomes: Reclaim time, reduce errors
-user_metrics: Hours saved per week, error rate
-business_problem: High churn from power users citing workflow friction
-business_metrics: Churn rate, feature adoption
-budget: 2 engineers, 1 quarter
-adoption_factors: In-app prompt, onboarding flow
-factors_for_success: Low setup friction, works with existing data
+block: Problem / Opportunity
+  Manual reporting consumes 4+ hours per week for ops teams
+
+block: Solution Ideas
+  Automated report generation, smart templates, one-click export
+
+block: Target Users
+  Operations managers and analysts at 20–200 person companies
+
+block: User Outcomes
+  Reclaim time, reduce errors, look credible to leadership
+
+block: User Metrics
+  Hours saved per week, error rate, report turnaround time
+
+block: Business Problem
+  High churn from power users citing workflow friction
+
+block: Business Metrics
+  30-day churn rate, feature adoption, support ticket volume
+
+block: Budget
+  2 engineers, 1 designer, 1 quarter
+
+block: Adoption Factors
+  In-app prompt after third manual export, onboarding flow
+
+block: Factors for Success
+  Low setup friction, works with tools users already have
 ```
 ~~~
+
+---
 
 ### Lean UX Canvas
 
 ~~~
 ```leanux
-business_problem: Users drop off during onboarding before reaching the first value moment
-business_outcomes: Increase 7-day retention by 20%
-users: First-time SaaS buyers with no technical background
-user_outcomes: Feel confident and productive within 10 minutes
-solutions: Guided setup wizard, contextual tooltips, sample data
-hypotheses: |
+block: Business Problem
+  Users drop off during onboarding before reaching their first value moment
+
+block: Business Outcomes
+  Increase 7-day retention by 20%
+
+block: Users
+  First-time SaaS buyers with no technical background
+
+block: User Outcomes & Benefits
+  Feel confident and productive within 10 minutes of signing up
+
+block: Solutions
+  Guided setup wizard, contextual tooltips, pre-loaded sample data
+
+block: Hypotheses
   If we add a guided wizard, users will reach first value faster
   If we show sample data, users will understand the product sooner
-most_important_assumption: Users abandon because setup feels overwhelming
-minimum_experiment: A/B test wizard vs. blank start with 500 new signups
+  If we reduce setup steps, fewer users will abandon mid-flow
+
+block: Most Important Thing to Learn First
+  Do users abandon because setup feels overwhelming, or because
+  they don't understand the value of completing it?
+
+block: Minimum Experiment
+  A/B test: guided wizard vs blank start with 500 new signups
 ```
 ~~~
+
+---
 
 ### Value Proposition Canvas
 
 ~~~
 ```vpc
-products_services: |
+block: Products & Services
   Automated reporting suite
   One-click export to PDF and Slides
-pain_relievers: Eliminates manual data gathering and formatting
-gain_creators: Delivers polished reports in seconds instead of hours
-customer_jobs: Produce weekly status reports for stakeholders
-pains: Repetitive, error-prone work that takes hours every week
-gains: More time for analysis, look credible in front of leadership
+  Scheduled delivery to stakeholders
+
+block: Pain Relievers
+  Eliminates manual data gathering and copy-paste formatting
+  Removes dependency on the analyst for routine reports
+
+block: Gain Creators
+  Polished, on-brand reports ready in seconds instead of hours
+  More time for analysis and strategic thinking
+
+block: Customer Jobs
+  Produce accurate weekly status reports for senior leadership
+  Present data confidently without needing design support
+
+block: Pains
+  Repetitive, error-prone work that eats Friday afternoons
+  Reports look inconsistent across team members
+
+block: Gains
+  Look credible and prepared in front of the CEO
+  Free up time for higher-value work
 ```
 ~~~
+
+---
 
 ### Product Kata
 
 ~~~
 ```kata
-current_condition: Onboarding takes 3 days and requires manual handholding from CS
-target_condition: New users reach first value moment within 30 minutes, unassisted
-obstacles: |
-  No in-app guidance exists
+block: Current Condition
+  Onboarding takes 3 days on average and requires manual
+  handholding from the Customer Success team on every account
+
+block: Target Condition
+  New users reach their first value moment within 30 minutes,
+  unassisted, with no CS intervention needed
+
+block: Obstacles
+  No in-app guidance exists today
   Sample data is not representative of real use cases
-  Setup requires 12 manual configuration steps
-next_experiment: Ship a 5-step guided wizard for the top user job-to-be-done
-expected_outcome: 40% of new signups complete setup without contacting support
+  Setup requires 12 manual configuration steps before any value
+
+block: Next Experiment
+  Ship a 5-step guided wizard focused on the single top
+  job-to-be-done identified in the last 10 user interviews
+
+block: Expected Outcome
+  40% of new signups complete setup without contacting support
+  within the first 14 days of the experiment
 ```
 ~~~
+
+---
 
 ### Jobs Canvas
 
 ~~~
 ```jobs
-job_performer: Operations manager at a 50-person company
-main_job: Produce accurate weekly reports for leadership without stress
-circumstances: End of week, under time pressure, data spread across three tools
-functional_aspects: Pull data, calculate KPIs, format slides, send by Friday noon
-emotional_aspects: Wants to feel in control and look competent in front of the CEO
-social_aspects: Seen as the person who "always has the numbers ready"
-current_solutions: Excel + copy-paste from dashboards + manual PowerPoint formatting
-desired_outcomes: |
-  Done in under 30 minutes
-  No manual errors
-  Presentable without extra design work
-obstacles: Data lives in three separate tools with no shared export format
+block: Job Performer
+  Operations manager at a 50-person B2B SaaS company
+
+block: Main Job
+  Produce accurate weekly reports for leadership without stress
+
+block: Circumstances
+  End of week, under time pressure, data spread across three tools
+
+block: Functional Aspects
+  Pull data from three sources, calculate KPIs, format slides,
+  distribute to leadership by Friday at noon
+
+block: Emotional Aspects
+  Wants to feel in control and look competent in front of the CEO
+  Fears sending a report with a mistake
+
+block: Social Aspects
+  Known as the person who "always has the numbers ready"
+  Seen as a reliable, detail-oriented operator
+
+block: Current Solutions
+  Excel + manual copy-paste from dashboards + PowerPoint formatting
+  Slack reminders to chase down missing data from other teams
+
+block: Desired Outcomes
+  Done in under 30 minutes with no manual errors
+  Report looks polished without extra design work
+  No chasing people for data on Friday morning
+
+block: Obstacles
+  Data lives in three tools with no shared export format
+  KPI definitions are inconsistent across departments
 ```
 ~~~
+
+---
 
 ### Impact Map
 
@@ -179,12 +310,14 @@ actor: Product Team
     deliverable: Empty state templates
   impact: Surface progress milestones
     deliverable: Progress bar in dashboard
+    deliverable: Celebration moment at day 7
 
 actor: Marketing Team
   impact: Re-engage dormant users
-    deliverable: Day-7 reactivation email
+    deliverable: Day-7 reactivation email sequence
   impact: Set clearer expectations pre-signup
     deliverable: Revised landing page copy
+    deliverable: Updated onboarding video
 
 actor: Customer Success
   impact: Catch at-risk accounts early
@@ -193,60 +326,122 @@ actor: Customer Success
 ```
 ~~~
 
-**Impact Map syntax rules:**
-- `goal:` and `actor:` — no indent
-- `impact:` — indented once (2 spaces)
-- `deliverable:` — indented twice (4 spaces)
-- Any number of actors, impacts per actor, and deliverables per impact
+**Impact Map syntax:**
+- `goal:` — root, no indent, required, one only
+- `actor:` — no indent, repeatable
+- `impact:` — indented once under an actor
+- `deliverable:` — indented twice under an impact
+
+---
+
+### User Story Map
+
+~~~
+```story
+backbone: Discovery | Sign Up | Onboarding | Core Feature | Share
+
+slice: MVP
+  Discovery: Landing page, product tour video
+  Sign Up: Email + password, verify email
+  Onboarding: Welcome wizard, sample data pre-loaded
+  Core Feature: Create and export first report
+
+slice: Beta
+  Discovery: SEO landing pages, G2 profile
+  Sign Up: Google OAuth
+  Onboarding: Interactive tutorial, progress tracker
+  Core Feature: Report templates, export to PDF and Slides
+  Share: Invite a team member
+
+slice: v1.0
+  Discovery: Paid ads, referral program page
+  Sign Up: SSO for enterprise accounts
+  Onboarding: Role-based setup paths
+  Core Feature: Custom dashboards, scheduled report delivery
+  Share: Public share link, embed in Notion or Confluence
+```
+~~~
+
+**Story Map syntax:**
+- `backbone:` — pipe-separated list of activities (columns), required
+- `slice:` — release lane (row), at least one required
+- Indented `Activity: stories` — cell content; activity name must match backbone exactly (case-insensitive)
+- Empty cells (activity not listed in a slice) render as dashed placeholders
 
 ---
 
 ## Linking blocks to document headings
 
-Add a `_links:` section to connect canvas blocks to headings in the same note. A small link icon appears on the block; tapping it scrolls to that heading.
+Add a `_links:` section to connect canvas blocks to headings elsewhere in the same note. A small link icon appears on the block — tapping it navigates to that heading.
 
 ~~~
 ```lean
-problem: Too many manual steps
-solution: One-click automation
-customer_segments: Solo founders
+block: Problem
+  Too many manual steps in the daily workflow
+
+block: Solution
+  One-click automation for recurring tasks
+
+block: Customer Segments
+  Solo founders and freelancers
 
 _links:
-  problem: 1. Why? — Problem & Opportunity
-  solution: 2. How? — Our Approach
-  customer_segments: 3. Who? — Target Users
+  Problem: 1. Why? — Problem & Opportunity
+  Solution: 2. How? — Our Approach
+  Customer Segments: 3. Who? — Target Users
 ```
 ~~~
 
-- Only linked blocks show the icon
+- Block labels in `_links:` are case-insensitive
 - Heading text must match the document heading exactly
-- Works with any framework
+- Only linked blocks show the icon
+- Works with any grid framework
 
 ---
 
 ## Presentation mode
 
-Each canvas has a small expand icon (⛶) in its title bar. Tapping it opens a full-screen overlay that covers the entire Obsidian UI — including sidebars and toolbars.
+Each canvas has a small expand icon in its title bar. Tapping it opens a full-screen overlay covering the entire Obsidian UI — including sidebars and toolbars.
 
-**On iPhone connected to Apple TV via screen mirroring**, this fills the TV output, giving you a clean single-canvas presentation view directly from your notes.
+**On iPhone connected to Apple TV via screen mirroring**, this fills the TV output, giving you a clean single-canvas view directly from your notes.
 
-- All grid blocks are shown at once (mobile carousel is suspended)
+- Grid canvases show all blocks at once (mobile carousel is suspended)
 - Larger type for readability at a distance
-- Impact Map scrolls vertically within the overlay
-- **Dismiss:** tap the ✕ button, press Escape, or swipe down
+- Impact Maps and Story Maps scroll vertically within the overlay
+- **Dismiss:** tap ✕, press Escape, or swipe down
 
 ---
 
 ## Syntax reference
 
+### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs)
+
 | Syntax | Meaning |
 |---|---|
-| `key: value` | Single-line value |
-| `key: \|` followed by indented lines | Multi-line value |
-| `_links:` followed by indented `key: heading` pairs | Link blocks to headings |
+| `block: Label` | Start a block; label must match a framework block name |
+| Indented lines below | Block content (multi-line, no special syntax needed) |
+| `_links:` | Start the heading links section |
+| Indented `Label: Heading text` | Link a block to a document heading |
 | `# comment` | Ignored line |
-| Unknown keys | Silently ignored |
-| Duplicate keys | Last one wins |
+| Unknown block labels | Silently ignored |
+
+### Impact Map (impact)
+
+| Syntax | Meaning |
+|---|---|
+| `goal:` | Root node — no indent, required, one only |
+| `actor:` | Level 1 — no indent, repeatable |
+| `impact:` | Level 2 — indented under an actor |
+| `deliverable:` | Level 3 — indented under an impact |
+
+### User Story Map (story)
+
+| Syntax | Meaning |
+|---|---|
+| `backbone: A \| B \| C` | Pipe-separated column headers, required |
+| `slice: Name` | Release lane (row), at least one required |
+| Indented `Activity: content` | Cell content for that backbone column |
+| Deeper indented lines | Multi-line cell content |
 
 ---
 
