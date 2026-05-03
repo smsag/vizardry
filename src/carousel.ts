@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, Plugin, TFile } from "obsidian";
+import { MarkdownPostProcessorContext, MarkdownView, Plugin, TFile } from "obsidian";
 
 // Tags whose presence ends an image group
 const BREAKER_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6", "HR", "TABLE", "PRE", "BLOCKQUOTE"]);
@@ -184,27 +184,45 @@ function wrapAsCarousel(
 // ── Plugin registration ──────────────────────────────────────────────────────
 
 export function registerCarouselProcessor(plugin: Plugin): void {
-  // Debounce one scan per render cycle per document view
   const pending = new Map<string, ReturnType<typeof setTimeout>>();
+
+  function findPreviewEl(el: HTMLElement): HTMLElement | null {
+    // Primary: look up the active MarkdownView from the workspace.
+    // This is reliable on both desktop and mobile, even when the section
+    // element is being rendered in an offscreen buffer.
+    const view = plugin.app.workspace.getActiveViewOfType(MarkdownView);
+    if (view?.getMode() === "preview") {
+      const container = view.previewMode.containerEl;
+      if (container) return container;
+    }
+
+    // Fallback: DOM traversal — handles embedded / hover views
+    return (
+      el.closest<HTMLElement>(".markdown-preview-view") ??
+      el.closest<HTMLElement>(".markdown-reading-view") ??
+      null
+    );
+  }
 
   plugin.registerMarkdownPostProcessor(
     (el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       if (!isCarouselEnabled(ctx, plugin)) return;
 
-      const previewEl = el.closest<HTMLElement>(".markdown-preview-view");
+      const previewEl = findPreviewEl(el);
       if (!previewEl) return;
 
-      const docId = ctx.docId;
-      const existing = pending.get(docId);
+      // Debounce per source path — one scan after all sections have rendered.
+      // 300 ms gives enough headroom for slow mobile renders.
+      const key = ctx.sourcePath;
+      const existing = pending.get(key);
       if (existing !== undefined) clearTimeout(existing);
 
       const timer = setTimeout(() => {
-        pending.delete(docId);
-        if (!previewEl.isConnected) return;
-        buildCarousels(previewEl);
-      }, 50);
+        pending.delete(key);
+        if (previewEl.isConnected) buildCarousels(previewEl);
+      }, 300);
 
-      pending.set(docId, timer);
+      pending.set(key, timer);
     },
     // Higher priority number = runs after canvas code-block processors
     100
