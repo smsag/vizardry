@@ -216,8 +216,10 @@ export function registerCarouselProcessor(plugin: Plugin): void {
       if (existing !== undefined) clearTimeout(existing);
 
       const timer = setTimeout(() => {
-        pending.delete(key);        // Resolve the container lazily — view mode transition is complete by now.
-        const previewEl = findPreviewContainer(plugin, ctx.sourcePath);        if (previewEl.isConnected) buildCarousels(previewEl);
+        pending.delete(key);
+        // Resolve the container lazily — view mode transition is complete by now.
+        const previewEl = findPreviewContainer(plugin, ctx.sourcePath);
+        if (previewEl && previewEl.isConnected) buildCarousels(previewEl);
       }, 300);
 
       pending.set(key, timer);
