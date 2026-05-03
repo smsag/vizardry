@@ -1,28 +1,44 @@
 import { MarkdownPostProcessorContext, MarkdownView, Plugin, TFile } from "obsidian";
 
-// Tags whose presence ends an image group
 const BREAKER_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6", "HR", "TABLE", "PRE", "BLOCKQUOTE"]);
 const BREAKER_SELECTOR = "h1,h2,h3,h4,h5,h6,hr,table,pre,blockquote";
 
+// Marks source sections absorbed into a carousel so teardown can find them.
+const MEMBER_ATTR = "data-vzd-carousel-member";
+
 function isCarouselEnabled(ctx: MarkdownPostProcessorContext, plugin: Plugin): boolean {
-  // ctx.frontmatter is available on Obsidian ≥ 1.4.4; use it when present.
   if (ctx.frontmatter !== undefined && ctx.frontmatter !== null) {
     return ctx.frontmatter.carousel === true;
   }
-  // Fallback for older builds: read via the metadata cache.
   const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
   if (!(file instanceof TFile)) return false;
   return plugin.app.metadataCache.getFileCache(file)?.frontmatter?.carousel === true;
 }
 
+// ── Teardown ─────────────────────────────────────────────────────────────────
+// Removes all carousel wrappers and restores all hidden source sections.
+// Called at the start of every buildCarousels so the function is idempotent
+// regardless of how many times it runs or what state the DOM is in.
+
+function teardownCarousels(container: HTMLElement): void {
+  container.querySelectorAll<HTMLElement>(".vzd-carousel").forEach((el) => el.remove());
+  container.querySelectorAll<HTMLElement>(`[${MEMBER_ATTR}]`).forEach((el) => {
+    el.removeAttribute(MEMBER_ATTR);
+    el.style.removeProperty("display");
+  });
+}
+
 // ── Group detection ─────────────────────────────────────────────────────────
 
 function buildCarousels(previewEl: HTMLElement): void {
-  // Support both .markdown-preview-sizer wrapper and bare preview containers
   const container =
     previewEl.querySelector<HTMLElement>(".markdown-preview-sizer") ?? previewEl;
 
-  // Snapshot children before any DOM mutations
+  // Full teardown first: restore source sections, remove stale carousel wrappers.
+  // This is safe to call on every run — carousel wrappers are not Obsidian-managed,
+  // and source sections are unhidden so the scan always starts from a clean DOM.
+  teardownCarousels(container);
+
   const blocks = Array.from(container.children) as HTMLElement[];
 
   const groups: Array<{ nodes: HTMLElement[]; imgs: HTMLImageElement[] }> = [];
@@ -38,13 +54,6 @@ function buildCarousels(previewEl: HTMLElement): void {
   }
 
   for (const block of blocks) {
-    // Skip already-processed carousels (idempotency guard)
-    if (block.classList.contains("vzd-carousel")) {
-      flush();
-      continue;
-    }
-
-    // Group breaker: known breaker tag, or contains a breaker, or vizardry canvas
     const isBreaker =
       BREAKER_TAGS.has(block.tagName) ||
       block.querySelector(BREAKER_SELECTOR) !== null ||
@@ -56,9 +65,8 @@ function buildCarousels(previewEl: HTMLElement): void {
       continue;
     }
 
-    // Collect images not inside vizardry canvases
     const imgs = Array.from(block.querySelectorAll<HTMLImageElement>("img")).filter(
-      (img) => !img.closest(".vizardry-canvas") && !img.closest(".vzd-carousel")
+      (img) => !img.closest(".vizardry-canvas")
     );
 
     if (imgs.length === 0) {
@@ -66,7 +74,7 @@ function buildCarousels(previewEl: HTMLElement): void {
       continue;
     }
 
-    // Reject if any text content exists outside the img elements
+    // Reject blocks that have text content alongside the images
     const clone = block.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("img").forEach((i) => i.remove());
     if ((clone.textContent?.trim() ?? "") !== "") {
@@ -93,23 +101,28 @@ function wrapAsCarousel(
 ): void {
   const first = sections[0];
 
-  // Root container — focusable for keyboard nav
+  // Hide source sections instead of removing them.
+  // Removing them breaks Obsidian's internal section registry: when sections
+  // scroll into view or the view re-renders, Obsidian re-inserts new copies
+  // of those sections, causing carousels to dissolve or duplicate.
+  for (const section of sections) {
+    section.setAttribute(MEMBER_ATTR, "true");
+    section.style.display = "none";
+  }
+
   const carousel = parent.createEl("div", { cls: "vzd-carousel" });
   carousel.setAttribute("tabindex", "0");
   carousel.setAttribute("role", "region");
   carousel.setAttribute("aria-label", `Image carousel, ${imgs.length} images`);
 
-  // Slide track
   const track = carousel.createEl("div", { cls: "vzd-carousel-track" });
   imgs.forEach((img, idx) => {
     const slide = track.createEl("div", {
       cls: idx === 0 ? "vzd-carousel-slide vzd-carousel-slide-active" : "vzd-carousel-slide",
     });
-    // Clone so we don't move the original out of the section before removal
     slide.appendChild(img.cloneNode(true));
   });
 
-  // Controls row: ‹ · · · ›
   const controls = carousel.createEl("div", { cls: "vzd-carousel-controls" });
 
   const prevBtn = controls.createEl("button", { cls: "vzd-carousel-btn" });
@@ -129,7 +142,6 @@ function wrapAsCarousel(
   nextBtn.setAttribute("aria-label", "Next image");
   nextBtn.appendText("›");
 
-  // ── Navigation state ────────────────────────────────────────────
   const slides = Array.from(track.children) as HTMLElement[];
   let current = 0;
 
@@ -145,48 +157,26 @@ function wrapAsCarousel(
   nextBtn.addEventListener("click", () => goTo(current + 1));
   dots.forEach((dot, idx) => dot.addEventListener("click", () => goTo(idx)));
 
-  // Keyboard: scoped to carousel when focused
   carousel.addEventListener("keydown", (e: KeyboardEvent) => {
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      goTo(current - 1);
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      goTo(current + 1);
-    }
+    if (e.key === "ArrowLeft") { e.preventDefault(); goTo(current - 1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); goTo(current + 1); }
   });
 
-  // Touch/swipe support
   let touchStartX = 0;
-  carousel.addEventListener(
-    "touchstart",
-    (e: TouchEvent) => {
-      touchStartX = e.touches[0].clientX;
-    },
-    { passive: true }
-  );
-  carousel.addEventListener(
-    "touchend",
-    (e: TouchEvent) => {
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
-    },
-    { passive: true }
-  );
+  carousel.addEventListener("touchstart", (e: TouchEvent) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  carousel.addEventListener("touchend", (e: TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
+  }, { passive: true });
 
-  // Insert carousel before first original section, then remove all sections
+  // Insert carousel immediately before the first hidden source section
   parent.insertBefore(carousel, first);
-  for (const section of sections) {
-    parent.removeChild(section);
-  }
 }
 
 // ── Plugin registration ──────────────────────────────────────────────────────
 
-// Find the preview container for a specific file by iterating all open leaves.
-// This is robust against mode transitions: previewMode.containerEl is always
-// available on a MarkdownView regardless of whether it is currently showing
-// preview or source mode.
 function findPreviewContainer(plugin: Plugin, sourcePath: string): HTMLElement | null {
   let found: HTMLElement | null = null;
   plugin.app.workspace.iterateAllLeaves((leaf) => {
@@ -202,35 +192,35 @@ function findPreviewContainer(plugin: Plugin, sourcePath: string): HTMLElement |
 export function registerCarouselProcessor(plugin: Plugin): void {
   const pending = new Map<string, ReturnType<typeof setTimeout>>();
 
+  function scheduleRebuild(sourcePath: string, delay = 300): void {
+    const existing = pending.get(sourcePath);
+    if (existing !== undefined) clearTimeout(existing);
+
+    const timer = setTimeout(() => {
+      pending.delete(sourcePath);
+      const previewEl = findPreviewContainer(plugin, sourcePath);
+      if (previewEl && previewEl.isConnected) {
+        buildCarousels(previewEl);
+      } else if (delay < 2000) {
+        // Single back-off retry if the view is not ready yet (mobile, slow transition)
+        scheduleRebuild(sourcePath, delay * 2);
+      }
+    }, delay);
+
+    pending.set(sourcePath, timer);
+  }
+
   plugin.registerMarkdownPostProcessor(
-    (el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+    (_el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       if (!isCarouselEnabled(ctx, plugin)) return;
-
-      // Schedule a deferred scan — do NOT resolve the container here.
-      // At processor-fire time the view is mid-transition (edit → preview),
-      // so getMode() can still return "source" and el.closest() can return
-      // null because sections are in an offscreen rendering buffer.
-      // By the time the 300 ms timer fires the transition is complete.
-      const key = ctx.sourcePath;
-      const existing = pending.get(key);
-      if (existing !== undefined) clearTimeout(existing);
-
-      const timer = setTimeout(() => {
-        pending.delete(key);
-        // Resolve the container lazily — view mode transition is complete by now.
-        const previewEl = findPreviewContainer(plugin, ctx.sourcePath);
-        if (previewEl && previewEl.isConnected) buildCarousels(previewEl);
-      }, 300);
-
-      pending.set(key, timer);
+      scheduleRebuild(ctx.sourcePath);
     },
-    // Higher priority number = runs after canvas code-block processors
     100
   );
 
-  // Clean up any outstanding timers on plugin unload
   plugin.register(() => {
     for (const timer of pending.values()) clearTimeout(timer);
     pending.clear();
   });
 }
+
