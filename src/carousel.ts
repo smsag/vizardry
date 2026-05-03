@@ -237,7 +237,25 @@ export function registerCarouselProcessor(plugin: Plugin): void {
       observer: null!,
       rebuildTimer: null,
     };
-    state.observer = new MutationObserver(() => scheduleRebuild(sourcePath));
+
+    // Only rebuild when a mutation involves image-bearing, carousel, or member
+    // nodes. Obsidian's virtual scroller inserts plain text sections as the user
+    // scrolls to the bottom; those mutations must NOT trigger a rebuild — doing
+    // so causes the sizer height to flicker (teardown unhides sections, rebuild
+    // hides them again) which makes the scrollbar jump and creates a reload loop.
+    state.observer = new MutationObserver((mutations) => {
+      const relevant = mutations.some((m) => {
+        const nodes = [...Array.from(m.addedNodes), ...Array.from(m.removedNodes)];
+        return nodes.some(
+          (n) =>
+            n instanceof HTMLElement &&
+            (n.querySelector("img") !== null ||
+              n.hasAttribute(MEMBER_ATTR) ||
+              n.classList.contains("vzd-carousel"))
+        );
+      });
+      if (relevant) scheduleRebuild(sourcePath);
+    });
     fileStates.set(sourcePath, state);
 
     // Initial build (sizer is ready and connected).
