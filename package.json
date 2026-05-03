@@ -1,6 +1,6 @@
 {
   "name": "vizardry",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Renders product management frameworks as visual canvases inline in Read View.",
   "main": "main.js",
   "scripts": {

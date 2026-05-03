@@ -2,9 +2,9 @@ import { MarkdownPostProcessorContext, MarkdownView, Plugin, TFile } from "obsid
 
 const BREAKER_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6", "HR", "TABLE", "PRE", "BLOCKQUOTE"]);
 const BREAKER_SELECTOR = "h1,h2,h3,h4,h5,h6,hr,table,pre,blockquote";
-
-// Marks source sections absorbed into a carousel so teardown can find them.
 const MEMBER_ATTR = "data-vzd-carousel-member";
+
+// ── Frontmatter check ────────────────────────────────────────────────────────
 
 function isCarouselEnabled(ctx: MarkdownPostProcessorContext, plugin: Plugin): boolean {
   if (ctx.frontmatter !== undefined && ctx.frontmatter !== null) {
@@ -16,31 +16,28 @@ function isCarouselEnabled(ctx: MarkdownPostProcessorContext, plugin: Plugin): b
 }
 
 // ── Teardown ─────────────────────────────────────────────────────────────────
-// Removes all carousel wrappers and restores all hidden source sections.
-// Called at the start of every buildCarousels so the function is idempotent
-// regardless of how many times it runs or what state the DOM is in.
+// Removes carousel wrappers and restores hidden source sections.
+// Only works on whatever is currently in the DOM — safe to call at any time.
 
-function teardownCarousels(container: HTMLElement): void {
-  container.querySelectorAll<HTMLElement>(".vzd-carousel").forEach((el) => el.remove());
-  container.querySelectorAll<HTMLElement>(`[${MEMBER_ATTR}]`).forEach((el) => {
+function teardownCarousels(sizer: HTMLElement): void {
+  sizer.querySelectorAll<HTMLElement>(".vzd-carousel").forEach((el) => el.remove());
+  sizer.querySelectorAll<HTMLElement>(`[${MEMBER_ATTR}]`).forEach((el) => {
     el.removeAttribute(MEMBER_ATTR);
     el.style.removeProperty("display");
   });
 }
 
-// ── Group detection ─────────────────────────────────────────────────────────
+// ── Group detection & carousel construction ──────────────────────────────────
+// Works only with whatever sections are currently in the DOM.
+// If image sections have been unloaded by Obsidian's virtual scroller,
+// they simply won't be found — no carousel is built for that scroll position,
+// which is correct (nothing to show). When they scroll back in, Obsidian
+// re-inserts them, the MutationObserver fires, and they get wrapped again.
 
-function buildCarousels(previewEl: HTMLElement): void {
-  const container =
-    previewEl.querySelector<HTMLElement>(".markdown-preview-sizer") ?? previewEl;
+function buildCarousels(sizer: HTMLElement): void {
+  teardownCarousels(sizer);
 
-  // Full teardown first: restore source sections, remove stale carousel wrappers.
-  // This is safe to call on every run — carousel wrappers are not Obsidian-managed,
-  // and source sections are unhidden so the scan always starts from a clean DOM.
-  teardownCarousels(container);
-
-  const blocks = Array.from(container.children) as HTMLElement[];
-
+  const blocks = Array.from(sizer.children) as HTMLElement[];
   const groups: Array<{ nodes: HTMLElement[]; imgs: HTMLImageElement[] }> = [];
   let curNodes: HTMLElement[] = [];
   let curImgs: HTMLImageElement[] = [];
@@ -60,51 +57,37 @@ function buildCarousels(previewEl: HTMLElement): void {
       block.classList.contains("vizardry-canvas") ||
       block.querySelector(".vizardry-canvas") !== null;
 
-    if (isBreaker) {
-      flush();
-      continue;
-    }
+    if (isBreaker) { flush(); continue; }
 
     const imgs = Array.from(block.querySelectorAll<HTMLImageElement>("img")).filter(
       (img) => !img.closest(".vizardry-canvas")
     );
 
-    if (imgs.length === 0) {
-      flush();
-      continue;
-    }
+    if (imgs.length === 0) { flush(); continue; }
 
-    // Reject blocks that have text content alongside the images
     const clone = block.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("img").forEach((i) => i.remove());
-    if ((clone.textContent?.trim() ?? "") !== "") {
-      flush();
-      continue;
-    }
+    if ((clone.textContent?.trim() ?? "") !== "") { flush(); continue; }
 
     curNodes.push(block);
     curImgs.push(...imgs);
   }
   flush();
 
-  for (const group of groups) {
-    wrapAsCarousel(group.nodes, group.imgs, container);
+  for (const { nodes, imgs } of groups) {
+    wrapAsCarousel(nodes, imgs, sizer);
   }
 }
 
-// ── Carousel DOM construction ────────────────────────────────────────────────
+// ── Carousel DOM construction ─────────────────────────────────────────────────
 
 function wrapAsCarousel(
   sections: HTMLElement[],
   imgs: HTMLImageElement[],
   parent: HTMLElement
 ): void {
-  const first = sections[0];
-
-  // Hide source sections instead of removing them.
-  // Removing them breaks Obsidian's internal section registry: when sections
-  // scroll into view or the view re-renders, Obsidian re-inserts new copies
-  // of those sections, causing carousels to dissolve or duplicate.
+  // Hide source sections — do NOT remove them.
+  // Removing Obsidian-managed elements breaks its section registry.
   for (const section of sections) {
     section.setAttribute(MEMBER_ATTR, "true");
     section.style.display = "none";
@@ -171,56 +154,125 @@ function wrapAsCarousel(
     if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
   }, { passive: true });
 
-  // Insert carousel immediately before the first hidden source section
-  parent.insertBefore(carousel, first);
+  parent.insertBefore(carousel, sections[0]);
 }
 
-// ── Plugin registration ──────────────────────────────────────────────────────
+// ── Per-file observer state ───────────────────────────────────────────────────
 
-function findPreviewContainer(plugin: Plugin, sourcePath: string): HTMLElement | null {
+interface FileCarouselState {
+  sizer: HTMLElement;
+  observer: MutationObserver;
+  rebuildTimer: ReturnType<typeof setTimeout> | null;
+}
+
+function findSizer(plugin: Plugin, sourcePath: string): HTMLElement | null {
   let found: HTMLElement | null = null;
   plugin.app.workspace.iterateAllLeaves((leaf) => {
     if (found) return;
     const view = leaf.view;
     if (view instanceof MarkdownView && view.file?.path === sourcePath) {
-      found = view.previewMode.containerEl;
+      const c = view.previewMode.containerEl;
+      found = c.querySelector<HTMLElement>(".markdown-preview-sizer") ?? c;
     }
   });
   return found;
 }
 
+// ── Plugin registration ───────────────────────────────────────────────────────
+
 export function registerCarouselProcessor(plugin: Plugin): void {
-  const pending = new Map<string, ReturnType<typeof setTimeout>>();
+  // Tracks the active MutationObserver + state per source file.
+  const fileStates = new Map<string, FileCarouselState>();
 
-  function scheduleRebuild(sourcePath: string, delay = 300): void {
-    const existing = pending.get(sourcePath);
-    if (existing !== undefined) clearTimeout(existing);
+  // Debounce timers for the initial setup (allows mode transition to complete).
+  const setupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-    const timer = setTimeout(() => {
-      pending.delete(sourcePath);
-      const previewEl = findPreviewContainer(plugin, sourcePath);
-      if (previewEl && previewEl.isConnected) {
-        buildCarousels(previewEl);
-      } else if (delay < 2000) {
-        // Single back-off retry if the view is not ready yet (mobile, slow transition)
-        scheduleRebuild(sourcePath, delay * 2);
+  // Schedule a debounced rebuild for a file. Disconnects the observer during
+  // the synchronous buildCarousels call so our own DOM mutations don't re-trigger it.
+  function scheduleRebuild(sourcePath: string): void {
+    const state = fileStates.get(sourcePath);
+    if (!state || !state.sizer.isConnected) return;
+    if (state.rebuildTimer !== null) clearTimeout(state.rebuildTimer);
+
+    state.rebuildTimer = setTimeout(() => {
+      state.rebuildTimer = null;
+      if (!state.sizer.isConnected) return;
+      state.observer.disconnect();
+      buildCarousels(state.sizer);
+      state.observer.observe(state.sizer, { childList: true });
+    }, 150);
+  }
+
+  // Attach a MutationObserver to the sizer for the given file.
+  // Called (debounced) from the post-processor after mode transitions complete.
+  function setupCarousel(sourcePath: string): void {
+    setupTimers.delete(sourcePath);
+
+    const sizer = findSizer(plugin, sourcePath);
+    if (!sizer || !sizer.isConnected) {
+      // View not ready yet (mid mode-transition) — retry once
+      const t = setTimeout(() => setupCarousel(sourcePath), 400);
+      setupTimers.set(sourcePath, t);
+      return;
+    }
+
+    const existing = fileStates.get(sourcePath);
+
+    if (existing) {
+      if (existing.sizer === sizer) {
+        // Same container — already observing. Just trigger a rebuild
+        // (handles edit→read transition where the sizer element is reused).
+        scheduleRebuild(sourcePath);
+        return;
       }
-    }, delay);
+      // The preview container was recreated — disconnect the stale observer.
+      existing.observer.disconnect();
+      if (existing.rebuildTimer !== null) clearTimeout(existing.rebuildTimer);
+      fileStates.delete(sourcePath);
+    }
 
-    pending.set(sourcePath, timer);
+    // Create state first so scheduleRebuild can find it inside the observer callback.
+    const state: FileCarouselState = {
+      sizer,
+      observer: null!,
+      rebuildTimer: null,
+    };
+    state.observer = new MutationObserver(() => scheduleRebuild(sourcePath));
+    fileStates.set(sourcePath, state);
+
+    // Initial build (sizer is ready and connected).
+    buildCarousels(sizer);
+
+    // Observe direct children of the sizer — that is where Obsidian inserts/removes
+    // sections during lazy scroll rendering and document re-renders.
+    state.observer.observe(sizer, { childList: true });
   }
 
   plugin.registerMarkdownPostProcessor(
     (_el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       if (!isCarouselEnabled(ctx, plugin)) return;
-      scheduleRebuild(ctx.sourcePath);
+
+      const sp = ctx.sourcePath;
+      const t = setupTimers.get(sp);
+      if (t !== undefined) clearTimeout(t);
+
+      // Debounce so we call setupCarousel once after the full render batch
+      // (and after any mode transition is complete).
+      const timer = setTimeout(() => setupCarousel(sp), 300);
+      setupTimers.set(sp, timer);
     },
     100
   );
 
   plugin.register(() => {
-    for (const timer of pending.values()) clearTimeout(timer);
-    pending.clear();
+    for (const t of setupTimers.values()) clearTimeout(t);
+    setupTimers.clear();
+    for (const state of fileStates.values()) {
+      state.observer.disconnect();
+      if (state.rebuildTimer !== null) clearTimeout(state.rebuildTimer);
+    }
+    fileStates.clear();
   });
 }
+
 
