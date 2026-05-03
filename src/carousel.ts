@@ -183,43 +183,41 @@ function wrapAsCarousel(
 
 // ── Plugin registration ──────────────────────────────────────────────────────
 
+// Find the preview container for a specific file by iterating all open leaves.
+// This is robust against mode transitions: previewMode.containerEl is always
+// available on a MarkdownView regardless of whether it is currently showing
+// preview or source mode.
+function findPreviewContainer(plugin: Plugin, sourcePath: string): HTMLElement | null {
+  let found: HTMLElement | null = null;
+  plugin.app.workspace.iterateAllLeaves((leaf) => {
+    if (found) return;
+    const view = leaf.view;
+    if (view instanceof MarkdownView && view.file?.path === sourcePath) {
+      found = view.previewMode.containerEl;
+    }
+  });
+  return found;
+}
+
 export function registerCarouselProcessor(plugin: Plugin): void {
   const pending = new Map<string, ReturnType<typeof setTimeout>>();
-
-  function findPreviewEl(el: HTMLElement): HTMLElement | null {
-    // Primary: look up the active MarkdownView from the workspace.
-    // This is reliable on both desktop and mobile, even when the section
-    // element is being rendered in an offscreen buffer.
-    const view = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-    if (view?.getMode() === "preview") {
-      const container = view.previewMode.containerEl;
-      if (container) return container;
-    }
-
-    // Fallback: DOM traversal — handles embedded / hover views
-    return (
-      el.closest<HTMLElement>(".markdown-preview-view") ??
-      el.closest<HTMLElement>(".markdown-reading-view") ??
-      null
-    );
-  }
 
   plugin.registerMarkdownPostProcessor(
     (el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
       if (!isCarouselEnabled(ctx, plugin)) return;
 
-      const previewEl = findPreviewEl(el);
-      if (!previewEl) return;
-
-      // Debounce per source path — one scan after all sections have rendered.
-      // 300 ms gives enough headroom for slow mobile renders.
+      // Schedule a deferred scan — do NOT resolve the container here.
+      // At processor-fire time the view is mid-transition (edit → preview),
+      // so getMode() can still return "source" and el.closest() can return
+      // null because sections are in an offscreen rendering buffer.
+      // By the time the 300 ms timer fires the transition is complete.
       const key = ctx.sourcePath;
       const existing = pending.get(key);
       if (existing !== undefined) clearTimeout(existing);
 
       const timer = setTimeout(() => {
-        pending.delete(key);
-        if (previewEl.isConnected) buildCarousels(previewEl);
+        pending.delete(key);        // Resolve the container lazily — view mode transition is complete by now.
+        const previewEl = findPreviewContainer(plugin, ctx.sourcePath);        if (previewEl.isConnected) buildCarousels(previewEl);
       }, 300);
 
       pending.set(key, timer);
