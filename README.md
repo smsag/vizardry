@@ -1,6 +1,6 @@
 # Vizardry
 
-An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input.
+An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an opt-in image carousel and a mind map renderer.
 
 ---
 
@@ -32,6 +32,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```jobs ` | Jobs Canvas | 3-column grid |
 | ` ```impact ` | Impact Map | Hierarchical tree |
 | ` ```story ` | User Story Map | Backbone + slices grid |
+| ` ```mindmap ` | Mind Map | Indented tree |
 
 ---
 
@@ -370,6 +371,71 @@ slice: v1.0
 
 ---
 
+### Mind Map
+
+~~~
+```mindmap
+root: What makes a great PM?
+
+  Discovery
+    Talk to users weekly
+    Root Cause Analysis
+      5 Whys
+      Opportunity Canvas
+    Distinguish problem from solution
+
+  Delivery
+    Short feedback loops
+    Slice by outcome, not feature
+    Story Map before planning
+
+  Strategy
+    Understand trade-offs
+    Align on north-star metric
+    Kill features that don't serve the goal
+
+  Mindset
+    Comfort with ambiguity
+    Curiosity over certainty
+    Ship to learn
+```
+~~~
+
+**Mind Map syntax:**
+- `root:` — central node, no indent, required, one only
+- Indented lines — child nodes; indent level determines depth in the tree
+- Any consistent indent unit works (2 spaces, 4 spaces, tab)
+- Blank lines and `# comment` lines are ignored
+- Depth 1–3 get progressively lighter styling; depth 4+ uses a minimal leaf style
+
+---
+
+## Image Carousel
+
+Automatically groups consecutive images in Read View into a navigable carousel. Activated per note via frontmatter — no global setting.
+
+**Frontmatter** (must be the first lines in the file):
+
+```yaml
+---
+carousel: true
+---
+```
+
+**Grouping rules:**
+- Finds all `<img>` elements in the rendered note
+- Groups consecutive images where nothing else (text, heading, table, `---`, Vizardry canvas) appears between them
+- Groups of **2 or more** images become a carousel; single isolated images are left untouched
+- Two separate image groups in one note → two independent carousels
+
+**Controls:**
+- Left / right arrow buttons
+- Dot indicators — one per image, clickable to jump directly
+- Keyboard `←` / `→` when the carousel is focused
+- Swipe left / right on mobile
+
+---
+
 ## Linking blocks to document headings
 
 Add a `_links:` section to connect canvas blocks to headings elsewhere in the same note. A small link icon appears on the block — tapping it navigates to that heading.
@@ -442,6 +508,22 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 | `slice: Name` | Release lane (row), at least one required |
 | Indented `Activity: content` | Cell content for that backbone column |
 | Deeper indented lines | Multi-line cell content |
+
+### Mind Map (mindmap)
+
+| Syntax | Meaning |
+|---|---|
+| `root: Text` | Central node — no indent, required, one only |
+| Indented lines | Child nodes; depth determined by indent level |
+| Blank lines | Ignored (use freely for readability) |
+| `# comment` | Ignored |
+
+### Image Carousel
+
+| Syntax | Meaning |
+|---|---|
+| `carousel: true` in frontmatter | Activates carousel grouping for the note |
+| No frontmatter key or `carousel: false` | Images render normally |
 
 ---
 
