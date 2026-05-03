@@ -1,13 +1,18 @@
-import { App, MarkdownPostProcessorContext, Plugin, TFile } from "obsidian";
+import { MarkdownPostProcessorContext, Plugin, TFile } from "obsidian";
 
 // Tags whose presence ends an image group
 const BREAKER_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6", "HR", "TABLE", "PRE", "BLOCKQUOTE"]);
 const BREAKER_SELECTOR = "h1,h2,h3,h4,h5,h6,hr,table,pre,blockquote";
 
-function isCarouselEnabled(ctx: MarkdownPostProcessorContext, app: App): boolean {
-  const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
+function isCarouselEnabled(ctx: MarkdownPostProcessorContext, plugin: Plugin): boolean {
+  // ctx.frontmatter is available on Obsidian ≥ 1.4.4; use it when present.
+  if (ctx.frontmatter !== undefined && ctx.frontmatter !== null) {
+    return ctx.frontmatter.carousel === true;
+  }
+  // Fallback for older builds: read via the metadata cache.
+  const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
   if (!(file instanceof TFile)) return false;
-  return app.metadataCache.getFileCache(file)?.frontmatter?.carousel === true;
+  return plugin.app.metadataCache.getFileCache(file)?.frontmatter?.carousel === true;
 }
 
 // ── Group detection ─────────────────────────────────────────────────────────
@@ -184,7 +189,7 @@ export function registerCarouselProcessor(plugin: Plugin): void {
 
   plugin.registerMarkdownPostProcessor(
     (el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-      if (!isCarouselEnabled(ctx, (plugin as Plugin & { app: App }).app)) return;
+      if (!isCarouselEnabled(ctx, plugin)) return;
 
       const previewEl = el.closest<HTMLElement>(".markdown-preview-view");
       if (!previewEl) return;
