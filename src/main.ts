@@ -2,8 +2,9 @@ import { Editor, MarkdownView, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE } from "./templates";
+import { parseMindMap } from "./mindmap";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE } from "./templates";
 import { CanvasInsertModal, FrameworkOption } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
@@ -13,6 +14,7 @@ import { VPC } from "./frameworks/vpc";
 import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { FrameworkDefinition } from "./types";
+import { registerCarouselProcessor } from "./carousel";
 
 const FRAMEWORKS: Record<string, FrameworkDefinition> = {
   bmc: BMC,
@@ -62,7 +64,16 @@ export default class VizardryPlugin extends Plugin {
     } catch (err) {
       console.error('Vizardry: failed to register processor for "story"', err);
     }
-
+    // ── Mind Map renderer ─────────────────────────────────────────────────────
+    try {
+      this.registerMarkdownCodeBlockProcessor("mindmap", (source, el, _ctx) => {
+        const result = parseMindMap(source);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderMindMap(result.data, el);
+      });
+    } catch (err) {
+      console.error('Vizardry: failed to register processor for "mindmap"', err);
+    }
     // ── Build framework options list (used by modal + commands) ────
     const frameworkOptions: FrameworkOption[] = [
       ...Object.entries(FRAMEWORKS).map(([id, def]) => ({
@@ -79,6 +90,11 @@ export default class VizardryPlugin extends Plugin {
         id: "story",
         label: "User Story Map",
         template: STORY_MAP_TEMPLATE,
+      },
+      {
+        id: "mindmap",
+        label: "Mind Map",
+        template: MIND_MAP_TEMPLATE,
       },
     ];
 
@@ -117,6 +133,9 @@ export default class VizardryPlugin extends Plugin {
         },
       });
     }
+
+    // ── Image carousel post-processor ─────────────────────────────
+    registerCarouselProcessor(this);
   }
 
   onunload(): void {

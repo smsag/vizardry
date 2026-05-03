@@ -544,3 +544,244 @@
 .vzd-presentation-wrap .vzd-im-deliverable .vzd-im-node-text {
   font-size: var(--font-ui-small);
 }
+
+/* ══ Carousel ════════════════════════════════════════════════════════
+   Opt-in image carousel for Read View. Activated via frontmatter:
+     carousel: true
+   Groups of ≥2 consecutive images (no other content between them)
+   are wrapped automatically; isolated single images are unchanged.
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-carousel {
+  margin: 1rem 0;
+  outline: none;
+}
+
+.vzd-carousel:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-m);
+}
+
+.vzd-carousel-track {
+  position: relative;
+  width: 100%;
+}
+
+.vzd-carousel-slide {
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.vzd-carousel-slide-active {
+  display: flex;
+  animation: vzd-carousel-fade 0.2s ease;
+}
+
+@keyframes vzd-carousel-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.vzd-carousel-slide img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-s);
+}
+
+/* Controls row: ‹  · · ·  › */
+.vzd-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.vzd-carousel-btn {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  font-size: 1.25rem;
+  line-height: 1;
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  transition: background 0.1s ease, color 0.1s ease;
+  user-select: none;
+}
+
+.vzd-carousel-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+.vzd-carousel-btn:active {
+  background: var(--background-modifier-active);
+}
+
+.vzd-carousel-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vzd-carousel-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.vzd-carousel-dot:hover {
+  background: var(--text-muted);
+}
+
+.vzd-carousel-dot-active {
+  background: var(--interactive-accent);
+  transform: scale(1.35);
+}
+
+/* Larger touch targets on mobile */
+@media (max-width: 600px) {
+  .vzd-carousel-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ══ Mind Map ════════════════════════════════════════════════════════
+   Indented vertical tree. Root sits at the top; each level is
+   visually indented with a left border and L-shaped branch lines,
+   reusing the same structural vocabulary as Impact Map.
+   Depth classes 1–3 get distinct weights; depth 4+ shares "deep".
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-mm-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Root node — highest visual weight */
+.vzd-mm-root {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 4px solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.7rem 1rem;
+}
+
+.vzd-mm-root > .vzd-mm-node-text {
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Shared level indentation with L-shaped branch lines */
+.vzd-mm-level {
+  margin-top: 0.35rem;
+  margin-left: 1.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.vzd-mm-level > * {
+  position: relative;
+}
+
+.vzd-mm-level > *::before {
+  content: "";
+  position: absolute;
+  left: -1rem;
+  top: 0.9rem;
+  width: 0.75rem;
+  height: 2px;
+  background: var(--text-faint);
+}
+
+/* Depth 1 — section weight */
+.vzd-mm-node.vzd-mm-depth-1 {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+  padding: 0.5rem 0.75rem;
+}
+
+.vzd-mm-node.vzd-mm-depth-1 > .vzd-mm-node-text {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+}
+
+/* Depth 2 — item weight */
+.vzd-mm-node.vzd-mm-depth-2 {
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 2px solid var(--text-faint);
+  border-radius: var(--radius-m);
+  padding: 0.4rem 0.75rem;
+}
+
+.vzd-mm-node.vzd-mm-depth-2 > .vzd-mm-node-text {
+  font-size: var(--font-ui-small);
+}
+
+/* Depth 3 — sub-item weight */
+.vzd-mm-node.vzd-mm-depth-3 {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 0.3rem 0.6rem;
+}
+
+.vzd-mm-node.vzd-mm-depth-3 > .vzd-mm-node-text {
+  font-size: var(--font-ui-smaller);
+}
+
+/* Depth 4+ — leaf weight */
+.vzd-mm-node.vzd-mm-depth-deep {
+  background: transparent;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 0.25rem 0.5rem;
+}
+
+.vzd-mm-node.vzd-mm-depth-deep > .vzd-mm-node-text {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* Shared text style */
+.vzd-mm-node-text {
+  color: var(--text-normal);
+  line-height: 1.45;
+}
+
+/* Mobile: tighten indentation */
+@media (max-width: 600px) {
+  .vzd-mm-level {
+    margin-left: 0.75rem;
+    padding-left: 0.75rem;
+  }
+}

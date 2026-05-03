@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { FrameworkDefinition, ImpactMap, StoryMap } from "./types";
+import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, StoryMap } from "./types";
 
 export function renderCanvas(
   framework: FrameworkDefinition,
@@ -252,4 +252,43 @@ export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");
   container.createEl("span", { cls: "vizardry-error-icon", text: "⚠" });
   container.createEl("span", { cls: "vizardry-error-message", text: message });
+}
+
+// ── Mind Map ─────────────────────────────────────────────────────────────────
+
+export function renderMindMap(map: MindMap, container: HTMLElement): void {
+  container.addClass("vizardry-canvas");
+  container.setAttribute("data-framework", "mindmap");
+
+  const header = container.createEl("div", { cls: "vizardry-header" });
+  header.createEl("span", { text: "Mind Map", cls: "vizardry-title" });
+
+  const tree = container.createEl("div", { cls: "vzd-mm-tree" });
+
+  const rootEl = tree.createEl("div", { cls: "vzd-mm-root" });
+  rootEl.createEl("div", { cls: "vzd-mm-node-text", text: map.root.text });
+
+  if (map.root.children.length > 0) {
+    const childrenWrap = rootEl.createEl("div", { cls: "vzd-mm-level" });
+    for (const child of map.root.children) {
+      renderMindMapNode(child, childrenWrap, 1);
+    }
+  }
+}
+
+function renderMindMapNode(
+  node: MindMapNode,
+  parent: HTMLElement,
+  depth: number
+): void {
+  const depthCls = depth <= 3 ? `vzd-mm-depth-${depth}` : "vzd-mm-depth-deep";
+  const nodeEl = parent.createEl("div", { cls: `vzd-mm-node ${depthCls}` });
+  nodeEl.createEl("div", { cls: "vzd-mm-node-text", text: node.text });
+
+  if (node.children.length > 0) {
+    const childrenWrap = nodeEl.createEl("div", { cls: "vzd-mm-level" });
+    for (const child of node.children) {
+      renderMindMapNode(child, childrenWrap, depth + 1);
+    }
+  }
 }

@@ -52,3 +52,18 @@ export interface StoryMap {
 export type StoryMapResult =
   | { ok: true; data: StoryMap }
   | { ok: false; error: string };
+
+// ── Mind Map ────────────────────────────────────────────────────────────────
+
+export interface MindMapNode {
+  text: string;
+  children: MindMapNode[];
+}
+
+export interface MindMap {
+  root: MindMapNode;
+}
+
+export type MindMapResult =
+  | { ok: true; data: MindMap }
+  | { ok: false; error: string };

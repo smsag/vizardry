@@ -26,3 +26,20 @@ slice: Slice 2
   Activity 2:
 \`\`\`
 `;
+
+export const MIND_MAP_TEMPLATE = `\`\`\`mindmap
+root: Central Topic
+
+  Branch One
+    Sub-item A
+    Sub-item B
+
+  Branch Two
+    Nested Group
+      Deep Item 1
+      Deep Item 2
+    Standalone Item
+
+  Branch Three
+\`\`\`
+`;
