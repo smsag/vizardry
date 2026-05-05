@@ -73,7 +73,7 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   goalEl.createEl("span", { cls: "vzd-im-level-label", text: "Goal" });
   goalEl.createEl("div", { cls: "vzd-im-node-text", text: map.goal });
 
-  const actorsWrap = tree.createEl("div", { cls: "vzd-im-level vzd-im-actors-wrap" });
+  const actorsWrap = tree.createEl("div", { cls: "vzd-im-actors-wrap" });
 
   if (map.actors.length === 0) {
     actorsWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No actors defined" });
@@ -81,11 +81,12 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   }
 
   for (const actor of map.actors) {
-    const actorEl = actorsWrap.createEl("div", { cls: "vzd-im-actor" });
+    const actorBranch = actorsWrap.createEl("div", { cls: "vzd-im-actor-branch" });
+    const actorEl = actorBranch.createEl("div", { cls: "vzd-im-actor" });
     actorEl.createEl("span", { cls: "vzd-im-level-label", text: "Actor" });
     actorEl.createEl("div", { cls: "vzd-im-node-text", text: actor.name });
 
-    const impactsWrap = actorEl.createEl("div", { cls: "vzd-im-level vzd-im-impacts-wrap" });
+    const impactsWrap = actorBranch.createEl("div", { cls: "vzd-im-impacts-wrap" });
 
     if (actor.impacts.length === 0) {
       impactsWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No impacts defined" });
@@ -93,11 +94,12 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
     }
 
     for (const impact of actor.impacts) {
-      const impactEl = impactsWrap.createEl("div", { cls: "vzd-im-impact" });
+      const impactBranch = impactsWrap.createEl("div", { cls: "vzd-im-impact-branch" });
+      const impactEl = impactBranch.createEl("div", { cls: "vzd-im-impact" });
       impactEl.createEl("span", { cls: "vzd-im-level-label", text: "Impact" });
       impactEl.createEl("div", { cls: "vzd-im-node-text", text: impact.name });
 
-      const deliverablesWrap = impactEl.createEl("div", { cls: "vzd-im-level vzd-im-deliverables-wrap" });
+      const deliverablesWrap = impactBranch.createEl("div", { cls: "vzd-im-deliverables-wrap" });
 
       if (impact.deliverables.length === 0) {
         deliverablesWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No deliverables defined" });
@@ -105,7 +107,8 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
       }
 
       for (const deliverable of impact.deliverables) {
-        const deliverableEl = deliverablesWrap.createEl("div", { cls: "vzd-im-deliverable" });
+        const deliverableBranch = deliverablesWrap.createEl("div", { cls: "vzd-im-deliverable-branch" });
+        const deliverableEl = deliverableBranch.createEl("div", { cls: "vzd-im-deliverable" });
         deliverableEl.createEl("span", { cls: "vzd-im-level-label", text: "Deliverable" });
         deliverableEl.createEl("div", { cls: "vzd-im-node-text", text: deliverable });
       }
@@ -240,6 +243,9 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   // Header bar
   const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
   pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
+  const reloadBtn = pHeader.createEl("button", { cls: "vzd-presentation-reload" });
+  setIcon(reloadBtn, "refresh-cw");
+  reloadBtn.setAttribute("aria-label", "Reload canvas");
   const closeBtn = pHeader.createEl("button", { cls: "vzd-presentation-close" });
   setIcon(closeBtn, "x");
   closeBtn.setAttribute("aria-label", "Exit presentation");
@@ -247,16 +253,27 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   // Content area
   const wrap = overlay.createEl("div", { cls: "vzd-presentation-wrap" });
 
-  // Clone the rendered content — grid canvas, impact map tree, or story map grid
-  const contentEl = sourceContainer.querySelector<HTMLElement>(
-    ".vizardry-grid, .vzd-im-tree, .vzd-story-grid"
-  );
-  if (contentEl) {
-    const clone = contentEl.cloneNode(true) as HTMLElement;
-    // Force all blocks visible — overrides mobile carousel display:none state
-    clone.querySelectorAll(".vizardry-block").forEach(b => b.classList.add("vizardry-block-active"));
-    wrap.appendChild(clone);
-  }
+  // Clone the rendered content into wrap, replacing any previous clone
+  const loadContent = (): void => {
+    wrap.empty();
+    const contentEl = sourceContainer.querySelector<HTMLElement>(
+      ".vizardry-grid, .vzd-im-tree, .vzd-story-grid"
+    );
+    if (contentEl) {
+      const clone = contentEl.cloneNode(true) as HTMLElement;
+      // Force all blocks visible — overrides mobile carousel display:none state
+      clone.querySelectorAll(".vizardry-block").forEach(b => b.classList.add("vizardry-block-active"));
+      wrap.appendChild(clone);
+    }
+  };
+
+  loadContent();
+
+  reloadBtn.addEventListener("click", () => {
+    reloadBtn.addClass("vzd-presentation-reload--spinning");
+    loadContent();
+    setTimeout(() => reloadBtn.removeClass("vzd-presentation-reload--spinning"), 400);
+  });
 
   const dismiss = (): void => {
     overlay.remove();
