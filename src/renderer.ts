@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, StoryMap } from "./types";
+import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, StoryMap, StoryTask } from "./types";
 
 export function renderCanvas(
   framework: FrameworkDefinition,
@@ -117,37 +117,108 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", "story");
 
+  // Header
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "User Story Map", cls: "vizardry-title" });
+  if (map.user || map.goal) {
+    const meta = header.createEl("div", { cls: "vzd-story-meta" });
+    if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `User: ${map.user}` });
+    if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `Goal: ${map.goal}` });
+  }
   addPresentButton(header, container, "User Story Map");
 
-  const grid = container.createEl("div", { cls: "vzd-story-grid" });
-  grid.style.setProperty("--vzd-story-cols", String(map.backbone.length));
+  // Flatten all steps in document order — each becomes one grid column
+  const allSteps = map.activities.flatMap(a => a.steps);
+  const totalCols = allSteps.length;
+  if (totalCols === 0) return;
 
-  // Backbone header row — one cell per activity
-  for (const activity of map.backbone) {
-    grid.createEl("div", { cls: "vzd-story-backbone-item", text: activity });
+  const grid = container.createEl("div", { cls: "vzd-story-grid" });
+  grid.style.setProperty("--vzd-story-cols", String(totalCols));
+
+  // Row 1: Activity headers, each spanning its steps
+  let colOffset = 1;
+  for (const activity of map.activities) {
+    const el = grid.createEl("div", { cls: "vzd-story-activity-header", text: activity.name });
+    el.style.gridColumn = `${colOffset} / span ${activity.steps.length}`;
+    colOffset += activity.steps.length;
   }
 
-  // Slice rows
+  // Row 2: Step headers — one per column, auto-placed
+  for (const step of allSteps) {
+    grid.createEl("div", { cls: "vzd-story-step-header", text: step.name });
+  }
+
+  // Build set of all assigned task keys: "stepKey\0taskKey"
+  const assignedKeys = new Set<string>();
   for (const slice of map.slices) {
-    // Full-width slice label spanning all columns
+    for (const [stepKey, taskKeys] of Object.entries(slice.cells)) {
+      for (const taskKey of taskKeys) {
+        assignedKeys.add(`${stepKey}\0${taskKey}`);
+      }
+    }
+  }
+
+  // Helper: append task cards into a cell element
+  function appendCards(
+    cell: HTMLElement,
+    step: typeof allSteps[number],
+    taskKeys: string[]
+  ): void {
+    for (const taskKey of taskKeys) {
+      const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKey);
+      if (!task) continue;
+      const card = cell.createEl("div", { cls: "vzd-story-task-card" });
+      card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+      if (task.subtitle) {
+        card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+      }
+    }
+  }
+
+  // Slice bands
+  for (const slice of map.slices) {
     grid.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
 
-    // One cell per backbone activity (empty cell if not in this slice)
-    for (const activity of map.backbone) {
-      const key = activity.toLowerCase().trim();
-      const content = slice.cells[key] ?? "";
+    for (const step of allSteps) {
+      const stepKey = step.name.toLowerCase().trim();
+      const taskKeys = slice.cells[stepKey] ?? [];
       const cell = grid.createEl("div", { cls: "vzd-story-cell" });
-
-      if (content.trim() === "") {
+      if (taskKeys.length === 0) {
         cell.addClass("vzd-story-cell-empty");
       } else {
-        const lines = content.split("\n");
-        lines.forEach((line, idx) => {
-          cell.appendText(line);
-          if (idx < lines.length - 1) cell.createEl("br");
-        });
+        appendCards(cell, step, taskKeys);
+      }
+    }
+  }
+
+  // Backlog band — tasks not assigned to any slice
+  const backlogByStep = new Map<string, typeof allSteps[number]["tasks"]>();
+  for (const step of allSteps) {
+    const stepKey = step.name.toLowerCase().trim();
+    const unassigned = step.tasks.filter(
+      (t: StoryTask) => !assignedKeys.has(`${stepKey}\0${t.name.toLowerCase().trim()}`)
+    );
+    if (unassigned.length > 0) backlogByStep.set(stepKey, unassigned);
+  }
+
+  if (backlogByStep.size > 0) {
+    const backlogLabel = grid.createEl("div", { cls: "vzd-story-slice-label", text: "Backlog" });
+    backlogLabel.addClass("vzd-story-backlog-label");
+
+    for (const step of allSteps) {
+      const stepKey = step.name.toLowerCase().trim();
+      const tasks = backlogByStep.get(stepKey) ?? [];
+      const cell = grid.createEl("div", { cls: "vzd-story-cell" });
+      if (tasks.length === 0) {
+        cell.addClass("vzd-story-cell-empty");
+      } else {
+        for (const task of tasks) {
+          const card = cell.createEl("div", { cls: "vzd-story-task-card" });
+          card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+          if (task.subtitle) {
+            card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+          }
+        }
       }
     }
   }

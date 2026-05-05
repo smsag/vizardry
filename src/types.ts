@@ -39,14 +39,32 @@ export type ImpactMapResult =
 
 // ── Story Map ───────────────────────────────────────────────────────────────
 
-export interface StoryMapSlice {
+export interface StoryTask {
   name: string;
-  cells: Record<string, string>; // backbone item (lowercased) → content
+  subtitle: string;
+}
+
+export interface StoryStep {
+  name: string;
+  tasks: StoryTask[];
+}
+
+export interface StoryActivity {
+  name: string;
+  steps: StoryStep[];
+}
+
+export interface StorySlice {
+  name: string;
+  // step name (lowercased) → task names (lowercased) assigned to this slice
+  cells: Record<string, string[]>;
 }
 
 export interface StoryMap {
-  backbone: string[];
-  slices: StoryMapSlice[];
+  user: string;
+  goal: string;
+  activities: StoryActivity[];
+  slices: StorySlice[];
 }
 
 export type StoryMapResult =

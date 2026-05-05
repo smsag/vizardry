@@ -31,7 +31,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```kata ` | Product Kata | 2-column grid |
 | ` ```jobs ` | Jobs Canvas | 3-column grid |
 | ` ```impact ` | Impact Map | Hierarchical tree |
-| ` ```story ` | User Story Map | Backbone + slices grid |
+| ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
 
 ---
@@ -339,35 +339,67 @@ actor: Customer Success
 
 ~~~
 ```story
-backbone: Discovery | Sign Up | Onboarding | Core Feature | Share
+user: Team Lead
+goal: Coordinate team and ship features reliably
+
+activity Define:
+  step Backlog:
+    task Create ticket: title and acceptance criteria
+    task Estimate: story points via planning poker
+    task Assign: pick owner from team roster
+  step Sprint Planning:
+    task Build sprint: drag tickets from backlog
+    task Set goal: one-line sprint objective
+
+activity Build:
+  step Development:
+    task Start work: move ticket to in-progress
+    task Open PR: linked to ticket with description
+    task Request review: tag a reviewer
+  step Review:
+    task Read diff: leave inline comments
+    task Approve: or request changes with notes
+    task Merge: squash and merge to main
+
+activity Ship:
+  step QA:
+    task Smoke test: cover critical user paths
+    task Regression: run automated test suite
+  step Release:
+    task Tag version: apply semver tag
+    task Deploy: one-click promote to production
+    task Announce: post changelog to stakeholders
+
+activity Improve:
+  step Retrospective:
+    task Collect feedback: team happiness score
+    task Action items: owner and due date
+  step Analytics:
+    task Velocity chart: story points per sprint
+    task Burndown: remaining work over time
 
 slice: MVP
-  Discovery: Landing page, product tour video
-  Sign Up: Email + password, verify email
-  Onboarding: Welcome wizard, sample data pre-loaded
-  Core Feature: Create and export first report
+  step Backlog: Create ticket, Assign
+  step Development: Start work, Open PR, Request review
+  step Review: Read diff, Approve, Merge
+  step Release: Deploy
 
-slice: Beta
-  Discovery: SEO landing pages, G2 profile
-  Sign Up: Google OAuth
-  Onboarding: Interactive tutorial, progress tracker
-  Core Feature: Report templates, export to PDF and Slides
-  Share: Invite a team member
-
-slice: v1.0
-  Discovery: Paid ads, referral program page
-  Sign Up: SSO for enterprise accounts
-  Onboarding: Role-based setup paths
-  Core Feature: Custom dashboards, scheduled report delivery
-  Share: Public share link, embed in Notion or Confluence
+slice: V1.1
+  step Backlog: Estimate
+  step Sprint Planning: Build sprint, Set goal
+  step QA: Smoke test, Regression
+  step Release: Tag version, Announce
 ```
 ~~~
 
 **Story Map syntax:**
-- `backbone:` — pipe-separated list of activities (columns), required
-- `slice:` — release lane (row), at least one required
-- Indented `Activity: stories` — cell content; activity name must match backbone exactly (case-insensitive)
-- Empty cells (activity not listed in a slice) render as dashed placeholders
+- `user:` — optional one-line persona description shown in the header
+- `goal:` — optional one-line objective shown in the header
+- `activity <name>:` — top-level backbone group; becomes a column-spanning header
+- `step <name>:` — indented under an activity; each step is one grid column. Step names must be **globally unique** across all activities
+- `task <name>: [subtitle]` — indented under a step; the optional subtitle is shown as secondary text in the task card. Task names must be unique within their parent step
+- `slice: <name>` — priority band; assigns tasks to it using `step <name>: task A, task B`
+- Tasks not assigned to any slice appear in a catch-all **Backlog** band at the bottom
 
 ---
 
@@ -504,10 +536,14 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 
 | Syntax | Meaning |
 |---|---|
-| `backbone: A \| B \| C` | Pipe-separated column headers, required |
-| `slice: Name` | Release lane (row), at least one required |
-| Indented `Activity: content` | Cell content for that backbone column |
-| Deeper indented lines | Multi-line cell content |
+| `user: Description` | Optional persona — shown in the canvas header |
+| `goal: Description` | Optional objective — shown in the canvas header |
+| `activity <name>:` | Top-level backbone group; spans its child step columns |
+| `step <name>:` | Indented under activity; one grid column. Must be unique across all activities |
+| `task <name>: [subtitle]` | Indented under step; renders as a task card with optional subtitle. Must be unique within its step |
+| `slice: <name>` | Priority band |
+| Indented `step <name>: task A, task B` | Assigns comma-separated tasks to this slice |
+| Unassigned tasks | Collected into a **Backlog** band at the bottom |
 
 ### Mind Map (mindmap)
 
