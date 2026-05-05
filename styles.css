@@ -666,7 +666,13 @@
   color: var(--text-normal);
 }
 
-.vzd-presentation-reload,
+.vzd-presentation-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+
 .vzd-presentation-close {
   background: none;
   border: none;

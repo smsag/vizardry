@@ -243,10 +243,11 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   // Header bar
   const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
   pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
-  const reloadBtn = pHeader.createEl("button", { cls: "vzd-presentation-reload" });
+  const btnGroup = pHeader.createEl("div", { cls: "vzd-presentation-btn-group" });
+  const reloadBtn = btnGroup.createEl("button", { cls: "vzd-presentation-reload" });
   setIcon(reloadBtn, "refresh-cw");
   reloadBtn.setAttribute("aria-label", "Reload canvas");
-  const closeBtn = pHeader.createEl("button", { cls: "vzd-presentation-close" });
+  const closeBtn = btnGroup.createEl("button", { cls: "vzd-presentation-close" });
   setIcon(closeBtn, "x");
   closeBtn.setAttribute("aria-label", "Exit presentation");
 
