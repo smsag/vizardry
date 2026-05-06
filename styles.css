@@ -4,6 +4,7 @@
   font-size: var(--font-ui-small);
   color: var(--text-normal);
   margin: 1rem 0 2rem;
+  overflow-x: auto;
 }
 
 .vizardry-header {
@@ -713,12 +714,13 @@
   color: var(--text-normal);
 }
 
+
+
 .vzd-presentation-btn-group {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
-
 
 .vzd-presentation-close {
   background: none;
