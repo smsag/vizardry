@@ -124,18 +124,26 @@
 /* ── Error state ── */
 .vizardry-error {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: var(--background-modifier-error);
+  border-left: 3px solid var(--text-error);
   border-radius: var(--radius-m);
-  color: var(--text-error);
   font-size: var(--font-ui-small);
 }
 
 .vizardry-error-icon {
   font-size: 1rem;
   flex-shrink: 0;
+  color: var(--text-error);
+}
+
+.vizardry-error-message {
+  color: var(--text-normal);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
 /* ── Mobile nav (hidden on desktop) ── */
@@ -614,6 +622,45 @@
 /* Presentation mode */
 .vzd-presentation-wrap .vzd-story-grid {
   width: 100%;
+}
+
+/* Step carousel nav — shown on narrow viewports via JS */
+.vzd-story-nav {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+
+.vzd-story-nav-btn {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  font-size: 1.25rem;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.vzd-story-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.vzd-story-nav-label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vzd-presentation-wrap .vzd-story-activity-header,

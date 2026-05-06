@@ -6,23 +6,23 @@ import { StoryMap, StoryMapResult } from "./types";
  *   user: Persona description
  *   goal: What they want to achieve
  *
- *   activity Activity Name:
- *     step Step Name:
- *       task Task Name: optional subtitle
- *       task Task Name: optional subtitle
+ *   activity: Activity Name
+ *     step: Step Name
+ *       task: Task Name
+ *       task: Task Name | optional subtitle
  *
  *   slice: Priority Band
- *     step Step Name: Task Name, Task Name
+ *     step: Step Name | Task Name, Task Name
  *
  * Rules:
  * - `user:` and `goal:` are optional one-line metadata shown in the header
- * - Each `activity <name>:` defines a backbone column group
- * - Each `step <name>:` (indented under an activity) defines a column;
+ * - Each `activity: <name>` defines a backbone column group
+ * - Each `step: <name>` (indented under an activity) defines a column;
  *   step names must be unique across the whole document
- * - Each `task <name>: [subtitle]` (indented under a step) defines a card;
- *   task names must be unique within their parent step
+ * - Each `task: <name>` (indented under a step) defines a card;
+ *   an optional subtitle is separated by `|`; task names must be unique within their parent step
  * - Each `slice: <name>` defines a priority band
- * - Under a slice, `step <name>: task A, task B` assigns tasks to that band
+ * - Under a slice, `step: <name> | task A, task B` assigns tasks to that band
  * - Tasks not assigned to any slice appear in a catch-all Backlog band
  */
 export function parseStoryMap(source: string): StoryMapResult {
@@ -62,12 +62,8 @@ export function parseStoryMap(source: string): StoryMapResult {
         goal = trimmed.slice("goal:".length).trim();
         currentActivity = null;
         currentSlice = null;
-      } else if (trimmed.startsWith("activity")) {
-        const colonIdx = trimmed.indexOf(":");
-        if (colonIdx === -1) {
-          return { ok: false, error: `Line ${i + 1}: expected "activity <name>:" — "${trimmed}"` };
-        }
-        const name = trimmed.slice("activity".length, colonIdx).trim();
+      } else if (trimmed.startsWith("activity:")) {
+        const name = trimmed.slice("activity:".length).trim();
         if (!name) {
           return { ok: false, error: `Line ${i + 1}: activity requires a name` };
         }
@@ -91,14 +87,10 @@ export function parseStoryMap(source: string): StoryMapResult {
 
       if (indent === blockIndent) {
         // Step declaration
-        if (!trimmed.startsWith("step")) {
-          return { ok: false, error: `Line ${i + 1}: expected "step <name>:" under activity — "${trimmed}"` };
+        if (!trimmed.startsWith("step:")) {
+          return { ok: false, error: `Line ${i + 1}: expected "step: <name>" under activity — "${trimmed}"` };
         }
-        const colonIdx = trimmed.indexOf(":");
-        if (colonIdx === -1) {
-          return { ok: false, error: `Line ${i + 1}: expected "step <name>:"` };
-        }
-        const stepName = trimmed.slice("step".length, colonIdx).trim();
+        const stepName = trimmed.slice("step:".length).trim();
         if (!stepName) {
           return { ok: false, error: `Line ${i + 1}: step requires a name` };
         }
@@ -117,14 +109,12 @@ export function parseStoryMap(source: string): StoryMapResult {
         if (indent !== taskIndent) {
           return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
         }
-        if (!trimmed.startsWith("task")) {
-          return { ok: false, error: `Line ${i + 1}: expected "task <name>:" — "${trimmed}"` };
+        if (!trimmed.startsWith("task:")) {
+          return { ok: false, error: `Line ${i + 1}: expected "task: <name>" — "${trimmed}"` };
         }
-        const colonIdx = trimmed.indexOf(":");
-        if (colonIdx === -1) {
-          return { ok: false, error: `Line ${i + 1}: expected "task <name>:"` };
-        }
-        const taskName = trimmed.slice("task".length, colonIdx).trim();
+        const rest = trimmed.slice("task:".length).trim();
+        const pipeIdx = rest.indexOf("|");
+        const taskName = pipeIdx === -1 ? rest : rest.slice(0, pipeIdx).trim();
         if (!taskName) {
           return { ok: false, error: `Line ${i + 1}: task requires a name` };
         }
@@ -132,7 +122,7 @@ export function parseStoryMap(source: string): StoryMapResult {
         if (currentStep.tasks.some(t => t.name.toLowerCase().trim() === taskKey)) {
           return { ok: false, error: `Line ${i + 1}: task "${taskName}" is defined more than once in step "${currentStep.name}"` };
         }
-        const subtitle = trimmed.slice(colonIdx + 1).trim();
+        const subtitle = pipeIdx === -1 ? "" : rest.slice(pipeIdx + 1).trim();
         currentStep.tasks.push({ name: taskName, subtitle });
 
       } else {
@@ -144,18 +134,16 @@ export function parseStoryMap(source: string): StoryMapResult {
       if (indent !== blockIndent) {
         return { ok: false, error: `Line ${i + 1}: unexpected indentation in slice — "${trimmed}"` };
       }
-      if (!trimmed.startsWith("step")) {
-        return { ok: false, error: `Line ${i + 1}: expected "step <name>: task, task" — "${trimmed}"` };
+      if (!trimmed.startsWith("step:")) {
+        return { ok: false, error: `Line ${i + 1}: expected "step: <name> | task, task" — "${trimmed}"` };
       }
-      const colonIdx = trimmed.indexOf(":");
-      if (colonIdx === -1) {
-        return { ok: false, error: `Line ${i + 1}: expected "step <name>: task, task"` };
-      }
-      const stepName = trimmed.slice("step".length, colonIdx).trim();
+      const rest = trimmed.slice("step:".length).trim();
+      const pipeIdx = rest.indexOf("|");
+      const stepName = pipeIdx === -1 ? rest : rest.slice(0, pipeIdx).trim();
       if (!stepName) {
         return { ok: false, error: `Line ${i + 1}: step reference requires a name` };
       }
-      const taskList = trimmed.slice(colonIdx + 1).trim();
+      const taskList = pipeIdx === -1 ? "" : rest.slice(pipeIdx + 1).trim();
       if (taskList) {
         const stepKey = stepName.toLowerCase().trim();
         const taskKeys = taskList.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
@@ -168,7 +156,7 @@ export function parseStoryMap(source: string): StoryMapResult {
   }
 
   if (activities.length === 0) {
-    return { ok: false, error: 'At least one "activity" is required' };
+    return { ok: false, error: 'At least one "activity:" is required' };
   }
 
   for (const activity of activities) {
@@ -177,18 +165,17 @@ export function parseStoryMap(source: string): StoryMapResult {
     }
   }
 
-  // Validate slice references
+  // Silently drop slice references to renamed/missing steps or tasks
   for (const slice of slices) {
-    for (const [stepKey, taskKeys] of Object.entries(slice.cells)) {
+    for (const stepKey of Object.keys(slice.cells)) {
       const step = stepRegistry.get(stepKey);
       if (!step) {
-        return { ok: false, error: `Slice "${slice.name}": step "${stepKey}" not found` };
+        delete slice.cells[stepKey];
+        continue;
       }
-      for (const taskKey of taskKeys) {
-        if (!step.tasks.some(t => t.name.toLowerCase().trim() === taskKey)) {
-          return { ok: false, error: `Slice "${slice.name}": task "${taskKey}" not found in step "${step.name}"` };
-        }
-      }
+      slice.cells[stepKey] = slice.cells[stepKey].filter(taskKey =>
+        step.tasks.some(t => t.name.toLowerCase().trim() === taskKey)
+      );
     }
   }
 
