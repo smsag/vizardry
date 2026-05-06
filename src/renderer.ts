@@ -361,7 +361,6 @@ function addPresentButton(header: HTMLElement, sourceContainer: HTMLElement, tit
 function openPresentation(sourceContainer: HTMLElement, title: string): void {
   const overlay = document.body.createEl("div", { cls: "vzd-presentation-overlay" });
 
-  // Header bar — title left, reload + close grouped right
   const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
   pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
   const btnGroup = pHeader.createEl("div", { cls: "vzd-presentation-btn-group" });
