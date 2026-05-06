@@ -84,3 +84,31 @@ root: Central Topic
   Branch Three
 \`\`\`
 `;
+
+export const VENN_TEMPLATE = `\`\`\`venn
+circle: Design
+  - User research
+  - Wireframing
+
+circle: Engineering
+  - Architecture
+  - Code review
+
+circle: Business
+  - Market sizing
+  - Revenue model
+
+intersection: Design+Engineering
+  - Prototyping
+  - [[Design System|Shared components]]
+
+intersection: Design+Business
+  - Brand strategy
+
+intersection: Engineering+Business
+  - Build vs. buy
+
+center:
+  - Product vision
+\`\`\`
+`;

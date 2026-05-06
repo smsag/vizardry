@@ -1,6 +1,6 @@
 # Vizardry
 
-An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an opt-in image carousel and a mind map renderer.
+An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an opt-in image carousel, a mind map renderer, and a Venn diagram renderer.
 
 ---
 
@@ -33,6 +33,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```impact ` | Impact Map | Hierarchical tree |
 | ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
+| ` ```venn ` | Venn Diagram | 2- or 3-circle overlap diagram |
 
 ---
 
@@ -442,6 +443,47 @@ root: What makes a great PM?
 
 ---
 
+### Venn Diagram
+
+~~~
+```venn
+circle: Design
+  - User research
+  - Wireframing
+
+circle: Engineering
+  - Architecture
+  - Code review
+
+circle: Business
+  - Market sizing
+  - Revenue model
+
+intersection: Design+Engineering
+  - Prototyping
+  - [[Design System|Shared components]]
+
+intersection: Design+Business
+  - Brand strategy
+
+intersection: Engineering+Business
+  - Build vs. buy
+
+center:
+  - Product vision
+```
+~~~
+
+**Venn Diagram syntax:**
+- `circle: <name>` — defines a circle; 2 or 3 circles supported. Items below it (indented `- text`) appear in the circle's exclusive area
+- `intersection: A+B` — items placed in the overlap of the named circles; name matching is case-insensitive and order-insensitive
+- `center:` — 3-circle only; shorthand for the intersection of all three circles
+- `- [[Note|Alias]]` — renders a clickable chip showing the alias; tapping opens the linked note
+- `- [[Note]]` — same, using the note name as the display text
+- Regions with no items are simply left empty; all regions are optional
+
+---
+
 ## Image Carousel
 
 Automatically groups consecutive images in Read View into a navigable carousel. Activated per note via frontmatter — no global setting.
@@ -538,11 +580,11 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 |---|---|
 | `user: Description` | Optional persona — shown in the canvas header |
 | `goal: Description` | Optional objective — shown in the canvas header |
-| `activity <name>:` | Top-level backbone group; spans its child step columns |
-| `step <name>:` | Indented under activity; one grid column. Must be unique across all activities |
-| `task <name>: [subtitle]` | Indented under step; renders as a task card with optional subtitle. Must be unique within its step |
+| `activity: <name>` | Top-level backbone group; spans its child step columns |
+| `step: <name>` | Indented under activity; one grid column. Must be unique across all activities |
+| `task: <name>` or `task: <name> \| <subtitle>` | Indented under step; renders as a task card with optional subtitle after `\|`. Must be unique within its step |
 | `slice: <name>` | Priority band |
-| Indented `step <name>: task A, task B` | Assigns comma-separated tasks to this slice |
+| Indented `step: <name> \| task A, task B` | Assigns comma-separated tasks to this slice |
 | Unassigned tasks | Collected into a **Backlog** band at the bottom |
 
 ### Mind Map (mindmap)
@@ -560,6 +602,17 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 |---|---|
 | `carousel: true` in frontmatter | Activates carousel grouping for the note |
 | No frontmatter key or `carousel: false` | Images render normally |
+
+### Venn Diagram (venn)
+
+| Syntax | Meaning |
+|---|---|
+| `circle: <name>` | Defines a circle (2 or 3 total); items below appear in its exclusive area |
+| `- item text` | Indented bullet — a text item placed in the parent region |
+| `- [[Note\|Alias]]` | Clickable link chip; alias is the display text |
+| `intersection: A+B` | Items in the overlap of two named circles (order-insensitive) |
+| `intersection: A+B+C` | Items in the overlap of all three circles |
+| `center:` | 3-circle only — shorthand for the intersection of all three |
 
 ---
 

@@ -3,8 +3,9 @@ import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
 import { parseMindMap } from "./mindmap";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE } from "./templates";
+import { parseVennDiagram } from "./venn";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderVennDiagram, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, VENN_TEMPLATE } from "./templates";
 import { CanvasInsertModal, FrameworkOption } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
@@ -74,6 +75,18 @@ export default class VizardryPlugin extends Plugin {
     } catch (err) {
       console.error('Vizardry: failed to register processor for "mindmap"', err);
     }
+    // ── Venn Diagram renderer ─────────────────────────────────────────────────
+    try {
+      this.registerMarkdownCodeBlockProcessor("venn", (source, el, ctx) => {
+        const result = parseVennDiagram(source);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderVennDiagram(result.data, el, (target) => {
+          this.app.workspace.openLinkText(target, ctx.sourcePath, false);
+        });
+      });
+    } catch (err) {
+      console.error('Vizardry: failed to register processor for "venn"', err);
+    }
     // ── Build framework options list (used by modal + commands) ────
     const frameworkOptions: FrameworkOption[] = [
       ...Object.entries(FRAMEWORKS).map(([id, def]) => ({
@@ -95,6 +108,11 @@ export default class VizardryPlugin extends Plugin {
         id: "mindmap",
         label: "Mind Map",
         template: MIND_MAP_TEMPLATE,
+      },
+      {
+        id: "venn",
+        label: "Venn Diagram",
+        template: VENN_TEMPLATE,
       },
     ];
 
