@@ -4,6 +4,7 @@ export interface FrameworkOption {
   id: string;
   label: string;
   template: string;
+  description: string;
 }
 
 export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
@@ -26,7 +27,7 @@ export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
 
   renderSuggestion(option: FrameworkOption, el: HTMLElement): void {
     el.createEl("div", { text: option.label, cls: "suggestion-title" });
-    el.createEl("div", { text: `\`\`\`${option.id}`, cls: "suggestion-note" });
+    el.createEl("div", { text: option.description, cls: "suggestion-note" });
   }
 
   onChooseSuggestion(option: FrameworkOption): void {

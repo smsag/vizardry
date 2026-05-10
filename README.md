@@ -30,6 +30,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```vpc ` | Value Proposition Canvas | 2-column grid |
 | ` ```kata ` | Product Kata | 2-column grid |
 | ` ```jobs ` | Jobs Canvas | 3-column grid |
+| ` ```rac ` | Riskiest Assumptions Canvas | 3-column grid |
 | ` ```impact ` | Impact Map | Hierarchical tree |
 | ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
@@ -300,6 +301,47 @@ block: Obstacles
 
 ---
 
+### Riskiest Assumptions Canvas
+
+~~~
+```rac
+block: Customers
+  Ops managers at 20–200 person SaaS companies — P:4 I:9 Risk:36
+  Finance teams needing weekly KPI reports — P:3 I:7 Risk:21
+
+block: Problem
+  Manual reporting consumes 4+ hours per week — P:3 I:9 Risk:27
+  Data inconsistency causes rework and embarrassment — P:2 I:8 Risk:16
+
+block: Solution
+  One-click automation solves the core pain — P:3 I:8 Risk:24
+  Users will self-serve without CS support — P:4 I:7 Risk:28
+
+block: MVP
+  Export automation alone is enough to validate — P:4 I:8 Risk:32
+  Customers will pay before full feature parity — P:3 I:10 Risk:30
+
+block: Competition
+  No direct competitor owns the SMB reporting niche — P:3 I:7 Risk:21
+  Incumbents are too slow to copy the approach — P:2 I:6 Risk:12
+
+block: Sales Channels
+  Product-led growth will drive most acquisition — P:4 I:8 Risk:32
+  Inbound SEO alone supports target growth rate — P:3 I:7 Risk:21
+
+block: Top Riskiest Assumptions
+  1. Ops managers are the right buyer (Risk: 36)
+  2. PLG drives sufficient acquisition (Risk: 32)
+  3. Export MVP validates core value (Risk: 32)
+  4. Customers pay before full parity (Risk: 30)
+  5. One-click automation solves the pain (Risk: 27)
+```
+~~~
+
+Each assumption is rated: **P** = probability of being wrong (1–5), **I** = impact if wrong (1–10). Risk = P × I. The **Top Riskiest Assumptions** block collects the highest-scoring items across all themes for prioritised validation.
+
+---
+
 ### Impact Map
 
 ~~~
@@ -554,7 +596,7 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 
 ## Syntax reference
 
-### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs)
+### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs, rac)
 
 | Syntax | Meaning |
 |---|---|
