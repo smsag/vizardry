@@ -33,8 +33,11 @@
   cursor: pointer;
   color: var(--text-faint);
   padding: 0;
+  width: 1.4rem;
+  height: 1.4rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -43,8 +46,8 @@
 }
 
 .vizardry-present-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .vizardry-header-actions {
@@ -59,9 +62,12 @@
   border: none;
   cursor: pointer;
   color: var(--text-faint);
-  padding: 0 0.1rem;
+  padding: 0;
+  width: 1.4rem;
+  height: 1.4rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   font-family: var(--font-interface);
   font-size: 0.72rem;
