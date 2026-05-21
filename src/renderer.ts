@@ -79,30 +79,82 @@ function ensureFullWidthWatchers(canvasEl: FullWidthCanvasEl, container: HTMLEle
 
 export function applyFullWidth(canvasEl: HTMLElement): void {
   const fullWidthEl = canvasEl as FullWidthCanvasEl;
+  const isEditView = !!canvasEl.closest(".cm-editor");
   const container = findWorkspaceContainer(canvasEl);
 
-  let availableWidth = window.innerWidth;
-  if (container) {
-    // In live-preview/edit view, use the cm-scroller as the width reference
-    // since it reflects the actual visible writing column more accurately
-    // than the workspace-leaf-content which can include hidden overflow area.
-    const cmScroller = container.querySelector<HTMLElement>(".cm-scroller");
-    const measureEl = cmScroller ?? container;
+  if (isEditView) {
+    // ── Edit / live-preview view ──────────────────────────────────
+    // cm-scroller is the visible viewport. cm-content (the containing
+    // block for position:relative children) is wider when readable line
+    // width is active. We must NOT use left:50%/transform here because
+    // left:50% resolves against cm-content, not cm-scroller.
+    // Instead: set an explicit pixel width and pull the element left by
+    // exactly the distance between its natural left edge and the
+    // scroller's left edge.
+    const cmScroller = container?.querySelector<HTMLElement>(".cm-scroller");
+
+    if (cmScroller) {
+      // Reset margin before measuring so getBoundingClientRect reflects
+      // the element's natural position, not a previously corrected one.
+      canvasEl.style.marginLeft = "";
+      const scrollerRect = cmScroller.getBoundingClientRect();
+      const canvasRect = canvasEl.getBoundingClientRect();
+      const computed = getComputedStyle(cmScroller);
+      const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+      const paddingRight = parseFloat(computed.paddingRight) || 0;
+      const scrollerContentWidth = cmScroller.clientWidth - paddingLeft - paddingRight;
+
+      const HORIZONTAL_MARGIN = 32;
+      const finalWidth = Math.max(0, scrollerContentWidth - HORIZONTAL_MARGIN);
+
+      // Distance from canvas natural left to scroller content left edge
+      const offsetLeft = canvasRect.left - scrollerRect.left - paddingLeft;
+
+      canvasEl.style.position = "relative";
+      canvasEl.style.left = "0";
+      canvasEl.style.transform = "none";
+      canvasEl.style.width = `${finalWidth}px`;
+      canvasEl.style.maxWidth = `${finalWidth}px`;
+      canvasEl.style.marginLeft = `${-offsetLeft + HORIZONTAL_MARGIN / 2}px`;
+      canvasEl.style.marginRight = "0";
+    } else {
+      // cm-scroller not found — fall back to window width
+      const HORIZONTAL_MARGIN = 32;
+      const finalWidth = Math.max(0, window.innerWidth - HORIZONTAL_MARGIN);
+      const px = `${finalWidth}px`;
+      canvasEl.style.position = "relative";
+      canvasEl.style.left = "50%";
+      canvasEl.style.transform = "translateX(-50%)";
+      canvasEl.style.width = px;
+      canvasEl.style.maxWidth = px;
+      canvasEl.style.marginLeft = "auto";
+      canvasEl.style.marginRight = "auto";
+    }
+  } else {
+    // ── Read view ─────────────────────────────────────────────────
+    // The containing block is .markdown-preview-sizer. The scroll
+    // container does not clip, so left:50% + translateX(-50%) works
+    // reliably. Measure against the sizer's parent to get the true
+    // available width.
+    const sizer = canvasEl.closest<HTMLElement>(".markdown-preview-sizer");
+    const measureEl = sizer?.parentElement ?? container ?? document.documentElement;
     const computed = getComputedStyle(measureEl);
     const paddingLeft = parseFloat(computed.paddingLeft) || 0;
     const paddingRight = parseFloat(computed.paddingRight) || 0;
-    availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;
-  }
+    const availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;
 
-  const HORIZONTAL_MARGIN = 32;
-  const px = `${Math.max(0, availableWidth - HORIZONTAL_MARGIN)}px`;
-  canvasEl.style.width = px;
-  canvasEl.style.maxWidth = px;
-  canvasEl.style.position = "relative";
-  canvasEl.style.left = "50%";
-  canvasEl.style.transform = "translateX(-50%)";
-  canvasEl.style.marginLeft = "auto";
-  canvasEl.style.marginRight = "auto";
+    const HORIZONTAL_MARGIN = 32;
+    const finalWidth = Math.max(0, availableWidth - HORIZONTAL_MARGIN);
+    const px = `${finalWidth}px`;
+
+    canvasEl.style.position = "relative";
+    canvasEl.style.left = "50%";
+    canvasEl.style.transform = "translateX(-50%)";
+    canvasEl.style.width = px;
+    canvasEl.style.maxWidth = px;
+    canvasEl.style.marginLeft = "auto";
+    canvasEl.style.marginRight = "auto";
+  }
 
   ensureFullWidthWatchers(fullWidthEl, container);
 }

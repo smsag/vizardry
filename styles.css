@@ -20,17 +20,6 @@
   box-sizing: border-box;
 }
 
-.markdown-preview-sizer > .vizardry-canvas:not([style*="width"]),
-.markdown-preview-sizer .el-pre > .vizardry-canvas:not([style*="width"]),
-.markdown-preview-view .block-language-story:not([style*="width"]),
-.cm-embed-block .block-language-story:not([style*="width"]) {
-  position: relative;
-  left: 50%;
-  width: 100vw;
-  max-width: 100vw;
-  transform: translateX(-50%);
-}
-
 .vizardry-header {
   display: flex;
   align-items: center;
