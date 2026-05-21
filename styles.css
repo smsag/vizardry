@@ -14,12 +14,15 @@
 }
 
 .markdown-preview-sizer > .vizardry-canvas,
-.markdown-preview-sizer .el-pre > .vizardry-canvas {
+.markdown-preview-sizer .el-pre > .vizardry-canvas,
+.markdown-preview-view .block-language-story,
+.cm-embed-block .block-language-story {
   position: relative;
   left: 50%;
   width: 100vw;
   max-width: 100vw;
   transform: translateX(-50%);
+  box-sizing: border-box;
 }
 
 .vizardry-header {
@@ -29,7 +32,8 @@
   margin-bottom: 0.5rem;
 }
 
-.vizardry-present-btn {
+.vizardry-present-btn,
+.vizardry-font-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -43,7 +47,8 @@
   flex-shrink: 0;
 }
 
-.vizardry-present-btn:hover {
+.vizardry-present-btn:hover,
+.vizardry-font-btn:hover {
   color: var(--interactive-accent);
 }
 
@@ -60,26 +65,11 @@
 }
 
 .vizardry-font-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-faint);
-  padding: 0;
-  width: 1.4rem;
-  height: 1.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
   font-family: var(--font-interface);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
-}
-
-.vizardry-font-btn:hover {
-  color: var(--interactive-accent);
 }
 
 .vizardry-font-btn:disabled {
@@ -723,15 +713,15 @@
 .vzd-presentation-wrap .vzd-story-activity-header,
 .vzd-presentation-wrap .vzd-story-step-header,
 .vzd-presentation-wrap .vzd-story-slice-label {
-  font-size: 0.85rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
 }
 
 .vzd-presentation-wrap .vzd-story-task-name {
-  font-size: 1rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.3);
 }
 
 .vzd-presentation-wrap .vzd-story-task-subtitle {
-  font-size: 0.8rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1);
 }
 
 /* ══ Presentation overlay ════════════════════════════════════════════
@@ -836,11 +826,11 @@
 
 /* Larger type for TV readability */
 .vzd-presentation-wrap .vizardry-block-label {
-  font-size: 0.85rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
 }
 
 .vzd-presentation-wrap .vizardry-block-body {
-  font-size: 1rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.3);
   line-height: 1.55;
 }
 
@@ -850,16 +840,16 @@
 }
 
 .vzd-presentation-wrap .vzd-im-goal .vzd-im-node-text {
-  font-size: var(--font-ui-larger);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.6);
 }
 
 .vzd-presentation-wrap .vzd-im-actor .vzd-im-node-text,
 .vzd-presentation-wrap .vzd-im-impact .vzd-im-node-text {
-  font-size: var(--font-ui-medium);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.3);
 }
 
 .vzd-presentation-wrap .vzd-im-deliverable .vzd-im-node-text {
-  font-size: var(--font-ui-small);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1);
 }
 
 /* ══ Carousel ════════════════════════════════════════════════════════
