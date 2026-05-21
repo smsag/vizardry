@@ -39,6 +39,7 @@ export function renderCanvas(
       const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn" });
       setIcon(linkBtn, "link");
       linkBtn.setAttribute("aria-label", `Jump to: ${heading}`);
+      linkBtn.dataset.heading = heading;
       linkBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         navigateTo(heading);
@@ -405,6 +406,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
           el.style.gridColumn = "";
         });
       }
+      rebindPresentationInteractions(clone, sourceContainer);
       wrap.appendChild(clone);
     }
   };
@@ -437,6 +439,45 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   overlay.addEventListener("touchend", (e) => {
     if (e.changedTouches[0].clientY - touchStartY > 80) dismiss();
   }, { passive: true });
+}
+
+function rebindPresentationInteractions(cloneRoot: HTMLElement, sourceContainer: HTMLElement): void {
+  cloneRoot.querySelectorAll<HTMLElement>(".vizardry-block-link-btn").forEach((cloneBtn) => {
+    cloneBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      const heading = cloneBtn.dataset.heading;
+      if (heading) {
+        const sourceByHeading = sourceContainer.querySelector<HTMLElement>(
+          `.vizardry-block-link-btn[data-heading="${CSS.escape(heading)}"]`
+        );
+        if (sourceByHeading) {
+          sourceByHeading.click();
+          return;
+        }
+      }
+
+      const area = cloneBtn.closest<HTMLElement>(".vizardry-block")?.dataset.area;
+      if (!area) return;
+
+      const sourceBtn = sourceContainer.querySelector<HTMLElement>(
+        `.vizardry-block[data-area="${CSS.escape(area)}"] .vizardry-block-link-btn`
+      );
+      sourceBtn?.click();
+    });
+  });
+
+  cloneRoot.querySelectorAll<HTMLElement>(".vzd-venn-link").forEach((cloneLink) => {
+    cloneLink.addEventListener("click", () => {
+      const target = cloneLink.dataset.linkTarget;
+      if (!target) return;
+
+      const sourceLink = sourceContainer.querySelector<HTMLElement>(
+        `.vzd-venn-link[data-link-target="${CSS.escape(target)}"]`
+      );
+      sourceLink?.click();
+    });
+  });
 }
 
 function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
@@ -578,6 +619,7 @@ export function renderVennDiagram(
       const itemEl = div.createEl("div", { cls: "vzd-venn-item" });
       if (item.linkTarget) {
         const link = itemEl.createEl("span", { cls: "vzd-venn-link", text: item.text });
+        link.dataset.linkTarget = item.linkTarget;
         link.addEventListener("click", () => openLink((item as VennItem).linkTarget!));
       } else {
         itemEl.setText(item.text);
