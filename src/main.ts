@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Plugin } from "obsidian";
+import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
@@ -138,6 +138,29 @@ export default class VizardryPlugin extends Plugin {
       },
     ];
 
+    const withActiveMarkdownEditor = (run: (editor: Editor) => void): void => {
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+      const editor = view?.editor;
+      if (!editor) {
+        new Notice("Open a Markdown note in editing mode to use this command.");
+        return;
+      }
+      run(editor);
+    };
+
+    const insertTemplateAtCursor = (editor: Editor, template: string): void => {
+      const cursor = editor.getCursor();
+      const lineText = editor.getLine(cursor.line);
+      const onBlankLine = lineText.trim() === "";
+      const from = onBlankLine
+        ? { line: cursor.line, ch: 0 }
+        : { line: cursor.line, ch: lineText.length };
+      editor.replaceRange(onBlankLine ? template : "\n" + template, from);
+      const firstKeyLine = cursor.line + (onBlankLine ? 1 : 2);
+      const firstKeyText = editor.getLine(firstKeyLine);
+      editor.setCursor({ line: firstKeyLine, ch: firstKeyText.length });
+    };
+
     // ── Ribbon icon → opens insert modal ──────────────────────────
     this.addRibbonIcon("layout-template", "Insert Vizardry canvas…", () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -149,9 +172,9 @@ export default class VizardryPlugin extends Plugin {
     this.addCommand({
       id: "insert-canvas",
       name: "Insert canvas…",
-      editorCallback: (editor: Editor) => {
+      callback: () => withActiveMarkdownEditor((editor) => {
         new CanvasInsertModal(this.app, editor, frameworkOptions).open();
-      },
+      }),
     });
 
     // ── Commands: one per framework ───────────────────────────────
@@ -159,18 +182,9 @@ export default class VizardryPlugin extends Plugin {
       this.addCommand({
         id: `insert-${option.id}`,
         name: `Insert ${option.label}`,
-        editorCallback: (editor: Editor) => {
-          const cursor = editor.getCursor();
-          const lineText = editor.getLine(cursor.line);
-          const onBlankLine = lineText.trim() === "";
-          const from = onBlankLine
-            ? { line: cursor.line, ch: 0 }
-            : { line: cursor.line, ch: lineText.length };
-          editor.replaceRange(onBlankLine ? option.template : "\n" + option.template, from);
-          const firstKeyLine = cursor.line + (onBlankLine ? 1 : 2);
-          const firstKeyText = editor.getLine(firstKeyLine);
-          editor.setCursor({ line: firstKeyLine, ch: firstKeyText.length });
-        },
+        callback: () => withActiveMarkdownEditor((editor) => {
+          insertTemplateAtCursor(editor, option.template);
+        }),
       });
     }
 

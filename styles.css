@@ -1,5 +1,9 @@
 /* ── Vizardry canvas wrapper ── */
 .vizardry-canvas {
+  display: block;
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
   font-family: var(--font-interface);
   font-size: var(--font-ui-small);
   color: var(--text-normal);
@@ -53,6 +57,7 @@
 /* ── Grid (desktop) ── */
 .vizardry-grid {
   display: grid;
+  width: 100%;
   grid-template-areas: var(--vzd-template);
   grid-template-columns: var(--vzd-columns);
   grid-template-rows: var(--vzd-rows);
@@ -242,6 +247,7 @@
 .vzd-im-tree {
   display: flex;
   flex-direction: column;
+  width: 100%;
   align-items: center;
   overflow-x: auto;
   padding: 1rem 1.5rem 1.5rem;
@@ -516,6 +522,7 @@
 
 .vzd-story-grid {
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(var(--vzd-story-cols), minmax(120px, 1fr));
   gap: 0.4rem;
   align-items: start;
@@ -943,6 +950,7 @@
 .vzd-mm-tree {
   display: flex;
   flex-direction: column;
+  width: 100%;
   gap: 0.25rem;
 }
 
@@ -1056,6 +1064,7 @@
 .vzd-venn-wrap {
   position: relative;
   width: 100%;
+  min-width: 100%;
 }
 
 .vzd-venn-svg {

@@ -10,6 +10,9 @@ export function renderCanvas(
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", framework.id);
+  container.style.width = "100%";
+  container.style.minWidth = "100%";
+  container.style.boxSizing = "border-box";
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: framework.label, cls: "vizardry-title" });
@@ -62,6 +65,9 @@ export function renderCanvas(
 export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", "impact");
+  container.style.width = "100%";
+  container.style.minWidth = "100%";
+  container.style.boxSizing = "border-box";
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Impact Map", cls: "vizardry-title" });
@@ -119,6 +125,9 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
 export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", "story");
+  container.style.width = "100%";
+  container.style.minWidth = "100%";
+  container.style.boxSizing = "border-box";
 
   // Header
   const header = container.createEl("div", { cls: "vizardry-header" });
@@ -484,6 +493,9 @@ export function renderVennDiagram(
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", "venn");
+  container.style.width = "100%";
+  container.style.minWidth = "100%";
+  container.style.boxSizing = "border-box";
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Venn Diagram", cls: "vizardry-title" });
@@ -579,6 +591,9 @@ export function renderVennDiagram(
 export function renderMindMap(map: MindMap, container: HTMLElement): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", "mindmap");
+  container.style.width = "100%";
+  container.style.minWidth = "100%";
+  container.style.boxSizing = "border-box";
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Mind Map", cls: "vizardry-title" });
