@@ -16,7 +16,7 @@ export function renderCanvas(
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: framework.label, cls: "vizardry-title" });
-  addPresentButton(header, container, framework.label);
+  addHeaderControls(header, container, framework.label);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);
@@ -72,7 +72,7 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Impact Map", cls: "vizardry-title" });
-  addPresentButton(header, container, "Impact Map");
+  addHeaderControls(header, container, "Impact Map");
 
   const tree = container.createEl("div", { cls: "vzd-im-tree" });
 
@@ -138,7 +138,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
     if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `User: ${map.user}` });
     if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `Goal: ${map.goal}` });
   }
-  addPresentButton(header, container, "User Story Map");
+  addHeaderControls(header, container, "User Story Map");
 
   // Flatten all steps in document order — each becomes one grid column
   const allSteps = map.activities.flatMap(a => a.steps);
@@ -358,13 +358,58 @@ function setupStoryCarousel(
   }, { passive: true });
 }
 
-function addPresentButton(header: HTMLElement, sourceContainer: HTMLElement, title: string): void {
-  const btn = header.createEl("button", { cls: "vizardry-present-btn" });
+function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string): void {
+  const actions = header.createEl("div", { cls: "vizardry-header-actions" });
+
+  // ── Font-size controls ─────────────────────────────────────────
+  const STEP_PX = 2;
+  const MIN_STEP = -3;
+  const MAX_STEP = 6;
+  let step = 0;
+
+  const decreaseBtn = actions.createEl("button", {
+    cls: "vizardry-font-btn",
+    text: "A\u2212",
+  }) as HTMLButtonElement;
+  decreaseBtn.setAttribute("aria-label", "Decrease font size");
+
+  const increaseBtn = actions.createEl("button", {
+    cls: "vizardry-font-btn",
+    text: "A+",
+  }) as HTMLButtonElement;
+  increaseBtn.setAttribute("aria-label", "Increase font size");
+
+  const applyStep = (): void => {
+    if (step === 0) {
+      container.style.removeProperty("--vzd-base");
+    } else {
+      container.style.setProperty(
+        "--vzd-base",
+        `calc(var(--font-ui-small) + ${step * STEP_PX}px)`
+      );
+    }
+    decreaseBtn.disabled = step <= MIN_STEP;
+    increaseBtn.disabled = step >= MAX_STEP;
+  };
+
+  decreaseBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (step > MIN_STEP) { step--; applyStep(); }
+  });
+  increaseBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (step < MAX_STEP) { step++; applyStep(); }
+  });
+
+  applyStep(); // set initial disabled state
+
+  // ── Present button ─────────────────────────────────────────────
+  const btn = actions.createEl("button", { cls: "vizardry-present-btn" });
   setIcon(btn, "expand");
   btn.setAttribute("aria-label", "Present fullscreen");
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    openPresentation(sourceContainer, title);
+    openPresentation(container, title);
   });
 }
 
@@ -540,7 +585,7 @@ export function renderVennDiagram(
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Venn Diagram", cls: "vizardry-title" });
-  addPresentButton(header, container, "Venn Diagram");
+  addHeaderControls(header, container, "Venn Diagram");
 
   const wrap = container.createEl("div", { cls: "vzd-venn-wrap" });
   const is3 = venn.circles.length === 3;
@@ -639,6 +684,7 @@ export function renderMindMap(map: MindMap, container: HTMLElement): void {
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Mind Map", cls: "vizardry-title" });
+  addHeaderControls(header, container, "Mind Map");
 
   const tree = container.createEl("div", { cls: "vzd-mm-tree" });
 
