@@ -1,6 +1,104 @@
 import { setIcon } from "obsidian";
 import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, StoryMap, StoryTask, VennDiagram, VennItem } from "./types";
 
+type FullWidthCanvasEl = HTMLElement & {
+  __vzdFullWidthObserver?: ResizeObserver;
+  __vzdFullWidthRemovalObserver?: MutationObserver;
+  __vzdFullWidthWindowHandler?: () => void;
+  __vzdFullWidthObservedContainer?: HTMLElement | null;
+};
+
+const WORKSPACE_CONTAINER_SELECTORS = [
+  ".workspace-leaf-content",
+  ".workspace-split.mod-root",
+  ".workspace-tabs",
+  ".workspace-leaf",
+] as const;
+
+function findWorkspaceContainer(canvasEl: HTMLElement): HTMLElement | null {
+  for (const selector of WORKSPACE_CONTAINER_SELECTORS) {
+    const match = canvasEl.closest<HTMLElement>(selector);
+    if (match) return match;
+  }
+  return null;
+}
+
+function cleanupFullWidthWatchers(canvasEl: FullWidthCanvasEl): void {
+  canvasEl.__vzdFullWidthObserver?.disconnect();
+  canvasEl.__vzdFullWidthObserver = undefined;
+
+  canvasEl.__vzdFullWidthRemovalObserver?.disconnect();
+  canvasEl.__vzdFullWidthRemovalObserver = undefined;
+
+  if (canvasEl.__vzdFullWidthWindowHandler) {
+    window.removeEventListener("resize", canvasEl.__vzdFullWidthWindowHandler);
+    canvasEl.__vzdFullWidthWindowHandler = undefined;
+  }
+
+  canvasEl.__vzdFullWidthObservedContainer = undefined;
+}
+
+function ensureFullWidthWatchers(canvasEl: FullWidthCanvasEl, container: HTMLElement | null): void {
+  const current = canvasEl.__vzdFullWidthObservedContainer;
+  if (current === container && canvasEl.__vzdFullWidthRemovalObserver) return;
+
+  cleanupFullWidthWatchers(canvasEl);
+  canvasEl.__vzdFullWidthObservedContainer = container;
+
+  if (container) {
+    const ro = new ResizeObserver(() => {
+      if (!canvasEl.isConnected) {
+        cleanupFullWidthWatchers(canvasEl);
+        return;
+      }
+      applyFullWidth(canvasEl);
+    });
+    ro.observe(container);
+    canvasEl.__vzdFullWidthObserver = ro;
+  } else {
+    const onResize = (): void => {
+      if (!canvasEl.isConnected) {
+        cleanupFullWidthWatchers(canvasEl);
+        return;
+      }
+      applyFullWidth(canvasEl);
+    };
+    window.addEventListener("resize", onResize);
+    canvasEl.__vzdFullWidthWindowHandler = onResize;
+  }
+
+  const parent = canvasEl.parentElement ?? document.body;
+  const mo = new MutationObserver(() => {
+    if (!canvasEl.isConnected || !parent.contains(canvasEl)) {
+      cleanupFullWidthWatchers(canvasEl);
+    }
+  });
+  mo.observe(parent, { childList: true });
+  canvasEl.__vzdFullWidthRemovalObserver = mo;
+}
+
+export function applyFullWidth(canvasEl: HTMLElement): void {
+  const fullWidthEl = canvasEl as FullWidthCanvasEl;
+  const container = findWorkspaceContainer(canvasEl);
+
+  let availableWidth = window.innerWidth;
+  if (container) {
+    const computed = getComputedStyle(container);
+    const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+    const paddingRight = parseFloat(computed.paddingRight) || 0;
+    availableWidth = container.clientWidth - paddingLeft - paddingRight;
+  }
+
+  const px = `${Math.max(0, availableWidth)}px`;
+  canvasEl.style.width = px;
+  canvasEl.style.maxWidth = px;
+  canvasEl.style.position = "relative";
+  canvasEl.style.left = "50%";
+  canvasEl.style.transform = "translateX(-50%)";
+
+  ensureFullWidthWatchers(fullWidthEl, container);
+}
+
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
@@ -13,6 +111,7 @@ export function renderCanvas(
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
+  requestAnimationFrame(() => applyFullWidth(container));
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: framework.label, cls: "vizardry-title" });
@@ -69,6 +168,7 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
+  requestAnimationFrame(() => applyFullWidth(container));
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Impact Map", cls: "vizardry-title" });
@@ -129,6 +229,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
+  requestAnimationFrame(() => applyFullWidth(container));
 
   // Header
   const header = container.createEl("div", { cls: "vizardry-header" });
@@ -582,6 +683,7 @@ export function renderVennDiagram(
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
+  requestAnimationFrame(() => applyFullWidth(container));
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Venn Diagram", cls: "vizardry-title" });
@@ -681,6 +783,7 @@ export function renderMindMap(map: MindMap, container: HTMLElement): void {
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
+  requestAnimationFrame(() => applyFullWidth(container));
 
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Mind Map", cls: "vizardry-title" });
