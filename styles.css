@@ -5,14 +5,16 @@
   min-width: 100%;
   box-sizing: border-box;
   font-family: var(--font-interface);
-  --vzd-base: var(--font-ui-small);
+  --vzd-base-default: calc(var(--font-ui-small) * 1.3);
+  --vzd-base: var(--vzd-base-default);
   font-size: var(--vzd-base);
   color: var(--text-normal);
   margin: 1rem 0 2rem;
   overflow-x: auto;
 }
 
-.markdown-preview-sizer > .vizardry-canvas {
+.markdown-preview-sizer > .vizardry-canvas,
+.markdown-preview-sizer .el-pre > .vizardry-canvas {
   position: relative;
   left: 50%;
   width: 100vw;

@@ -385,7 +385,7 @@ function addHeaderControls(header: HTMLElement, container: HTMLElement, title: s
     } else {
       container.style.setProperty(
         "--vzd-base",
-        `calc(var(--font-ui-small) + ${step * STEP_PX}px)`
+        `calc(var(--vzd-base-default) + ${step * STEP_PX}px)`
       );
     }
     decreaseBtn.disabled = step <= MIN_STEP;
