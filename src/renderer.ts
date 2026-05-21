@@ -83,18 +83,26 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
 
   let availableWidth = window.innerWidth;
   if (container) {
-    const computed = getComputedStyle(container);
+    // In live-preview/edit view, use the cm-scroller as the width reference
+    // since it reflects the actual visible writing column more accurately
+    // than the workspace-leaf-content which can include hidden overflow area.
+    const cmScroller = container.querySelector<HTMLElement>(".cm-scroller");
+    const measureEl = cmScroller ?? container;
+    const computed = getComputedStyle(measureEl);
     const paddingLeft = parseFloat(computed.paddingLeft) || 0;
     const paddingRight = parseFloat(computed.paddingRight) || 0;
-    availableWidth = container.clientWidth - paddingLeft - paddingRight;
+    availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;
   }
 
-  const px = `${Math.max(0, availableWidth)}px`;
+  const HORIZONTAL_MARGIN = 32;
+  const px = `${Math.max(0, availableWidth - HORIZONTAL_MARGIN)}px`;
   canvasEl.style.width = px;
   canvasEl.style.maxWidth = px;
   canvasEl.style.position = "relative";
   canvasEl.style.left = "50%";
   canvasEl.style.transform = "translateX(-50%)";
+  canvasEl.style.marginLeft = "auto";
+  canvasEl.style.marginRight = "auto";
 
   ensureFullWidthWatchers(fullWidthEl, container);
 }
