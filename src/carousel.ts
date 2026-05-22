@@ -92,14 +92,8 @@ function wrapAsCarousel(
   imgs: HTMLImageElement[],
   parent: HTMLElement
 ): void {
-  // Hide source sections — do NOT remove them.
-  // Removing Obsidian-managed elements breaks its section registry.
-  for (const section of sections) {
-    section.setAttribute(MEMBER_ATTR, "true");
-    section.style.display = "none";
-  }
-
-  const carousel = parent.createEl("div", { cls: "vzd-carousel" });
+  const carousel = document.createElement("div");
+  carousel.addClass("vzd-carousel");
   carousel.setAttribute("tabindex", "0");
   carousel.setAttribute("role", "region");
   carousel.setAttribute("aria-label", `Image carousel, ${imgs.length} images`);
@@ -161,6 +155,13 @@ function wrapAsCarousel(
   }, { passive: true });
 
   parent.insertBefore(carousel, sections[0]);
+
+  // Hide source sections — do NOT remove them.
+  // Removing Obsidian-managed elements breaks its section registry.
+  for (const section of sections) {
+    section.setAttribute(MEMBER_ATTR, "true");
+    section.style.display = "none";
+  }
 }
 
 // ── Per-file observer state ───────────────────────────────────────────────────

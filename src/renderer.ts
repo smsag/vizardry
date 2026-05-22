@@ -600,7 +600,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   const loadContent = (): void => {
     wrap.empty();
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-im-tree, .vzd-story-grid, .vzd-venn-wrap"
+      ".vizardry-grid, .vzd-im-tree, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper"
     );
     if (contentEl) {
       const clone = contentEl.cloneNode(true) as HTMLElement;
@@ -1041,7 +1041,7 @@ export function renderOST(tree: OSTTree, el: HTMLElement): void {
   svg.setAttribute("width", String(svgWidth));
   svg.setAttribute("height", String(svgHeight));
   svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
-  svg.addClass("vizardry-ost");
+  svg.setAttribute("class", "vizardry-ost");
 
   renderOSTEdges(tree.root, svg);
   renderOSTNodes(tree.root, svg);
