@@ -92,8 +92,7 @@ function wrapAsCarousel(
   imgs: HTMLImageElement[],
   parent: HTMLElement
 ): void {
-  const carousel = document.createElement("div");
-  carousel.addClass("vzd-carousel");
+  const carousel = createEl("div", { cls: "vzd-carousel" });
   carousel.setAttribute("tabindex", "0");
   carousel.setAttribute("role", "region");
   carousel.setAttribute("aria-label", `Image carousel, ${imgs.length} images`);
