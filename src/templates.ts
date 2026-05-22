@@ -112,3 +112,16 @@ center:
   - Product vision
 \`\`\`
 `;
+
+export const OST_TEMPLATE = `\`\`\`ost
+outcome: Your desired outcome
+
+  Opportunity one
+    Solution A
+      Experiment 1
+    Solution B
+
+  Opportunity two
+    Solution C
+\`\`\`
+`;

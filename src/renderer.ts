@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, StoryMap, StoryTask, VennDiagram, VennItem } from "./types";
+import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, OSTNode, OSTTree, StoryMap, StoryTask, VennDiagram, VennItem } from "./types";
 
 type FullWidthCanvasEl = HTMLElement & {
   __vzdFullWidthObserver?: ResizeObserver;
@@ -883,6 +883,170 @@ function renderMindMapNode(
       renderMindMapNode(child, childrenWrap, depth + 1);
     }
   }
+}
+
+// ── Opportunity Solution Tree ───────────────────────────────────────────────
+
+const OST_NODE_W = 180;
+const OST_NODE_H = 44;
+const OST_LEVEL_GAP = 80;
+const OST_SIBLING_GAP = 20;
+const OST_H_PADDING = 24;
+const OST_V_PADDING = 24;
+
+type OSTBounds = { maxX: number; maxY: number };
+
+function createSvgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string> = {}): SVGElementTagNameMap[K] {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    node.setAttribute(key, value);
+  }
+  return node;
+}
+
+function layoutOSTNode(node: OSTNode, level: number, left: number): number {
+  if (node.children.length === 0) {
+    const width = OST_NODE_W;
+    node.x = left;
+    node.y = OST_V_PADDING + level * (OST_NODE_H + OST_LEVEL_GAP);
+    node.width = OST_NODE_W;
+    node.height = OST_NODE_H;
+    return width;
+  }
+
+  const childWidths = node.children.map((child) => layoutOSTNode(child, level + 1, 0));
+  const childSpan = childWidths.reduce((sum, width) => sum + width, 0) + OST_SIBLING_GAP * (node.children.length - 1);
+  const width = Math.max(OST_NODE_W, childSpan);
+  const nodeX = left + (width - OST_NODE_W) / 2;
+
+  node.x = nodeX;
+  node.y = OST_V_PADDING + level * (OST_NODE_H + OST_LEVEL_GAP);
+  node.width = OST_NODE_W;
+  node.height = OST_NODE_H;
+
+  const childLeft = left + (width - childSpan) / 2;
+  let cursor = childLeft;
+  for (let i = 0; i < node.children.length; i++) {
+    const child = node.children[i];
+    const childWidth = childWidths[i];
+    layoutOSTNode(child, level + 1, cursor);
+    cursor += childWidth + OST_SIBLING_GAP;
+  }
+
+  return width;
+}
+
+function collectOSTBounds(node: OSTNode, bounds: OSTBounds): void {
+  bounds.maxX = Math.max(bounds.maxX, node.x + node.width);
+  bounds.maxY = Math.max(bounds.maxY, node.y + node.height);
+  for (const child of node.children) {
+    collectOSTBounds(child, bounds);
+  }
+}
+
+function renderOSTEdges(node: OSTNode, svg: SVGSVGElement): void {
+  for (const child of node.children) {
+    const x1 = node.x + OST_NODE_W / 2;
+    const y1 = node.y + OST_NODE_H;
+    const x2 = child.x + OST_NODE_W / 2;
+    const y2 = child.y;
+    const cy = (y1 + y2) / 2;
+
+    svg.appendChild(createSvgEl("path", {
+      d: `M ${x1} ${y1} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${y2}`,
+      fill: "none",
+      stroke: "var(--background-modifier-border)",
+      "stroke-width": "1.5",
+    }));
+
+    renderOSTEdges(child, svg);
+  }
+}
+
+function renderOSTNodes(node: OSTNode, svg: SVGSVGElement): void {
+  const group = createSvgEl("g", {
+    transform: `translate(${node.x}, ${node.y})`,
+  });
+
+  const fill = node.level === 0
+    ? "var(--color-accent)"
+    : node.level === 1
+      ? "var(--background-modifier-hover)"
+      : "var(--background-secondary)";
+  const textFill = node.level === 0 ? "var(--text-on-accent)" : "var(--text-normal)";
+  const radius = node.level === 0 ? "10" : node.level === 1 ? "8" : node.level === 3 ? "22" : "6";
+
+  const rectAttrs: Record<string, string> = {
+    width: String(OST_NODE_W),
+    height: String(OST_NODE_H),
+    rx: radius,
+    fill,
+    stroke: "var(--background-modifier-border)",
+    "stroke-width": "1",
+  };
+  if (node.level === 4) {
+    rectAttrs["stroke-dasharray"] = "6 3";
+  }
+
+  group.appendChild(createSvgEl("rect", rectAttrs));
+
+  const label = node.text.length > 22 ? `${node.text.slice(0, 21)}…` : node.text;
+  const textEl = createSvgEl("text", {
+    x: String(OST_NODE_W / 2),
+    y: String(OST_NODE_H / 2),
+    "dominant-baseline": "middle",
+    "text-anchor": "middle",
+    "font-size": "12",
+    fill: textFill,
+  });
+  textEl.textContent = label;
+  group.appendChild(textEl);
+
+  const title = createSvgEl("title");
+  title.textContent = node.text;
+  group.appendChild(title);
+
+  svg.appendChild(group);
+
+  for (const child of node.children) {
+    renderOSTNodes(child, svg);
+  }
+}
+
+export function renderOST(tree: OSTTree, el: HTMLElement): void {
+  el.addClass("vizardry-canvas");
+  el.setAttribute("data-framework", "ost");
+  el.style.width = "100%";
+  el.style.minWidth = "100%";
+  el.style.boxSizing = "border-box";
+  requestAnimationFrame(() => applyFullWidth(el));
+
+  const header = el.createEl("div", { cls: "vizardry-header" });
+  header.createEl("span", { text: "Opportunity Solution Tree", cls: "vizardry-title" });
+  addHeaderControls(header, el, "Opportunity Solution Tree");
+
+  const wrapper = el.createEl("div", { cls: "vizardry-ost-wrapper" });
+  wrapper.style.overflowX = "auto";
+  wrapper.style.overflowY = "auto";
+  wrapper.style.maxHeight = "600px";
+
+  layoutOSTNode(tree.root, 0, OST_H_PADDING);
+
+  const bounds: OSTBounds = { maxX: 0, maxY: 0 };
+  collectOSTBounds(tree.root, bounds);
+  const svgWidth = bounds.maxX + OST_H_PADDING;
+  const svgHeight = bounds.maxY + OST_V_PADDING;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
+  svg.setAttribute("width", String(svgWidth));
+  svg.setAttribute("height", String(svgHeight));
+  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+  svg.addClass("vizardry-ost");
+
+  renderOSTEdges(tree.root, svg);
+  renderOSTNodes(tree.root, svg);
+
+  wrapper.appendChild(svg);
 }
 
 export function testApplyFullWidth(): void {

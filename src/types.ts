@@ -86,6 +86,29 @@ export type MindMapResult =
   | { ok: true; data: MindMap }
   | { ok: false; error: string };
 
+// ── Opportunity Solution Tree ───────────────────────────────────────────────
+
+export interface OSTNode {
+  text: string;
+  level: number;          // 0 = outcome, 1 = opportunity, 2 = solution,
+                          // 3 = experiment, 4 = assumption
+  children: OSTNode[];
+
+  // Set by layout engine — do not populate in parser
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface OSTTree {
+  root: OSTNode;
+}
+
+export type OSTResult =
+  | { ok: true; data: OSTTree }
+  | { ok: false; error: string };
+
 // ── Venn Diagram ─────────────────────────────────────────────────────────────
 
 export interface VennItem {

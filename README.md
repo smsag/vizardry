@@ -1,6 +1,6 @@
 # Vizardry
 
-An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an opt-in image carousel, a mind map renderer, and a Venn diagram renderer.
+An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an opt-in image carousel, a mind map renderer, a Venn diagram renderer, and a top-down SVG Opportunity Solution Tree renderer.
 
 ---
 
@@ -31,7 +31,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```kata ` | Product Kata | 2-column grid |
 | ` ```jobs ` | Jobs Canvas | 3-column grid |
 | ` ```rac ` | Riskiest Assumptions Canvas | 3-column grid |
-| ` ```ost ` | Opportunity Solution Tree | 1-column vertical grid |
+| ` ```ost ` | Opportunity Solution Tree | Top-down SVG tree |
 | ` ```impact ` | Impact Map | Hierarchical tree |
 | ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
@@ -167,24 +167,17 @@ block: Factors for Success
 
 ~~~
 ```ost
-block: Desired Outcome
-  Increase weekly active users by 20% in Q3.
+outcome: Increase weekly active users by 20% in Q3.
 
-block: Opportunities
   New users do not discover the first high-value workflow.
+    Guided quick-start path for first session.
+      A/B test quick-start entry point on onboarding screen.
+    Resume banner for incomplete workflows.
+
   Returning users struggle to continue unfinished work.
-
-block: Solutions
-  Guided quick-start path for first session.
-  Resume banner for incomplete workflows.
-
-block: Experiments
-  A/B test quick-start entry point on onboarding screen.
-  Measure completion uplift from resume banner placement.
-
-block: Assumptions
-  Discovery friction is the main onboarding bottleneck.
-  Resume prompts will increase workflow completion rate.
+    Resume banner for incomplete workflows.
+      Measure completion uplift from resume banner placement.
+    Discovery friction is the main onboarding bottleneck.
 ```
 ~~~
 

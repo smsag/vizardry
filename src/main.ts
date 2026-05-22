@@ -3,9 +3,10 @@ import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
 import { parseMindMap } from "./mindmap";
+import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderVennDiagram, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, VENN_TEMPLATE } from "./templates";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE } from "./templates";
 import { CanvasInsertModal, FrameworkOption } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
@@ -15,7 +16,6 @@ import { VPC } from "./frameworks/vpc";
 import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
-import { OST } from "./frameworks/ost";
 import { FrameworkDefinition } from "./types";
 import { registerCarouselProcessor } from "./carousel";
 
@@ -28,7 +28,6 @@ const FRAMEWORKS: Record<string, FrameworkDefinition> = {
   kata: KATA,
   jobs: JOBS,
   rac: RAC,
-  ost: OST,
 };
 
 const DESCRIPTIONS: Record<string, string> = {
@@ -40,7 +39,6 @@ const DESCRIPTIONS: Record<string, string> = {
   kata:        "Clear path to next experiment.",
   jobs:        "Core customer motivation laid bare.",
   rac:         "Biggest risks ranked for testing.",
-  ost:         "Outcome drives opportunities, solutions, and experiments.",
   impact:      "All features tied to goals.",
   story:       "Release scope and priorities clear.",
   mindmap:     "Complex ideas structured and prioritised.",
@@ -107,6 +105,18 @@ export default class VizardryPlugin extends Plugin {
     } catch (err) {
       console.error('Vizardry: failed to register processor for "venn"', err);
     }
+
+    // ── Opportunity Solution Tree renderer ─────────────────────────────────
+    try {
+      this.registerMarkdownCodeBlockProcessor("ost", (source, el, _ctx) => {
+        const result = parseOST(source);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderOST(result.data, el);
+      });
+    } catch (err) {
+      console.error('Vizardry: failed to register processor for "ost"', err);
+    }
+
     // ── Build framework options list (used by modal + commands) ────
     const frameworkOptions: FrameworkOption[] = [
       ...Object.entries(FRAMEWORKS).map(([id, def]) => ({
@@ -138,6 +148,12 @@ export default class VizardryPlugin extends Plugin {
         label: "Venn Diagram",
         template: VENN_TEMPLATE,
         description: DESCRIPTIONS.venn,
+      },
+      {
+        id: "ost",
+        label: "Opportunity Solution Tree",
+        template: OST_TEMPLATE,
+        description: "Outcome drives opportunities, solutions, and experiments.",
       },
     ];
 
