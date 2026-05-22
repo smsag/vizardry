@@ -15,6 +15,7 @@ import { VPC } from "./frameworks/vpc";
 import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
+import { OST } from "./frameworks/ost";
 import { FrameworkDefinition } from "./types";
 import { registerCarouselProcessor } from "./carousel";
 
@@ -27,6 +28,7 @@ const FRAMEWORKS: Record<string, FrameworkDefinition> = {
   kata: KATA,
   jobs: JOBS,
   rac: RAC,
+  ost: OST,
 };
 
 const DESCRIPTIONS: Record<string, string> = {
@@ -38,6 +40,7 @@ const DESCRIPTIONS: Record<string, string> = {
   kata:        "Clear path to next experiment.",
   jobs:        "Core customer motivation laid bare.",
   rac:         "Biggest risks ranked for testing.",
+  ost:         "Outcome drives opportunities, solutions, and experiments.",
   impact:      "All features tied to goals.",
   story:       "Release scope and priorities clear.",
   mindmap:     "Complex ideas structured and prioritised.",

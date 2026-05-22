@@ -97,8 +97,8 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       // Reset margin before measuring so getBoundingClientRect reflects
       // the element's natural position, not a previously corrected one.
       canvasEl.style.marginLeft = "";
+      const cmContent = container.querySelector<HTMLElement>(".cm-content");
       const scrollerRect = cmScroller.getBoundingClientRect();
-      const canvasRect = canvasEl.getBoundingClientRect();
       const computed = getComputedStyle(cmScroller);
       const paddingLeft = parseFloat(computed.paddingLeft) || 0;
       const paddingRight = parseFloat(computed.paddingRight) || 0;
@@ -107,8 +107,14 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       const HORIZONTAL_MARGIN = 32;
       const finalWidth = Math.max(0, scrollerContentWidth - HORIZONTAL_MARGIN);
 
-      // Distance from canvas natural left to scroller content left edge
-      const offsetLeft = canvasRect.left - scrollerRect.left - paddingLeft;
+      // Measure how far cm-content's left edge is from cm-scroller's
+      // content left edge — this is the readable-line-width indent offset.
+      // The canvas must be pulled left by this amount to align with the
+      // scroller's visible left edge.
+      const contentRect = cmContent
+        ? cmContent.getBoundingClientRect()
+        : scrollerRect;
+      const offsetLeft = contentRect.left - scrollerRect.left - paddingLeft;
 
       canvasEl.style.position = "relative";
       canvasEl.style.left = "0";
@@ -877,4 +883,218 @@ function renderMindMapNode(
       renderMindMapNode(child, childrenWrap, depth + 1);
     }
   }
+}
+
+export function testApplyFullWidth(): void {
+  const results: Array<{ test: string; passed: boolean; detail: string }> = [];
+
+  function assert(test: string, condition: boolean, detail: string): void {
+    results.push({ test, passed: condition, detail });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────
+
+  function makeEl(cls: string): HTMLElement {
+    const el = document.createElement("div");
+    el.className = cls;
+    el.style.boxSizing = "border-box";
+    return el;
+  }
+
+  function px(n: number): string {
+    return `${n}px`;
+  }
+
+  // ── Test 1: Edit view — canvas aligns with scroller left edge ──
+  // Simulate: workspace-leaf-content > cm-editor > cm-scroller >
+  //           cm-content > cm-embed-block > vizardry-canvas
+  // cm-scroller is 800px wide with 8px padding each side (784px content)
+  // cm-content is 600px wide, centered (auto margin of 92px each side)
+  // Canvas natural left is at cm-content left = scroller left + 92px
+  // Expected: canvas width = 784 - 32 = 752px
+  //           marginLeft = -(92) + 16 = -76px (pulls canvas left to
+  //           16px inside scroller content edge)
+
+  const leaf1 = makeEl("workspace-leaf-content");
+  const editor1 = makeEl("cm-editor");
+  const scroller1 = makeEl("cm-scroller");
+  const content1 = makeEl("cm-content");
+  const embed1 = makeEl("cm-embed-block");
+  const canvas1 = makeEl("vizardry-canvas") as HTMLElement;
+
+  // Size the scroller
+  Object.assign(scroller1.style, {
+    width: px(800),
+    padding: "0 8px",
+    position: "relative",
+    overflow: "hidden",
+  });
+
+  // Size cm-content with readable-line-width centering
+  Object.assign(content1.style, {
+    width: px(600),
+    margin: "0 auto",
+    position: "relative",
+  });
+
+  leaf1.appendChild(editor1);
+  editor1.appendChild(scroller1);
+  scroller1.appendChild(content1);
+  content1.appendChild(embed1);
+  embed1.appendChild(canvas1);
+  document.body.appendChild(leaf1);
+
+  applyFullWidth(canvas1);
+
+  const w1 = parseFloat(canvas1.style.width);
+  const ml1 = parseFloat(canvas1.style.marginLeft);
+
+  assert(
+    "Edit view: width = scrollerContentWidth - 32",
+    Math.abs(w1 - 752) < 2,
+    `Expected ~752px, got ${w1}px`
+  );
+  assert(
+    "Edit view: marginLeft pulls canvas to HORIZONTAL_MARGIN/2 inside scroller",
+    ml1 < 0,
+    `Expected negative marginLeft, got ${ml1}px`
+  );
+  assert(
+    "Edit view: position is relative",
+    canvas1.style.position === "relative",
+    `Got: ${canvas1.style.position}`
+  );
+  assert(
+    "Edit view: left is 0",
+    canvas1.style.left === "0px" || canvas1.style.left === "0",
+    `Got: ${canvas1.style.left}`
+  );
+  assert(
+    "Edit view: transform is none",
+    canvas1.style.transform === "none",
+    `Got: ${canvas1.style.transform}`
+  );
+
+  leaf1.remove();
+
+  // ── Test 2: Edit view — ResizeObserver re-fires correctly ──────
+  // After a simulated resize (scroller width changes to 1000px),
+  // applyFullWidth called again should produce updated width.
+
+  const leaf2 = makeEl("workspace-leaf-content");
+  const editor2 = makeEl("cm-editor");
+  const scroller2 = makeEl("cm-scroller");
+  const content2 = makeEl("cm-content");
+  const embed2 = makeEl("cm-embed-block");
+  const canvas2 = makeEl("vizardry-canvas") as HTMLElement;
+
+  Object.assign(scroller2.style, { width: px(800), padding: "0 8px", position: "relative", overflow: "hidden" });
+  Object.assign(content2.style, { width: px(600), margin: "0 auto", position: "relative" });
+
+  leaf2.appendChild(editor2);
+  editor2.appendChild(scroller2);
+  scroller2.appendChild(content2);
+  content2.appendChild(embed2);
+  embed2.appendChild(canvas2);
+  document.body.appendChild(leaf2);
+
+  applyFullWidth(canvas2);
+
+  // Simulate resize
+  scroller2.style.width = px(1000);
+  applyFullWidth(canvas2);
+
+  const w2 = parseFloat(canvas2.style.width);
+  assert(
+    "Edit view resize: width updates after second call",
+    Math.abs(w2 - 952) < 2,
+    `Expected ~952px after resize, got ${w2}px`
+  );
+
+  leaf2.remove();
+
+  // ── Test 3: Read view — left:50% + translateX(-50%) applied ───
+  // Simulate: workspace-leaf-content > markdown-preview-view >
+  //           markdown-preview-sizer > el-pre > vizardry-canvas
+  // sizer parent is 900px wide with no padding
+  // Expected: width = 900 - 32 = 868px, left = 50%, transform = translateX(-50%)
+
+  const leaf3 = makeEl("workspace-leaf-content");
+  const preview3 = makeEl("markdown-preview-view");
+  const sizerParent3 = makeEl("markdown-preview-section");
+  const sizer3 = makeEl("markdown-preview-sizer");
+  const elPre3 = makeEl("el-pre");
+  const canvas3 = makeEl("vizardry-canvas") as HTMLElement;
+
+  Object.assign(sizerParent3.style, { width: px(900), position: "relative" });
+
+  leaf3.appendChild(preview3);
+  preview3.appendChild(sizerParent3);
+  sizerParent3.appendChild(sizer3);
+  sizer3.appendChild(elPre3);
+  elPre3.appendChild(canvas3);
+  document.body.appendChild(leaf3);
+
+  applyFullWidth(canvas3);
+
+  const w3 = parseFloat(canvas3.style.width);
+  assert(
+    "Read view: width = parentWidth - 32",
+    Math.abs(w3 - 868) < 2,
+    `Expected ~868px, got ${w3}px`
+  );
+  assert(
+    "Read view: left is 50%",
+    canvas3.style.left === "50%",
+    `Got: ${canvas3.style.left}`
+  );
+  assert(
+    "Read view: transform is translateX(-50%)",
+    canvas3.style.transform === "translateX(-50%)",
+    `Got: ${canvas3.style.transform}`
+  );
+
+  leaf3.remove();
+
+  // ── Test 4: Cleanup — watchers disconnected after removal ──────
+  const leaf4 = makeEl("workspace-leaf-content");
+  const editor4 = makeEl("cm-editor");
+  const scroller4 = makeEl("cm-scroller");
+  const content4 = makeEl("cm-content");
+  const embed4 = makeEl("cm-embed-block");
+  const canvas4 = makeEl("vizardry-canvas") as FullWidthCanvasEl;
+
+  Object.assign(scroller4.style, { width: px(800), padding: "0 8px", position: "relative" });
+  Object.assign(content4.style, { width: px(600), margin: "0 auto", position: "relative" });
+
+  leaf4.appendChild(editor4);
+  editor4.appendChild(scroller4);
+  scroller4.appendChild(content4);
+  content4.appendChild(embed4);
+  embed4.appendChild(canvas4);
+  document.body.appendChild(leaf4);
+
+  applyFullWidth(canvas4);
+
+  const hadObserver = !!canvas4.__vzdFullWidthObserver;
+  leaf4.remove();
+
+  // Trigger MutationObserver callback by waiting a microtask
+  setTimeout(() => {
+    assert(
+      "Cleanup: ResizeObserver was attached after applyFullWidth",
+      hadObserver,
+      hadObserver ? "Observer was attached" : "Observer was never attached"
+    );
+
+    // ── Print results ──────────────────────────────────────────────
+    const passed = results.filter(r => r.passed).length;
+    const failed = results.filter(r => !r.passed).length;
+    console.group(`testApplyFullWidth: ${passed} passed, ${failed} failed`);
+    for (const r of results) {
+      const icon = r.passed ? "✅" : "❌";
+      console.log(`${icon} ${r.test}${r.passed ? "" : ` — ${r.detail}`}`);
+    }
+    console.groupEnd();
+  }, 50);
 }

@@ -31,6 +31,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```kata ` | Product Kata | 2-column grid |
 | ` ```jobs ` | Jobs Canvas | 3-column grid |
 | ` ```rac ` | Riskiest Assumptions Canvas | 3-column grid |
+| ` ```ost ` | Opportunity Solution Tree | 1-column vertical grid |
 | ` ```impact ` | Impact Map | Hierarchical tree |
 | ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
@@ -157,6 +158,33 @@ block: Adoption Factors
 
 block: Factors for Success
   Low setup friction, works with tools users already have
+```
+~~~
+
+---
+
+### Opportunity Solution Tree
+
+~~~
+```ost
+block: Desired Outcome
+  Increase weekly active users by 20% in Q3.
+
+block: Opportunities
+  New users do not discover the first high-value workflow.
+  Returning users struggle to continue unfinished work.
+
+block: Solutions
+  Guided quick-start path for first session.
+  Resume banner for incomplete workflows.
+
+block: Experiments
+  A/B test quick-start entry point on onboarding screen.
+  Measure completion uplift from resume banner placement.
+
+block: Assumptions
+  Discovery friction is the main onboarding bottleneck.
+  Resume prompts will increase workflow completion rate.
 ```
 ~~~
 
@@ -596,7 +624,7 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 
 ## Syntax reference
 
-### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs, rac)
+### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs, rac, ost)
 
 | Syntax | Meaning |
 |---|---|
