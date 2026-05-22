@@ -63,7 +63,13 @@ function buildCarousels(sizer: HTMLElement): void {
       (img) => !img.closest(".vizardry-canvas")
     );
 
-    if (imgs.length === 0) { flush(); continue; }
+    if (imgs.length === 0) {
+      // Only flush if the block has actual visible text content.
+      // Empty paragraphs (Obsidian spacers) should not break a group.
+      const hasText = (block.textContent?.trim() ?? "") !== "";
+      if (hasText) flush();
+      continue;
+    }
 
     const clone = block.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("img").forEach((i) => i.remove());
@@ -199,7 +205,7 @@ export function registerCarouselProcessor(plugin: Plugin): void {
       if (!state.sizer.isConnected) return;
       state.observer.disconnect();
       buildCarousels(state.sizer);
-      state.observer.observe(state.sizer, { childList: true });
+      state.observer.observe(state.sizer, { childList: true, subtree: true });
     }, 150);
   }
 
@@ -246,12 +252,16 @@ export function registerCarouselProcessor(plugin: Plugin): void {
     state.observer = new MutationObserver((mutations) => {
       const relevant = mutations.some((m) => {
         // Additions: rebuild if a real image section or carousel node appears
-        const addedRelevant = Array.from(m.addedNodes).some(
-          (n) =>
+        const addedRelevant = Array.from(m.addedNodes).some((n) => {
+          if (n instanceof HTMLElement && n.classList.contains("vzd-carousel")) return false;
+          if (n instanceof HTMLImageElement && !n.closest(".vzd-carousel")) return true;
+          if (
             n instanceof HTMLElement &&
-            (n.querySelector("img") !== null ||
-              n.classList.contains("vzd-carousel"))
-        );
+            !n.closest(".vzd-carousel") &&
+            n.querySelector("img") !== null
+          ) return true;
+          return false;
+        });
         if (addedRelevant) return true;
 
         // Removals: only rebuild if a *visible* image-bearing node disappears.
@@ -274,9 +284,8 @@ export function registerCarouselProcessor(plugin: Plugin): void {
     // Initial build (sizer is ready and connected).
     buildCarousels(sizer);
 
-    // Observe direct children of the sizer — that is where Obsidian inserts/removes
-    // sections during lazy scroll rendering and document re-renders.
-    state.observer.observe(sizer, { childList: true });
+    // Observe the whole subtree so image insertions inside existing sections trigger rebuilds.
+    state.observer.observe(sizer, { childList: true, subtree: true });
   }
 
   plugin.registerMarkdownPostProcessor(

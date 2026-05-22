@@ -97,7 +97,7 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       // Reset margin before measuring so getBoundingClientRect reflects
       // the element's natural position, not a previously corrected one.
       canvasEl.style.marginLeft = "";
-      const cmContent = container.querySelector<HTMLElement>(".cm-content");
+      const cmContent = container?.querySelector<HTMLElement>(".cm-content");
       const scrollerRect = cmScroller.getBoundingClientRect();
       const computed = getComputedStyle(cmScroller);
       const paddingLeft = parseFloat(computed.paddingLeft) || 0;
