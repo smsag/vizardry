@@ -245,14 +245,27 @@ export function registerCarouselProcessor(plugin: Plugin): void {
     // hides them again) which makes the scrollbar jump and creates a reload loop.
     state.observer = new MutationObserver((mutations) => {
       const relevant = mutations.some((m) => {
-        const nodes = [...Array.from(m.addedNodes), ...Array.from(m.removedNodes)];
-        return nodes.some(
+        // Additions: rebuild if a real image section or carousel node appears
+        const addedRelevant = Array.from(m.addedNodes).some(
           (n) =>
             n instanceof HTMLElement &&
             (n.querySelector("img") !== null ||
-              n.hasAttribute(MEMBER_ATTR) ||
               n.classList.contains("vzd-carousel"))
         );
+        if (addedRelevant) return true;
+
+        // Removals: only rebuild if a *visible* image-bearing node disappears.
+        // Ignore removal of hidden carousel members — that is the virtual
+        // scroller unloading sections we already hid; rebuilding here causes
+        // the flicker/scroll-jump loop.
+        const removedRelevant = Array.from(m.removedNodes).some(
+          (n) =>
+            n instanceof HTMLElement &&
+            !n.hasAttribute(MEMBER_ATTR) &&          // skip already-hidden members
+            !n.classList.contains("vzd-carousel") && // skip our own carousel wrappers
+            n.querySelector("img") !== null
+        );
+        return removedRelevant;
       });
       if (relevant) scheduleRebuild(sourcePath);
     });
