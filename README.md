@@ -663,9 +663,19 @@ _links:
 
 ---
 
+## Exporting a canvas as PNG
+
+Each canvas has a **download icon** (↓) in its title bar, revealed on hover. Clicking it saves a PNG of the current canvas to your downloads folder. The image is captured at 2× resolution for sharp results on high-DPI screens.
+
+- The title bar action buttons are excluded from the image — only the title and content are captured
+- The filename matches the framework label, e.g. `SIPOC Diagram.png`
+- Works for every canvas type: grid frameworks, SIPOC, Story Map, Venn Diagram, OST, Impact Map, Mind Map
+
+---
+
 ## Presentation mode
 
-Each canvas has a small expand icon in its title bar. Tapping it opens a full-screen overlay covering the entire Obsidian UI — including sidebars and toolbars.
+Each canvas has a small **expand icon** in its title bar. Tapping it opens a full-screen overlay covering the entire Obsidian UI — including sidebars and toolbars.
 
 **On iPhone connected to Apple TV via screen mirroring**, this fills the TV output, giving you a clean single-canvas view directly from your notes.
 
