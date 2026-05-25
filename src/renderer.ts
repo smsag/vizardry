@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, OSTNode, OSTTree, StoryMap, StoryTask, VennDiagram, VennItem } from "./types";
+import { FrameworkDefinition, ImpactMap, MindMap, MindMapNode, OSTNode, OSTTree, StoryMap, StoryTask, TreeNode, TreeNodeStyle, TreeRenderOptions, VennDiagram, VennItem } from "./types";
 
 type FullWidthCanvasEl = HTMLElement & {
   __vzdFullWidthObserver?: ResizeObserver;
@@ -239,54 +239,8 @@ export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Impact Map", cls: "vizardry-title" });
   addHeaderControls(header, container, "Impact Map");
-
-  const tree = container.createEl("div", { cls: "vzd-im-tree" });
-
-  const goalEl = tree.createEl("div", { cls: "vzd-im-goal" });
-  goalEl.createEl("span", { cls: "vzd-im-level-label", text: "Goal" });
-  goalEl.createEl("div", { cls: "vzd-im-node-text", text: map.goal });
-
-  const actorsWrap = tree.createEl("div", { cls: "vzd-im-actors-wrap" });
-
-  if (map.actors.length === 0) {
-    actorsWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No actors defined" });
-    return;
-  }
-
-  for (const actor of map.actors) {
-    const actorBranch = actorsWrap.createEl("div", { cls: "vzd-im-actor-branch" });
-    const actorEl = actorBranch.createEl("div", { cls: "vzd-im-actor" });
-    actorEl.createEl("span", { cls: "vzd-im-level-label", text: "Actor" });
-    actorEl.createEl("div", { cls: "vzd-im-node-text", text: actor.name });
-
-    const impactsWrap = actorBranch.createEl("div", { cls: "vzd-im-impacts-wrap" });
-
-    if (actor.impacts.length === 0) {
-      impactsWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No impacts defined" });
-      continue;
-    }
-
-    for (const impact of actor.impacts) {
-      const impactBranch = impactsWrap.createEl("div", { cls: "vzd-im-impact-branch" });
-      const impactEl = impactBranch.createEl("div", { cls: "vzd-im-impact" });
-      impactEl.createEl("span", { cls: "vzd-im-level-label", text: "Impact" });
-      impactEl.createEl("div", { cls: "vzd-im-node-text", text: impact.name });
-
-      const deliverablesWrap = impactBranch.createEl("div", { cls: "vzd-im-deliverables-wrap" });
-
-      if (impact.deliverables.length === 0) {
-        deliverablesWrap.createEl("div", { cls: "vzd-im-empty-placeholder", text: "No deliverables defined" });
-        continue;
-      }
-
-      for (const deliverable of impact.deliverables) {
-        const deliverableBranch = deliverablesWrap.createEl("div", { cls: "vzd-im-deliverable-branch" });
-        const deliverableEl = deliverableBranch.createEl("div", { cls: "vzd-im-deliverable" });
-        deliverableEl.createEl("span", { cls: "vzd-im-level-label", text: "Deliverable" });
-        deliverableEl.createEl("div", { cls: "vzd-im-node-text", text: deliverable });
-      }
-    }
-  }
+  const adapted = adaptImpactMapToTree(map);
+  renderTree(adapted, IMPACT_MAP_OPTS, container);
 }
 
 export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
@@ -600,7 +554,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   const loadContent = (): void => {
     wrap.empty();
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-im-tree, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper"
     );
     if (contentEl) {
       const clone = contentEl.cloneNode(true) as HTMLElement;
@@ -854,35 +808,8 @@ export function renderMindMap(map: MindMap, container: HTMLElement): void {
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: "Mind Map", cls: "vizardry-title" });
   addHeaderControls(header, container, "Mind Map");
-
-  const tree = container.createEl("div", { cls: "vzd-mm-tree" });
-
-  const rootEl = tree.createEl("div", { cls: "vzd-mm-root" });
-  rootEl.createEl("div", { cls: "vzd-mm-node-text", text: map.root.text });
-
-  if (map.root.children.length > 0) {
-    const childrenWrap = rootEl.createEl("div", { cls: "vzd-mm-level" });
-    for (const child of map.root.children) {
-      renderMindMapNode(child, childrenWrap, 1);
-    }
-  }
-}
-
-function renderMindMapNode(
-  node: MindMapNode,
-  parent: HTMLElement,
-  depth: number
-): void {
-  const depthCls = depth <= 3 ? `vzd-mm-depth-${depth}` : "vzd-mm-depth-deep";
-  const nodeEl = parent.createEl("div", { cls: `vzd-mm-node ${depthCls}` });
-  nodeEl.createEl("div", { cls: "vzd-mm-node-text", text: node.text });
-
-  if (node.children.length > 0) {
-    const childrenWrap = nodeEl.createEl("div", { cls: "vzd-mm-level" });
-    for (const child of node.children) {
-      renderMindMapNode(child, childrenWrap, depth + 1);
-    }
-  }
+  const adapted = adaptMindMapToTree(map);
+  renderTree(adapted, MINDMAP_OPTS, container);
 }
 
 // ── Opportunity Solution Tree ───────────────────────────────────────────────
@@ -904,51 +831,214 @@ function createSvgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record
   return node;
 }
 
-function layoutOSTNode(node: OSTNode, level: number, left: number): number {
-  if (node.children.length === 0) {
-    const width = OST_NODE_W;
-    node.x = left;
-    node.y = OST_V_PADDING + level * (OST_NODE_H + OST_LEVEL_GAP);
-    node.width = OST_NODE_W;
-    node.height = OST_NODE_H;
+const OST_LEVEL_STYLES: TreeNodeStyle[] = [
+  { fillVar: "var(--color-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+  { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 8, dashed: false },
+  { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
+  { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 22, dashed: false },
+  { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: true },
+];
+
+const OST_TREE_OPTIONS: TreeRenderOptions = {
+  nodeW: OST_NODE_W,
+  nodeH: OST_NODE_H,
+  levelGap: OST_LEVEL_GAP,
+  siblingGap: OST_SIBLING_GAP,
+  hPadding: OST_H_PADDING,
+  vPadding: OST_V_PADDING,
+  maxLabelChars: 22,
+  levelStyles: OST_LEVEL_STYLES,
+  canvasClass: "vizardry-ost",
+  wrapperClass: "vizardry-ost-wrapper",
+};
+
+const MINDMAP_OPTS: TreeRenderOptions = {
+  nodeW: 180,
+  nodeH: 40,
+  levelGap: 70,
+  siblingGap: 16,
+  hPadding: 24,
+  vPadding: 24,
+  maxLabelChars: 24,
+  canvasClass: "vizardry-mindmap",
+  wrapperClass: "vizardry-mindmap-wrapper",
+  levelStyles: [
+    { fillVar: "var(--color-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 5, dashed: false },
+  ],
+};
+
+const IMPACT_MAP_OPTS: TreeRenderOptions = {
+  nodeW: 200,
+  nodeH: 48,
+  levelGap: 80,
+  siblingGap: 16,
+  hPadding: 24,
+  vPadding: 24,
+  maxLabelChars: 22,
+  canvasClass: "vizardry-impact",
+  wrapperClass: "vizardry-impact-wrapper",
+  levelStyles: [
+    { fillVar: "var(--color-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 5, dashed: false },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
+  ],
+};
+
+export function adaptMindMapToTree(map: MindMap): { root: TreeNode } {
+  const convert = (node: MindMapNode, level: number): TreeNode => ({
+    text: node.text,
+    level,
+    sublabel: undefined,
+    children: node.children.map((child) => convert(child, level + 1)),
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+
+  return { root: convert(map.root, 0) };
+}
+
+export function adaptImpactMapToTree(map: ImpactMap): { root: TreeNode } {
+  const convertDeliverable = (deliverable: string): TreeNode => ({
+    text: deliverable,
+    level: 3,
+    sublabel: "Deliverable",
+    children: [],
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+
+  const convertImpact = (impact: ImpactMap["actors"][number]["impacts"][number]): TreeNode => ({
+    text: impact.name,
+    level: 2,
+    sublabel: "Impact",
+    children: impact.deliverables.map(convertDeliverable),
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+
+  const convertActor = (actor: ImpactMap["actors"][number]): TreeNode => ({
+    text: actor.name,
+    level: 1,
+    sublabel: "Actor",
+    children: actor.impacts.map(convertImpact),
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+
+  return {
+    root: {
+      text: map.goal,
+      level: 0,
+      sublabel: "Goal",
+      children: map.actors.map(convertActor),
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    },
+  };
+}
+
+function getTreeStyle(level: number, opts: TreeRenderOptions): TreeNodeStyle {
+  const index = Math.min(level, opts.levelStyles.length - 1);
+  return opts.levelStyles[index];
+}
+
+function renderTreeNodeRect(
+  group: SVGGElement,
+  node: TreeNode,
+  opts: TreeRenderOptions
+): void {
+  const style = getTreeStyle(node.level, opts);
+  const rectAttrs: Record<string, string> = {
+    width: String(opts.nodeW),
+    height: String(opts.nodeH),
+    rx: String(style.borderRadius),
+    fill: style.accentBar ? "var(--background-secondary)" : style.fillVar,
+    stroke: "var(--background-modifier-border)",
+    "stroke-width": "1",
+  };
+
+  if (style.dashed) {
+    rectAttrs["stroke-dasharray"] = "6 3";
+  }
+
+  group.appendChild(createSvgEl("rect", rectAttrs));
+
+  if (style.accentBar) {
+    group.appendChild(createSvgEl("rect", {
+      x: "0",
+      y: "0",
+      width: "3",
+      height: String(opts.nodeH),
+      fill: "var(--color-accent)",
+      rx: String(Math.min(3, style.borderRadius)),
+    }));
+  }
+}
+
+export function layoutTreeNode(node: TreeNode, opts: TreeRenderOptions): void {
+  function layout(nodeToLayout: TreeNode, level: number, left: number): number {
+    if (nodeToLayout.children.length === 0) {
+      const width = opts.nodeW;
+      nodeToLayout.x = left;
+      nodeToLayout.y = opts.vPadding + level * (opts.nodeH + opts.levelGap);
+      nodeToLayout.width = opts.nodeW;
+      nodeToLayout.height = opts.nodeH;
+      return width;
+    }
+
+    const childWidths = nodeToLayout.children.map((child) => layout(child, level + 1, 0));
+    const childSpan = childWidths.reduce((sum, width) => sum + width, 0) + opts.siblingGap * (nodeToLayout.children.length - 1);
+    const width = Math.max(opts.nodeW, childSpan);
+    const nodeX = left + (width - opts.nodeW) / 2;
+
+    nodeToLayout.x = nodeX;
+    nodeToLayout.y = opts.vPadding + level * (opts.nodeH + opts.levelGap);
+    nodeToLayout.width = opts.nodeW;
+    nodeToLayout.height = opts.nodeH;
+
+    const childLeft = left + (width - childSpan) / 2;
+    let cursor = childLeft;
+    for (let i = 0; i < nodeToLayout.children.length; i++) {
+      const child = nodeToLayout.children[i];
+      const childWidth = childWidths[i];
+      layout(child, level + 1, cursor);
+      cursor += childWidth + opts.siblingGap;
+    }
+
     return width;
   }
 
-  const childWidths = node.children.map((child) => layoutOSTNode(child, level + 1, 0));
-  const childSpan = childWidths.reduce((sum, width) => sum + width, 0) + OST_SIBLING_GAP * (node.children.length - 1);
-  const width = Math.max(OST_NODE_W, childSpan);
-  const nodeX = left + (width - OST_NODE_W) / 2;
-
-  node.x = nodeX;
-  node.y = OST_V_PADDING + level * (OST_NODE_H + OST_LEVEL_GAP);
-  node.width = OST_NODE_W;
-  node.height = OST_NODE_H;
-
-  const childLeft = left + (width - childSpan) / 2;
-  let cursor = childLeft;
-  for (let i = 0; i < node.children.length; i++) {
-    const child = node.children[i];
-    const childWidth = childWidths[i];
-    layoutOSTNode(child, level + 1, cursor);
-    cursor += childWidth + OST_SIBLING_GAP;
-  }
-
-  return width;
+  layout(node, node.level, opts.hPadding);
 }
 
-function collectOSTBounds(node: OSTNode, bounds: OSTBounds): void {
-  bounds.maxX = Math.max(bounds.maxX, node.x + node.width);
-  bounds.maxY = Math.max(bounds.maxY, node.y + node.height);
+export function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
+  const bounds = { maxX: node.x + node.width, maxY: node.y + node.height };
   for (const child of node.children) {
-    collectOSTBounds(child, bounds);
+    const childBounds = collectTreeBounds(child);
+    bounds.maxX = Math.max(bounds.maxX, childBounds.maxX);
+    bounds.maxY = Math.max(bounds.maxY, childBounds.maxY);
   }
+  return bounds;
 }
 
-function renderOSTEdges(node: OSTNode, svg: SVGSVGElement): void {
+export function renderTreeEdges(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOptions): void {
   for (const child of node.children) {
-    const x1 = node.x + OST_NODE_W / 2;
-    const y1 = node.y + OST_NODE_H;
-    const x2 = child.x + OST_NODE_W / 2;
+    const x1 = node.x + opts.nodeW / 2;
+    const y1 = node.y + opts.nodeH;
+    const x2 = child.x + opts.nodeW / 2;
     const y2 = child.y;
     const cy = (y1 + y2) / 2;
 
@@ -959,48 +1049,42 @@ function renderOSTEdges(node: OSTNode, svg: SVGSVGElement): void {
       "stroke-width": "1.5",
     }));
 
-    renderOSTEdges(child, svg);
+    renderTreeEdges(child, svg, opts);
   }
 }
 
-function renderOSTNodes(node: OSTNode, svg: SVGSVGElement): void {
+export function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOptions): void {
   const group = createSvgEl("g", {
     transform: `translate(${node.x}, ${node.y})`,
-  });
+  }) as SVGGElement;
 
-  const fill = node.level === 0
-    ? "var(--color-accent)"
-    : node.level === 1
-      ? "var(--background-modifier-hover)"
-      : "var(--background-secondary)";
-  const textFill = node.level === 0 ? "var(--text-on-accent)" : "var(--text-normal)";
-  const radius = node.level === 0 ? "10" : node.level === 1 ? "8" : node.level === 3 ? "22" : "6";
+  const style = getTreeStyle(node.level, opts);
+  renderTreeNodeRect(group, node, opts);
 
-  const rectAttrs: Record<string, string> = {
-    width: String(OST_NODE_W),
-    height: String(OST_NODE_H),
-    rx: radius,
-    fill,
-    stroke: "var(--background-modifier-border)",
-    "stroke-width": "1",
-  };
-  if (node.level === 4) {
-    rectAttrs["stroke-dasharray"] = "6 3";
-  }
-
-  group.appendChild(createSvgEl("rect", rectAttrs));
-
-  const label = node.text.length > 22 ? `${node.text.slice(0, 21)}…` : node.text;
+  const label = node.text.length > opts.maxLabelChars ? `${node.text.slice(0, opts.maxLabelChars - 1)}…` : node.text;
   const textEl = createSvgEl("text", {
-    x: String(OST_NODE_W / 2),
-    y: String(OST_NODE_H / 2),
+    x: String(opts.nodeW / 2),
+    y: String(opts.nodeH / 2),
     "dominant-baseline": "middle",
     "text-anchor": "middle",
     "font-size": "12",
-    fill: textFill,
+    fill: style.textVar,
   });
   textEl.textContent = label;
   group.appendChild(textEl);
+
+  if (node.sublabel) {
+    const sublabelEl = createSvgEl("text", {
+      x: String(opts.nodeW / 2),
+      y: String(opts.nodeH / 2 + 13),
+      "dominant-baseline": "middle",
+      "text-anchor": "middle",
+      "font-size": "10",
+      fill: "var(--text-muted)",
+    });
+    sublabelEl.textContent = node.sublabel;
+    group.appendChild(sublabelEl);
+  }
 
   const title = createSvgEl("title");
   title.textContent = node.text;
@@ -1009,8 +1093,55 @@ function renderOSTNodes(node: OSTNode, svg: SVGSVGElement): void {
   svg.appendChild(group);
 
   for (const child of node.children) {
-    renderOSTNodes(child, svg);
+    renderTreeNodes(child, svg, opts);
   }
+}
+
+export function renderTree(
+  tree: { root: TreeNode },
+  opts: TreeRenderOptions,
+  el: HTMLElement
+): void {
+  layoutTreeNode(tree.root, opts);
+
+  const bounds = collectTreeBounds(tree.root);
+  const svgWidth = bounds.maxX + opts.hPadding;
+  const svgHeight = bounds.maxY + opts.vPadding;
+
+  const wrapper = el.createEl("div", { cls: opts.wrapperClass });
+  wrapper.style.overflowX = "auto";
+  wrapper.style.overflowY = "auto";
+  wrapper.style.maxHeight = "600px";
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
+  svg.setAttribute("width", String(svgWidth));
+  svg.setAttribute("height", String(svgHeight));
+  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+  svg.setAttribute("class", opts.canvasClass);
+
+  renderTreeEdges(tree.root, svg, opts);
+  renderTreeNodes(tree.root, svg, opts);
+
+  wrapper.appendChild(svg);
+}
+
+function layoutOSTNode(node: OSTNode, level: number, left: number): number {
+  layoutTreeNode(node, OST_TREE_OPTIONS);
+  return node.width;
+}
+
+function collectOSTBounds(node: OSTNode, bounds: OSTBounds): void {
+  const treeBounds = collectTreeBounds(node);
+  bounds.maxX = Math.max(bounds.maxX, treeBounds.maxX);
+  bounds.maxY = Math.max(bounds.maxY, treeBounds.maxY);
+}
+
+function renderOSTEdges(node: OSTNode, svg: SVGSVGElement): void {
+  renderTreeEdges(node, svg, OST_TREE_OPTIONS);
+}
+
+function renderOSTNodes(node: OSTNode, svg: SVGSVGElement): void {
+  renderTreeNodes(node, svg, OST_TREE_OPTIONS);
 }
 
 export function renderOST(tree: OSTTree, el: HTMLElement): void {
@@ -1025,28 +1156,7 @@ export function renderOST(tree: OSTTree, el: HTMLElement): void {
   header.createEl("span", { text: "Opportunity Solution Tree", cls: "vizardry-title" });
   addHeaderControls(header, el, "Opportunity Solution Tree");
 
-  const wrapper = el.createEl("div", { cls: "vizardry-ost-wrapper" });
-  wrapper.style.overflowX = "auto";
-  wrapper.style.overflowY = "auto";
-  wrapper.style.maxHeight = "600px";
-
-  layoutOSTNode(tree.root, 0, OST_H_PADDING);
-
-  const bounds: OSTBounds = { maxX: 0, maxY: 0 };
-  collectOSTBounds(tree.root, bounds);
-  const svgWidth = bounds.maxX + OST_H_PADDING;
-  const svgHeight = bounds.maxY + OST_V_PADDING;
-
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
-  svg.setAttribute("width", String(svgWidth));
-  svg.setAttribute("height", String(svgHeight));
-  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
-  svg.setAttribute("class", "vizardry-ost");
-
-  renderOSTEdges(tree.root, svg);
-  renderOSTNodes(tree.root, svg);
-
-  wrapper.appendChild(svg);
+  renderTree(tree, OST_TREE_OPTIONS, el);
 }
 
 export function testApplyFullWidth(): void {
