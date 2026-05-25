@@ -172,6 +172,20 @@ export interface TreeRenderOptions {
   wrapperClass: string;
 }
 
+// ── SIPOC ────────────────────────────────────────────────────────────────────
+
+export interface SIPOCData {
+  suppliers: string[];
+  inputs: string[];
+  process: string[];
+  outputs: string[];
+  customers: string[];
+}
+
+export type SIPOCResult =
+  | { ok: true; data: SIPOCData }
+  | { ok: false; error: string };
+
 // ── Carousel ─────────────────────────────────────────────────────────────────
 
 export interface CarouselImage {

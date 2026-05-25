@@ -773,3 +773,100 @@
   width: 100%;
 }
 
+/* ══ SIPOC Diagram ═══════════════════════════════════════════════════
+   Five-column process table: Suppliers → Inputs → Process → Outputs → Customers.
+   The Process column is visually accented (accent tint + bold border) to
+   signal it is the central subject of the diagram.
+   Arrows between column headers are decorative spans, hidden from a11y.
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-sipoc-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.vzd-sipoc-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.vzd-sipoc-th {
+  position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  text-align: left;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.vzd-sipoc-th--process {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
+}
+
+/* Arrow that sits at the right edge of each non-last header cell */
+.vzd-sipoc-arrow {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1em;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.vzd-sipoc-td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  background: var(--background-primary);
+}
+
+.vzd-sipoc-td--process {
+  border-top: 2px solid var(--interactive-accent);
+}
+
+.vzd-sipoc-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.vzd-sipoc-list--numbered {
+  list-style: decimal;
+}
+
+.vzd-sipoc-item {
+  font-size: var(--vzd-base, var(--font-ui-small));
+  color: var(--text-normal);
+  line-height: 1.5;
+  padding: 0.1rem 0;
+}
+
+.vzd-sipoc-item--empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-sipoc-wrap {
+  width: 100%;
+}
+
+.vzd-presentation-wrap .vzd-sipoc-item {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.3);
+  line-height: 1.55;
+}
+
+.vzd-presentation-wrap .vzd-sipoc-th {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
+}
+

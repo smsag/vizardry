@@ -81,7 +81,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, venn, ost, mindmap, impact
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-sipoc-wrap"
     );
     if (!contentEl) return;
 
