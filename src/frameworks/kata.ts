@@ -3,6 +3,7 @@ import { FrameworkDefinition } from "../types";
 export const KATA: FrameworkDefinition = {
   id: "kata",
   label: "Product Kata",
+  description: "Clear path to next experiment.",
   gridTemplate: `
     "cc tc"
     "ob ob"

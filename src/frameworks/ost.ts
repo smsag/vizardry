@@ -1,15 +1,8 @@
 import { OSTNode, OSTResult, OSTTree } from "../types";
+import { buildIndentTree, detectIndentUnit, extractMeaningfulLines } from "../shared/indent-tree";
 
 export function parseOST(source: string): OSTResult {
-  const lines = source.split("\n");
-
-  const meaningful: Array<{ indent: number; text: string; lineNum: number }> = [];
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
-    meaningful.push({ indent: raw.search(/\S/), text: trimmed, lineNum: i + 1 });
-  }
+  const meaningful = extractMeaningfulLines(source);
 
   if (meaningful.length === 0) {
     return { ok: false, error: 'Missing required "outcome:" field' };
@@ -34,56 +27,15 @@ export function parseOST(source: string): OSTResult {
     }
   }
 
-  let indentUnit = 0;
-  for (let i = 1; i < meaningful.length; i++) {
-    if (meaningful[i].indent > 0) {
-      indentUnit = meaningful[i].indent;
-      break;
-    }
-  }
+  const indentUnit = detectIndentUnit(meaningful);
+  const treeLines = [{ ...meaningful[0], text: rootText }, ...meaningful.slice(1)];
 
   const makeNode = (text: string, level: number): OSTNode => ({
-    text,
-    level,
-    children: [],
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
+    text, level, children: [], x: 0, y: 0, width: 0, height: 0,
   });
 
-  const root = makeNode(rootText, 0);
-  const stack: Array<{ indent: number; node: OSTNode }> = [{ indent: 0, node: root }];
+  const result = buildIndentTree<OSTNode>(treeLines, indentUnit, makeNode, 4);
 
-  for (let i = 1; i < meaningful.length; i++) {
-    const { indent, text, lineNum } = meaningful[i];
-
-    if (indentUnit > 0 && indent % indentUnit !== 0) {
-      return {
-        ok: false,
-        error: `Line ${lineNum}: indent of ${indent} spaces is not a multiple of the base indent (${indentUnit})`,
-      };
-    }
-
-    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
-      stack.pop();
-    }
-
-    const parent = stack[stack.length - 1];
-    if (indent <= parent.indent && !(parent.indent === 0 && indent === 0)) {
-      return { ok: false, error: `Line ${lineNum}: unexpected indent level` };
-    }
-
-    const level = indentUnit > 0 ? indent / indentUnit : 1;
-    if (level > 4) {
-      return { ok: false, error: `Line ${lineNum}: OST depth cannot exceed 5 levels (0-4)` };
-    }
-
-    const node = makeNode(text, level);
-    parent.node.children.push(node);
-    stack.push({ indent, node });
-  }
-
-  const tree: OSTTree = { root };
-  return { ok: true, data: tree };
+  if (!result.ok) return result;
+  return { ok: true, data: { root: result.root } };
 }

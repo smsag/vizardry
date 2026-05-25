@@ -1,46 +1,24 @@
-import { StoryMap, StoryMapResult } from "./types";
+import { StoryActivity, StoryMap, StoryMapResult, StorySlice, StoryStep, StoryTask } from "./types";
 
-/**
- * Parses the User Story Map syntax:
- *
- *   user: Persona description
- *   goal: What they want to achieve
- *
- *   activity: Activity Name
- *     step: Step Name
- *       task: Task Name
- *       task: Task Name | optional subtitle
- *
- *   slice: Priority Band
- *     step: Step Name | Task Name, Task Name
- *
- * Rules:
- * - `user:` and `goal:` are optional one-line metadata shown in the header
- * - Each `activity: <name>` defines a backbone column group
- * - Each `step: <name>` (indented under an activity) defines a column;
- *   step names must be unique across the whole document
- * - Each `task: <name>` (indented under a step) defines a card;
- *   an optional subtitle is separated by `|`; task names must be unique within their parent step
- * - Each `slice: <name>` defines a priority band
- * - Under a slice, `step: <name> | task A, task B` assigns tasks to that band
- * - Tasks not assigned to any slice appear in a catch-all Backlog band
- */
 export function parseStoryMap(source: string): StoryMapResult {
   const lines = source.split("\n");
 
   let user = "";
   let goal = "";
-  const activities: { name: string; steps: { name: string; tasks: { name: string; subtitle: string }[] }[] }[] = [];
-  const slices: { name: string; cells: Record<string, string[]> }[] = [];
+  const activities: StoryActivity[] = [];
+  const slices: StorySlice[] = [];
 
-  let currentActivity: typeof activities[number] | null = null;
-  let currentStep: typeof activities[number]["steps"][number] | null = null;
-  let currentSlice: typeof slices[number] | null = null;
+  let currentActivity: StoryActivity | null = null;
+  let currentStep: StoryStep | null = null;
+  let currentSlice: StorySlice | null = null;
 
   let blockIndent = -1;
   let taskIndent = -1;
 
-  const stepRegistry = new Map<string, typeof activities[number]["steps"][number]>();
+  const stepRegistry = new Map<string, StoryStep>();
+  // Per-step task key sets for O(1) duplicate detection
+  const stepTaskKeys = new Map<string, Set<string>>();
+  let currentStepTaskKeys = new Set<string>();
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -53,6 +31,7 @@ export function parseStoryMap(source: string): StoryMapResult {
       currentStep = null;
       blockIndent = -1;
       taskIndent = -1;
+      currentStepTaskKeys = new Set<string>();
 
       if (trimmed.startsWith("user:")) {
         user = trimmed.slice("user:".length).trim();
@@ -64,17 +43,13 @@ export function parseStoryMap(source: string): StoryMapResult {
         currentSlice = null;
       } else if (trimmed.startsWith("activity:")) {
         const name = trimmed.slice("activity:".length).trim();
-        if (!name) {
-          return { ok: false, error: `Line ${i + 1}: activity requires a name` };
-        }
+        if (!name) return { ok: false, error: `Line ${i + 1}: activity requires a name` };
         currentActivity = { name, steps: [] };
         currentSlice = null;
         activities.push(currentActivity);
       } else if (trimmed.startsWith("slice:")) {
         const name = trimmed.slice("slice:".length).trim();
-        if (!name) {
-          return { ok: false, error: `Line ${i + 1}: "slice:" requires a name` };
-        }
+        if (!name) return { ok: false, error: `Line ${i + 1}: "slice:" requires a name` };
         currentSlice = { name, cells: {} };
         currentActivity = null;
         slices.push(currentSlice);
@@ -86,14 +61,12 @@ export function parseStoryMap(source: string): StoryMapResult {
       if (blockIndent === -1) blockIndent = indent;
 
       if (indent === blockIndent) {
-        // Step declaration
         if (!trimmed.startsWith("step:")) {
           return { ok: false, error: `Line ${i + 1}: expected "step: <name>" under activity — "${trimmed}"` };
         }
         const stepName = trimmed.slice("step:".length).trim();
-        if (!stepName) {
-          return { ok: false, error: `Line ${i + 1}: step requires a name` };
-        }
+        if (!stepName) return { ok: false, error: `Line ${i + 1}: step requires a name` };
+
         const stepKey = stepName.toLowerCase().trim();
         if (stepRegistry.has(stepKey)) {
           return { ok: false, error: `Line ${i + 1}: step "${stepName}" is defined more than once — step names must be unique` };
@@ -101,10 +74,11 @@ export function parseStoryMap(source: string): StoryMapResult {
         currentStep = { name: stepName, tasks: [] };
         currentActivity.steps.push(currentStep);
         stepRegistry.set(stepKey, currentStep);
+        currentStepTaskKeys = new Set<string>();
+        stepTaskKeys.set(stepKey, currentStepTaskKeys);
         taskIndent = -1;
 
       } else if (indent > blockIndent && currentStep !== null) {
-        // Task declaration
         if (taskIndent === -1) taskIndent = indent;
         if (indent !== taskIndent) {
           return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
@@ -115,13 +89,14 @@ export function parseStoryMap(source: string): StoryMapResult {
         const rest = trimmed.slice("task:".length).trim();
         const pipeIdx = rest.indexOf("|");
         const taskName = pipeIdx === -1 ? rest : rest.slice(0, pipeIdx).trim();
-        if (!taskName) {
-          return { ok: false, error: `Line ${i + 1}: task requires a name` };
-        }
+        if (!taskName) return { ok: false, error: `Line ${i + 1}: task requires a name` };
+
         const taskKey = taskName.toLowerCase().trim();
-        if (currentStep.tasks.some(t => t.name.toLowerCase().trim() === taskKey)) {
+        if (currentStepTaskKeys.has(taskKey)) {
           return { ok: false, error: `Line ${i + 1}: task "${taskName}" is defined more than once in step "${currentStep.name}"` };
         }
+        currentStepTaskKeys.add(taskKey);
+
         const subtitle = pipeIdx === -1 ? "" : rest.slice(pipeIdx + 1).trim();
         currentStep.tasks.push({ name: taskName, subtitle });
 
@@ -140,9 +115,8 @@ export function parseStoryMap(source: string): StoryMapResult {
       const rest = trimmed.slice("step:".length).trim();
       const pipeIdx = rest.indexOf("|");
       const stepName = pipeIdx === -1 ? rest : rest.slice(0, pipeIdx).trim();
-      if (!stepName) {
-        return { ok: false, error: `Line ${i + 1}: step reference requires a name` };
-      }
+      if (!stepName) return { ok: false, error: `Line ${i + 1}: step reference requires a name` };
+
       const taskList = pipeIdx === -1 ? "" : rest.slice(pipeIdx + 1).trim();
       if (taskList) {
         const stepKey = stepName.toLowerCase().trim();
@@ -168,16 +142,14 @@ export function parseStoryMap(source: string): StoryMapResult {
   // Silently drop slice references to renamed/missing steps or tasks
   for (const slice of slices) {
     for (const stepKey of Object.keys(slice.cells)) {
-      const step = stepRegistry.get(stepKey);
-      if (!step) {
+      const validKeys = stepTaskKeys.get(stepKey);
+      if (!validKeys) {
         delete slice.cells[stepKey];
-        continue;
+      } else {
+        slice.cells[stepKey] = slice.cells[stepKey].filter(taskKey => validKeys.has(taskKey));
       }
-      slice.cells[stepKey] = slice.cells[stepKey].filter(taskKey =>
-        step.tasks.some(t => t.name.toLowerCase().trim() === taskKey)
-      );
     }
   }
 
-  return { ok: true, data: { user, goal, activities, slices } as StoryMap };
+  return { ok: true, data: { user, goal, activities, slices } };
 }

@@ -618,7 +618,7 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 
 ## Syntax reference
 
-### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs, rac, ost)
+### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs, rac)
 
 | Syntax | Meaning |
 |---|---|
@@ -659,6 +659,17 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 | Indented lines | Child nodes; depth determined by indent level |
 | Blank lines | Ignored (use freely for readability) |
 | `# comment` | Ignored |
+
+### Opportunity Solution Tree (ost)
+
+| Syntax | Meaning |
+|---|---|
+| `outcome: <text>` | Root node — no indent, required, one only |
+| Indented lines | Child nodes; indent level determines depth (1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption) |
+| Blank lines | Ignored |
+| `# comment` | Ignored |
+
+Maximum depth is 5 levels (0–4). Any consistent indent unit works (2 spaces, 4 spaces, tab).
 
 ### Image Carousel
 

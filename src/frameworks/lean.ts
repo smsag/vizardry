@@ -3,6 +3,7 @@ import { FrameworkDefinition } from "../types";
 export const LEAN: FrameworkDefinition = {
   id: "lean",
   label: "Lean Canvas",
+  description: "Riskiest assumptions exposed and ranked.",
   gridTemplate: `
     "pr so uvp ca cs"
     "pr so uvp ua cs"
