@@ -1,6 +1,7 @@
 import { setIcon } from "obsidian";
-import { StoryMap, StoryTask } from "../types";
+import { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
+import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 
 export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   initCanvas(container, "story", "User Story Map", map.user || map.goal ? header => {
@@ -46,7 +47,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
     }
   }
 
-  function appendCards(cell: HTMLElement, step: typeof allSteps[number], taskKeys: string[]): void {
+  function appendCards(cell: HTMLElement, step: StoryStep, taskKeys: string[]): void {
     for (const taskKey of taskKeys) {
       const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKey);
       if (!task) continue;
@@ -85,7 +86,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   for (const step of allSteps) {
     const stepKey = step.name.toLowerCase().trim();
     const unassigned = step.tasks.filter(
-      (t: StoryTask) => !assignedKeys.has(`${stepKey}\0${t.name.toLowerCase().trim()}`)
+      t => !assignedKeys.has(`${stepKey}\0${t.name.toLowerCase().trim()}`)
     );
     if (unassigned.length > 0) backlogByStep.set(stepKey, unassigned);
   }
@@ -225,6 +226,6 @@ function setupStoryCarousel(
   grid.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
   grid.addEventListener("touchend", (e) => {
     const delta = touchStartX - e.changedTouches[0].clientX;
-    if (Math.abs(delta) > 40) goTo(delta > 0 ? current + 1 : current - 1);
+    if (Math.abs(delta) > SWIPE_THRESHOLD_PX) goTo(delta > 0 ? current + 1 : current - 1);
   }, { passive: true });
 }

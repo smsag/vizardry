@@ -854,6 +854,8 @@
 .vzd-sipoc-item--empty {
   color: var(--text-faint);
   font-style: italic;
+  list-style: none;
+  margin-left: -1.25rem;
 }
 
 /* Presentation mode */

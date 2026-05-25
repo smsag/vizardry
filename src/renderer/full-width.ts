@@ -1,9 +1,17 @@
-type FullWidthCanvasEl = HTMLElement & {
-  __vzdFullWidthObserver?: ResizeObserver;
-  __vzdFullWidthRemovalObserver?: MutationObserver;
-  __vzdFullWidthWindowHandler?: () => void;
-  __vzdFullWidthObservedContainer?: HTMLElement | null;
-};
+interface FullWidthState {
+  resizeObserver?: ResizeObserver;
+  mutationObserver?: MutationObserver;
+  windowHandler?: () => void;
+  observedContainer?: HTMLElement | null;
+}
+
+const stateMap = new WeakMap<HTMLElement, FullWidthState>();
+
+function getState(el: HTMLElement): FullWidthState {
+  let state = stateMap.get(el);
+  if (!state) { state = {}; stateMap.set(el, state); }
+  return state;
+}
 
 const WORKSPACE_CONTAINER_SELECTORS = [
   ".workspace-leaf-content",
@@ -20,27 +28,30 @@ function findWorkspaceContainer(canvasEl: HTMLElement): HTMLElement | null {
   return null;
 }
 
-function cleanupFullWidthWatchers(canvasEl: FullWidthCanvasEl): void {
-  canvasEl.__vzdFullWidthObserver?.disconnect();
-  canvasEl.__vzdFullWidthObserver = undefined;
+function cleanupFullWidthWatchers(canvasEl: HTMLElement): void {
+  const state = stateMap.get(canvasEl);
+  if (!state) return;
 
-  canvasEl.__vzdFullWidthRemovalObserver?.disconnect();
-  canvasEl.__vzdFullWidthRemovalObserver = undefined;
+  state.resizeObserver?.disconnect();
+  state.resizeObserver = undefined;
 
-  if (canvasEl.__vzdFullWidthWindowHandler) {
-    window.removeEventListener("resize", canvasEl.__vzdFullWidthWindowHandler);
-    canvasEl.__vzdFullWidthWindowHandler = undefined;
+  state.mutationObserver?.disconnect();
+  state.mutationObserver = undefined;
+
+  if (state.windowHandler) {
+    window.removeEventListener("resize", state.windowHandler);
+    state.windowHandler = undefined;
   }
 
-  canvasEl.__vzdFullWidthObservedContainer = undefined;
+  state.observedContainer = undefined;
 }
 
-function ensureFullWidthWatchers(canvasEl: FullWidthCanvasEl, container: HTMLElement | null): void {
-  const current = canvasEl.__vzdFullWidthObservedContainer;
-  if (current === container && canvasEl.__vzdFullWidthRemovalObserver) return;
+function ensureFullWidthWatchers(canvasEl: HTMLElement, container: HTMLElement | null): void {
+  const state = getState(canvasEl);
+  if (state.observedContainer === container && state.mutationObserver) return;
 
   cleanupFullWidthWatchers(canvasEl);
-  canvasEl.__vzdFullWidthObservedContainer = container;
+  state.observedContainer = container;
 
   if (container) {
     const ro = new ResizeObserver(() => {
@@ -48,14 +59,14 @@ function ensureFullWidthWatchers(canvasEl: FullWidthCanvasEl, container: HTMLEle
       applyFullWidth(canvasEl);
     });
     ro.observe(container);
-    canvasEl.__vzdFullWidthObserver = ro;
+    state.resizeObserver = ro;
   } else {
     const onResize = (): void => {
       if (!canvasEl.isConnected) { cleanupFullWidthWatchers(canvasEl); return; }
       applyFullWidth(canvasEl);
     };
     window.addEventListener("resize", onResize);
-    canvasEl.__vzdFullWidthWindowHandler = onResize;
+    state.windowHandler = onResize;
   }
 
   const parent = canvasEl.parentElement ?? document.body;
@@ -65,11 +76,10 @@ function ensureFullWidthWatchers(canvasEl: FullWidthCanvasEl, container: HTMLEle
     }
   });
   mo.observe(parent, { childList: true });
-  canvasEl.__vzdFullWidthRemovalObserver = mo;
+  state.mutationObserver = mo;
 }
 
 export function applyFullWidth(canvasEl: HTMLElement): void {
-  const fullWidthEl = canvasEl as FullWidthCanvasEl;
   const isEditView = !!canvasEl.closest(".cm-editor");
   const container = findWorkspaceContainer(canvasEl);
 
@@ -114,5 +124,5 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
     }
   }
 
-  ensureFullWidthWatchers(fullWidthEl, container);
+  ensureFullWidthWatchers(canvasEl, container);
 }
