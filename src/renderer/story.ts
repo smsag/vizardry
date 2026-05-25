@@ -1,6 +1,5 @@
 import { setIcon } from "obsidian";
-import type { StoryMap, StoryStep} from "../types";
-import { StoryTask } from "../types";
+import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 
@@ -229,7 +228,7 @@ function setupStoryCarousel(
       removalObserver.disconnect();
     }
   });
-  removalObserver.observe(grid.parentElement ?? document.body, { childList: true });
+  removalObserver.observe(document.body, { childList: true, subtree: true });
 
   prevBtn.addEventListener("click", () => goTo(current - 1));
   nextBtn.addEventListener("click", () => goTo(current + 1));

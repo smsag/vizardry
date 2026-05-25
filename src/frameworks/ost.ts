@@ -1,5 +1,4 @@
-import type { OSTNode, OSTResult} from "../types";
-import { OSTTree } from "../types";
+import type { OSTNode, OSTResult } from "../types";
 import { buildIndentTree, detectIndentUnit, extractMeaningfulLines } from "../shared/indent-tree";
 
 export function parseOST(source: string): OSTResult {
