@@ -1,4 +1,5 @@
-import { VennDiagram, VennItem, VennResult } from "./types";
+import type { VennItem, VennResult } from "./types";
+import { VennDiagram } from "./types";
 
 /**
  * Parses the Venn diagram syntax:

@@ -1,7 +1,9 @@
-import {
+import type {
   ImpactMap,
   MindMap,
   MindMapNode,
+  OSTNode,
+  OSTTree,
   TreeNode,
   TreeNodeStyle,
   TreeRenderOptions,
@@ -193,6 +195,16 @@ export const IMPACT_MAP_OPTS: TreeRenderOptions = {
 };
 
 // ── Domain → TreeNode adapters ───────────────────────────────────────────────
+
+export function adaptOSTToTree(tree: OSTTree): { root: TreeNode } {
+  const convert = (node: OSTNode): TreeNode => ({
+    text: node.text,
+    level: node.level,
+    children: node.children.map(convert),
+    x: 0, y: 0, width: 0, height: 0,
+  });
+  return { root: convert(tree.root) };
+}
 
 export function adaptMindMapToTree(map: MindMap): { root: TreeNode } {
   const convert = (node: MindMapNode, level: number): TreeNode => ({

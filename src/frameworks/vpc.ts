@@ -1,4 +1,4 @@
-import { FrameworkDefinition } from "../types";
+import type { FrameworkDefinition } from "../types";
 
 export const VPC: FrameworkDefinition = {
   id: "vpc",

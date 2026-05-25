@@ -1,4 +1,5 @@
-import { StoryActivity, StoryMap, StoryMapResult, StorySlice, StoryStep, StoryTask } from "./types";
+import type { StoryActivity, StoryMapResult, StorySlice, StoryStep} from "./types";
+import { StoryMap, StoryTask } from "./types";
 
 export function parseStoryMap(source: string): StoryMapResult {
   const lines = source.split("\n");

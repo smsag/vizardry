@@ -1,4 +1,5 @@
-import { App, Editor, SuggestModal } from "obsidian";
+import type { App, Editor} from "obsidian";
+import { SuggestModal } from "obsidian";
 import { insertTemplateAtCursor } from "./shared/editor";
 
 export interface FrameworkOption {

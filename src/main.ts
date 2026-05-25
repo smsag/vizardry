@@ -1,4 +1,5 @@
-import { App, Editor, MarkdownPostProcessorContext, MarkdownView, Notice, Plugin } from "obsidian";
+import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
+import { MarkdownView, Notice, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
@@ -7,7 +8,8 @@ import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
 import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderError } from "./renderer";
 import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE } from "./templates";
-import { CanvasInsertModal, FrameworkOption } from "./modal";
+import type { FrameworkOption } from "./modal";
+import { CanvasInsertModal } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
 import { OPPORTUNITY } from "./frameworks/opportunity";
@@ -16,7 +18,7 @@ import { VPC } from "./frameworks/vpc";
 import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
-import { FrameworkDefinition } from "./types";
+import type { FrameworkDefinition } from "./types";
 import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
 import { parseSIPOC } from "./sipoc";
 import { insertTemplateAtCursor } from "./shared/editor";
@@ -87,7 +89,7 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseVennDiagram(source);
       if (!result.ok) { renderError(result.error, el); return; }
       renderVennDiagram(result.data, el, (target) => {
-        app.workspace.openLinkText(target, ctx.sourcePath, false);
+        void app.workspace.openLinkText(target, ctx.sourcePath, false);
       });
     },
   },
@@ -147,7 +149,7 @@ export default class VizardryPlugin extends Plugin {
         const result = parseFrameworkSource(source);
         if (!result.ok) { renderError(result.error, el); return; }
         renderCanvas(definition, result.data, result.links, el, (heading) => {
-          this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
+          void this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
         });
       });
     }

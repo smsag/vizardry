@@ -94,12 +94,6 @@ export interface OSTNode {
   level: number;          // 0 = outcome, 1 = opportunity, 2 = solution,
                           // 3 = experiment, 4 = assumption
   children: OSTNode[];
-
-  // Set by layout engine — do not populate in parser
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 export interface OSTTree {

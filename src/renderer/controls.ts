@@ -58,8 +58,8 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   const downloadBtn = actions.createEl("button", { cls: "vizardry-download-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(downloadBtn, "download");
   downloadBtn.setAttribute("aria-label", "Download as PNG");
-  downloadBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
+
+  const handleDownload = async (): Promise<void> => {
     downloadBtn.disabled = true;
     try {
       const bg = getComputedStyle(document.body).getPropertyValue("--background-primary").trim() || "#ffffff";
@@ -77,7 +77,9 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
     } finally {
       downloadBtn.disabled = false;
     }
-  });
+  };
+
+  downloadBtn.addEventListener("click", (e) => { e.stopPropagation(); void handleDownload(); });
 
   const presentBtn = actions.createEl("button", { cls: "vizardry-present-btn vzd-btn" });
   setIcon(presentBtn, "expand");

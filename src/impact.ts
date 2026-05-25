@@ -1,4 +1,5 @@
-import { ImpactMap, ImpactMapResult, ImpactActor, ImpactItem } from "./types";
+import type { ImpactMapResult, ImpactActor, ImpactItem } from "./types";
+import { ImpactMap } from "./types";
 
 export function parseImpactMap(source: string): ImpactMapResult {
   const lines = source.split("\n");

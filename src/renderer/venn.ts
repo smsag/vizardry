@@ -1,4 +1,5 @@
-import { VennDiagram, VennItem } from "../types";
+import type { VennDiagram} from "../types";
+import { VennItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { createSvgEl } from "../shared/svg";
 
