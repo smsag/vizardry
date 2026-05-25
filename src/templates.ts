@@ -1,4 +1,4 @@
-import { FrameworkDefinition } from "./types";
+import type { FrameworkDefinition } from "./types";
 
 export function generateCanvasTemplate(framework: FrameworkDefinition): string {
   const blocks = framework.blocks.map(b => `block: ${b.label}\n  `).join("\n\n");

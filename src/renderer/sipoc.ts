@@ -1,4 +1,4 @@
-import { SIPOCData } from "../types";
+import type { SIPOCData } from "../types";
 import { initCanvas } from "./controls";
 
 type ColKey = "suppliers" | "inputs" | "process" | "outputs" | "customers";

@@ -1,4 +1,4 @@
-import { SIPOCData, SIPOCResult } from "./types";
+import type { SIPOCData, SIPOCResult } from "./types";
 
 const SECTIONS = ["suppliers", "inputs", "process", "outputs", "customers"] as const;
 type Section = typeof SECTIONS[number];

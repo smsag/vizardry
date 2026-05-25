@@ -1,4 +1,4 @@
-import { CarouselBlock, CarouselImage, CarouselResult } from "./types";
+import type { CarouselBlock, CarouselImage, CarouselResult } from "./types";
 import { SWIPE_THRESHOLD_PX } from "./shared/constants";
 
 // ── Parser ────────────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
-import { MindMap, MindMapNode, MindMapResult } from "./types";
+import type { MindMapNode, MindMapResult } from "./types";
+import { MindMap } from "./types";
 import { buildIndentTree, detectIndentUnit, extractMeaningfulLines } from "./shared/indent-tree";
 
 export function parseMindMap(source: string): MindMapResult {

@@ -1,4 +1,5 @@
-import { OSTNode, OSTResult, OSTTree } from "../types";
+import type { OSTNode, OSTResult} from "../types";
+import { OSTTree } from "../types";
 import { buildIndentTree, detectIndentUnit, extractMeaningfulLines } from "../shared/indent-tree";
 
 export function parseOST(source: string): OSTResult {
@@ -31,7 +32,7 @@ export function parseOST(source: string): OSTResult {
   const treeLines = [{ ...meaningful[0], text: rootText }, ...meaningful.slice(1)];
 
   const makeNode = (text: string, level: number): OSTNode => ({
-    text, level, children: [], x: 0, y: 0, width: 0, height: 0,
+    text, level, children: [],
   });
 
   const result = buildIndentTree<OSTNode>(treeLines, indentUnit, makeNode, 4);

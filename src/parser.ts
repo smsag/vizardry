@@ -1,4 +1,4 @@
-import { ParseResult } from "./types";
+import type { ParseResult } from "./types";
 
 /**
  * Parses the `block: Label\n  content` syntax used by all grid frameworks.

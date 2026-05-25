@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { FrameworkDefinition } from "../types";
+import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 
