@@ -307,8 +307,8 @@
 
 /* Activity headers — span their child steps */
 .vzd-story-activity-header {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
   border-radius: var(--radius-m);
   padding: 0.35rem 0.6rem;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
@@ -336,44 +336,57 @@
   text-overflow: ellipsis;
 }
 
-/* Slice label — spans full width as a priority band divider */
-.vzd-story-slice-label {
+/* Slice band — full-width wrapper giving each slice a tinted background */
+.vzd-story-slice-band {
   grid-column: 1 / -1;
-  background: var(--background-primary-alt);
-  border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
   border-radius: var(--radius-m);
-  padding: 0.4rem 0.75rem;
+  overflow: hidden;
+}
+
+/* Backlog band — no tint, visually de-emphasised */
+.vzd-story-backlog-band {
+  background: transparent;
+}
+
+/* Inner cell grid — mirrors the parent grid's column template */
+.vzd-story-slice-cells {
+  display: grid;
+  grid-template-columns: repeat(var(--vzd-story-cols), minmax(120px, 1fr));
+  gap: 0.4rem;
+  padding: 0 0.4rem 0.4rem;
+}
+
+/* Slice label — left accent stripe; sits inside its band wrapper */
+.vzd-story-slice-label {
+  background: transparent;
+  border: none;
+  border-left: 3px solid var(--interactive-accent);
+  padding: 0.3rem 0.75rem;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 600;
   color: var(--text-normal);
 }
 
-/* Backlog band — muted accent to distinguish from named slices */
+/* Backlog label — muted to distinguish from named slices */
 .vzd-story-backlog-label {
   border-left-color: var(--text-muted);
   color: var(--text-muted);
 }
 
-/* Cell — container for task cards within one step×slice intersection */
+/* Cell — invisible container; cards provide all visual weight */
 .vzd-story-cell {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  padding: 0.3rem;
-  min-height: 40px;
+  background: transparent;
+  border: none;
+  padding: 0.15rem 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
 .vzd-story-cell-empty {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  min-height: 0;
+  /* intentionally empty — no override needed */
 }
 
 /* Task card — individual story inside a cell */
@@ -381,8 +394,7 @@
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s, var(--radius-m));
-  padding: 0.35rem 0.45rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: 0.3rem 0.4rem;
 }
 
 .vzd-story-task-name {
@@ -706,20 +718,10 @@
   pointer-events: none;
 }
 
-/* Distinct fill colours per circle index so overlaps show naturally */
-.vzd-venn-circle[data-ci="0"] {
-  fill: hsla(220, 75%, 60%, 0.12);
-  stroke: hsla(220, 75%, 55%, 0.5);
-  stroke-width: 1.5;
-}
-.vzd-venn-circle[data-ci="1"] {
-  fill: hsla(150, 65%, 50%, 0.12);
-  stroke: hsla(150, 65%, 42%, 0.5);
-  stroke-width: 1.5;
-}
-.vzd-venn-circle[data-ci="2"] {
-  fill: hsla(270, 65%, 62%, 0.12);
-  stroke: hsla(270, 65%, 55%, 0.5);
+/* Circle colours are set as inline styles by the renderer,
+   derived from the user's Obsidian accent colour.
+   Only the fallback stroke-width lives here. */
+.vzd-venn-circle {
   stroke-width: 1.5;
 }
 

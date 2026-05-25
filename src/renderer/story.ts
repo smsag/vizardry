@@ -61,13 +61,16 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   const cellsByStep: HTMLElement[][] = Array.from({ length: totalCols }, () => []);
 
   for (const slice of map.slices) {
-    grid.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
+    const band = grid.createEl("div", { cls: "vzd-story-slice-band" });
+    band.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
+    const cellsRow = band.createEl("div", { cls: "vzd-story-slice-cells" });
+    cellsRow.style.setProperty("--vzd-story-cols", String(totalCols));
 
     for (let i = 0; i < allSteps.length; i++) {
       const step = allSteps[i];
       const stepKey = step.name.toLowerCase().trim();
       const taskKeys = slice.cells[stepKey] ?? [];
-      const cell = grid.createEl("div", { cls: "vzd-story-cell" });
+      const cell = cellsRow.createEl("div", { cls: "vzd-story-cell" });
       cell.dataset.stepCol = String(i);
       if (taskKeys.length === 0) {
         cell.addClass("vzd-story-cell-empty");
@@ -88,14 +91,16 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   }
 
   if (backlogByStep.size > 0) {
-    const backlogLabel = grid.createEl("div", { cls: "vzd-story-slice-label", text: "Backlog" });
-    backlogLabel.addClass("vzd-story-backlog-label");
+    const backlogBand = grid.createEl("div", { cls: "vzd-story-slice-band vzd-story-backlog-band" });
+    backlogBand.createEl("div", { cls: "vzd-story-slice-label vzd-story-backlog-label", text: "Backlog" });
+    const backlogCellsRow = backlogBand.createEl("div", { cls: "vzd-story-slice-cells" });
+    backlogCellsRow.style.setProperty("--vzd-story-cols", String(totalCols));
 
     for (let i = 0; i < allSteps.length; i++) {
       const step = allSteps[i];
       const stepKey = step.name.toLowerCase().trim();
       const tasks = backlogByStep.get(stepKey) ?? [];
-      const cell = grid.createEl("div", { cls: "vzd-story-cell" });
+      const cell = backlogCellsRow.createEl("div", { cls: "vzd-story-cell" });
       cell.dataset.stepCol = String(i);
       if (tasks.length === 0) {
         cell.addClass("vzd-story-cell-empty");
@@ -134,6 +139,11 @@ function setupStoryCarousel(
   let current = 0;
   const mq = window.matchMedia("(max-width: 600px)");
 
+  // All inner cell-row grids (one per slice band, including backlog)
+  const sliceCellsEls = Array.from(
+    grid.querySelectorAll(".vzd-story-slice-cells")
+  ) as HTMLElement[];
+
   const nav = container.createEl("div", { cls: "vzd-story-nav" });
   const prevBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(prevBtn, "chevron-left");
@@ -145,6 +155,8 @@ function setupStoryCarousel(
 
   function applyMobile(col: number): void {
     grid.style.gridTemplateColumns = "1fr";
+    // Collapse each slice's inner grid to a single column
+    sliceCellsEls.forEach(el => { el.style.gridTemplateColumns = "1fr"; });
 
     activityHeaderRefs.forEach(({ el, start, end }) => {
       const active = col >= start && col <= end;
@@ -172,6 +184,7 @@ function setupStoryCarousel(
 
   function resetLayout(): void {
     grid.style.gridTemplateColumns = "";
+    sliceCellsEls.forEach(el => { el.style.gridTemplateColumns = ""; });
     activityHeaderRefs.forEach(({ el, origGridCol }) => {
       el.style.display = "";
       el.style.gridColumn = origGridCol;
