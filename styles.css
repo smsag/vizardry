@@ -1,3 +1,21 @@
+/* ── Suppress Obsidian hover/focus borders on the code-block wrapper ── */
+.el-pre:has(> .vizardry-canvas),
+.el-pre:has(> .vizardry-canvas):hover,
+.cm-embed-block:has(.vizardry-canvas),
+.cm-embed-block:has(.vizardry-canvas):hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: none !important;
+  padding: 0 !important;
+}
+
+/* ── Hide Obsidian's native "Edit block" button overlay on vizardry blocks ── */
+.cm-embed-block:has(.vizardry-canvas) .edit-block-button,
+.cm-embed-block:has(.vizardry-canvas) .block-flair {
+  display: none !important;
+}
+
 /* ── Vizardry canvas wrapper ── */
 .vizardry-canvas {
   display: block;
@@ -27,29 +45,66 @@
   margin-bottom: 0.5rem;
 }
 
-.vizardry-present-btn,
-.vizardry-font-btn {
+/* ── Unified ghost icon button ────────────────────────────────────
+   All interactive controls share this appearance: icon-only, no chrome,
+   hidden until the parent .vizardry-canvas is hovered.
+   Presentation overlay buttons are always visible (the overlay is the
+   focused context). Mobile nav buttons stay at 44 × 44 px for touch.
+   ─────────────────────────────────────────────────────────────────── */
+.vzd-btn {
   background: none;
   border: none;
+  box-shadow: none;
   cursor: pointer;
-  color: var(--text-faint);
+  color: var(--text-muted);
   padding: 0;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border-radius: var(--radius-s);
+  opacity: 0;
+  pointer-events: none;
+  transition: color 0.1s ease, opacity 0.12s ease;
 }
 
-.vizardry-present-btn:hover,
-.vizardry-font-btn:hover {
-  color: var(--interactive-accent);
+.vzd-btn svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
-.vizardry-present-btn svg {
-  width: 0.75rem;
-  height: 0.75rem;
+.vzd-btn:disabled {
+  cursor: default;
+}
+
+/* Reveal all buttons when the canvas is hovered */
+.vizardry-canvas:hover .vzd-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vizardry-canvas:hover .vzd-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* On button hover: full-strength text colour */
+.vzd-btn:hover:not(:disabled) {
+  color: var(--text-normal);
+}
+
+/* Presentation overlay: always visible */
+.vzd-presentation-overlay .vzd-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vzd-presentation-overlay .vzd-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .vizardry-header-actions {
@@ -57,19 +112,6 @@
   align-items: center;
   gap: 0.3rem;
   flex-shrink: 0;
-}
-
-.vizardry-font-btn {
-  font-family: var(--font-interface);
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.vizardry-font-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
 }
 
 .vizardry-title {
@@ -95,13 +137,16 @@
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   padding: 0.6rem 0.75rem;
   display: flex;
   flex-direction: column;
   align-content: start;
   gap: 0.35rem;
-  min-height: 80px;
+  min-height: 180px;
+}
+
+.vizardry-block:hover {
+  border-color: var(--background-modifier-border);
 }
 
 .vizardry-block-label-row {
@@ -128,25 +173,7 @@
   text-overflow: ellipsis;
 }
 
-.vizardry-block-link-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 0;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.vizardry-block-link-btn:hover {
-  color: var(--interactive-accent);
-}
-
-.vizardry-block-link-btn svg {
-  width: 0.7rem;
-  height: 0.7rem;
-}
+/* .vizardry-block-link-btn inherits all styling from .vzd-btn */
 
 .vizardry-block-body {
   font-size: var(--vzd-base, var(--font-ui-small));
@@ -215,20 +242,14 @@
     margin-top: 0.5rem;
   }
 
+  /* Mobile carousel nav: ghost style inherits from .vzd-btn.
+     44×44px touch targets per Apple HIG. Always visible on mobile
+     (no hover state on touch screens).                              */
   .vizardry-nav-btn {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-s);
-    color: var(--text-normal);
-    font-size: 1.25rem;
-    line-height: 1;
-    /* 44×44px minimum touch target (Apple HIG) */
     min-width: 44px;
     min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .vizardry-nav-dots {
@@ -250,294 +271,11 @@
     background: var(--text-muted);
   }
 
-  .vzd-im-level {
-    margin-left: 0.75rem;
-    padding-left: 0.75rem;
-  }
-
   .vizardry-nav-btn:disabled {
-    opacity: 0.3;
+    opacity: 0.3 !important;
     cursor: default;
   }
 
-}
-
-/* ══ Impact Map ══════════════════════════════════════════════════════
-   Top-down org-chart tree: Goal centred at top, actors in a
-   horizontal row below, impacts below each actor, deliverables
-   below each impact. Branch wrappers use ::before (horizontal bar)
-   and ::after (vertical drop) for connector lines.
-   ══════════════════════════════════════════════════════════════════ */
-
-/* ── Tree root: column, centred, horizontally scrollable ── */
-.vzd-im-tree {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  align-items: center;
-  overflow-x: auto;
-  padding: 1rem 1.5rem 1.5rem;
-  gap: 0;
-}
-
-/* ── Goal: root node ── */
-.vzd-im-goal {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-bottom: 3px solid var(--interactive-accent);
-  border-radius: var(--radius-m);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 0.8rem 1.5rem;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.vzd-im-goal::after {
-  content: "";
-  position: absolute;
-  bottom: -1.5rem;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 1.5rem;
-  background: var(--background-modifier-border);
-}
-
-.vzd-im-goal .vzd-im-level-label {
-  color: var(--text-accent);
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.82);
-}
-
-.vzd-im-goal .vzd-im-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.15);
-  font-weight: 600;
-}
-
-/* ── Actors wrap: horizontal row ── */
-.vzd-im-actors-wrap {
-  display: flex;
-  flex-direction: row;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-  align-items: flex-start;
-}
-
-/* ── Actor branch: column wrapper (card above, children below) ── */
-.vzd-im-actor-branch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-
-/* Horizontal bar spanning siblings at actor level */
-.vzd-im-actor-branch::before {
-  content: "";
-  position: absolute;
-  top: -1.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--background-modifier-border);
-}
-
-.vzd-im-actors-wrap .vzd-im-actor-branch:first-child::before { left: 50%; }
-.vzd-im-actors-wrap .vzd-im-actor-branch:last-child::before  { right: 50%; }
-.vzd-im-actors-wrap .vzd-im-actor-branch:only-child::before  { display: none; }
-
-/* Vertical drop from horizontal bar to actor card */
-.vzd-im-actor-branch::after {
-  content: "";
-  position: absolute;
-  top: -1.5rem;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 1.5rem;
-  background: var(--background-modifier-border);
-}
-
-/* ── Actor card ── */
-.vzd-im-actor {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-bottom: 2px solid var(--interactive-accent);
-  border-radius: var(--radius-m);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
-  padding: 0.5rem 0.75rem;
-  min-width: 7rem;
-  max-width: 12rem;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-/* Vertical trunk from actor card to impacts row */
-.vzd-im-actor::after {
-  content: "";
-  position: absolute;
-  bottom: -1.5rem;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 1.5rem;
-  background: var(--background-modifier-border);
-}
-
-.vzd-im-actor .vzd-im-node-text {
-  font-size: var(--vzd-base, var(--font-ui-small));
-  font-weight: 600;
-}
-
-/* ── Impacts wrap ── */
-.vzd-im-impacts-wrap {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  align-items: flex-start;
-}
-
-/* ── Impact branch ── */
-.vzd-im-impact-branch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-
-.vzd-im-impact-branch::before {
-  content: "";
-  position: absolute;
-  top: -1.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--background-modifier-border);
-}
-
-.vzd-im-impacts-wrap .vzd-im-impact-branch:first-child::before { left: 50%; }
-.vzd-im-impacts-wrap .vzd-im-impact-branch:last-child::before  { right: 50%; }
-.vzd-im-impacts-wrap .vzd-im-impact-branch:only-child::before  { display: none; }
-
-.vzd-im-impact-branch::after {
-  content: "";
-  position: absolute;
-  top: -1.5rem;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 1.5rem;
-  background: var(--background-modifier-border);
-}
-
-/* ── Impact card ── */
-.vzd-im-impact {
-  background: var(--background-primary-alt);
-  border: 1px solid var(--background-modifier-border);
-  border-bottom: 2px solid var(--text-faint);
-  border-radius: var(--radius-m);
-  padding: 0.45rem 0.6rem;
-  min-width: 6rem;
-  max-width: 10rem;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.vzd-im-impact::after {
-  content: "";
-  position: absolute;
-  bottom: -1.5rem;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 1.5rem;
-  background: var(--background-modifier-border);
-}
-
-/* ── Deliverables wrap ── */
-.vzd-im-deliverables-wrap {
-  display: flex;
-  flex-direction: row;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  align-items: flex-start;
-}
-
-/* ── Deliverable branch ── */
-.vzd-im-deliverable-branch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-
-.vzd-im-deliverable-branch::before {
-  content: "";
-  position: absolute;
-  top: -1.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--background-modifier-border);
-}
-
-.vzd-im-deliverables-wrap .vzd-im-deliverable-branch:first-child::before { left: 50%; }
-.vzd-im-deliverables-wrap .vzd-im-deliverable-branch:last-child::before  { right: 50%; }
-.vzd-im-deliverables-wrap .vzd-im-deliverable-branch:only-child::before  { display: none; }
-
-.vzd-im-deliverable-branch::after {
-  content: "";
-  position: absolute;
-  top: -1.5rem;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 1.5rem;
-  background: var(--background-modifier-border);
-}
-
-/* ── Deliverable card ── */
-.vzd-im-deliverable {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  padding: 0.3rem 0.5rem;
-  min-width: 5rem;
-  max-width: 9rem;
-  text-align: center;
-}
-
-.vzd-im-deliverable .vzd-im-level-label {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.77);
-  color: var(--text-muted);
-}
-
-.vzd-im-deliverable .vzd-im-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  color: var(--text-muted);
-}
-
-/* ── Shared label style ── */
-.vzd-im-level-label {
-  display: block;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.77);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
-  margin-bottom: 0.2rem;
-}
-
-.vzd-im-node-text {
-  font-size: var(--vzd-base, var(--font-ui-small));
-  color: var(--text-normal);
-  line-height: 1.45;
-}
-
-/* ── Empty placeholder ── */
-.vzd-im-empty-placeholder {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  color: var(--text-faint);
-  font-style: italic;
-  padding: 0.3rem 0.5rem;
-  text-align: center;
 }
 
 /* ══ User Story Map ══════════════════════════════════════════════════
@@ -674,25 +412,11 @@
   padding: 0.4rem 0;
 }
 
+/* .vzd-story-nav-btn ghost style inherits from .vzd-btn.
+   Keep 44px touch target for mobile usability.             */
 .vzd-story-nav-btn {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  color: var(--text-normal);
-  font-size: 1.25rem;
-  line-height: 1;
   min-width: 44px;
   min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.vzd-story-nav-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
 }
 
 .vzd-story-nav-label {
@@ -763,27 +487,8 @@
   gap: 0.25rem;
 }
 
-.vzd-presentation-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.vzd-presentation-reload:hover,
-.vzd-presentation-close:hover {
-  color: var(--text-normal);
-}
-
-.vzd-presentation-reload svg,
-.vzd-presentation-close svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
+/* .vzd-presentation-close and .vzd-presentation-reload inherit from .vzd-btn.
+   The .vzd-presentation-overlay .vzd-btn rule above makes them always visible. */
 
 @keyframes vzd-spin {
   to { transform: rotate(360deg); }
@@ -829,22 +534,12 @@
   line-height: 1.55;
 }
 
-/* Impact Map — full width, scrollable */
-.vzd-presentation-wrap .vzd-im-tree {
+/* SVG tree renderers — full width in presentation */
+.vzd-presentation-wrap .vizardry-ost-wrapper,
+.vzd-presentation-wrap .vizardry-mindmap-wrapper,
+.vzd-presentation-wrap .vizardry-impact-wrapper {
   width: 100%;
-}
-
-.vzd-presentation-wrap .vzd-im-goal .vzd-im-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.6);
-}
-
-.vzd-presentation-wrap .vzd-im-actor .vzd-im-node-text,
-.vzd-presentation-wrap .vzd-im-impact .vzd-im-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.3);
-}
-
-.vzd-presentation-wrap .vzd-im-deliverable .vzd-im-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1);
+  max-height: none;
 }
 
 /* ══ Carousel ════════════════════════════════════════════════════════
@@ -966,119 +661,30 @@
   }
 }
 
-/* ══ Mind Map ════════════════════════════════════════════════════════
-   Indented vertical tree. Root sits at the top; each level is
-   visually indented with a left border and L-shaped branch lines,
-   reusing the same structural vocabulary as Impact Map.
-   Depth classes 1–3 get distinct weights; depth 4+ shares "deep".
+/* ══ SVG Tree Renderers (OST, Impact Map, Mind Map) ═════════════════
+   All three use the shared renderTree() SVG pipeline. Wrapper
+   overflow and text typography are defined here so font-size responds
+   to --vzd-base and the A+/A− controls work across all renderer types.
    ══════════════════════════════════════════════════════════════════ */
 
-.vzd-mm-tree {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 0.25rem;
+.vizardry-ost-wrapper,
+.vizardry-mindmap-wrapper,
+.vizardry-impact-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
 }
 
-/* Root node — highest visual weight */
-.vzd-mm-root {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-left: 4px solid var(--interactive-accent);
-  border-radius: var(--radius-m);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 0.7rem 1rem;
-}
-
-.vzd-mm-root > .vzd-mm-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.15);
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
-/* Shared level indentation with L-shaped branch lines */
-.vzd-mm-level {
-  margin-top: 0.35rem;
-  margin-left: 1.25rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--background-modifier-border);
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  position: relative;
-}
-
-.vzd-mm-level > * {
-  position: relative;
-}
-
-.vzd-mm-level > *::before {
-  content: "";
-  position: absolute;
-  left: -1rem;
-  top: 0.9rem;
-  width: 0.75rem;
-  height: 2px;
-  background: var(--text-faint);
-}
-
-/* Depth 1 — section weight */
-.vzd-mm-node.vzd-mm-depth-1 {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid var(--interactive-accent);
-  border-radius: var(--radius-m);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
-  padding: 0.5rem 0.75rem;
-}
-
-.vzd-mm-node.vzd-mm-depth-1 > .vzd-mm-node-text {
-  font-size: var(--vzd-base, var(--font-ui-small));
-  font-weight: 600;
-}
-
-/* Depth 2 — item weight */
-.vzd-mm-node.vzd-mm-depth-2 {
-  background: var(--background-primary-alt);
-  border: 1px solid var(--background-modifier-border);
-  border-left: 2px solid var(--text-faint);
-  border-radius: var(--radius-m);
-  padding: 0.4rem 0.75rem;
-}
-
-.vzd-mm-node.vzd-mm-depth-2 > .vzd-mm-node-text {
+/* Main node label — inherits --vzd-base so A+/A− applies */
+.vzd-tree-text-main {
+  font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
 }
 
-/* Depth 3 — sub-item weight */
-.vzd-mm-node.vzd-mm-depth-3 {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  padding: 0.3rem 0.6rem;
-}
-
-.vzd-mm-node.vzd-mm-depth-3 > .vzd-mm-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-}
-
-/* Depth 4+ — leaf weight */
-.vzd-mm-node.vzd-mm-depth-deep {
-  background: transparent;
-  border: 1px dashed var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  padding: 0.25rem 0.5rem;
-}
-
-.vzd-mm-node.vzd-mm-depth-deep > .vzd-mm-node-text {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  color: var(--text-muted);
-}
-
-/* Shared text style */
-.vzd-mm-node-text {
-  color: var(--text-normal);
-  line-height: 1.45;
+/* Sub-label (e.g. "Goal", "Actor", "Impact") — smaller than main */
+.vzd-tree-text-sub {
+  font-family: var(--font-interface);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.82);
 }
 
 /* ══ Venn Diagram ════════════════════════════════════════════════════
@@ -1165,10 +771,3 @@
   width: 100%;
 }
 
-/* Mobile: tighten indentation */
-@media (max-width: 600px) {
-  .vzd-mm-level {
-    margin-left: 0.75rem;
-    padding-left: 0.75rem;
-  }
-}

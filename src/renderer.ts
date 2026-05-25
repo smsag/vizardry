@@ -84,50 +84,46 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
 
   if (isEditView) {
     // ── Edit / live-preview view ──────────────────────────────────
-    // cm-scroller is the visible viewport. cm-content (the containing
-    // block for position:relative children) is wider when readable line
-    // width is active. We must NOT use left:50%/transform here because
-    // left:50% resolves against cm-content, not cm-scroller.
-    // Instead: set an explicit pixel width and pull the element left by
-    // exactly the distance between its natural left edge and the
-    // scroller's left edge.
-    const cmScroller = container?.querySelector<HTMLElement>(".cm-scroller");
+    // cm-content has overflow:hidden, so any canvas wider than cm-content
+    // gets clipped on the right. Simply fill the available content column;
+    // full-width breakout is only applied in read view where the scroll
+    // container does not clip.
+    canvasEl.style.position = "";
+    canvasEl.style.left = "";
+    canvasEl.style.transform = "";
+    canvasEl.style.width = "100%";
+    canvasEl.style.maxWidth = "100%";
+    canvasEl.style.marginLeft = "";
+    canvasEl.style.marginRight = "";
+  } else {
+    // ── Read view ─────────────────────────────────────────────────
+    const readableLineWidth = document.body.classList.contains("is-readable-line-width");
 
-    if (cmScroller) {
-      // Reset margin before measuring so getBoundingClientRect reflects
-      // the element's natural position, not a previously corrected one.
+    if (!readableLineWidth) {
+      // Readable line length is OFF — the markdown content already fills the
+      // pane, so just fill the parent naturally without positioning tricks.
+      canvasEl.style.position = "";
+      canvasEl.style.left = "";
+      canvasEl.style.transform = "";
+      canvasEl.style.width = "100%";
+      canvasEl.style.maxWidth = "100%";
       canvasEl.style.marginLeft = "";
-      const cmContent = container?.querySelector<HTMLElement>(".cm-content");
-      const scrollerRect = cmScroller.getBoundingClientRect();
-      const computed = getComputedStyle(cmScroller);
+      canvasEl.style.marginRight = "";
+    } else {
+      // Readable line length is ON — break out to the full pane width by
+      // measuring from .view-content so the canvas ignores the line-width
+      // constraint.
+      const viewContent = canvasEl.closest<HTMLElement>(".view-content");
+      const measureEl = viewContent ?? container ?? document.documentElement;
+      const computed = getComputedStyle(measureEl);
       const paddingLeft = parseFloat(computed.paddingLeft) || 0;
       const paddingRight = parseFloat(computed.paddingRight) || 0;
-      const scrollerContentWidth = cmScroller.clientWidth - paddingLeft - paddingRight;
+      const availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;
 
       const HORIZONTAL_MARGIN = 32;
-      const finalWidth = Math.max(0, scrollerContentWidth - HORIZONTAL_MARGIN);
-
-      // Measure how far cm-content's left edge is from cm-scroller's
-      // content left edge — this is the readable-line-width indent offset.
-      // The canvas must be pulled left by this amount to align with the
-      // scroller's visible left edge.
-      const contentRect = cmContent
-        ? cmContent.getBoundingClientRect()
-        : scrollerRect;
-      const offsetLeft = contentRect.left - scrollerRect.left - paddingLeft;
-
-      canvasEl.style.position = "relative";
-      canvasEl.style.left = "0";
-      canvasEl.style.transform = "none";
-      canvasEl.style.width = `${finalWidth}px`;
-      canvasEl.style.maxWidth = `${finalWidth}px`;
-      canvasEl.style.marginLeft = `${-offsetLeft + HORIZONTAL_MARGIN / 2}px`;
-      canvasEl.style.marginRight = "0";
-    } else {
-      // cm-scroller not found — fall back to window width
-      const HORIZONTAL_MARGIN = 32;
-      const finalWidth = Math.max(0, window.innerWidth - HORIZONTAL_MARGIN);
+      const finalWidth = Math.max(0, availableWidth - HORIZONTAL_MARGIN);
       const px = `${finalWidth}px`;
+
       canvasEl.style.position = "relative";
       canvasEl.style.left = "50%";
       canvasEl.style.transform = "translateX(-50%)";
@@ -136,30 +132,6 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       canvasEl.style.marginLeft = "auto";
       canvasEl.style.marginRight = "auto";
     }
-  } else {
-    // ── Read view ─────────────────────────────────────────────────
-    // The containing block is .markdown-preview-sizer. The scroll
-    // container does not clip, so left:50% + translateX(-50%) works
-    // reliably. Measure against the sizer's parent to get the true
-    // available width.
-    const sizer = canvasEl.closest<HTMLElement>(".markdown-preview-sizer");
-    const measureEl = sizer?.parentElement ?? container ?? document.documentElement;
-    const computed = getComputedStyle(measureEl);
-    const paddingLeft = parseFloat(computed.paddingLeft) || 0;
-    const paddingRight = parseFloat(computed.paddingRight) || 0;
-    const availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;
-
-    const HORIZONTAL_MARGIN = 32;
-    const finalWidth = Math.max(0, availableWidth - HORIZONTAL_MARGIN);
-    const px = `${finalWidth}px`;
-
-    canvasEl.style.position = "relative";
-    canvasEl.style.left = "50%";
-    canvasEl.style.transform = "translateX(-50%)";
-    canvasEl.style.width = px;
-    canvasEl.style.maxWidth = px;
-    canvasEl.style.marginLeft = "auto";
-    canvasEl.style.marginRight = "auto";
   }
 
   ensureFullWidthWatchers(fullWidthEl, container);
@@ -201,7 +173,7 @@ export function renderCanvas(
 
     const heading = links[labelKey];
     if (heading) {
-      const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn" });
+      const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
       setIcon(linkBtn, "link");
       linkBtn.setAttribute("aria-label", `Jump to: ${heading}`);
       linkBtn.dataset.heading = heading;
@@ -402,9 +374,13 @@ function setupStoryCarousel(
   const mq = window.matchMedia("(max-width: 600px)");
 
   const nav = container.createEl("div", { cls: "vzd-story-nav" });
-  const prevBtn = nav.createEl("button", { cls: "vzd-story-nav-btn", text: "‹" }) as HTMLButtonElement;
+  const prevBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
+  setIcon(prevBtn, "chevron-left");
+  prevBtn.setAttribute("aria-label", "Previous step");
   const label = nav.createEl("span", { cls: "vzd-story-nav-label" });
-  const nextBtn = nav.createEl("button", { cls: "vzd-story-nav-btn", text: "›" }) as HTMLButtonElement;
+  const nextBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
+  setIcon(nextBtn, "chevron-right");
+  nextBtn.setAttribute("aria-label", "Next step");
 
   function applyMobile(col: number): void {
     grid.style.gridTemplateColumns = "1fr";
@@ -489,15 +465,15 @@ function addHeaderControls(header: HTMLElement, container: HTMLElement, title: s
   let step = 0;
 
   const decreaseBtn = actions.createEl("button", {
-    cls: "vizardry-font-btn",
-    text: "A\u2212",
+    cls: "vizardry-font-btn vzd-btn",
   }) as HTMLButtonElement;
+  setIcon(decreaseBtn, "minus");
   decreaseBtn.setAttribute("aria-label", "Decrease font size");
 
   const increaseBtn = actions.createEl("button", {
-    cls: "vizardry-font-btn",
-    text: "A+",
+    cls: "vizardry-font-btn vzd-btn",
   }) as HTMLButtonElement;
+  setIcon(increaseBtn, "plus");
   increaseBtn.setAttribute("aria-label", "Increase font size");
 
   const applyStep = (): void => {
@@ -525,7 +501,7 @@ function addHeaderControls(header: HTMLElement, container: HTMLElement, title: s
   applyStep(); // set initial disabled state
 
   // ── Present button ─────────────────────────────────────────────
-  const btn = actions.createEl("button", { cls: "vizardry-present-btn" });
+  const btn = actions.createEl("button", { cls: "vizardry-present-btn vzd-btn" });
   setIcon(btn, "expand");
   btn.setAttribute("aria-label", "Present fullscreen");
   btn.addEventListener("click", (e) => {
@@ -540,10 +516,10 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
   pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
   const btnGroup = pHeader.createEl("div", { cls: "vzd-presentation-btn-group" });
-  const reloadBtn = btnGroup.createEl("button", { cls: "vzd-presentation-reload" });
+  const reloadBtn = btnGroup.createEl("button", { cls: "vzd-presentation-reload vzd-btn" });
   setIcon(reloadBtn, "refresh-cw");
   reloadBtn.setAttribute("aria-label", "Reload canvas");
-  const closeBtn = btnGroup.createEl("button", { cls: "vzd-presentation-close" });
+  const closeBtn = btnGroup.createEl("button", { cls: "vzd-presentation-close vzd-btn" });
   setIcon(closeBtn, "x");
   closeBtn.setAttribute("aria-label", "Exit presentation");
 
@@ -650,14 +626,18 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   let current = 0;
 
   const nav = container.createEl("div", { cls: "vizardry-nav" });
-  const prev = nav.createEl("button", { cls: "vizardry-nav-btn", text: "‹" });
+  const prev = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
+  setIcon(prev, "chevron-left");
+  prev.setAttribute("aria-label", "Previous block");
 
   const dotsWrap = nav.createEl("div", { cls: "vizardry-nav-dots" });
   const dots = Array.from({ length: blockCount }, () =>
     dotsWrap.createEl("span", { cls: "vizardry-nav-dot" })
   );
 
-  const next = nav.createEl("button", { cls: "vizardry-nav-btn", text: "›" });
+  const next = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
+  setIcon(next, "chevron-right");
+  next.setAttribute("aria-label", "Next block");
 
   function update(): void {
     const blocks = container.querySelectorAll<HTMLElement>(".vizardry-block");
@@ -832,7 +812,7 @@ function createSvgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record
 }
 
 const OST_LEVEL_STYLES: TreeNodeStyle[] = [
-  { fillVar: "var(--color-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+  { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
   { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 8, dashed: false },
   { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
   { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 22, dashed: false },
@@ -863,7 +843,7 @@ const MINDMAP_OPTS: TreeRenderOptions = {
   canvasClass: "vizardry-mindmap",
   wrapperClass: "vizardry-mindmap-wrapper",
   levelStyles: [
-    { fillVar: "var(--color-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
     { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 5, dashed: false },
   ],
@@ -880,7 +860,7 @@ const IMPACT_MAP_OPTS: TreeRenderOptions = {
   canvasClass: "vizardry-impact",
   wrapperClass: "vizardry-impact-wrapper",
   levelStyles: [
-    { fillVar: "var(--color-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
     { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 5, dashed: false },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
@@ -982,7 +962,7 @@ function renderTreeNodeRect(
       y: "0",
       width: "3",
       height: String(opts.nodeH),
-      fill: "var(--color-accent)",
+      fill: "var(--interactive-accent)",
       rx: String(Math.min(3, style.borderRadius)),
     }));
   }
@@ -1062,13 +1042,14 @@ export function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRe
   renderTreeNodeRect(group, node, opts);
 
   const label = node.text.length > opts.maxLabelChars ? `${node.text.slice(0, opts.maxLabelChars - 1)}…` : node.text;
+  const hasSublabel = !!node.sublabel;
   const textEl = createSvgEl("text", {
     x: String(opts.nodeW / 2),
-    y: String(opts.nodeH / 2),
+    y: String(hasSublabel ? opts.nodeH / 2 - 7 : opts.nodeH / 2),
     "dominant-baseline": "middle",
     "text-anchor": "middle",
-    "font-size": "12",
     fill: style.textVar,
+    class: "vzd-tree-text-main",
   });
   textEl.textContent = label;
   group.appendChild(textEl);
@@ -1076,11 +1057,11 @@ export function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRe
   if (node.sublabel) {
     const sublabelEl = createSvgEl("text", {
       x: String(opts.nodeW / 2),
-      y: String(opts.nodeH / 2 + 13),
+      y: String(opts.nodeH / 2 + 7),
       "dominant-baseline": "middle",
       "text-anchor": "middle",
-      "font-size": "10",
       fill: "var(--text-muted)",
+      class: "vzd-tree-text-sub",
     });
     sublabelEl.textContent = node.sublabel;
     group.appendChild(sublabelEl);
@@ -1109,9 +1090,6 @@ export function renderTree(
   const svgHeight = bounds.maxY + opts.vPadding;
 
   const wrapper = el.createEl("div", { cls: opts.wrapperClass });
-  wrapper.style.overflowX = "auto";
-  wrapper.style.overflowY = "auto";
-  wrapper.style.maxHeight = "600px";
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
   svg.setAttribute("width", String(svgWidth));
