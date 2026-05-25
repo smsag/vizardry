@@ -134,3 +134,54 @@ export interface VennDiagram {
 export type VennResult =
   | { ok: true; data: VennDiagram }
   | { ok: false; error: string };
+
+// ── Shared Tree Node (used by OST, Mind Map, Impact Map renderers) ──────────
+
+export interface TreeNode {
+  text: string;
+  level: number;
+  sublabel?: string;
+  children: TreeNode[];
+
+  // Set by layout engine — do not populate outside renderer
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface TreeNodeStyle {
+  fillVar: string;
+  textVar: string;
+  borderRadius: number;
+  dashed: boolean;
+  accentBar?: boolean;
+}
+
+export interface TreeRenderOptions {
+  nodeW: number;
+  nodeH: number;
+  levelGap: number;
+  siblingGap: number;
+  hPadding: number;
+  vPadding: number;
+  maxLabelChars: number;
+  levelStyles: TreeNodeStyle[];
+  canvasClass: string;
+  wrapperClass: string;
+}
+
+// ── Carousel ─────────────────────────────────────────────────────────────────
+
+export interface CarouselImage {
+  src: string;
+  alt: string;
+}
+
+export interface CarouselBlock {
+  images: CarouselImage[];
+}
+
+export type CarouselResult =
+  | { ok: true; data: CarouselBlock }
+  | { ok: false; error: string };
