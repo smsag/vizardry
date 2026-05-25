@@ -132,3 +132,34 @@ export const CAROUSEL_TEMPLATE = `\`\`\`carousel
 ![](image-three.png)
 \`\`\`
 `;
+
+export const SIPOC_TEMPLATE = `\`\`\`sipoc
+suppliers:
+  Dev team
+  CI/CD pipeline
+  Cloud provider
+
+inputs:
+  Feature branch
+  Test suite
+  Docker image
+
+process:
+  Build artefact
+  Run test suite
+  Deploy to staging
+  Approval gate
+  Deploy to production
+  Monitor & alert
+
+outputs:
+  Running service
+  Deployment report
+  Alert rules
+
+customers:
+  End users
+  On-call team
+  Product owner
+\`\`\`
+`;

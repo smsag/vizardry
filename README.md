@@ -36,6 +36,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
 | ` ```venn ` | Venn Diagram | 2- or 3-circle overlap diagram |
+| ` ```sipoc ` | SIPOC Diagram | Five-column process table |
 | ` ```carousel ` | Image Carousel | Navigable image gallery |
 
 ---
@@ -548,6 +549,65 @@ center:
 
 ---
 
+### SIPOC Diagram
+
+A SIPOC maps the full scope of a process — who provides inputs, what the steps are, what comes out, and who receives the results — before diving into detailed process design. The **Process** column is the anchor: start there and work outward.
+
+~~~
+```sipoc
+suppliers:
+  Product team
+  Engineering team
+  Design team
+  Data & analytics
+  Legal & compliance
+  Customer success
+
+inputs:
+  Validated user research
+  Approved product spec
+  Completed designs & prototypes
+  Passing automated test suite
+  Legal sign-off
+  Feature flag configuration
+
+process:
+  Research & discovery
+  Problem scoping
+  Solution design
+  Build & test
+  Internal beta (dogfood)
+  Staged rollout (10 % → 50 % → 100 %)
+  Full release
+  Post-launch review
+
+outputs:
+  Shipped feature (behind feature flag)
+  Public release notes
+  In-app announcement
+  Help centre articles
+  Usage analytics dashboard
+  Retrospective report
+
+customers:
+  End users
+  Account admins
+  Customer success team
+  Sales (demo environments)
+  Marketing (communications)
+  Executive stakeholders
+```
+~~~
+
+**SIPOC syntax:**
+- `suppliers:`, `inputs:`, `process:`, `outputs:`, `customers:` — the five section headers, each at zero indent
+- Indented lines below each header are list items — no bullet characters needed
+- `process:` items are rendered as a **numbered list** to emphasise sequence; all other columns render as bullet lists
+- Sections can appear in any order and empty sections are allowed (rendered as `—`)
+- Blank lines and `# comment` lines are ignored
+
+---
+
 ## Image Carousel
 
 Use the `carousel` code block to render a navigable gallery of images inline in Read View.
@@ -691,6 +751,21 @@ Maximum depth is 5 levels (0–4). Any consistent indent unit works (2 spaces, 4
 | `intersection: A+B` | Items in the overlap of two named circles (order-insensitive) |
 | `intersection: A+B+C` | Items in the overlap of all three circles |
 | `center:` | 3-circle only — shorthand for the intersection of all three |
+
+### SIPOC Diagram (sipoc)
+
+| Syntax | Meaning |
+|---|---|
+| `suppliers:` | Section header — who provides the inputs |
+| `inputs:` | Section header — what enters the process |
+| `process:` | Section header — the ordered steps of the process; rendered as a numbered list |
+| `outputs:` | Section header — what the process produces |
+| `customers:` | Section header — who receives the outputs |
+| Indented lines | Items for the current section; no bullet characters needed |
+| Blank lines | Ignored |
+| `# comment` | Ignored |
+
+Section headers are case-insensitive and can appear in any order. Empty sections render a muted `—` placeholder.
 
 ---
 

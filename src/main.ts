@@ -5,8 +5,8 @@ import { parseStoryMap } from "./story";
 import { parseMindMap } from "./mindmap";
 import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE } from "./templates";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE } from "./templates";
 import { CanvasInsertModal, FrameworkOption } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
@@ -18,6 +18,7 @@ import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
 import { FrameworkDefinition } from "./types";
 import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
+import { parseSIPOC } from "./sipoc";
 
 const FRAMEWORKS: Record<string, FrameworkDefinition> = {
   bmc: BMC,
@@ -102,6 +103,17 @@ export default class VizardryPlugin extends Plugin {
       console.error('Vizardry: failed to register processor for "ost"', err);
     }
 
+    // ── SIPOC renderer ────────────────────────────────────────────────────
+    try {
+      this.registerMarkdownCodeBlockProcessor("sipoc", (source, el, _ctx) => {
+        const result = parseSIPOC(source);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderSIPOC(result.data, el);
+      });
+    } catch (err) {
+      console.error('Vizardry: failed to register processor for "sipoc"', err);
+    }
+
     // ── Carousel renderer ─────────────────────────────────────────────────
     try {
       this.registerMarkdownCodeBlockProcessor("carousel", (source, el, ctx) => {
@@ -164,6 +176,12 @@ export default class VizardryPlugin extends Plugin {
         label: "Image Carousel",
         template: CAROUSEL_TEMPLATE,
         description: "Multiple images as a navigable carousel.",
+      },
+      {
+        id: "sipoc",
+        label: "SIPOC Diagram",
+        template: SIPOC_TEMPLATE,
+        description: "Process scope: suppliers, inputs, steps, outputs, customers.",
       },
     ];
 
