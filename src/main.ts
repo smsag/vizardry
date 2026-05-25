@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
+import { App, Editor, MarkdownPostProcessorContext, MarkdownView, Notice, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
@@ -19,170 +19,158 @@ import { RAC } from "./frameworks/rac";
 import { FrameworkDefinition } from "./types";
 import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
 import { parseSIPOC } from "./sipoc";
+import { insertTemplateAtCursor } from "./shared/editor";
 
-const FRAMEWORKS: Record<string, FrameworkDefinition> = {
-  bmc: BMC,
-  lean: LEAN,
-  opportunity: OPPORTUNITY,
-  leanux: LEANUX,
-  vpc: VPC,
-  kata: KATA,
-  jobs: JOBS,
-  rac: RAC,
-};
+// ── Grid-canvas framework registry ────────────────────────────────────────────
+// The map is derived from the id field on each definition — no duplicate key.
+
+const ALL_FRAMEWORKS: FrameworkDefinition[] = [
+  BMC, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC,
+];
+
+const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
+
+// ── Custom (non-grid) renderer registry ───────────────────────────────────────
+// Adding a new renderer here automatically wires up both its processor and
+// its entry in the insert modal — no second edit needed elsewhere.
+
+type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
+
+interface CustomRenderer {
+  id: string;
+  label: string;
+  description: string;
+  template: string;
+  createProcessor: (app: App) => ProcessorFn;
+}
+
+const CUSTOM_RENDERERS: CustomRenderer[] = [
+  {
+    id: "impact",
+    label: "Impact Map",
+    description: "All features tied to goals.",
+    template: IMPACT_MAP_TEMPLATE,
+    createProcessor: () => (source, el) => {
+      const result = parseImpactMap(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderImpactMap(result.data, el);
+    },
+  },
+  {
+    id: "story",
+    label: "User Story Map",
+    description: "Release scope and priorities clear.",
+    template: STORY_MAP_TEMPLATE,
+    createProcessor: () => (source, el) => {
+      const result = parseStoryMap(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderStoryMap(result.data, el);
+    },
+  },
+  {
+    id: "mindmap",
+    label: "Mind Map",
+    description: "Complex ideas structured and prioritised.",
+    template: MIND_MAP_TEMPLATE,
+    createProcessor: () => (source, el) => {
+      const result = parseMindMap(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderMindMap(result.data, el);
+    },
+  },
+  {
+    id: "venn",
+    label: "Venn Diagram",
+    description: "Overlaps and gaps clearly identified.",
+    template: VENN_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const result = parseVennDiagram(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderVennDiagram(result.data, el, (target) => {
+        app.workspace.openLinkText(target, ctx.sourcePath, false);
+      });
+    },
+  },
+  {
+    id: "ost",
+    label: "Opportunity Solution Tree",
+    description: "Outcome drives opportunities, solutions, and experiments.",
+    template: OST_TEMPLATE,
+    createProcessor: () => (source, el) => {
+      const result = parseOST(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderOST(result.data, el);
+    },
+  },
+  {
+    id: "carousel",
+    label: "Image Carousel",
+    description: "Multiple images as a navigable carousel.",
+    template: CAROUSEL_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const result = parseCarouselBlock(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderCarouselBlock(result.data, el, (src) => {
+        const file = app.vault.getFileByPath(
+          ctx.sourcePath.replace(/[^/]+$/, "") + src
+        );
+        return file ? app.vault.getResourcePath(file) : src;
+      });
+    },
+  },
+  {
+    id: "sipoc",
+    label: "SIPOC Diagram",
+    description: "Process scope: suppliers, inputs, steps, outputs, customers.",
+    template: SIPOC_TEMPLATE,
+    createProcessor: () => (source, el) => {
+      const result = parseSIPOC(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderSIPOC(result.data, el);
+    },
+  },
+];
 
 export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {
-    // ── Register grid canvas renderers ─────────────────────────────
-    for (const [id, definition] of Object.entries(FRAMEWORKS)) {
+    const registerProcessor = (id: string, handler: ProcessorFn): void => {
       try {
-        this.registerMarkdownCodeBlockProcessor(id, (source, el, ctx) => {
-          const result = parseFrameworkSource(source);
-          if (!result.ok) { renderError(result.error, el); return; }
-          renderCanvas(definition, result.data, result.links, el, (heading) => {
-            this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
-          });
-        });
+        this.registerMarkdownCodeBlockProcessor(id, handler);
       } catch (err) {
         console.error(`Vizardry: failed to register processor for "${id}"`, err);
       }
-    }
+    };
 
-    // ── Impact Map renderer ────────────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("impact", (source, el, _ctx) => {
-        const result = parseImpactMap(source);
+    // ── Grid canvas renderers ──────────────────────────────────────────
+    for (const [id, definition] of Object.entries(FRAMEWORKS)) {
+      registerProcessor(id, (source, el, ctx) => {
+        const result = parseFrameworkSource(source);
         if (!result.ok) { renderError(result.error, el); return; }
-        renderImpactMap(result.data, el);
-      });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "impact"', err);
-    }
-
-    // ── Story Map renderer ─────────────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("story", (source, el, _ctx) => {
-        const result = parseStoryMap(source);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderStoryMap(result.data, el);
-      });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "story"', err);
-    }
-    // ── Mind Map renderer ─────────────────────────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("mindmap", (source, el, _ctx) => {
-        const result = parseMindMap(source);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderMindMap(result.data, el);
-      });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "mindmap"', err);
-    }
-    // ── Venn Diagram renderer ─────────────────────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("venn", (source, el, ctx) => {
-        const result = parseVennDiagram(source);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderVennDiagram(result.data, el, (target) => {
-          this.app.workspace.openLinkText(target, ctx.sourcePath, false);
+        renderCanvas(definition, result.data, result.links, el, (heading) => {
+          this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
         });
       });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "venn"', err);
     }
 
-    // ── Opportunity Solution Tree renderer ─────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("ost", (source, el, _ctx) => {
-        const result = parseOST(source);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderOST(result.data, el);
-      });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "ost"', err);
+    // ── Custom renderers ───────────────────────────────────────────────
+    for (const renderer of CUSTOM_RENDERERS) {
+      registerProcessor(renderer.id, renderer.createProcessor(this.app));
     }
 
-    // ── SIPOC renderer ────────────────────────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("sipoc", (source, el, _ctx) => {
-        const result = parseSIPOC(source);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderSIPOC(result.data, el);
-      });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "sipoc"', err);
-    }
-
-    // ── Carousel renderer ─────────────────────────────────────────────────
-    try {
-      this.registerMarkdownCodeBlockProcessor("carousel", (source, el, ctx) => {
-        const result = parseCarouselBlock(source);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderCarouselBlock(result.data, el, (src) => {
-          // Resolve vault-relative paths to resource URLs
-          const file = this.app.vault.getFileByPath(
-            ctx.sourcePath.replace(/[^/]+$/, "") + src
-          );
-          return file
-            ? this.app.vault.getResourcePath(file)
-            : src;
-        });
-      });
-    } catch (err) {
-      console.error('Vizardry: failed to register processor for "carousel"', err);
-    }
-
-    // ── Build framework options list (used by modal + commands) ────
+    // ── Framework options (modal + commands) ───────────────────────────
     const frameworkOptions: FrameworkOption[] = [
-      ...Object.entries(FRAMEWORKS).map(([id, def]) => ({
-        id,
+      ...ALL_FRAMEWORKS.map(def => ({
+        id: def.id,
         label: def.label,
         template: generateCanvasTemplate(def),
         description: def.description,
       })),
-      {
-        id: "impact",
-        label: "Impact Map",
-        template: IMPACT_MAP_TEMPLATE,
-        description: "All features tied to goals.",
-      },
-      {
-        id: "story",
-        label: "User Story Map",
-        template: STORY_MAP_TEMPLATE,
-        description: "Release scope and priorities clear.",
-      },
-      {
-        id: "mindmap",
-        label: "Mind Map",
-        template: MIND_MAP_TEMPLATE,
-        description: "Complex ideas structured and prioritised.",
-      },
-      {
-        id: "venn",
-        label: "Venn Diagram",
-        template: VENN_TEMPLATE,
-        description: "Overlaps and gaps clearly identified.",
-      },
-      {
-        id: "ost",
-        label: "Opportunity Solution Tree",
-        template: OST_TEMPLATE,
-        description: "Outcome drives opportunities, solutions, and experiments.",
-      },
-      {
-        id: "carousel",
-        label: "Image Carousel",
-        template: CAROUSEL_TEMPLATE,
-        description: "Multiple images as a navigable carousel.",
-      },
-      {
-        id: "sipoc",
-        label: "SIPOC Diagram",
-        template: SIPOC_TEMPLATE,
-        description: "Process scope: suppliers, inputs, steps, outputs, customers.",
-      },
+      ...CUSTOM_RENDERERS.map(r => ({
+        id: r.id,
+        label: r.label,
+        template: r.template,
+        description: r.description,
+      })),
     ];
 
     const withActiveMarkdownEditor = (run: (editor: Editor) => void): void => {
@@ -195,27 +183,14 @@ export default class VizardryPlugin extends Plugin {
       run(editor);
     };
 
-    const insertTemplateAtCursor = (editor: Editor, template: string): void => {
-      const cursor = editor.getCursor();
-      const lineText = editor.getLine(cursor.line);
-      const onBlankLine = lineText.trim() === "";
-      const from = onBlankLine
-        ? { line: cursor.line, ch: 0 }
-        : { line: cursor.line, ch: lineText.length };
-      editor.replaceRange(onBlankLine ? template : "\n" + template, from);
-      const firstKeyLine = cursor.line + (onBlankLine ? 1 : 2);
-      const firstKeyText = editor.getLine(firstKeyLine);
-      editor.setCursor({ line: firstKeyLine, ch: firstKeyText.length });
-    };
-
-    // ── Ribbon icon → opens insert modal ──────────────────────────
+    // ── Ribbon icon → opens insert modal ──────────────────────────────
     this.addRibbonIcon("layout-template", "Insert Vizardry canvas…", () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
       if (!view) return;
       new CanvasInsertModal(this.app, view.editor, frameworkOptions).open();
     });
 
-    // ── Command: fuzzy modal ───────────────────────────────────────
+    // ── Command: fuzzy modal ───────────────────────────────────────────
     this.addCommand({
       id: "insert-canvas",
       name: "Insert canvas…",
@@ -224,7 +199,7 @@ export default class VizardryPlugin extends Plugin {
       }),
     });
 
-    // ── Commands: one per framework ───────────────────────────────
+    // ── Commands: one per framework ────────────────────────────────────
     for (const option of frameworkOptions) {
       this.addCommand({
         id: `insert-${option.id}`,
@@ -234,12 +209,7 @@ export default class VizardryPlugin extends Plugin {
         }),
       });
     }
-
   }
 
-  onunload(): void {
-    // Processor registrations are cleaned up automatically by Obsidian.
-    // DOM event listeners are attached to code block containers which
-    // Obsidian destroys with the view — no manual teardown needed.
-  }
+  onunload(): void {}
 }

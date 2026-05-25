@@ -1,5 +1,6 @@
 import { VennDiagram, VennItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
+import { createSvgEl } from "../shared/svg";
 
 // ── Color utilities ────────────────────────────────────────────────────────
 
@@ -107,13 +108,7 @@ export function renderVennDiagram(
   // ── SVG construction ──────────────────────────────────────────────────
   const wrap = container.createEl("div", { cls: "vzd-venn-wrap" });
 
-  function makeSvg(tag: string, attrs: Record<string, string>): SVGElement {
-    const el = document.createElementNS("http://www.w3.org/2000/svg", tag) as SVGElement;
-    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-    return el;
-  }
-
-  const svg = makeSvg("svg", {
+  const svg = createSvgEl("svg", {
     viewBox: is3 ? "0 0 500 460" : "0 0 500 300",
     class: "vzd-venn-svg",
   });
@@ -132,7 +127,7 @@ export function renderVennDiagram(
 
   geos.forEach((g, i) => {
     const { fill, stroke } = circleStyle(hues[i], accentS, accentL);
-    const circle = makeSvg("circle", {
+    const circle = createSvgEl("circle", {
       cx: String(g.cx), cy: String(g.cy), r: String(g.r),
       class: "vzd-venn-circle", "data-ci": String(i),
     });
@@ -141,7 +136,7 @@ export function renderVennDiagram(
     circle.style.strokeWidth = "1.5";
     svg.appendChild(circle);
 
-    const t = makeSvg("text", {
+    const t = createSvgEl("text", {
       x: String(g.lx), y: String(g.ly),
       class: "vzd-venn-circle-label", "text-anchor": "middle",
     });
@@ -189,7 +184,7 @@ export function renderVennDiagram(
         link.dataset.linkTarget = item.linkTarget;
         markInteractive(link);
         link.addEventListener("click", () =>
-          openLink((item as VennItem).linkTarget!)
+          openLink(item.linkTarget!)
         );
       } else {
         itemEl.setText(item.text);

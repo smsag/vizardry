@@ -49,9 +49,7 @@ export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
 
     const items = data[col.key];
     if (items.length === 0) {
-      const empty = list.createEl("li", { cls: "vzd-sipoc-item vzd-sipoc-item--empty", text: "—" });
-      empty.style.listStyle = "none";
-      empty.style.marginLeft = "-1.25rem";
+      list.createEl("li", { cls: "vzd-sipoc-item vzd-sipoc-item--empty", text: "—" });
     } else {
       items.forEach(item => list.createEl("li", { cls: "vzd-sipoc-item", text: item }));
     }

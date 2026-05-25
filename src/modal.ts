@@ -1,4 +1,5 @@
 import { App, Editor, SuggestModal } from "obsidian";
+import { insertTemplateAtCursor } from "./shared/editor";
 
 export interface FrameworkOption {
   id: string;
@@ -31,20 +32,6 @@ export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
   }
 
   onChooseSuggestion(option: FrameworkOption): void {
-    const cursor = this.editor.getCursor();
-    const lineText = this.editor.getLine(cursor.line);
-    const onBlankLine = lineText.trim() === "";
-
-    const from = onBlankLine
-      ? { line: cursor.line, ch: 0 }
-      : { line: cursor.line, ch: lineText.length };
-
-    const insertion = onBlankLine ? option.template : "\n" + option.template;
-    this.editor.replaceRange(insertion, from);
-
-    // Place cursor on the first value field
-    const firstKeyLine = cursor.line + (onBlankLine ? 1 : 2);
-    const firstKeyText = this.editor.getLine(firstKeyLine);
-    this.editor.setCursor({ line: firstKeyLine, ch: firstKeyText.length });
+    insertTemplateAtCursor(this.editor, option.template);
   }
 }

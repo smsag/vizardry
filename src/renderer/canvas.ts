@@ -1,6 +1,7 @@
 import { setIcon } from "obsidian";
 import { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
+import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 
 export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");
@@ -80,8 +81,8 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
       b.classList.toggle("vizardry-block-active", i === current)
     );
     dots.forEach((d, i) => d.classList.toggle("is-active", i === current));
-    (prev as HTMLButtonElement).disabled = current === 0;
-    (next as HTMLButtonElement).disabled = current === blockCount - 1;
+    prev.disabled = current === 0;
+    next.disabled = current === blockCount - 1;
   }
 
   prev.addEventListener("click", () => { if (current > 0) { current--; update(); } });
@@ -91,7 +92,7 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   container.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
   container.addEventListener("touchend", (e) => {
     const delta = touchStartX - e.changedTouches[0].clientX;
-    if (Math.abs(delta) > 40) {
+    if (Math.abs(delta) > SWIPE_THRESHOLD_PX) {
       if (delta > 0 && current < blockCount - 1) { current++; update(); }
       else if (delta < 0 && current > 0) { current--; update(); }
     }
