@@ -1,0 +1,217 @@
+import { setIcon } from "obsidian";
+import { StoryMap, StoryTask } from "../types";
+import { initCanvas } from "./controls";
+
+export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
+  initCanvas(container, "story", "User Story Map", map.user || map.goal ? header => {
+    const meta = header.createEl("div", { cls: "vzd-story-meta" });
+    if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `User: ${map.user}` });
+    if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `Goal: ${map.goal}` });
+  } : undefined);
+
+  const allSteps = map.activities.flatMap(a => a.steps);
+  const totalCols = allSteps.length;
+  if (totalCols === 0) return;
+
+  const grid = container.createEl("div", { cls: "vzd-story-grid" });
+  grid.style.setProperty("--vzd-story-cols", String(totalCols));
+
+  type ActivityHeaderRef = { el: HTMLElement; start: number; end: number; origGridCol: string };
+  const activityHeaderRefs: ActivityHeaderRef[] = [];
+  let colOffset = 1;
+  let stepOffset = 0;
+  for (const activity of map.activities) {
+    const origGridCol = `${colOffset} / span ${activity.steps.length}`;
+    const el = grid.createEl("div", { cls: "vzd-story-activity-header", text: activity.name });
+    el.style.gridColumn = origGridCol;
+    el.dataset.origGridCol = origGridCol;
+    activityHeaderRefs.push({ el, start: stepOffset, end: stepOffset + activity.steps.length - 1, origGridCol });
+    colOffset += activity.steps.length;
+    stepOffset += activity.steps.length;
+  }
+
+  const stepHeaderEls: HTMLElement[] = [];
+  for (let i = 0; i < allSteps.length; i++) {
+    const el = grid.createEl("div", { cls: "vzd-story-step-header", text: allSteps[i].name });
+    el.dataset.stepCol = String(i);
+    stepHeaderEls.push(el);
+  }
+
+  const assignedKeys = new Set<string>();
+  for (const slice of map.slices) {
+    for (const [stepKey, taskKeys] of Object.entries(slice.cells)) {
+      for (const taskKey of taskKeys) {
+        assignedKeys.add(`${stepKey}\0${taskKey}`);
+      }
+    }
+  }
+
+  function appendCards(cell: HTMLElement, step: typeof allSteps[number], taskKeys: string[]): void {
+    for (const taskKey of taskKeys) {
+      const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKey);
+      if (!task) continue;
+      const card = cell.createEl("div", { cls: "vzd-story-task-card" });
+      card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+      if (task.subtitle) {
+        card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+      }
+    }
+  }
+
+  const cellsByStep: HTMLElement[][] = Array.from({ length: totalCols }, () => []);
+
+  for (const slice of map.slices) {
+    grid.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
+
+    for (let i = 0; i < allSteps.length; i++) {
+      const step = allSteps[i];
+      const stepKey = step.name.toLowerCase().trim();
+      const taskKeys = slice.cells[stepKey] ?? [];
+      const cell = grid.createEl("div", { cls: "vzd-story-cell" });
+      cell.dataset.stepCol = String(i);
+      if (taskKeys.length === 0) {
+        cell.addClass("vzd-story-cell-empty");
+      } else {
+        appendCards(cell, step, taskKeys);
+      }
+      cellsByStep[i].push(cell);
+    }
+  }
+
+  const backlogByStep = new Map<string, typeof allSteps[number]["tasks"]>();
+  for (const step of allSteps) {
+    const stepKey = step.name.toLowerCase().trim();
+    const unassigned = step.tasks.filter(
+      (t: StoryTask) => !assignedKeys.has(`${stepKey}\0${t.name.toLowerCase().trim()}`)
+    );
+    if (unassigned.length > 0) backlogByStep.set(stepKey, unassigned);
+  }
+
+  if (backlogByStep.size > 0) {
+    const backlogLabel = grid.createEl("div", { cls: "vzd-story-slice-label", text: "Backlog" });
+    backlogLabel.addClass("vzd-story-backlog-label");
+
+    for (let i = 0; i < allSteps.length; i++) {
+      const step = allSteps[i];
+      const stepKey = step.name.toLowerCase().trim();
+      const tasks = backlogByStep.get(stepKey) ?? [];
+      const cell = grid.createEl("div", { cls: "vzd-story-cell" });
+      cell.dataset.stepCol = String(i);
+      if (tasks.length === 0) {
+        cell.addClass("vzd-story-cell-empty");
+      } else {
+        for (const task of tasks) {
+          const card = cell.createEl("div", { cls: "vzd-story-task-card" });
+          card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+          if (task.subtitle) {
+            card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+          }
+        }
+      }
+      cellsByStep[i].push(cell);
+    }
+  }
+
+  const stepMeta = allSteps.map((step, i) => {
+    const activity = map.activities.find(a => a.steps.some(s => s === step))!;
+    return { activityName: activity.name, stepName: step.name, index: i };
+  });
+
+  setupStoryCarousel(container, grid, stepMeta, activityHeaderRefs, stepHeaderEls, cellsByStep);
+}
+
+function setupStoryCarousel(
+  container: HTMLElement,
+  grid: HTMLElement,
+  stepMeta: Array<{ activityName: string; stepName: string; index: number }>,
+  activityHeaderRefs: Array<{ el: HTMLElement; start: number; end: number; origGridCol: string }>,
+  stepHeaderEls: HTMLElement[],
+  cellsByStep: HTMLElement[][]
+): void {
+  const total = stepMeta.length;
+  if (total <= 1) return;
+
+  let current = 0;
+  const mq = window.matchMedia("(max-width: 600px)");
+
+  const nav = container.createEl("div", { cls: "vzd-story-nav" });
+  const prevBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
+  setIcon(prevBtn, "chevron-left");
+  prevBtn.setAttribute("aria-label", "Previous step");
+  const label = nav.createEl("span", { cls: "vzd-story-nav-label" });
+  const nextBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
+  setIcon(nextBtn, "chevron-right");
+  nextBtn.setAttribute("aria-label", "Next step");
+
+  function applyMobile(col: number): void {
+    grid.style.gridTemplateColumns = "1fr";
+
+    activityHeaderRefs.forEach(({ el, start, end }) => {
+      const active = col >= start && col <= end;
+      el.style.display = active ? "" : "none";
+      el.style.gridColumn = "1";
+    });
+
+    stepHeaderEls.forEach((el, i) => {
+      el.style.display = i === col ? "" : "none";
+      el.style.gridColumn = "1";
+    });
+
+    cellsByStep.forEach((cells, i) => {
+      cells.forEach(cell => {
+        cell.style.display = i === col ? "" : "none";
+        cell.style.gridColumn = "1";
+      });
+    });
+
+    const { activityName, stepName } = stepMeta[col];
+    label.textContent = `${activityName} › ${stepName}`;
+    prevBtn.disabled = col === 0;
+    nextBtn.disabled = col === total - 1;
+  }
+
+  function resetLayout(): void {
+    grid.style.gridTemplateColumns = "";
+    activityHeaderRefs.forEach(({ el, origGridCol }) => {
+      el.style.display = "";
+      el.style.gridColumn = origGridCol;
+    });
+    stepHeaderEls.forEach(el => {
+      el.style.display = "";
+      el.style.gridColumn = "";
+    });
+    cellsByStep.forEach(cells => cells.forEach(cell => {
+      cell.style.display = "";
+      cell.style.gridColumn = "";
+    }));
+  }
+
+  function goTo(n: number): void {
+    current = Math.max(0, Math.min(n, total - 1));
+    if (mq.matches) applyMobile(current);
+  }
+
+  const onMediaChange = (e: MediaQueryList | MediaQueryListEvent): void => {
+    if (e.matches) {
+      nav.style.display = "flex";
+      applyMobile(current);
+    } else {
+      nav.style.display = "none";
+      resetLayout();
+    }
+  };
+
+  nav.style.display = "none";
+  mq.addEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
+  onMediaChange(mq);
+
+  prevBtn.addEventListener("click", () => goTo(current - 1));
+  nextBtn.addEventListener("click", () => goTo(current + 1));
+
+  let touchStartX = 0;
+  grid.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  grid.addEventListener("touchend", (e) => {
+    const delta = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(delta) > 40) goTo(delta > 0 ? current + 1 : current - 1);
+  }, { passive: true });
+}

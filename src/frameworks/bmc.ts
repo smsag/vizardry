@@ -3,6 +3,7 @@ import { FrameworkDefinition } from "../types";
 export const BMC: FrameworkDefinition = {
   id: "bmc",
   label: "Business Model Canvas",
+  description: "Whole business model made visible.",
   gridTemplate: `
     "kp ka vp cr cs"
     "kp kr vp ch cs"

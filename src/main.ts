@@ -30,21 +30,6 @@ const FRAMEWORKS: Record<string, FrameworkDefinition> = {
   rac: RAC,
 };
 
-const DESCRIPTIONS: Record<string, string> = {
-  bmc:         "Whole business model made visible.",
-  lean:        "Riskiest assumptions exposed and ranked.",
-  opportunity: "Solutions tied to real outcomes.",
-  leanux:      "Team aligned before building starts.",
-  vpc:         "Features match real customer needs.",
-  kata:        "Clear path to next experiment.",
-  jobs:        "Core customer motivation laid bare.",
-  rac:         "Biggest risks ranked for testing.",
-  impact:      "All features tied to goals.",
-  story:       "Release scope and priorities clear.",
-  mindmap:     "Complex ideas structured and prioritised.",
-  venn:        "Overlaps and gaps clearly identified.",
-};
-
 export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {
     // ── Register grid canvas renderers ─────────────────────────────
@@ -142,31 +127,31 @@ export default class VizardryPlugin extends Plugin {
         id,
         label: def.label,
         template: generateCanvasTemplate(def),
-        description: DESCRIPTIONS[id] ?? "",
+        description: def.description,
       })),
       {
         id: "impact",
         label: "Impact Map",
         template: IMPACT_MAP_TEMPLATE,
-        description: DESCRIPTIONS.impact,
+        description: "All features tied to goals.",
       },
       {
         id: "story",
         label: "User Story Map",
         template: STORY_MAP_TEMPLATE,
-        description: DESCRIPTIONS.story,
+        description: "Release scope and priorities clear.",
       },
       {
         id: "mindmap",
         label: "Mind Map",
         template: MIND_MAP_TEMPLATE,
-        description: DESCRIPTIONS.mindmap,
+        description: "Complex ideas structured and prioritised.",
       },
       {
         id: "venn",
         label: "Venn Diagram",
         template: VENN_TEMPLATE,
-        description: DESCRIPTIONS.venn,
+        description: "Overlaps and gaps clearly identified.",
       },
       {
         id: "ost",

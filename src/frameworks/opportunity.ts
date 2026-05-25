@@ -3,6 +3,7 @@ import { FrameworkDefinition } from "../types";
 export const OPPORTUNITY: FrameworkDefinition = {
   id: "opportunity",
   label: "Opportunity Canvas",
+  description: "Solutions tied to real outcomes.",
   gridTemplate: `
     "po si tu uo um"
     "bp bm bu af fs"
