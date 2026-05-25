@@ -1,4 +1,5 @@
 import { setIcon } from "obsidian";
+import { toPng } from "html-to-image";
 import { applyFullWidth } from "./full-width";
 
 let nextId = 0;
@@ -53,6 +54,30 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   decreaseBtn.addEventListener("click", (e) => { e.stopPropagation(); if (step > MIN_STEP) { step--; applyStep(); } });
   increaseBtn.addEventListener("click", (e) => { e.stopPropagation(); if (step < MAX_STEP) { step++; applyStep(); } });
   applyStep();
+
+  const downloadBtn = actions.createEl("button", { cls: "vizardry-download-btn vzd-btn" }) as HTMLButtonElement;
+  setIcon(downloadBtn, "download");
+  downloadBtn.setAttribute("aria-label", "Download as PNG");
+  downloadBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    downloadBtn.disabled = true;
+    try {
+      const bg = getComputedStyle(document.body).getPropertyValue("--background-primary").trim() || "#ffffff";
+      const dataUrl = await toPng(container, {
+        pixelRatio: window.devicePixelRatio * 2,
+        backgroundColor: bg,
+        filter: (node) => !(node as HTMLElement).classList?.contains("vizardry-header-actions"),
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title}.png`;
+      a.click();
+    } catch (err) {
+      console.error("Vizardry: PNG export failed", err);
+    } finally {
+      downloadBtn.disabled = false;
+    }
+  });
 
   const presentBtn = actions.createEl("button", { cls: "vizardry-present-btn vzd-btn" });
   setIcon(presentBtn, "expand");
