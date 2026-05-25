@@ -6,7 +6,7 @@ import { parseMindMap } from "./mindmap";
 import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
 import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE } from "./templates";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE } from "./templates";
 import { CanvasInsertModal, FrameworkOption } from "./modal";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
@@ -17,7 +17,7 @@ import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
 import { FrameworkDefinition } from "./types";
-import { registerCarouselProcessor } from "./carousel";
+import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
 
 const FRAMEWORKS: Record<string, FrameworkDefinition> = {
   bmc: BMC,
@@ -117,6 +117,25 @@ export default class VizardryPlugin extends Plugin {
       console.error('Vizardry: failed to register processor for "ost"', err);
     }
 
+    // ── Carousel renderer ─────────────────────────────────────────────────
+    try {
+      this.registerMarkdownCodeBlockProcessor("carousel", (source, el, ctx) => {
+        const result = parseCarouselBlock(source);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderCarouselBlock(result.data, el, (src) => {
+          // Resolve vault-relative paths to resource URLs
+          const file = this.app.vault.getFileByPath(
+            ctx.sourcePath.replace(/[^/]+$/, "") + src
+          );
+          return file
+            ? this.app.vault.getResourcePath(file)
+            : src;
+        });
+      });
+    } catch (err) {
+      console.error('Vizardry: failed to register processor for "carousel"', err);
+    }
+
     // ── Build framework options list (used by modal + commands) ────
     const frameworkOptions: FrameworkOption[] = [
       ...Object.entries(FRAMEWORKS).map(([id, def]) => ({
@@ -154,6 +173,12 @@ export default class VizardryPlugin extends Plugin {
         label: "Opportunity Solution Tree",
         template: OST_TEMPLATE,
         description: "Outcome drives opportunities, solutions, and experiments.",
+      },
+      {
+        id: "carousel",
+        label: "Image Carousel",
+        template: CAROUSEL_TEMPLATE,
+        description: "Multiple images as a navigable carousel.",
       },
     ];
 
@@ -207,8 +232,6 @@ export default class VizardryPlugin extends Plugin {
       });
     }
 
-    // ── Image carousel post-processor ─────────────────────────────
-    registerCarouselProcessor(this);
   }
 
   onunload(): void {

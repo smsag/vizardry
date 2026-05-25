@@ -134,3 +134,18 @@ export interface VennDiagram {
 export type VennResult =
   | { ok: true; data: VennDiagram }
   | { ok: false; error: string };
+
+// ── Carousel ─────────────────────────────────────────────────────────────────
+
+export interface CarouselImage {
+  src: string;
+  alt: string;
+}
+
+export interface CarouselBlock {
+  images: CarouselImage[];
+}
+
+export type CarouselResult =
+  | { ok: true; data: CarouselBlock }
+  | { ok: false; error: string };

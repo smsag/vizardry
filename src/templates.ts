@@ -125,3 +125,10 @@ outcome: Your desired outcome
     Solution C
 \`\`\`
 `;
+
+export const CAROUSEL_TEMPLATE = `\`\`\`carousel
+![](image-one.png)
+![](image-two.png)
+![](image-three.png)
+\`\`\`
+`;

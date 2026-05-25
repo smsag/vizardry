@@ -1,6 +1,6 @@
 # Vizardry
 
-An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an opt-in image carousel, a mind map renderer, a Venn diagram renderer, and a top-down SVG Opportunity Solution Tree renderer.
+An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an image carousel renderer, a mind map renderer, a Venn diagram renderer, and a top-down SVG Opportunity Solution Tree renderer.
 
 ---
 
@@ -36,6 +36,7 @@ Multi-line content needs no special syntax — just indent everything below the 
 | ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
 | ` ```mindmap ` | Mind Map | Indented tree |
 | ` ```venn ` | Venn Diagram | 2- or 3-circle overlap diagram |
+| ` ```carousel ` | Image Carousel | Navigable image gallery |
 
 ---
 
@@ -549,21 +550,21 @@ center:
 
 ## Image Carousel
 
-Automatically groups consecutive images in Read View into a navigable carousel. Activated per note via frontmatter — no global setting.
+Use the `carousel` code block to render a navigable gallery of images inline in Read View.
 
-**Frontmatter** (must be the first lines in the file):
-
-```yaml
----
-carousel: true
----
+~~~
+```carousel
+![](image-one.png)
+![](image-two.png)
+![](image-three.png)
 ```
+~~~
 
-**Grouping rules:**
-- Finds all `<img>` elements in the rendered note
-- Groups consecutive images where nothing else (text, heading, table, `---`, Vizardry canvas) appears between them
-- Groups of **2 or more** images become a carousel; single isolated images are left untouched
-- Two separate image groups in one note → two independent carousels
+**Rules:**
+- One image per line using standard Markdown image syntax
+- Blank lines and `#` comment lines are ignored
+- Fewer than 2 images shows a visible error message
+- Invalid lines show a visible error message with the line number
 
 **Controls:**
 - Left / right arrow buttons
@@ -663,8 +664,11 @@ Each canvas has a small expand icon in its title bar. Tapping it opens a full-sc
 
 | Syntax | Meaning |
 |---|---|
-| `carousel: true` in frontmatter | Activates carousel grouping for the note |
-| No frontmatter key or `carousel: false` | Images render normally |
+| ```carousel``` code block | Renders a navigable image carousel inline in Read View |
+| One image per line | Use standard Markdown image syntax: `![](image.png)` or `![Alt](image.png)` |
+| Blank lines and `#` comments | Ignored by the parser |
+| Fewer than 2 images | Shows a visible error message |
+| Invalid image syntax | Shows a visible error message with the line number |
 
 ### Venn Diagram (venn)
 
