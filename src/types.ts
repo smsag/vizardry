@@ -194,3 +194,26 @@ export interface CarouselBlock {
 export type CarouselResult =
   | { ok: true; data: CarouselBlock }
   | { ok: false; error: string };
+
+// ── Wardley Map ───────────────────────────────────────────────────────────────
+
+export interface WardleyComponent {
+  name: string;
+  visibility: number; // 0–1, 1 = visible to user (top of Y axis)
+  evolution: number;  // 0–1, 1 = commodity (right of X axis)
+}
+
+export interface WardleyLink {
+  from: string;
+  to: string;
+}
+
+export interface WardleyMap {
+  anchor: string | null;
+  components: WardleyComponent[];
+  links: WardleyLink[];
+}
+
+export type WardleyResult =
+  | { ok: true; data: WardleyMap }
+  | { ok: false; error: string };

@@ -6,8 +6,9 @@ import { parseStoryMap } from "./story";
 import { parseMindMap } from "./mindmap";
 import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE } from "./templates";
+import { parseWardleyMap } from "./wardley";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderWardleyMap, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE, WARDLEY_TEMPLATE } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { BMC } from "./frameworks/bmc";
@@ -18,6 +19,7 @@ import { VPC } from "./frameworks/vpc";
 import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
+import { SWOT } from "./frameworks/swot";
 import type { FrameworkDefinition } from "./types";
 import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
 import { parseSIPOC } from "./sipoc";
@@ -27,7 +29,7 @@ import { insertTemplateAtCursor } from "./shared/editor";
 // The map is derived from the id field on each definition — no duplicate key.
 
 const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  BMC, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC,
+  BMC, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC, SWOT,
 ];
 
 const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
@@ -129,6 +131,17 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseSIPOC(source);
       if (!result.ok) { renderError(result.error, el); return; }
       renderSIPOC(result.data, el);
+    },
+  },
+  {
+    id: "wardley",
+    label: "Wardley Map",
+    description: "Value chain plotted against evolution to reveal strategic moves.",
+    template: WARDLEY_TEMPLATE,
+    createProcessor: () => (source, el) => {
+      const result = parseWardleyMap(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderWardleyMap(result.data, el);
     },
   },
 ];

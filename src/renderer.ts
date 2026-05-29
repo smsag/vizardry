@@ -3,3 +3,4 @@ export { renderImpactMap, renderMindMap, renderOST } from "./renderer/tree-canva
 export { renderStoryMap } from "./renderer/story";
 export { renderVennDiagram } from "./renderer/venn";
 export { renderSIPOC } from "./renderer/sipoc";
+export { renderWardleyMap } from "./renderer/wardley";

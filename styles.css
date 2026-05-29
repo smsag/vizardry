@@ -871,3 +871,88 @@
 .vzd-presentation-wrap .vzd-sipoc-th {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
 }
+
+/* ── Wardley Map ──────────────────────────────────────────────────────────── */
+
+.vzd-wardley-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.vzd-wardley-svg {
+  width: 100%;
+  min-width: 480px;
+  max-width: 900px;
+  display: block;
+  margin: 0 auto;
+}
+
+.vzd-wardley-band {
+  fill: var(--background-modifier-hover);
+  opacity: 0.5;
+}
+
+.vzd-wardley-axis {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.vzd-wardley-stage-line {
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.vzd-wardley-stage-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-interface);
+}
+
+.vzd-wardley-axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-interface);
+}
+
+.vzd-wardley-link {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.vzd-wardley-arrowhead {
+  fill: var(--text-muted);
+}
+
+.vzd-wardley-node {
+  fill: var(--interactive-accent);
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+  fill-opacity: 0.15;
+}
+
+.vzd-wardley-node--anchor {
+  fill: var(--interactive-accent);
+  fill-opacity: 0.7;
+}
+
+.vzd-wardley-label {
+  fill: var(--text-normal);
+  font-size: 12px;
+  font-family: var(--font-interface);
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-wardley-wrap {
+  width: 100%;
+}
+
+.vzd-presentation-wrap .vzd-wardley-label {
+  font-size: 14px;
+}
+
+.vzd-presentation-wrap .vzd-wardley-stage-label,
+.vzd-presentation-wrap .vzd-wardley-axis-label {
+  font-size: 13px;
+}
