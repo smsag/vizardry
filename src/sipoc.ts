@@ -1,12 +1,28 @@
-import type { SIPOCData, SIPOCResult } from "./types";
+import type { SIPOCData, SIPOCResult, SIPOCRow } from "./types";
 
-const SECTIONS = ["suppliers", "inputs", "process", "outputs", "customers"] as const;
-type Section = typeof SECTIONS[number];
+const CELL_KEYS = ["supplier", "input", "process", "output", "customer"] as const;
+type CellKey = typeof CELL_KEYS[number];
 
+function emptyRow(): SIPOCRow {
+  return { supplier: "", input: "", process: "", output: "", customer: "" };
+}
+
+/**
+ * Parses row-wise SIPOC syntax:
+ *
+ *   row:
+ *     supplier: Dev team
+ *     input: Feature branch
+ *     process: Build artefact
+ *     output: Running service
+ *     customer: End users
+ *
+ * All five cell keys are optional per row — missing ones render as empty.
+ */
 export function parseSIPOC(source: string): SIPOCResult {
   const lines = source.split("\n");
-  const data: SIPOCData = { suppliers: [], inputs: [], process: [], outputs: [], customers: [] };
-  let current: Section | null = null;
+  const rows: SIPOCRow[] = [];
+  let current: SIPOCRow | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -16,16 +32,42 @@ export function parseSIPOC(source: string): SIPOCResult {
     const indent = raw.search(/\S/);
 
     if (indent === 0) {
-      const key = trimmed.toLowerCase().replace(/:$/, "") as Section;
-      if (!(SECTIONS as readonly string[]).includes(key)) {
-        return { ok: false, error: `Line ${i + 1}: unknown section "${trimmed}" — expected one of: ${SECTIONS.join(", ")}` };
+      const keyword = trimmed.toLowerCase().replace(/:$/, "");
+      if (keyword !== "row") {
+        return { ok: false, error: `Line ${i + 1}: expected "row:" but got "${trimmed}"` };
       }
-      current = key;
-    } else {
-      if (!current) return { ok: false, error: `Line ${i + 1}: item before any section header` };
-      if (trimmed) data[current].push(trimmed);
+      current = emptyRow();
+      rows.push(current);
+      continue;
     }
+
+    // Indented line — must be inside a row
+    if (!current) {
+      return { ok: false, error: `Line ${i + 1}: cell key before any "row:"` };
+    }
+
+    const colonIdx = trimmed.indexOf(":");
+    if (colonIdx === -1) {
+      return { ok: false, error: `Line ${i + 1}: expected "key: value", got "${trimmed}"` };
+    }
+
+    const key = trimmed.slice(0, colonIdx).trim().toLowerCase() as CellKey;
+    const value = trimmed.slice(colonIdx + 1).trim();
+
+    if (!(CELL_KEYS as readonly string[]).includes(key)) {
+      return { ok: false, error: `Line ${i + 1}: unknown cell key "${key}" — expected one of: ${CELL_KEYS.join(", ")}` };
+    }
+
+    if (current[key]) {
+      return { ok: false, error: `Line ${i + 1}: duplicate key "${key}" in the same row` };
+    }
+
+    current[key] = value;
   }
 
-  return { ok: true, data };
+  if (rows.length === 0) {
+    return { ok: false, error: `No rows defined — start each row with "row:"` };
+  }
+
+  return { ok: true, data: { rows } };
 }
