@@ -163,3 +163,19 @@ customers:
   Product owner
 \`\`\`
 `;
+
+export const WARDLEY_TEMPLATE = `\`\`\`wardley
+anchor: User
+
+component: User         [1.00, 0.10]
+component: Web App      [0.85, 0.35]
+component: Auth Service [0.60, 0.55]
+component: Database     [0.40, 0.60]
+component: Cloud Host   [0.15, 0.90]
+
+link: User -> Web App
+link: Web App -> Auth Service
+link: Web App -> Database
+link: Database -> Cloud Host
+\`\`\`
+`;
