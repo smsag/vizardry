@@ -187,6 +187,11 @@
   font-style: italic;
 }
 
+.vzd-block-line {
+  padding-left: 1em;
+  text-indent: -1em;
+}
+
 /* ── Inline block editing ── */
 
 /* Show a subtle pointer + hover ring when the block body is editable */

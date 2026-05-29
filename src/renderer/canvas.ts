@@ -71,10 +71,8 @@ function renderBlockBody(body: HTMLElement, content: string): void {
   } else {
     body.removeClass("vizardry-block-empty");
     body.addClass("vzd-block-body--filled");
-    const lines = content.split("\n");
-    lines.forEach((line, idx) => {
-      body.appendText(line);
-      if (idx < lines.length - 1) body.createEl("br");
+    content.split("\n").forEach(line => {
+      body.createEl("div", { cls: "vzd-block-line", text: line });
     });
   }
 }
