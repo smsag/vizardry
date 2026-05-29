@@ -1,7 +1,9 @@
 import { setIcon } from "obsidian";
+import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
+import { writeBlockContent } from "../shared/block-edit";
 
 export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");
@@ -14,7 +16,9 @@ export function renderCanvas(
   data: Record<string, string>,
   links: Record<string, string>,
   container: HTMLElement,
-  navigateTo: (heading: string) => void
+  navigateTo: (heading: string) => void,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
 ): void {
   initCanvas(container, framework.id, framework.label);
 
@@ -45,19 +49,107 @@ export function renderCanvas(
     const content = data[labelKey] ?? "";
     const body = block.createEl("div", { cls: "vizardry-block-body" });
 
-    if (content.trim() === "") {
-      body.addClass("vizardry-block-empty");
-    } else {
-      const lines = content.split("\n");
-      lines.forEach((line, idx) => {
-        body.appendText(line);
-        if (idx < lines.length - 1) body.createEl("br");
-      });
+    renderBlockBody(body, content);
+
+    if (app && ctx) {
+      body.addClass("vzd-block-editable");
+      body.setAttribute("title", "Click to edit");
+      body.addEventListener("click", () => activateBlockEdit(body, blockDef.label, content, app, ctx, container));
     }
   }
 
   setupMobileCarousel(container, framework.blocks.length);
 }
+
+// ── Inline block editing ───────────────────────────────────────────────────
+
+function renderBlockBody(body: HTMLElement, content: string): void {
+  body.empty();
+  if (content.trim() === "") {
+    body.addClass("vizardry-block-empty");
+    body.removeClass("vzd-block-body--filled");
+  } else {
+    body.removeClass("vizardry-block-empty");
+    body.addClass("vzd-block-body--filled");
+    content.split("\n").forEach(line => {
+      body.createEl("div", { cls: "vzd-block-line", text: line });
+    });
+  }
+}
+
+function activateBlockEdit(
+  body: HTMLElement,
+  blockLabel: string,
+  currentContent: string,
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  container: HTMLElement,
+): void {
+  // Prevent re-entrancy
+  if (body.hasClass("vzd-block-editing")) return;
+  body.addClass("vzd-block-editing");
+  body.removeClass("vizardry-block-empty");
+  body.empty();
+
+  const textarea = body.createEl("textarea", { cls: "vzd-block-textarea" });
+  textarea.value = currentContent.trim();
+
+  // Auto-size height to content
+  const resize = (): void => {
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+  resize();
+  textarea.addEventListener("input", resize);
+
+  // Focus and place cursor at end
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  let committed = false;
+
+  const commit = (): void => {
+    if (committed) return;
+    committed = true;
+
+    const newValue = textarea.value;
+    const written = writeBlockContent(app, ctx, container, blockLabel, newValue);
+
+    body.removeClass("vzd-block-editing");
+
+    if (!written) {
+      // Read-only mode or couldn't locate block — just re-render with the
+      // original content so the canvas doesn't break
+      renderBlockBody(body, currentContent);
+      return;
+    }
+
+    // Optimistically re-render so the canvas updates immediately before
+    // Obsidian triggers a full re-render from the source change
+    renderBlockBody(body, newValue.trim());
+  };
+
+  textarea.addEventListener("blur", commit);
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      // Discard — restore original content
+      committed = true;
+      body.removeClass("vzd-block-editing");
+      renderBlockBody(body, currentContent);
+    }
+    // Allow Tab to insert spaces rather than moving focus
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      textarea.value = textarea.value.slice(0, start) + "  " + textarea.value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = start + 2;
+      resize();
+    }
+  });
+}
+
+// ── Mobile carousel ────────────────────────────────────────────────────────
 
 function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   let current = 0;

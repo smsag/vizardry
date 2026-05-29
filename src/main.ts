@@ -173,7 +173,7 @@ export default class VizardryPlugin extends Plugin {
         if (!result.ok) { renderError(result.error, el); return; }
         renderCanvas(definition, result.data, result.links, el, (heading) => {
           void this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
-        });
+        }, this.app, ctx);
       });
     }
 
