@@ -168,12 +168,16 @@ export interface TreeRenderOptions {
 
 // ── SIPOC ────────────────────────────────────────────────────────────────────
 
+export interface SIPOCRow {
+  supplier: string;
+  input: string;
+  process: string;
+  output: string;
+  customer: string;
+}
+
 export interface SIPOCData {
-  suppliers: string[];
-  inputs: string[];
-  process: string[];
-  outputs: string[];
-  customers: string[];
+  rows: SIPOCRow[];
 }
 
 export type SIPOCResult =
@@ -216,4 +220,30 @@ export interface WardleyMap {
 
 export type WardleyResult =
   | { ok: true; data: WardleyMap }
+  | { ok: false; error: string };
+
+// ── SIPOC Flow ────────────────────────────────────────────────────────────────
+
+export type SIPOCNodeShape = "ellipse" | "parallelogram" | "rect";
+export type SIPOCColumn = "suppliers" | "inputs" | "process" | "outputs" | "customers";
+
+export interface SIPOCFlowNode {
+  id: string;           // normalised label used for link lookup
+  label: string;        // display text
+  shape: SIPOCNodeShape;
+  column: SIPOCColumn;
+}
+
+export interface SIPOCFlowLink {
+  from: string;         // node id
+  to: string;           // node id
+}
+
+export interface SIPOCFlowData {
+  nodes: SIPOCFlowNode[];
+  links: SIPOCFlowLink[];
+}
+
+export type SIPOCFlowResult =
+  | { ok: true; data: SIPOCFlowData }
   | { ok: false; error: string };

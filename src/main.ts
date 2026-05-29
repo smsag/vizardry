@@ -7,8 +7,9 @@ import { parseMindMap } from "./mindmap";
 import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
 import { parseWardleyMap } from "./wardley";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderWardleyMap, renderError } from "./renderer";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE, WARDLEY_TEMPLATE } from "./templates";
+import { parseSIPOCFlow } from "./sipoc-flow";
+import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderError } from "./renderer";
+import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { BMC } from "./frameworks/bmc";
@@ -128,6 +129,15 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
     description: "Process scope: suppliers, inputs, steps, outputs, customers.",
     template: SIPOC_TEMPLATE,
     createProcessor: () => (source, el) => {
+      // Detect flow variant: first non-blank, non-comment line is "type: flow"
+      const firstLine = source.split("\n").find(l => l.trim() && !l.trim().startsWith("#"))?.trim() ?? "";
+      if (firstLine === "type: flow") {
+        const body = source.replace(/^\s*type:\s*flow\s*\n?/i, "");
+        const result = parseSIPOCFlow(body);
+        if (!result.ok) { renderError(result.error, el); return; }
+        renderSIPOCFlow(result.data, el);
+        return;
+      }
       const result = parseSIPOC(source);
       if (!result.ok) { renderError(result.error, el); return; }
       renderSIPOC(result.data, el);
@@ -186,6 +196,12 @@ export default class VizardryPlugin extends Plugin {
         template: r.template,
         description: r.description,
       })),
+      {
+        id: "sipoc-flow",
+        label: "SIPOC Flow Diagram",
+        description: "Process scope with explicit node shapes and flow connections.",
+        template: SIPOC_FLOW_TEMPLATE,
+      },
     ];
 
     const withActiveMarkdownEditor = (run: (editor: Editor) => void): void => {

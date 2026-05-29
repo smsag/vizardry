@@ -1,14 +1,14 @@
-import type { SIPOCData } from "../types";
+import type { SIPOCData, SIPOCRow } from "../types";
 import { initCanvas } from "./controls";
 
-type ColKey = "suppliers" | "inputs" | "process" | "outputs" | "customers";
+type ColKey = keyof SIPOCRow;
 
 const COLS: { key: ColKey; label: string }[] = [
-  { key: "suppliers", label: "Suppliers" },
-  { key: "inputs",    label: "Inputs" },
-  { key: "process",   label: "Process" },
-  { key: "outputs",   label: "Outputs" },
-  { key: "customers", label: "Customers" },
+  { key: "supplier", label: "Suppliers" },
+  { key: "input",    label: "Inputs" },
+  { key: "process",  label: "Process" },
+  { key: "output",   label: "Outputs" },
+  { key: "customer", label: "Customers" },
 ];
 
 export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
@@ -32,26 +32,23 @@ export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
   });
 
   const tbody = table.createEl("tbody");
-  const bodyRow = tbody.createEl("tr");
 
-  COLS.forEach((col) => {
-    const td = bodyRow.createEl("td", {
-      cls: `vzd-sipoc-td${col.key === "process" ? " vzd-sipoc-td--process" : ""}`,
+  data.rows.forEach((row, rowIdx) => {
+    const tr = tbody.createEl("tr", {
+      cls: rowIdx % 2 === 1 ? "vzd-sipoc-row vzd-sipoc-row--alt" : "vzd-sipoc-row",
     });
 
-    const isProcess = col.key === "process";
-    let list: HTMLElement;
-    if (isProcess) {
-      list = td.createEl("ol", { cls: "vzd-sipoc-list vzd-sipoc-list--numbered" });
-    } else {
-      list = td.createEl("ul", { cls: "vzd-sipoc-list" });
-    }
+    COLS.forEach((col) => {
+      const value = row[col.key];
+      const td = tr.createEl("td", {
+        cls: `vzd-sipoc-td${col.key === "process" ? " vzd-sipoc-td--process" : ""}`,
+      });
 
-    const items = data[col.key];
-    if (items.length === 0) {
-      list.createEl("li", { cls: "vzd-sipoc-item vzd-sipoc-item--empty", text: "—" });
-    } else {
-      items.forEach(item => list.createEl("li", { cls: "vzd-sipoc-item", text: item }));
-    }
+      if (value) {
+        td.createEl("span", { cls: "vzd-sipoc-cell-value", text: value });
+      } else {
+        td.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
+      }
+    });
   });
 }
