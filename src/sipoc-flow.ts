@@ -1,4 +1,4 @@
-import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowNode, SIPOCFlowResult, SIPOCNodeShape } from "./types";
+import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowLink, SIPOCFlowNode, SIPOCFlowResult, SIPOCNodeShape } from "./types";
 
 const COLUMNS: SIPOCColumn[] = ["suppliers", "inputs", "process", "outputs", "customers"];
 const SHAPES: SIPOCNodeShape[] = ["ellipse", "parallelogram", "rect"];
