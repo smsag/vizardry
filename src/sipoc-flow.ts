@@ -101,6 +101,3 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
 
   return { ok: true, data: { nodes, links } };
 }
-
-// Re-export so main.ts can import from one place
-export type { SIPOCFlowLink } from "./types";
