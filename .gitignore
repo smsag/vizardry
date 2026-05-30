@@ -5,8 +5,16 @@ vizardry
 node_modules/
 main.js
 *.js.map
+*.tsbuildinfo
 dist/
 build/
+
+# Test output
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
 
 # Internal documentation (not for public repo)
 AGENTS.md
