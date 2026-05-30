@@ -22,8 +22,12 @@ export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-// Convenience alias for the flat key:value grid parser.
-export type ParseResult = Result<{ data: Record<string, string>; links: Record<string, string> }>;
+// ParseResult has two sibling payload fields (data + links) on the success
+// variant, which doesn't fit the single-data Result<T> pattern, so it is
+// kept as a standalone definition.
+export type ParseResult =
+  | { ok: true; data: Record<string, string>; links: Record<string, string> }
+  | { ok: false; error: string };
 
 // ── Impact Map ──────────────────────────────────────────────────────────────
 
