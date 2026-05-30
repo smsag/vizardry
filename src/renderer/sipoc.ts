@@ -1,15 +1,18 @@
 import type { SIPOCData, SIPOCRow } from "../types";
+import { t } from "../i18n";
 import { initCanvas } from "./controls";
 
 type ColKey = keyof SIPOCRow;
 
-const COLS: { key: ColKey; label: string }[] = [
-  { key: "supplier", label: "Suppliers" },
-  { key: "input",    label: "Inputs" },
-  { key: "process",  label: "Process" },
-  { key: "output",   label: "Outputs" },
-  { key: "customer", label: "Customers" },
-];
+function getCols(): { key: ColKey; label: string }[] {
+  return [
+    { key: "supplier", label: t("sipoc.col.suppliers") },
+    { key: "input",    label: t("sipoc.col.inputs") },
+    { key: "process",  label: t("sipoc.col.process") },
+    { key: "output",   label: t("sipoc.col.outputs") },
+    { key: "customer", label: t("sipoc.col.customers") },
+  ];
+}
 
 export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
   initCanvas(container, "sipoc", "SIPOC Diagram");
@@ -20,12 +23,12 @@ export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
   const thead = table.createEl("thead");
   const headerRow = thead.createEl("tr");
 
-  COLS.forEach((col, i) => {
+  getCols().forEach((col, i) => {
     const th = headerRow.createEl("th", {
       cls: `vzd-sipoc-th${col.key === "process" ? " vzd-sipoc-th--process" : ""}`,
       text: col.label,
     });
-    if (i < COLS.length - 1) {
+    if (i < getCols().length - 1) {
       const arrow = th.createEl("span", { cls: "vzd-sipoc-arrow", text: "→" });
       arrow.setAttribute("aria-hidden", "true");
     }
@@ -38,7 +41,7 @@ export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
       cls: rowIdx % 2 === 1 ? "vzd-sipoc-row vzd-sipoc-row--alt" : "vzd-sipoc-row",
     });
 
-    COLS.forEach((col) => {
+    getCols().forEach((col) => {
       const value = row[col.key];
       const td = tr.createEl("td", {
         cls: `vzd-sipoc-td${col.key === "process" ? " vzd-sipoc-td--process" : ""}`,

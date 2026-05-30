@@ -51,6 +51,26 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "impact.level.impact":      "Auswirkung",
   "impact.level.deliverable": "Lieferobjekt",
 
+  // ── Story Map labels ────────────────────────────────────────────────────────
+  "story.label.user":    "Nutzer",
+  "story.label.goal":    "Ziel",
+  "story.backlog":       "Backlog",
+
+  // ── SIPOC column headers ────────────────────────────────────────────────────
+  "sipoc.col.suppliers": "Lieferanten",
+  "sipoc.col.inputs":    "Eingaben",
+  "sipoc.col.process":   "Prozess",
+  "sipoc.col.outputs":   "Ausgaben",
+  "sipoc.col.customers": "Kunden",
+
+  // ── Wardley Map labels ──────────────────────────────────────────────────────
+  "wardley.stage.genesis":   "Genesis",
+  "wardley.stage.custom":    "Individuell",
+  "wardley.stage.product":   "Produkt",
+  "wardley.stage.commodity": "Rohstoff",
+  "wardley.axis.visibility": "Sichtbarkeit",
+  "wardley.axis.evolution":  "Evolution →",
+
   // ── Commands ────────────────────────────────────────────────────────────────
   "commands.insertCanvas":         "Canvas einfügen…",
   "commands.insertVizardryCanvas": "Vizardry-Canvas einfügen…",

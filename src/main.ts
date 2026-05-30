@@ -1,18 +1,13 @@
 import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
 import { MarkdownView, Notice, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
-import { parseImpactMap } from "./impact";
-import { parseStoryMap } from "./story";
-import { parseMindMap } from "./mindmap";
-import { parseOST } from "./frameworks/ost";
-import { parseVennDiagram } from "./venn";
-import { parseWardleyMap } from "./wardley";
-import { parseSIPOCFlow } from "./sipoc-flow";
-import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderError } from "./renderer";
+import { renderCanvas, renderError } from "./renderer";
 import { resetInteractiveIdCounter } from "./renderer/controls";
-import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE } from "./templates";
+import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
+import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
+import type { ProcessorFn } from "./processors";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
 import { OPPORTUNITY } from "./frameworks/opportunity";
@@ -24,9 +19,6 @@ import { RAC } from "./frameworks/rac";
 import { SWOT } from "./frameworks/swot";
 import { FOURLS } from "./frameworks/fourls";
 import type { FrameworkDefinition } from "./types";
-import { parseCarouselBlock } from "./carousel";
-import { renderCarouselBlock } from "./renderer/carousel";
-import { parseSIPOC } from "./sipoc";
 import { insertTemplateAtCursor } from "./shared/editor";
 import { t, tFrameworkDescription } from "./i18n";
 
@@ -38,141 +30,6 @@ const ALL_FRAMEWORKS: FrameworkDefinition[] = [
 ];
 
 const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
-
-// ── Custom (non-grid) renderer registry ───────────────────────────────────────
-// Adding a new renderer here automatically wires up both its processor and
-// its entry in the insert modal — no second edit needed elsewhere.
-//
-// EXTRA_OPTIONS holds modal-only entries for block variants that share a
-// processor with another entry (e.g. SIPOC Flow dispatches inside the `sipoc`
-// processor via `type: flow`). These appear in the insert modal and get their
-// own insert command, but do not register a separate code block processor.
-
-type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
-
-interface ModalOnlyOption {
-  id: string;
-  label: string;
-  template: string;
-}
-
-// Modal-only entries: appear in the insert modal and get insert commands,
-// but share an existing processor (no separate registerMarkdownCodeBlockProcessor call).
-const EXTRA_OPTIONS: ModalOnlyOption[] = [
-  { id: "sipoc-flow", label: "SIPOC Flow Diagram", template: SIPOC_FLOW_TEMPLATE },
-];
-
-interface CustomRenderer {
-  id: string;
-  label: string;
-  // description is intentionally absent — descriptions are resolved at
-  // runtime via tFrameworkDescription(id), not stored on the struct.
-  template: string;
-  createProcessor: (app: App) => ProcessorFn;
-}
-
-const CUSTOM_RENDERERS: CustomRenderer[] = [
-  {
-    id: "impact",
-    label: "Impact Map",
-    template: IMPACT_MAP_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseImpactMap(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderImpactMap(result.data, el);
-    },
-  },
-  {
-    id: "story",
-    label: "User Story Map",
-    template: STORY_MAP_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseStoryMap(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderStoryMap(result.data, el);
-    },
-  },
-  {
-    id: "mindmap",
-    label: "Mind Map",
-    template: MIND_MAP_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseMindMap(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderMindMap(result.data, el);
-    },
-  },
-  {
-    id: "venn",
-    label: "Venn Diagram",
-    template: VENN_TEMPLATE,
-    createProcessor: (app) => (source, el, ctx) => {
-      const result = parseVennDiagram(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderVennDiagram(result.data, el, (target) => {
-        void app.workspace.openLinkText(target, ctx.sourcePath, false);
-      });
-    },
-  },
-  {
-    id: "ost",
-    label: "Opportunity Solution Tree",
-    template: OST_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseOST(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderOST(result.data, el);
-    },
-  },
-  {
-    id: "carousel",
-    label: "Image Carousel",
-    template: CAROUSEL_TEMPLATE,
-    createProcessor: (app) => (source, el, ctx) => {
-      const result = parseCarouselBlock(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderCarouselBlock(result.data, el, (src) => {
-        const file = app.vault.getFileByPath(
-          ctx.sourcePath.replace(/[^/]+$/, "") + src
-        );
-        if (!file) {
-          console.warn(`Vizardry: carousel image not found in vault: ${src}`);
-          return "";
-        }
-        return app.vault.getResourcePath(file);
-      });
-    },
-  },
-  {
-    id: "sipoc",
-    label: "SIPOC Diagram",
-    template: SIPOC_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      // Detect flow variant: first non-blank, non-comment line is "type: flow"
-      const firstLine = source.split("\n").find(l => l.trim() && !l.trim().startsWith("#"))?.trim() ?? "";
-      if (firstLine === "type: flow") {
-        const body = source.replace(/^\s*type:\s*flow\s*\n?/i, "");
-        const result = parseSIPOCFlow(body);
-        if (!result.ok) { renderError(result.error, el); return; }
-        renderSIPOCFlow(result.data, el);
-        return;
-      }
-      const result = parseSIPOC(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderSIPOC(result.data, el);
-    },
-  },
-  {
-    id: "wardley",
-    label: "Wardley Map",
-    template: WARDLEY_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseWardleyMap(source);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderWardleyMap(result.data, el);
-    },
-  },
-];
 
 export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {

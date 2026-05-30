@@ -8,8 +8,8 @@ import { t } from "../i18n";
 export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   initCanvas(container, "story", "User Story Map", map.user || map.goal ? header => {
     const meta = header.createEl("div", { cls: "vzd-story-meta" });
-    if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `User: ${map.user}` });
-    if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `Goal: ${map.goal}` });
+    if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `${t("story.label.user")}: ${map.user}` });
+    if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `${t("story.label.goal")}: ${map.goal}` });
   } : undefined);
 
   const allSteps = map.activities.flatMap(a => a.steps);
@@ -98,7 +98,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
 
   if (backlogByStep.size > 0) {
     const backlogBand = grid.createEl("div", { cls: "vzd-story-slice-band vzd-story-backlog-band" });
-    backlogBand.createEl("div", { cls: "vzd-story-slice-label vzd-story-backlog-label", text: "Backlog" });
+    backlogBand.createEl("div", { cls: "vzd-story-slice-label vzd-story-backlog-label", text: t("story.backlog") });
     const backlogCellsRow = backlogBand.createEl("div", { cls: "vzd-story-slice-cells" });
     backlogCellsRow.style.setProperty("--vzd-story-cols", String(totalCols));
 
