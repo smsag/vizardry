@@ -49,7 +49,14 @@ export const en = {
   "nav.jumpTo":           "Jump to: {{heading}}",
 
   // ── Inline editing ──────────────────────────────────────────────────────────
-  "edit.clickToEdit": "Click to edit",
+  "edit.clickToEdit":  "Click to edit",
+  "edit.writeFailed":  "Edit could not be saved — open the note in editing mode",
+
+  // ── Impact Map level labels ─────────────────────────────────────────────────
+  "impact.level.goal":        "Goal",
+  "impact.level.actor":       "Actor",
+  "impact.level.impact":      "Impact",
+  "impact.level.deliverable": "Deliverable",
 
   // ── Commands ────────────────────────────────────────────────────────────────
   "commands.insertCanvas":           "Insert canvas…",

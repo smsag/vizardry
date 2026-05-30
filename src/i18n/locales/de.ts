@@ -43,6 +43,13 @@ export const de: Partial<Record<TranslationKey, string>> = {
 
   // ── Inline editing ──────────────────────────────────────────────────────────
   "edit.clickToEdit": "Zum Bearbeiten klicken",
+  "edit.writeFailed": "Bearbeitung konnte nicht gespeichert werden — öffne die Notiz im Bearbeitungsmodus",
+
+  // ── Impact Map level labels ─────────────────────────────────────────────────
+  "impact.level.goal":        "Ziel",
+  "impact.level.actor":       "Akteur",
+  "impact.level.impact":      "Auswirkung",
+  "impact.level.deliverable": "Lieferobjekt",
 
   // ── Commands ────────────────────────────────────────────────────────────────
   "commands.insertCanvas":         "Canvas einfügen…",

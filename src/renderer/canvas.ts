@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { setIcon, Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
@@ -128,8 +128,7 @@ function activateBlockEdit(
     body.removeClass("vzd-block-editing");
 
     if (!written) {
-      // Read-only mode or couldn't locate block — just re-render with the
-      // original content so the canvas doesn't break
+      new Notice(t("edit.writeFailed"));
       renderBlockBody(body, currentContent);
       return;
     }

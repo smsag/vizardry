@@ -87,9 +87,11 @@ export function renderVennDiagram(
 ): void {
   initCanvas(container, "venn", "Venn Diagram");
 
-  // Count already-rendered Venn diagrams to derive the rotation offset.
-  // This call happens before we add .vzd-venn-wrap, so it gives the correct index.
-  const diagramIdx = document.querySelectorAll(".vzd-venn-wrap").length;
+  // Count Venn diagrams already rendered in the same workspace leaf to derive
+  // the palette rotation. Scoped to the leaf so that diagrams in other open
+  // panes don't affect the colour assignment in this one.
+  const leaf = container.closest(".workspace-leaf-content") ?? document.body;
+  const diagramIdx = leaf.querySelectorAll(".vzd-venn-wrap").length;
 
   // ── Accent palette ────────────────────────────────────────────────────
   const [accentH, accentS, accentL] = getAccentHsl();
