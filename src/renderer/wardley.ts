@@ -25,10 +25,17 @@ function toSvgY(visibility: number): number {
   return PLOT_Y + (1 - visibility) * PLOT_H;
 }
 
+/** Approximate character width used for rough label-width estimation. */
+const CHAR_W_PX = 7;
+/** Minimum vertical gap (px) enforced between any two label baselines. */
+const LABEL_MIN_GAP_PX = 14;
+/** Two labels are considered horizontally overlapping when their text columns are this close. */
+const LABEL_OVERLAP_X_PX = 80;
+
 /**
- * Nudge label positions to reduce overlap.
- * Each label gets an anchor direction based on its quadrant so most labels
- * sit outside the node rather than over each other.
+ * Base anchor direction for a label based on its map quadrant.
+ * Right-side nodes get right-aligned text to the left of the node;
+ * left-side nodes get left-aligned text to the right.
  */
 function labelAnchor(evo: number, vis: number): { dx: number; dy: number; anchor: string } {
   const right = evo > 0.5;
@@ -38,6 +45,54 @@ function labelAnchor(evo: number, vis: number): { dx: number; dy: number; anchor
     dy: top   ? -(NODE_R + 4) : NODE_R + 12,
     anchor: right ? "end" : "start",
   };
+}
+
+interface LabelSlot {
+  /** Final SVG x of the text anchor point. */
+  textX: number;
+  /** Mutable SVG y of the text anchor point — adjusted by the nudge pass. */
+  textY: number;
+  anchor: string;
+  name: string;
+}
+
+/**
+ * Run a single-pass vertical nudge over all label slots to reduce overlap.
+ *
+ * Algorithm:
+ *  1. Sort slots by textX then textY.
+ *  2. For each consecutive pair that is horizontally close AND vertically
+ *     too close, push the lower slot down by the gap deficit.
+ *
+ * This is O(n²) in the number of horizontally overlapping labels, but for
+ * typical Wardley maps (< 30 components) the cost is negligible.
+ */
+function nudgeLabels(slots: LabelSlot[]): void {
+  // Sort by x-band first, then by y so we process top-to-bottom within a band.
+  slots.sort((a, b) => a.textX - b.textX || a.textY - b.textY);
+
+  for (let i = 0; i < slots.length; i++) {
+    for (let j = i + 1; j < slots.length; j++) {
+      const a = slots[i];
+      const b = slots[j];
+
+      // Estimate horizontal extents (rough: name length × char width).
+      const aW = a.name.length * CHAR_W_PX;
+      const bW = b.name.length * CHAR_W_PX;
+      const aLeft  = a.anchor === "end" ? a.textX - aW : a.textX;
+      const aRight = a.anchor === "end" ? a.textX      : a.textX + aW;
+      const bLeft  = b.anchor === "end" ? b.textX - bW : b.textX;
+      const bRight = b.anchor === "end" ? b.textX      : b.textX + bW;
+
+      // Skip pairs whose text columns don't overlap horizontally.
+      if (aRight + LABEL_OVERLAP_X_PX < bLeft || bRight + LABEL_OVERLAP_X_PX < aLeft) continue;
+
+      const gap = b.textY - a.textY;
+      if (gap < LABEL_MIN_GAP_PX) {
+        b.textY += LABEL_MIN_GAP_PX - gap;
+      }
+    }
+  }
 }
 
 export function renderWardleyMap(data: WardleyMap, container: HTMLElement): void {
@@ -168,7 +223,18 @@ export function renderWardleyMap(data: WardleyMap, container: HTMLElement): void
   }
 
   // ── Nodes ──────────────────────────────────────────────────────────────
-  for (const comp of data.components) {
+  // Compute label positions first so the nudge pass can adjust them before
+  // any SVG elements are created.
+  const labelSlots: LabelSlot[] = data.components.map(comp => {
+    const cx = toSvgX(comp.evolution);
+    const cy = toSvgY(comp.visibility);
+    const { dx, dy, anchor } = labelAnchor(comp.evolution, comp.visibility);
+    return { textX: cx + dx, textY: cy + dy, anchor, name: comp.name };
+  });
+  nudgeLabels(labelSlots);
+
+  for (let i = 0; i < data.components.length; i++) {
+    const comp = data.components[i];
     const cx = toSvgX(comp.evolution);
     const cy = toSvgY(comp.visibility);
     const isAnchor = comp.name === data.anchor;
@@ -179,12 +245,12 @@ export function renderWardleyMap(data: WardleyMap, container: HTMLElement): void
     });
     svg.appendChild(circle);
 
-    const { dx, dy, anchor } = labelAnchor(comp.evolution, comp.visibility);
+    const slot = labelSlots[i];
     const text = createSvgEl("text", {
-      x: String(cx + dx),
-      y: String(cy + dy),
+      x: String(slot.textX),
+      y: String(slot.textY),
       class: "vzd-wardley-label",
-      "text-anchor": anchor,
+      "text-anchor": slot.anchor,
     });
     text.textContent = comp.name;
     svg.appendChild(text);
