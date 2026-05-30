@@ -3,7 +3,6 @@ import type { FrameworkDefinition } from "../types";
 export const VPC: FrameworkDefinition = {
   id: "vpc",
   label: "Value Proposition Canvas",
-  description: "Features match real customer needs.",
   gridTemplate: `
     "ps cj"
     "pr pn"

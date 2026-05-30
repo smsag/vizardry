@@ -35,7 +35,7 @@ import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
 import { renderSIPOCFlow } from "./sipoc-flow";
 import { renderVennDiagram } from "./venn";
-import { renderCarouselBlock } from "../carousel";
+import { renderCarouselBlock } from "./carousel";
 
 import type {
   FrameworkDefinition,
@@ -81,7 +81,6 @@ describe("renderCanvas", () => {
   const swot: FrameworkDefinition = {
     id: "swot",
     label: "SWOT Analysis",
-    description: "",
     gridTemplate: '"st wk"\n"op th"',
     gridColumns: "1fr 1fr",
     gridRows: "1fr 1fr",

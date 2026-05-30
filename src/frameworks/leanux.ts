@@ -3,7 +3,6 @@ import type { FrameworkDefinition } from "../types";
 export const LEANUX: FrameworkDefinition = {
   id: "leanux",
   label: "Lean UX Canvas",
-  description: "Team aligned before building starts.",
   gridTemplate: `
     "bp bo us ub so"
     "hy hy ma me me"

@@ -23,7 +23,9 @@ export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
   getSuggestions(query: string): FrameworkOption[] {
     const q = query.toLowerCase();
     return this.options.filter(opt =>
-      opt.label.toLowerCase().includes(q) || opt.id.toLowerCase().includes(q)
+      opt.label.toLowerCase().includes(q) ||
+      opt.id.toLowerCase().includes(q) ||
+      opt.description.toLowerCase().includes(q)
     );
   }
 

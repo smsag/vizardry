@@ -3,7 +3,6 @@ import type { FrameworkDefinition } from "../types";
 export const SWOT: FrameworkDefinition = {
   id: "swot",
   label: "SWOT Analysis",
-  description: "Strengths, weaknesses, opportunities, and threats at a glance.",
   gridTemplate: `
     "sw wk"
     "op th"

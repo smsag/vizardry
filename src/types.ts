@@ -1,7 +1,6 @@
 export interface FrameworkDefinition {
   id: string;
   label: string;
-  description: string;
   blocks: BlockDefinition[];
   gridTemplate: string;
   gridColumns: string;

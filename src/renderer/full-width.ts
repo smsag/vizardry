@@ -1,8 +1,8 @@
 import { FULL_WIDTH_MARGIN_PX } from "../shared/constants";
+import { onDisconnected } from "../shared/lifecycle";
 
 interface FullWidthState {
   resizeObserver?: ResizeObserver;
-  mutationObserver?: MutationObserver;
   windowHandler?: () => void;
   observedContainer?: HTMLElement | null;
 }
@@ -37,9 +37,6 @@ function cleanupFullWidthWatchers(canvasEl: HTMLElement): void {
   state.resizeObserver?.disconnect();
   state.resizeObserver = undefined;
 
-  state.mutationObserver?.disconnect();
-  state.mutationObserver = undefined;
-
   if (state.windowHandler) {
     window.removeEventListener("resize", state.windowHandler);
     state.windowHandler = undefined;
@@ -50,7 +47,7 @@ function cleanupFullWidthWatchers(canvasEl: HTMLElement): void {
 
 function ensureFullWidthWatchers(canvasEl: HTMLElement, container: HTMLElement | null): void {
   const state = getState(canvasEl);
-  if (state.observedContainer === container && state.mutationObserver) return;
+  if (state.observedContainer === container && (state.resizeObserver || state.windowHandler)) return;
 
   cleanupFullWidthWatchers(canvasEl);
   state.observedContainer = container;
@@ -71,14 +68,10 @@ function ensureFullWidthWatchers(canvasEl: HTMLElement, container: HTMLElement |
     state.windowHandler = onResize;
   }
 
-  const parent = canvasEl.parentElement ?? document.body;
-  const mo = new MutationObserver(() => {
-    if (!canvasEl.isConnected || !parent.contains(canvasEl)) {
-      cleanupFullWidthWatchers(canvasEl);
-    }
-  });
-  mo.observe(parent, { childList: true });
-  state.mutationObserver = mo;
+  // Use the shared onDisconnected utility instead of a hand-rolled
+  // MutationObserver — keeps the observer scoped to the nearest
+  // .workspace-leaf-content rather than an arbitrary parent.
+  onDisconnected(canvasEl, () => cleanupFullWidthWatchers(canvasEl));
 }
 
 export function applyFullWidth(canvasEl: HTMLElement): void {
