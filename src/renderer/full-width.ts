@@ -1,3 +1,5 @@
+import { FULL_WIDTH_MARGIN_PX } from "../shared/constants";
+
 interface FullWidthState {
   resizeObserver?: ResizeObserver;
   mutationObserver?: MutationObserver;
@@ -110,8 +112,7 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       const paddingRight = parseFloat(computed.paddingRight) || 0;
       const availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;
 
-      const HORIZONTAL_MARGIN = 32;
-      const finalWidth = Math.max(0, availableWidth - HORIZONTAL_MARGIN);
+      const finalWidth = Math.max(0, availableWidth - FULL_WIDTH_MARGIN_PX);
       const px = `${finalWidth}px`;
 
       canvasEl.style.position = "relative";

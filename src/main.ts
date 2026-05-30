@@ -40,8 +40,25 @@ const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
 // ── Custom (non-grid) renderer registry ───────────────────────────────────────
 // Adding a new renderer here automatically wires up both its processor and
 // its entry in the insert modal — no second edit needed elsewhere.
+//
+// EXTRA_OPTIONS holds modal-only entries for block variants that share a
+// processor with another entry (e.g. SIPOC Flow dispatches inside the `sipoc`
+// processor via `type: flow`). These appear in the insert modal and get their
+// own insert command, but do not register a separate code block processor.
 
 type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
+
+interface ModalOnlyOption {
+  id: string;
+  label: string;
+  template: string;
+}
+
+// Modal-only entries: appear in the insert modal and get insert commands,
+// but share an existing processor (no separate registerMarkdownCodeBlockProcessor call).
+const EXTRA_OPTIONS: ModalOnlyOption[] = [
+  { id: "sipoc-flow", label: "SIPOC Flow Diagram", template: SIPOC_FLOW_TEMPLATE },
+];
 
 interface CustomRenderer {
   id: string;
@@ -160,11 +177,16 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
 
 export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {
+    // Expose version on body for bug reports and renderer error attribution.
+    document.body.dataset.vizardryVersion = this.manifest.version;
+
+    const tag = `Vizardry v${this.manifest.version}`;
+
     const registerProcessor = (id: string, handler: ProcessorFn): void => {
       try {
         this.registerMarkdownCodeBlockProcessor(id, handler);
       } catch (err) {
-        console.error(`Vizardry: failed to register processor for "${id}"`, err);
+        console.error(`${tag}: failed to register processor for "${id}"`, err);
       }
     };
 
@@ -198,12 +220,12 @@ export default class VizardryPlugin extends Plugin {
         template: r.template,
         description: tFrameworkDescription(r.id),
       })),
-      {
-        id: "sipoc-flow",
-        label: "SIPOC Flow Diagram",
-        description: tFrameworkDescription("sipoc-flow"),
-        template: SIPOC_FLOW_TEMPLATE,
-      },
+      ...EXTRA_OPTIONS.map(o => ({
+        id: o.id,
+        label: o.label,
+        template: o.template,
+        description: tFrameworkDescription(o.id),
+      })),
     ];
 
     const withActiveMarkdownEditor = (run: (editor: Editor) => void): void => {

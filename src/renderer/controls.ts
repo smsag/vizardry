@@ -74,7 +74,8 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
       a.download = `${title}.png`;
       a.click();
     } catch (err) {
-      console.error("Vizardry: PNG export failed", err);
+      const v = (document.body.dataset.vizardryVersion ?? "?");
+      console.error(`Vizardry v${v}: PNG export failed`, err);
     } finally {
       downloadBtn.disabled = false;
     }
