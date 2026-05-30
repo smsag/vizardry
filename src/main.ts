@@ -21,6 +21,7 @@ import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
 import { SWOT } from "./frameworks/swot";
+import { FOURLS } from "./frameworks/fourls";
 import type { FrameworkDefinition } from "./types";
 import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
 import { parseSIPOC } from "./sipoc";
@@ -30,7 +31,7 @@ import { insertTemplateAtCursor } from "./shared/editor";
 // The map is derived from the id field on each definition — no duplicate key.
 
 const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  BMC, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC, SWOT,
+  BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC, SWOT,
 ];
 
 const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
