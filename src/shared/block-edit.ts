@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 
 /**
  * Writes updated block content back into the source code block.
@@ -25,9 +26,9 @@ export function writeBlockContent(
 
   // Find a live editor for this file
   const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => (l.view as any)?.file?.path === ctx.sourcePath
+    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
   );
-  const editor = (leaf?.view as any)?.editor;
+  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
   if (!editor) return false;
 
   const { lineStart, lineEnd } = info;

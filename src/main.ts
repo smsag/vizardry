@@ -9,6 +9,7 @@ import { parseVennDiagram } from "./venn";
 import { parseWardleyMap } from "./wardley";
 import { parseSIPOCFlow } from "./sipoc-flow";
 import { renderCanvas, renderImpactMap, renderStoryMap, renderMindMap, renderOST, renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderError } from "./renderer";
+import { resetInteractiveIdCounter } from "./renderer/controls";
 import { generateCanvasTemplate, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE, OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE, SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
@@ -46,7 +47,8 @@ type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorC
 interface CustomRenderer {
   id: string;
   label: string;
-  description: string;
+  // description is intentionally absent — descriptions are resolved at
+  // runtime via tFrameworkDescription(id), not stored on the struct.
   template: string;
   createProcessor: (app: App) => ProcessorFn;
 }
@@ -55,7 +57,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "impact",
     label: "Impact Map",
-    description: "All features tied to goals.",
     template: IMPACT_MAP_TEMPLATE,
     createProcessor: () => (source, el) => {
       const result = parseImpactMap(source);
@@ -66,7 +67,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "story",
     label: "User Story Map",
-    description: "Release scope and priorities clear.",
     template: STORY_MAP_TEMPLATE,
     createProcessor: () => (source, el) => {
       const result = parseStoryMap(source);
@@ -77,7 +77,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "mindmap",
     label: "Mind Map",
-    description: "Complex ideas structured and prioritised.",
     template: MIND_MAP_TEMPLATE,
     createProcessor: () => (source, el) => {
       const result = parseMindMap(source);
@@ -88,7 +87,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "venn",
     label: "Venn Diagram",
-    description: "Overlaps and gaps clearly identified.",
     template: VENN_TEMPLATE,
     createProcessor: (app) => (source, el, ctx) => {
       const result = parseVennDiagram(source);
@@ -101,7 +99,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "ost",
     label: "Opportunity Solution Tree",
-    description: "Outcome drives opportunities, solutions, and experiments.",
     template: OST_TEMPLATE,
     createProcessor: () => (source, el) => {
       const result = parseOST(source);
@@ -112,7 +109,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "carousel",
     label: "Image Carousel",
-    description: "Multiple images as a navigable carousel.",
     template: CAROUSEL_TEMPLATE,
     createProcessor: (app) => (source, el, ctx) => {
       const result = parseCarouselBlock(source);
@@ -128,7 +124,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "sipoc",
     label: "SIPOC Diagram",
-    description: "Process scope: suppliers, inputs, steps, outputs, customers.",
     template: SIPOC_TEMPLATE,
     createProcessor: () => (source, el) => {
       // Detect flow variant: first non-blank, non-comment line is "type: flow"
@@ -148,7 +143,6 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
   {
     id: "wardley",
     label: "Wardley Map",
-    description: "Value chain plotted against evolution to reveal strategic moves.",
     template: WARDLEY_TEMPLATE,
     createProcessor: () => (source, el) => {
       const result = parseWardleyMap(source);
@@ -244,5 +238,7 @@ export default class VizardryPlugin extends Plugin {
     }
   }
 
-  onunload(): void {}
+  onunload(): void {
+    resetInteractiveIdCounter();
+  }
 }
