@@ -3,6 +3,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
+import { onDisconnected } from "../shared/lifecycle";
 import { writeBlockContent } from "../shared/block-edit";
 import { t } from "../i18n";
 
@@ -55,7 +56,13 @@ export function renderCanvas(
     if (app && ctx) {
       body.addClass("vzd-block-editable");
       body.setAttribute("title", t("edit.clickToEdit"));
-      body.addEventListener("click", () => activateBlockEdit(body, blockDef.label, content, app, ctx, container));
+      // Store current content in dataset so the click handler always reads the
+      // latest value — capturing `content` in the closure would give the stale
+      // render-time string after an optimistic re-render (#1).
+      body.dataset.blockContent = content;
+      body.addEventListener("click", () => {
+        activateBlockEdit(body, blockDef.label, body.dataset.blockContent ?? "", app, ctx, container);
+      });
     }
   }
 
@@ -66,6 +73,8 @@ export function renderCanvas(
 
 function renderBlockBody(body: HTMLElement, content: string): void {
   body.empty();
+  // Keep dataset in sync so the click handler always has the latest content.
+  body.dataset.blockContent = content;
   if (content.trim() === "") {
     body.addClass("vizardry-block-empty");
     body.removeClass("vzd-block-body--filled");
@@ -126,7 +135,9 @@ function activateBlockEdit(
     }
 
     // Optimistically re-render so the canvas updates immediately before
-    // Obsidian triggers a full re-render from the source change
+    // Obsidian triggers a full re-render from the source change.
+    // renderBlockBody also updates body.dataset.blockContent, so the next
+    // click will use the correct value.
     renderBlockBody(body, newValue.trim());
   };
 
@@ -154,6 +165,7 @@ function activateBlockEdit(
 
 function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   let current = 0;
+  const mq = window.matchMedia("(max-width: 600px)");
 
   const nav = container.createEl("div", { cls: "vizardry-nav" });
   const prev = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
@@ -169,7 +181,7 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   setIcon(next, "chevron-right");
   next.setAttribute("aria-label", t("nav.nextBlock"));
 
-  function update(): void {
+  function applyMobile(): void {
     container.querySelectorAll<HTMLElement>(".vizardry-block").forEach((b, i) =>
       b.classList.toggle("vizardry-block-active", i === current)
     );
@@ -178,18 +190,52 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
     next.disabled = current === blockCount - 1;
   }
 
-  prev.addEventListener("click", () => { if (current > 0) { current--; update(); } });
-  next.addEventListener("click", () => { if (current < blockCount - 1) { current++; update(); } });
+  function resetLayout(): void {
+    // On desktop, all blocks are always visible — remove carousel state.
+    container.querySelectorAll<HTMLElement>(".vizardry-block").forEach(b => {
+      b.classList.remove("vizardry-block-active");
+    });
+    dots.forEach(d => d.classList.remove("is-active"));
+    prev.disabled = false;
+    next.disabled = false;
+  }
 
+  const onMediaChange = (e: MediaQueryList | MediaQueryListEvent): void => {
+    if (e.matches) {
+      nav.style.display = "flex";
+      applyMobile();
+    } else {
+      nav.style.display = "none";
+      resetLayout();
+    }
+  };
+
+  nav.style.display = "none";
+  mq.addEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
+  onMediaChange(mq);
+
+  prev.addEventListener("click", () => { if (current > 0) { current--; applyMobile(); } });
+  next.addEventListener("click", () => { if (current < blockCount - 1) { current++; applyMobile(); } });
+
+  // Touch swipe — only active in mobile mode (when nav is visible).
   let touchStartX = 0;
-  container.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
-  container.addEventListener("touchend", (e) => {
+  const onTouchStart = (e: TouchEvent): void => { touchStartX = e.touches[0].clientX; };
+  const onTouchEnd = (e: TouchEvent): void => {
+    if (!mq.matches) return;
     const delta = touchStartX - e.changedTouches[0].clientX;
     if (Math.abs(delta) > SWIPE_THRESHOLD_PX) {
-      if (delta > 0 && current < blockCount - 1) { current++; update(); }
-      else if (delta < 0 && current > 0) { current--; update(); }
+      if (delta > 0 && current < blockCount - 1) { current++; applyMobile(); }
+      else if (delta < 0 && current > 0) { current--; applyMobile(); }
     }
-  }, { passive: true });
+  };
+  container.addEventListener("touchstart", onTouchStart, { passive: true });
+  container.addEventListener("touchend", onTouchEnd, { passive: true });
 
-  update();
+  // Clean up both the MediaQueryList listener and the touch listeners when the
+  // container leaves the DOM, preventing accumulation across re-renders.
+  onDisconnected(container, () => {
+    mq.removeEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
+    container.removeEventListener("touchstart", onTouchStart);
+    container.removeEventListener("touchend", onTouchEnd);
+  });
 }

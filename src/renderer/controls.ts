@@ -1,5 +1,6 @@
 import { setIcon } from "obsidian";
 import { applyFullWidth } from "./full-width";
+import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
 
 let nextId = 0;
@@ -167,6 +168,13 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
 
   const onKeyDown = (e: KeyboardEvent): void => { if (e.key === "Escape") dismiss(); };
   document.addEventListener("keydown", onKeyDown);
+
+  // Guard: if the overlay is removed from the DOM without dismiss() being
+  // called (e.g. a plugin reload), clean up the document-level listener so it
+  // doesn't accumulate across reloads.
+  onDisconnected(overlay, () => {
+    document.removeEventListener("keydown", onKeyDown);
+  });
 
   let touchStartY = 0;
   overlay.addEventListener("touchstart", (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });

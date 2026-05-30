@@ -36,7 +36,11 @@ export function resetLocaleCache(): void {
  */
 export function t(key: TranslationKey, vars?: Record<string, string | number>): string {
   const locale = resolvedLocale();
-  let str = (locale[key] ?? en[key]) as string;
+  // Cast through `string | undefined`: a missing key renders as the key itself
+  // rather than "undefined". TypeScript prevents this at compile time for
+  // direct calls (TranslationKey is exhaustive over en), but dynamic callers
+  // such as tFrameworkDescription can reach here with unrecognised keys.
+  let str = ((locale[key] ?? en[key]) as string | undefined) ?? key;
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       str = str.replace(`{{${k}}}`, String(v));
