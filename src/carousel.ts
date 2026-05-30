@@ -1,5 +1,6 @@
 import type { CarouselBlock, CarouselImage, CarouselResult } from "./types";
 import { SWIPE_THRESHOLD_PX } from "./shared/constants";
+import { t } from "./i18n";
 
 // ── Parser ────────────────────────────────────────────────────────────────────
 // Accepts standard Markdown image syntax, one image per line.
@@ -54,7 +55,7 @@ export function renderCarouselBlock(
     attr: {
       tabindex: "0",
       role: "region",
-      "aria-label": `Image carousel, ${images.length} images`,
+      "aria-label": t("nav.imageCarousel", { n: images.length }),
     },
   });
 
@@ -84,7 +85,7 @@ export function renderCarouselBlock(
   const prevBtn = controls.createEl("button", {
     cls: "vzd-carousel-btn",
     text: "‹",
-    attr: { type: "button", "aria-label": "Previous image" },
+    attr: { type: "button", "aria-label": t("nav.previousImage") },
   });
 
   const dotsWrap = controls.createEl("div", { cls: "vzd-carousel-dots" });
@@ -92,7 +93,7 @@ export function renderCarouselBlock(
   const dots = images.map((_, idx) => {
     const dot = dotsWrap.createEl("button", {
       cls: "vzd-carousel-dot",
-      attr: { type: "button", "aria-label": `Go to image ${idx + 1}` },
+      attr: { type: "button", "aria-label": t("nav.goToImage", { n: idx + 1 }) },
     });
     dot.toggleClass("vzd-carousel-dot-active", idx === 0);
     return dot;
@@ -101,7 +102,7 @@ export function renderCarouselBlock(
   const nextBtn = controls.createEl("button", {
     cls: "vzd-carousel-btn",
     text: "›",
-    attr: { type: "button", "aria-label": "Next image" },
+    attr: { type: "button", "aria-label": t("nav.nextImage") },
   });
 
   let current = 0;

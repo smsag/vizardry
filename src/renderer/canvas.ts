@@ -4,6 +4,7 @@ import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { writeBlockContent } from "../shared/block-edit";
+import { t } from "../i18n";
 
 export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");
@@ -40,7 +41,7 @@ export function renderCanvas(
     if (heading) {
       const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
       setIcon(linkBtn, "link");
-      linkBtn.setAttribute("aria-label", `Jump to: ${heading}`);
+      linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
       linkBtn.dataset.heading = heading;
       markInteractive(linkBtn);
       linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
@@ -53,7 +54,7 @@ export function renderCanvas(
 
     if (app && ctx) {
       body.addClass("vzd-block-editable");
-      body.setAttribute("title", "Click to edit");
+      body.setAttribute("title", t("edit.clickToEdit"));
       body.addEventListener("click", () => activateBlockEdit(body, blockDef.label, content, app, ctx, container));
     }
   }
@@ -157,7 +158,7 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   const nav = container.createEl("div", { cls: "vizardry-nav" });
   const prev = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
   setIcon(prev, "chevron-left");
-  prev.setAttribute("aria-label", "Previous block");
+  prev.setAttribute("aria-label", t("nav.previousBlock"));
 
   const dotsWrap = nav.createEl("div", { cls: "vizardry-nav-dots" });
   const dots = Array.from({ length: blockCount }, () =>
@@ -166,7 +167,7 @@ function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
 
   const next = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
   setIcon(next, "chevron-right");
-  next.setAttribute("aria-label", "Next block");
+  next.setAttribute("aria-label", t("nav.nextBlock"));
 
   function update(): void {
     container.querySelectorAll<HTMLElement>(".vizardry-block").forEach((b, i) =>

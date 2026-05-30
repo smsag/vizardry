@@ -1,0 +1,54 @@
+import type { TranslationKey } from "./en";
+
+export const de: Partial<Record<TranslationKey, string>> = {
+  // ── Framework descriptions ──────────────────────────────────────────────────
+  "framework.bmc.description":        "Das gesamte Geschäftsmodell auf einen Blick.",
+  "framework.carousel.description":   "Mehrere Bilder als navigierbares Karussell.",
+  "framework.fourls.description":     "Gefiel, Gelernt, Gefehlt, Gewünscht — plus eine gemeinsame Aktionsliste.",
+  "framework.impact.description":     "Alle Features an Zielen ausgerichtet.",
+  "framework.jobs.description":       "Kernmotivation der Kunden freigelegt.",
+  "framework.kata.description":       "Klarer Weg zum nächsten Experiment.",
+  "framework.lean.description":       "Riskanteste Annahmen aufgedeckt und priorisiert.",
+  "framework.leanux.description":     "Team abgestimmt bevor die Entwicklung beginnt.",
+  "framework.mindmap.description":    "Komplexe Ideen strukturiert und priorisiert.",
+  "framework.opportunity.description":"Lösungen an echten Ergebnissen ausgerichtet.",
+  "framework.ost.description":        "Ergebnis treibt Chancen, Lösungen und Experimente.",
+  "framework.rac.description":        "Größte Risiken für Tests priorisiert.",
+  "framework.sipoc.description":      "Prozessumfang: Lieferanten, Eingaben, Schritte, Ausgaben, Kunden.",
+  "framework.sipoc-flow.description": "Prozessumfang mit expliziten Knotenformen und Flussverbindungen.",
+  "framework.story.description":      "Release-Umfang und Prioritäten klar.",
+  "framework.swot.description":       "Stärken, Schwächen, Chancen und Risiken auf einen Blick.",
+  "framework.venn.description":       "Überschneidungen und Lücken klar erkannt.",
+  "framework.vpc.description":        "Features treffen echte Kundenbedürfnisse.",
+  "framework.wardley.description":    "Wertkette gegen Evolution aufgetragen zur Aufdeckung strategischer Züge.",
+
+  // ── Canvas controls ─────────────────────────────────────────────────────────
+  "controls.decreaseFontSize":  "Schriftgröße verringern",
+  "controls.increaseFontSize":  "Schriftgröße vergrößern",
+  "controls.downloadPng":       "Als PNG herunterladen",
+  "controls.presentFullscreen": "Vollbild-Präsentation",
+  "controls.reloadCanvas":      "Canvas neu laden",
+  "controls.exitPresentation":  "Präsentation beenden",
+
+  // ── Navigation aria-labels ──────────────────────────────────────────────────
+  "nav.previousBlock":    "Vorheriger Block",
+  "nav.nextBlock":        "Nächster Block",
+  "nav.previousStep":     "Vorheriger Schritt",
+  "nav.nextStep":         "Nächster Schritt",
+  "nav.previousImage":    "Vorheriges Bild",
+  "nav.nextImage":        "Nächstes Bild",
+  "nav.goToImage":        "Zu Bild {{n}} wechseln",
+  "nav.imageCarousel":    "Bildkarussell, {{n}} Bilder",
+  "nav.jumpTo":           "Springen zu: {{heading}}",
+
+  // ── Inline editing ──────────────────────────────────────────────────────────
+  "edit.clickToEdit": "Zum Bearbeiten klicken",
+
+  // ── Commands ────────────────────────────────────────────────────────────────
+  "commands.insertCanvas":         "Canvas einfügen…",
+  "commands.insertVizardryCanvas": "Vizardry-Canvas einfügen…",
+  "commands.insertFramework":      "{{label}} einfügen",
+
+  // ── Notices ─────────────────────────────────────────────────────────────────
+  "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
+};
