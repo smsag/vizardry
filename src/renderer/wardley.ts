@@ -1,4 +1,5 @@
 import type { WardleyMap, WardleyComponent } from "../types";
+import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX } from "../shared/constants";
@@ -14,7 +15,7 @@ const PLOT_Y = PAD.top;
 const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
-const EVOLUTION_STAGES = ["Genesis", "Custom", "Product", "Commodity"];
+const evolutionStages = (): string[] => [t("wardley.stage.genesis"), t("wardley.stage.custom"), t("wardley.stage.product"), t("wardley.stage.commodity")];
 const NODE_R = 8;
 
 function toSvgX(evolution: number): number {
@@ -119,8 +120,8 @@ export function renderWardleyMap(data: WardleyMap, container: HTMLElement): void
   svg.appendChild(defs);
 
   // ── Evolution stage bands and labels ──────────────────────────────────
-  const stageW = PLOT_W / EVOLUTION_STAGES.length;
-  EVOLUTION_STAGES.forEach((stage, i) => {
+  const stageW = PLOT_W / evolutionStages().length;
+  evolutionStages().forEach((stage, i) => {
     const x = PLOT_X + i * stageW;
     // Alternating subtle band
     if (i % 2 === 1) {
@@ -173,7 +174,7 @@ export function renderWardleyMap(data: WardleyMap, container: HTMLElement): void
     "text-anchor": "middle",
     transform: `rotate(-90, ${PLOT_X - 10}, ${PLOT_Y + PLOT_H / 2})`,
   });
-  yLabel.textContent = "Visibility";
+  yLabel.textContent = t("wardley.axis.visibility");
   svg.appendChild(yLabel);
 
   // X axis label
@@ -183,7 +184,7 @@ export function renderWardleyMap(data: WardleyMap, container: HTMLElement): void
     class: "vzd-wardley-axis-label",
     "text-anchor": "middle",
   });
-  xLabel.textContent = "Evolution →";
+  xLabel.textContent = t("wardley.axis.evolution");
   svg.appendChild(xLabel);
 
   // ── Build component lookup for link drawing ────────────────────────────

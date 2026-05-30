@@ -58,6 +58,26 @@ export const en = {
   "impact.level.impact":      "Impact",
   "impact.level.deliverable": "Deliverable",
 
+  // ── Story Map labels ────────────────────────────────────────────────────────
+  "story.label.user":    "User",
+  "story.label.goal":    "Goal",
+  "story.backlog":       "Backlog",
+
+  // ── SIPOC column headers ────────────────────────────────────────────────────
+  "sipoc.col.suppliers": "Suppliers",
+  "sipoc.col.inputs":    "Inputs",
+  "sipoc.col.process":   "Process",
+  "sipoc.col.outputs":   "Outputs",
+  "sipoc.col.customers": "Customers",
+
+  // ── Wardley Map labels ──────────────────────────────────────────────────────
+  "wardley.stage.genesis":   "Genesis",
+  "wardley.stage.custom":    "Custom",
+  "wardley.stage.product":   "Product",
+  "wardley.stage.commodity": "Commodity",
+  "wardley.axis.visibility": "Visibility",
+  "wardley.axis.evolution":  "Evolution →",
+
   // ── Commands ────────────────────────────────────────────────────────────────
   "commands.insertCanvas":           "Insert canvas…",
   "commands.insertVizardryCanvas":   "Insert Vizardry canvas…",

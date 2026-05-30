@@ -1,4 +1,5 @@
 import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowNode, SIPOCNodeShape } from "../types";
+import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
 import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
@@ -6,13 +7,15 @@ import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
 // ── Layout constants ───────────────────────────────────────────────────────
 
 const COLS: SIPOCColumn[] = ["suppliers", "inputs", "process", "outputs", "customers"];
-const COL_LABELS: Record<SIPOCColumn, string> = {
-  suppliers: "Suppliers",
-  inputs: "Inputs",
-  process: "Process",
-  outputs: "Outputs",
-  customers: "Customers",
-};
+function colLabels(): Record<SIPOCColumn, string> {
+  return {
+    suppliers: t("sipoc.col.suppliers"),
+    inputs:    t("sipoc.col.inputs"),
+    process:   t("sipoc.col.process"),
+    outputs:   t("sipoc.col.outputs"),
+    customers: t("sipoc.col.customers"),
+  };
+}
 
 const W = 900;
 const HEADER_H = 44;
@@ -193,7 +196,7 @@ export function renderSIPOCFlow(data: SIPOCFlowData, container: HTMLElement): vo
       "text-anchor": "middle",
       "dominant-baseline": "central",
     });
-    headerText.textContent = COL_LABELS[col];
+    headerText.textContent = colLabels()[col];
     svg.appendChild(headerText);
   });
 
