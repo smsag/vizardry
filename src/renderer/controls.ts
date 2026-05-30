@@ -1,5 +1,4 @@
 import { setIcon } from "obsidian";
-import { toPng } from "html-to-image";
 import { applyFullWidth } from "./full-width";
 import { t } from "../i18n";
 
@@ -7,6 +6,17 @@ let nextId = 0;
 
 export function markInteractive(el: HTMLElement): void {
   el.dataset.vzdId = String(nextId++);
+}
+
+/**
+ * Reset the interactive-element ID counter.
+ * Must be called from VizardryPlugin.onunload() so that a plugin reload
+ * (e.g. via Hot Reload) starts fresh — otherwise presentation-mode click
+ * rebinding silently fails because the new canvas IDs do not match the
+ * IDs already burned into the cloned DOM from the previous load.
+ */
+export function resetInteractiveIdCounter(): void {
+  nextId = 0;
 }
 
 export function initCanvas(
@@ -63,6 +73,10 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   const handleDownload = async (): Promise<void> => {
     downloadBtn.disabled = true;
     try {
+      // Lazy-load html-to-image so its initialisation cost is deferred to the
+      // first click rather than paid at plugin startup. esbuild's CJS __commonJS
+      // factory means the module code runs on first require(), not at bundle eval.
+      const { toPng } = await import("html-to-image");
       const bg = getComputedStyle(document.body).getPropertyValue("--background-primary").trim() || "#ffffff";
       const dataUrl = await toPng(container, {
         pixelRatio: window.devicePixelRatio * 2,

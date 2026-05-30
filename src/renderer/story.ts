@@ -49,15 +49,18 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
     }
   }
 
+  function renderTaskCard(cell: HTMLElement, task: StoryTask): void {
+    const card = cell.createEl("div", { cls: "vzd-story-task-card" });
+    card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+    if (task.subtitle) {
+      card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+    }
+  }
+
   function appendCards(cell: HTMLElement, step: StoryStep, taskKeys: string[]): void {
     for (const taskKey of taskKeys) {
       const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKey);
-      if (!task) continue;
-      const card = cell.createEl("div", { cls: "vzd-story-task-card" });
-      card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
-      if (task.subtitle) {
-        card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
-      }
+      if (task) renderTaskCard(cell, task);
     }
   }
 
@@ -108,13 +111,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
       if (tasks.length === 0) {
         cell.addClass("vzd-story-cell-empty");
       } else {
-        for (const task of tasks) {
-          const card = cell.createEl("div", { cls: "vzd-story-task-card" });
-          card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
-          if (task.subtitle) {
-            card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
-          }
-        }
+        for (const task of tasks) renderTaskCard(cell, task);
       }
       cellsByStep[i].push(cell);
     }
