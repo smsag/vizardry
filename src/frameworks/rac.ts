@@ -3,7 +3,6 @@ import type { FrameworkDefinition } from "../types";
 export const RAC: FrameworkDefinition = {
   id: "rac",
   label: "Riskiest Assumptions Canvas",
-  description: "Biggest risks ranked for testing.",
   gridTemplate: `
     "cu pr so"
     "mv co sc"

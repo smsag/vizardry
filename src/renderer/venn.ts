@@ -2,6 +2,13 @@ import type { VennDiagram, VennItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { createSvgEl } from "../shared/svg";
 
+// Obsidian exposes its App instance on window.app, but there is no official
+// type declaration for this undocumented property. We describe only the minimal
+// shape we actually read so the cast is explicit and searchable.
+interface ObsidianWindow extends Window {
+  app?: { vault?: { config?: { accentColor?: string } } };
+}
+
 // ── Color utilities ────────────────────────────────────────────────────────
 
 /** Convert an RGB triplet (0–255) to [h, s, l] (degrees, %, %). */
@@ -37,7 +44,7 @@ function hexToHsl(hex: string): [number, number, number] {
 function getAccentHsl(): [number, number, number] {
   // 1. Obsidian vault config stores the accent as a hex string
   try {
-    const hex: string | undefined = (window as any).app?.vault?.config?.accentColor;
+    const hex: string | undefined = (window as ObsidianWindow).app?.vault?.config?.accentColor;
     if (hex && /^#[0-9a-f]{6}$/i.test(hex)) return hexToHsl(hex);
   } catch { /* ignore */ }
 

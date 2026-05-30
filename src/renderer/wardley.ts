@@ -1,6 +1,7 @@
 import type { WardleyMap, WardleyComponent } from "../types";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
+import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX } from "../shared/constants";
 
 // Canvas dimensions
 const W = 800;
@@ -25,12 +26,6 @@ function toSvgY(visibility: number): number {
   return PLOT_Y + (1 - visibility) * PLOT_H;
 }
 
-/** Approximate character width used for rough label-width estimation. */
-const CHAR_W_PX = 7;
-/** Minimum vertical gap (px) enforced between any two label baselines. */
-const LABEL_MIN_GAP_PX = 14;
-/** Two labels are considered horizontally overlapping when their text columns are this close. */
-const LABEL_OVERLAP_X_PX = 80;
 
 /**
  * Base anchor direction for a label based on its map quadrant.
@@ -77,19 +72,19 @@ function nudgeLabels(slots: LabelSlot[]): void {
       const b = slots[j];
 
       // Estimate horizontal extents (rough: name length × char width).
-      const aW = a.name.length * CHAR_W_PX;
-      const bW = b.name.length * CHAR_W_PX;
+      const aW = a.name.length * WARDLEY_CHAR_W_PX;
+      const bW = b.name.length * WARDLEY_CHAR_W_PX;
       const aLeft  = a.anchor === "end" ? a.textX - aW : a.textX;
       const aRight = a.anchor === "end" ? a.textX      : a.textX + aW;
       const bLeft  = b.anchor === "end" ? b.textX - bW : b.textX;
       const bRight = b.anchor === "end" ? b.textX      : b.textX + bW;
 
       // Skip pairs whose text columns don't overlap horizontally.
-      if (aRight + LABEL_OVERLAP_X_PX < bLeft || bRight + LABEL_OVERLAP_X_PX < aLeft) continue;
+      if (aRight + WARDLEY_LABEL_OVERLAP_X_PX < bLeft || bRight + WARDLEY_LABEL_OVERLAP_X_PX < aLeft) continue;
 
       const gap = b.textY - a.textY;
-      if (gap < LABEL_MIN_GAP_PX) {
-        b.textY += LABEL_MIN_GAP_PX - gap;
+      if (gap < WARDLEY_LABEL_MIN_GAP_PX) {
+        b.textY += WARDLEY_LABEL_MIN_GAP_PX - gap;
       }
     }
   }

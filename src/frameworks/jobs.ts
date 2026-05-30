@@ -3,7 +3,6 @@ import type { FrameworkDefinition } from "../types";
 export const JOBS: FrameworkDefinition = {
   id: "jobs",
   label: "Jobs Canvas",
-  description: "Core customer motivation laid bare.",
   gridTemplate: `
     "jp mj ci"
     "fa ea sa"

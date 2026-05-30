@@ -1,6 +1,7 @@
 import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowNode, SIPOCNodeShape } from "../types";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
+import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
 
 // ── Layout constants ───────────────────────────────────────────────────────
 
@@ -91,8 +92,7 @@ function drawNode(
   }
 
   // Label — truncate long text
-  const MAX_CHARS = 16;
-  const displayLabel = label.length > MAX_CHARS ? label.slice(0, MAX_CHARS - 1) + "…" : label;
+  const displayLabel = label.length > SIPOC_FLOW_LABEL_MAX_CHARS ? label.slice(0, SIPOC_FLOW_LABEL_MAX_CHARS - 1) + "…" : label;
   const text = createSvgEl("text", {
     x: String(cx), y: String(cy),
     class: "vzd-sf-label",
@@ -102,7 +102,7 @@ function drawNode(
   text.textContent = displayLabel;
 
   // title tooltip for full label when truncated
-  if (label.length > MAX_CHARS) {
+  if (label.length > SIPOC_FLOW_LABEL_MAX_CHARS) {
     const title = createSvgEl("title");
     title.textContent = label;
     text.appendChild(title);
