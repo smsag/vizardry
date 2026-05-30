@@ -116,7 +116,7 @@ export function renderVennDiagram(
   type CircleGeo = { cx: number; cy: number; r: number; lx: number; ly: number };
   const geos: CircleGeo[] = is3
     ? [
-        { cx: 250, cy: 165, r: 140, lx: 250, ly: 38  },
+        { cx: 250, cy: 165, r: 140, lx: 250, ly: 128 },
         { cx: 338, cy: 315, r: 140, lx: 422, ly: 322 },
         { cx: 162, cy: 315, r: 140, lx: 78,  ly: 322 },
       ]
