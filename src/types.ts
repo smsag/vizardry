@@ -13,6 +13,18 @@ export interface BlockDefinition {
   area: string;
 }
 
+/**
+ * Generic discriminated-union result type used by every parser.
+ * `ok: true` carries the parsed data; `ok: false` carries a human-readable
+ * error string suitable for display in the canvas error banner.
+ */
+export type Result<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
+// ParseResult has two sibling payload fields (data + links) on the success
+// variant, which doesn't fit the single-data Result<T> pattern, so it is
+// kept as a standalone definition.
 export type ParseResult =
   | { ok: true; data: Record<string, string>; links: Record<string, string> }
   | { ok: false; error: string };
@@ -34,9 +46,7 @@ export interface ImpactMap {
   actors: ImpactActor[];
 }
 
-export type ImpactMapResult =
-  | { ok: true; data: ImpactMap }
-  | { ok: false; error: string };
+export type ImpactMapResult = Result<ImpactMap>;
 
 // ── Story Map ───────────────────────────────────────────────────────────────
 
@@ -68,9 +78,7 @@ export interface StoryMap {
   slices: StorySlice[];
 }
 
-export type StoryMapResult =
-  | { ok: true; data: StoryMap }
-  | { ok: false; error: string };
+export type StoryMapResult = Result<StoryMap>;
 
 // ── Mind Map ────────────────────────────────────────────────────────────────
 
@@ -83,9 +91,7 @@ export interface MindMap {
   root: MindMapNode;
 }
 
-export type MindMapResult =
-  | { ok: true; data: MindMap }
-  | { ok: false; error: string };
+export type MindMapResult = Result<MindMap>;
 
 // ── Opportunity Solution Tree ───────────────────────────────────────────────
 
@@ -100,9 +106,7 @@ export interface OSTTree {
   root: OSTNode;
 }
 
-export type OSTResult =
-  | { ok: true; data: OSTTree }
-  | { ok: false; error: string };
+export type OSTResult = Result<OSTTree>;
 
 // ── Venn Diagram ─────────────────────────────────────────────────────────────
 
@@ -126,9 +130,7 @@ export interface VennDiagram {
   regions: VennRegion[];
 }
 
-export type VennResult =
-  | { ok: true; data: VennDiagram }
-  | { ok: false; error: string };
+export type VennResult = Result<VennDiagram>;
 
 // ── Shared Tree Node (used by OST, Mind Map, Impact Map renderers) ──────────
 
@@ -180,9 +182,7 @@ export interface SIPOCData {
   rows: SIPOCRow[];
 }
 
-export type SIPOCResult =
-  | { ok: true; data: SIPOCData }
-  | { ok: false; error: string };
+export type SIPOCResult = Result<SIPOCData>;
 
 // ── Carousel ─────────────────────────────────────────────────────────────────
 
@@ -195,9 +195,7 @@ export interface CarouselBlock {
   images: CarouselImage[];
 }
 
-export type CarouselResult =
-  | { ok: true; data: CarouselBlock }
-  | { ok: false; error: string };
+export type CarouselResult = Result<CarouselBlock>;
 
 // ── Wardley Map ───────────────────────────────────────────────────────────────
 
@@ -218,9 +216,7 @@ export interface WardleyMap {
   links: WardleyLink[];
 }
 
-export type WardleyResult =
-  | { ok: true; data: WardleyMap }
-  | { ok: false; error: string };
+export type WardleyResult = Result<WardleyMap>;
 
 // ── SIPOC Flow ────────────────────────────────────────────────────────────────
 
@@ -244,6 +240,4 @@ export interface SIPOCFlowData {
   links: SIPOCFlowLink[];
 }
 
-export type SIPOCFlowResult =
-  | { ok: true; data: SIPOCFlowData }
-  | { ok: false; error: string };
+export type SIPOCFlowResult = Result<SIPOCFlowData>;

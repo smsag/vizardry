@@ -2,6 +2,7 @@ import { setIcon } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
+import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
 
 export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
@@ -220,16 +221,9 @@ function setupStoryCarousel(
   // Remove the mq listener when the grid is detached from the DOM.
   // Without this, each re-render of the note accumulates a new listener on the
   // global MediaQueryList object, leaking the closure (and its DOM references).
-  // Observe only the immediate parent (not document.body with subtree:true) to
-  // avoid firing on every keystroke in the entire document.
-  const removalObserver = new MutationObserver(() => {
-    if (!grid.isConnected) {
-      mq.removeEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
-      removalObserver.disconnect();
-    }
+  onDisconnected(grid, () => {
+    mq.removeEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
   });
-  const observationRoot = grid.closest(".workspace-leaf-content") ?? grid.parentElement ?? document.body;
-  removalObserver.observe(observationRoot, { childList: true });
 
   prevBtn.addEventListener("click", () => goTo(current - 1));
   nextBtn.addEventListener("click", () => goTo(current + 1));
