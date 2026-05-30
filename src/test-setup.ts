@@ -56,6 +56,16 @@ Object.assign(HTMLElement.prototype, {
     this.appendChild(document.createTextNode(text));
     return this;
   },
+
+  toggleClass(this: HTMLElement, cls: string, value: boolean): HTMLElement {
+    this.classList.toggle(cls, value);
+    return this;
+  },
+
+  setText(this: HTMLElement, text: string): HTMLElement {
+    this.textContent = text;
+    return this;
+  },
 });
 
 // ── window stubs ──────────────────────────────────────────────────────────────
