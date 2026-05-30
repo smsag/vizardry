@@ -326,6 +326,29 @@ describe("renderWardleyMap", () => {
     };
     expect(() => renderWardleyMap(brokenMap, el)).not.toThrow();
   });
+
+  it("renders 10 clustered components at [0.5, 0.5] without throwing", () => {
+    const el = container();
+    const clustered: WardleyMap = {
+      anchor: null,
+      components: Array.from({ length: 10 }, (_, i) => ({
+        name: `Component ${i + 1}`,
+        visibility: 0.5,
+        evolution: 0.5,
+      })),
+      links: [],
+    };
+    expect(() => renderWardleyMap(clustered, el)).not.toThrow();
+    const svg = el.querySelector("svg");
+    expect(svg).toBeTruthy();
+    const nodes = svg!.querySelectorAll(".vzd-wardley-node");
+    expect(nodes).toHaveLength(10);
+    // All label y-positions should be distinct after the nudge pass
+    const labelYs = Array.from(svg!.querySelectorAll(".vzd-wardley-label"))
+      .map(t => parseFloat((t as SVGTextElement).getAttribute("y") ?? "0"));
+    const uniqueYs = new Set(labelYs.map(y => Math.round(y)));
+    expect(uniqueYs.size).toBe(10);
+  });
 });
 
 // ── renderSIPOC ───────────────────────────────────────────────────────────────
