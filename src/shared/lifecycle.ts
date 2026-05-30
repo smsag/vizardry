@@ -1,14 +1,16 @@
 /**
- * Calls `cleanup()` once when `el` is removed from the DOM.
+ * Calls `cleanup()` once when `el` is removed from the DOM, then
+ * disconnects the internal observer automatically.
  *
- * Observes only the immediate parent (not document.body with subtree:true)
- * so the MutationObserver fires only when the parent's direct children change,
- * not on every DOM mutation in the entire document.
+ * Returns a dispose function — call it to cancel the watch early (e.g.
+ * when setting up a replacement observer on a new container). Without
+ * calling dispose, the observer stays live until `el` actually disconnects.
  *
- * Use this anywhere a renderer needs to release resources (event listeners,
- * ResizeObservers, MediaQueryList listeners) when its root element is removed.
+ * Observes only the nearest .workspace-leaf-content ancestor (not
+ * document.body with subtree:true) so it fires only when the parent's
+ * direct children change, not on every DOM mutation in the document.
  */
-export function onDisconnected(el: HTMLElement, cleanup: () => void): void {
+export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void {
   const parent = el.closest(".workspace-leaf-content") ?? el.parentElement ?? document.body;
   const mo = new MutationObserver(() => {
     if (!el.isConnected) {
@@ -17,4 +19,5 @@ export function onDisconnected(el: HTMLElement, cleanup: () => void): void {
     }
   });
   mo.observe(parent, { childList: true });
+  return () => mo.disconnect();
 }

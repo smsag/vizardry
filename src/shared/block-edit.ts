@@ -10,6 +10,8 @@ import { MarkdownView } from "obsidian";
  * (or end of block) with the new value.
  *
  * Returns false if we couldn't find a writable editor (reading mode, etc.).
+ * Each failure path emits a console.warn so it is diagnosable without
+ * requiring the user to reproduce the issue.
  */
 export function writeBlockContent(
   app: App,
@@ -19,17 +21,26 @@ export function writeBlockContent(
   newValue: string,
 ): boolean {
   const info = ctx.getSectionInfo(el);
-  if (!info) return false;
+  if (!info) {
+    console.warn("Vizardry: writeBlockContent — no section info for container");
+    return false;
+  }
 
   const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) return false;
+  if (!file) {
+    console.warn(`Vizardry: writeBlockContent — file not found: ${ctx.sourcePath}`);
+    return false;
+  }
 
   // Find a live editor for this file
   const leaf = app.workspace.getLeavesOfType("markdown").find(
     l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
   );
   const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) return false;
+  if (!editor) {
+    console.warn(`Vizardry: writeBlockContent — no live editor for ${ctx.sourcePath}`);
+    return false;
+  }
 
   const { lineStart, lineEnd } = info;
 
@@ -45,7 +56,10 @@ export function writeBlockContent(
     }
   }
 
-  if (blockHeaderLine === -1) return false;
+  if (blockHeaderLine === -1) {
+    console.warn(`Vizardry: writeBlockContent — block "${blockLabel}" not found in lines ${lineStart}–${lineEnd}`);
+    return false;
+  }
 
   // Find the range of indented lines that follow (the block body)
   let bodyStart = blockHeaderLine + 1;

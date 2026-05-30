@@ -139,13 +139,20 @@ export function parseStoryMap(source: string): StoryMapResult {
     }
   }
 
-  // Silently drop slice references to renamed/missing steps or tasks
+  // Drop slice references to renamed/missing steps or tasks.
+  // Log a warning so typos are diagnosable without making this a hard error —
+  // a renamed step shouldn't break the entire canvas.
   for (const slice of slices) {
     for (const stepKey of Object.keys(slice.cells)) {
       const validKeys = stepTaskKeys.get(stepKey);
       if (!validKeys) {
+        console.warn(`Vizardry: slice "${slice.name}" references unknown step "${stepKey}" — ignored`);
         delete slice.cells[stepKey];
       } else {
+        const dropped = slice.cells[stepKey].filter(k => !validKeys.has(k));
+        if (dropped.length > 0) {
+          console.warn(`Vizardry: slice "${slice.name}" / step "${stepKey}" references unknown tasks: ${dropped.join(", ")} — ignored`);
+        }
         slice.cells[stepKey] = slice.cells[stepKey].filter(taskKey => validKeys.has(taskKey));
       }
     }

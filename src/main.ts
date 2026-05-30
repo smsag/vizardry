@@ -135,7 +135,11 @@ const CUSTOM_RENDERERS: CustomRenderer[] = [
         const file = app.vault.getFileByPath(
           ctx.sourcePath.replace(/[^/]+$/, "") + src
         );
-        return file ? app.vault.getResourcePath(file) : src;
+        if (!file) {
+          console.warn(`Vizardry: carousel image not found in vault: ${src}`);
+          return "";
+        }
+        return app.vault.getResourcePath(file);
       });
     },
   },
@@ -185,20 +189,35 @@ export default class VizardryPlugin extends Plugin {
       }
     };
 
+
+    // Wraps a renderer call so any uncaught exception is surfaced as an
+    // inline error banner rather than silently leaving the code block blank.
+    const safeRender = (id: string, el: HTMLElement, fn: () => void): void => {
+      try {
+        fn();
+      } catch (err) {
+        console.error(`${tag}: renderer "${id}" threw`, err);
+        renderError(`Renderer error — check the console (${tag})`, el);
+      }
+    };
+
     // ── Grid canvas renderers ──────────────────────────────────────────
     for (const [id, definition] of Object.entries(FRAMEWORKS)) {
       registerProcessor(id, (source, el, ctx) => {
         const result = parseFrameworkSource(source);
         if (!result.ok) { renderError(result.error, el); return; }
-        renderCanvas(definition, result.data, result.links, el, (heading) => {
+        safeRender(id, el, () => renderCanvas(definition, result.data, result.links, el, (heading) => {
           void this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
-        }, this.app, ctx);
+        }, this.app, ctx));
       });
     }
 
     // ── Custom renderers ───────────────────────────────────────────────
     for (const renderer of CUSTOM_RENDERERS) {
-      registerProcessor(renderer.id, renderer.createProcessor(this.app));
+      const inner = renderer.createProcessor(this.app);
+      registerProcessor(renderer.id, (source, el, ctx) => {
+        safeRender(renderer.id, el, () => inner(source, el, ctx));
+      });
     }
 
     // ── Framework options (modal + commands) ───────────────────────────

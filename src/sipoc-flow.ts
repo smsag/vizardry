@@ -21,6 +21,7 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
   const lines = source.split("\n");
   const nodes: SIPOCFlowNode[] = [];
   const links: SIPOCFlowLink[] = [];
+  const linkLines = new Map<SIPOCFlowLink, number>();
   const nodeIndex = new Map<string, SIPOCFlowNode>();
   let currentCol: SIPOCColumn | null = null;
 
@@ -45,7 +46,9 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
         if (!fromLabel || !toLabel) {
           return { ok: false, error: `Line ${i + 1}: link requires two node names` };
         }
-        links.push({ from: normalise(fromLabel), to: normalise(toLabel) });
+        const linkObj = { from: normalise(fromLabel), to: normalise(toLabel) };
+        links.push(linkObj);
+        linkLines.set(linkObj, i + 1);
         continue;
       }
 
@@ -89,13 +92,15 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
     return { ok: false, error: "No nodes defined" };
   }
 
-  // Validate link references
+  // Validate link references (line numbers tracked in linkLines for precise errors)
   for (const link of links) {
+    const ln = linkLines.get(link) ?? 0;
+    const lineTag = ln ? `Line ${ln}: ` : "";
     if (!nodeIndex.has(link.from)) {
-      return { ok: false, error: `Link references unknown node "${link.from}"` };
+      return { ok: false, error: `${lineTag}link references unknown node "${link.from}"` };
     }
     if (!nodeIndex.has(link.to)) {
-      return { ok: false, error: `Link references unknown node "${link.to}"` };
+      return { ok: false, error: `${lineTag}link references unknown node "${link.to}"` };
     }
   }
 

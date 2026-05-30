@@ -9,6 +9,7 @@ import type {
   TreeRenderOptions,
 } from "../types";
 import { createSvgEl } from "../shared/svg";
+import { t } from "../i18n";
 
 function getTreeStyle(level: number, opts: TreeRenderOptions): TreeNodeStyle {
   return opts.levelStyles[Math.min(level, opts.levelStyles.length - 1)];
@@ -135,6 +136,10 @@ function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
   for (const child of node.children) renderTreeNodes(child, svg, opts);
 }
 
+// INVARIANT: renderTree mutates TreeNode.x/y/width/height in place during layout.
+// The adapter functions (adaptOSTToTree etc.) always create fresh TreeNode objects,
+// so this is safe. Do not cache or reuse a TreeNode tree across two renderTree calls —
+// the second call will inherit stale layout coordinates from the first.
 export function renderTree(tree: { root: TreeNode }, opts: TreeRenderOptions, el: HTMLElement): void {
   layoutTreeNode(tree.root, opts);
   const bounds = collectTreeBounds(tree.root);
@@ -223,10 +228,10 @@ export function adaptImpactMapToTree(map: ImpactMap): { root: TreeNode } {
   });
 
   return {
-    root: node(map.goal, 0, "Goal", map.actors.map(actor =>
-      node(actor.name, 1, "Actor", actor.impacts.map(impact =>
-        node(impact.name, 2, "Impact", impact.deliverables.map(d =>
-          node(d, 3, "Deliverable", [])
+    root: node(map.goal, 0, t("impact.level.goal"), map.actors.map(actor =>
+      node(actor.name, 1, t("impact.level.actor"), actor.impacts.map(impact =>
+        node(impact.name, 2, t("impact.level.impact"), impact.deliverables.map(d =>
+          node(d, 3, t("impact.level.deliverable"), [])
         ))
       ))
     )),

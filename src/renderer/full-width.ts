@@ -4,6 +4,11 @@ import { onDisconnected } from "../shared/lifecycle";
 interface FullWidthState {
   resizeObserver?: ResizeObserver;
   windowHandler?: () => void;
+  // Cancels the onDisconnected MutationObserver so it doesn't accumulate
+  // when the workspace container changes and a new one is registered.
+  disposeDisconnectWatch?: () => void;
+  // rAF id for debouncing resize events
+  resizeRafId?: number;
   observedContainer?: HTMLElement | null;
 }
 
@@ -42,6 +47,14 @@ function cleanupFullWidthWatchers(canvasEl: HTMLElement): void {
     state.windowHandler = undefined;
   }
 
+  if (state.resizeRafId) {
+    cancelAnimationFrame(state.resizeRafId);
+    state.resizeRafId = undefined;
+  }
+
+  state.disposeDisconnectWatch?.();
+  state.disposeDisconnectWatch = undefined;
+
   state.observedContainer = undefined;
 }
 
@@ -55,23 +68,26 @@ function ensureFullWidthWatchers(canvasEl: HTMLElement, container: HTMLElement |
   if (container) {
     const ro = new ResizeObserver(() => {
       if (!canvasEl.isConnected) { cleanupFullWidthWatchers(canvasEl); return; }
-      applyFullWidth(canvasEl);
+      // Debounce: collapse multiple resize events in the same frame into one
+      // applyFullWidth call. Without this, panel drags can fire 30-60 events/s.
+      cancelAnimationFrame(state.resizeRafId ?? 0);
+      state.resizeRafId = requestAnimationFrame(() => applyFullWidth(canvasEl));
     });
     ro.observe(container);
     state.resizeObserver = ro;
   } else {
     const onResize = (): void => {
       if (!canvasEl.isConnected) { cleanupFullWidthWatchers(canvasEl); return; }
-      applyFullWidth(canvasEl);
+      cancelAnimationFrame(state.resizeRafId ?? 0);
+      state.resizeRafId = requestAnimationFrame(() => applyFullWidth(canvasEl));
     };
     window.addEventListener("resize", onResize);
     state.windowHandler = onResize;
   }
 
-  // Use the shared onDisconnected utility instead of a hand-rolled
-  // MutationObserver — keeps the observer scoped to the nearest
-  // .workspace-leaf-content rather than an arbitrary parent.
-  onDisconnected(canvasEl, () => cleanupFullWidthWatchers(canvasEl));
+  // Track the disposer so cleanupFullWidthWatchers can cancel the observer
+  // if the workspace container changes before the element is removed from DOM.
+  state.disposeDisconnectWatch = onDisconnected(canvasEl, () => cleanupFullWidthWatchers(canvasEl));
 }
 
 export function applyFullWidth(canvasEl: HTMLElement): void {
