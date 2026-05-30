@@ -2,6 +2,7 @@ import { setIcon } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
+import { t } from "../i18n";
 
 export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
   initCanvas(container, "story", "User Story Map", map.user || map.goal ? header => {
@@ -148,11 +149,11 @@ function setupStoryCarousel(
   const nav = container.createEl("div", { cls: "vzd-story-nav" });
   const prevBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(prevBtn, "chevron-left");
-  prevBtn.setAttribute("aria-label", "Previous step");
+  prevBtn.setAttribute("aria-label", t("nav.previousStep"));
   const label = nav.createEl("span", { cls: "vzd-story-nav-label" });
   const nextBtn = nav.createEl("button", { cls: "vzd-story-nav-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(nextBtn, "chevron-right");
-  nextBtn.setAttribute("aria-label", "Next step");
+  nextBtn.setAttribute("aria-label", t("nav.nextStep"));
 
   function applyMobile(col: number): void {
     grid.style.gridTemplateColumns = "1fr";

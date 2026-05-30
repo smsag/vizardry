@@ -26,6 +26,7 @@ import type { FrameworkDefinition } from "./types";
 import { parseCarouselBlock, renderCarouselBlock } from "./carousel";
 import { parseSIPOC } from "./sipoc";
 import { insertTemplateAtCursor } from "./shared/editor";
+import { t, tFrameworkDescription } from "./i18n";
 
 // ── Grid-canvas framework registry ────────────────────────────────────────────
 // The map is derived from the id field on each definition — no duplicate key.
@@ -189,18 +190,18 @@ export default class VizardryPlugin extends Plugin {
         id: def.id,
         label: def.label,
         template: generateCanvasTemplate(def),
-        description: def.description,
+        description: tFrameworkDescription(def.id),
       })),
       ...CUSTOM_RENDERERS.map(r => ({
         id: r.id,
         label: r.label,
         template: r.template,
-        description: r.description,
+        description: tFrameworkDescription(r.id),
       })),
       {
         id: "sipoc-flow",
         label: "SIPOC Flow Diagram",
-        description: "Process scope with explicit node shapes and flow connections.",
+        description: tFrameworkDescription("sipoc-flow"),
         template: SIPOC_FLOW_TEMPLATE,
       },
     ];
@@ -209,14 +210,14 @@ export default class VizardryPlugin extends Plugin {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
       const editor = view?.editor;
       if (!editor) {
-        new Notice("Open a Markdown note in editing mode to use this command.");
+        new Notice(t("notices.openMarkdownNote"));
         return;
       }
       run(editor);
     };
 
     // ── Ribbon icon → opens insert modal ──────────────────────────────
-    this.addRibbonIcon("layout-template", "Insert Vizardry canvas…", () => {
+    this.addRibbonIcon("layout-template", t("commands.insertVizardryCanvas"), () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
       if (!view) return;
       new CanvasInsertModal(this.app, view.editor, frameworkOptions).open();
@@ -225,7 +226,7 @@ export default class VizardryPlugin extends Plugin {
     // ── Command: fuzzy modal ───────────────────────────────────────────
     this.addCommand({
       id: "insert-canvas",
-      name: "Insert canvas…",
+      name: t("commands.insertCanvas"),
       callback: () => withActiveMarkdownEditor((editor) => {
         new CanvasInsertModal(this.app, editor, frameworkOptions).open();
       }),
@@ -235,7 +236,7 @@ export default class VizardryPlugin extends Plugin {
     for (const option of frameworkOptions) {
       this.addCommand({
         id: `insert-${option.id}`,
-        name: `Insert ${option.label}`,
+        name: t("commands.insertFramework", { label: option.label }),
         callback: () => withActiveMarkdownEditor((editor) => {
           insertTemplateAtCursor(editor, option.template);
         }),

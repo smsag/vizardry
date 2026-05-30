@@ -1,6 +1,7 @@
 import { setIcon } from "obsidian";
 import { toPng } from "html-to-image";
 import { applyFullWidth } from "./full-width";
+import { t } from "../i18n";
 
 let nextId = 0;
 
@@ -35,11 +36,11 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
 
   const decreaseBtn = actions.createEl("button", { cls: "vizardry-font-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(decreaseBtn, "minus");
-  decreaseBtn.setAttribute("aria-label", "Decrease font size");
+  decreaseBtn.setAttribute("aria-label", t("controls.decreaseFontSize"));
 
   const increaseBtn = actions.createEl("button", { cls: "vizardry-font-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(increaseBtn, "plus");
-  increaseBtn.setAttribute("aria-label", "Increase font size");
+  increaseBtn.setAttribute("aria-label", t("controls.increaseFontSize"));
 
   const applyStep = (): void => {
     if (step === 0) {
@@ -57,7 +58,7 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
 
   const downloadBtn = actions.createEl("button", { cls: "vizardry-download-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(downloadBtn, "download");
-  downloadBtn.setAttribute("aria-label", "Download as PNG");
+  downloadBtn.setAttribute("aria-label", t("controls.downloadPng"));
 
   const handleDownload = async (): Promise<void> => {
     downloadBtn.disabled = true;
@@ -83,7 +84,7 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
 
   const presentBtn = actions.createEl("button", { cls: "vizardry-present-btn vzd-btn" });
   setIcon(presentBtn, "expand");
-  presentBtn.setAttribute("aria-label", "Present fullscreen");
+  presentBtn.setAttribute("aria-label", t("controls.presentFullscreen"));
   presentBtn.addEventListener("click", (e) => { e.stopPropagation(); openPresentation(container, title); });
 }
 
@@ -96,11 +97,11 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
 
   const reloadBtn = btnGroup.createEl("button", { cls: "vzd-presentation-reload vzd-btn" });
   setIcon(reloadBtn, "refresh-cw");
-  reloadBtn.setAttribute("aria-label", "Reload canvas");
+  reloadBtn.setAttribute("aria-label", t("controls.reloadCanvas"));
 
   const closeBtn = btnGroup.createEl("button", { cls: "vzd-presentation-close vzd-btn" });
   setIcon(closeBtn, "x");
-  closeBtn.setAttribute("aria-label", "Exit presentation");
+  closeBtn.setAttribute("aria-label", t("controls.exitPresentation"));
 
   const wrap = overlay.createEl("div", { cls: "vzd-presentation-wrap" });
 
