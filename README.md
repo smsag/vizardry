@@ -1,43 +1,48 @@
 # Vizardry
 
-An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in Read View — using fenced code blocks as input. Also includes an image carousel renderer, a mind map renderer, a Venn diagram renderer, and a top-down SVG Opportunity Solution Tree renderer.
+An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in your notes — using fenced code blocks as input. Supports grid-based canvases, trees, diagrams, and flow charts. Canvases are **editable in Live Preview**: click any block to edit its content directly, without touching the source.
 
 ---
 
 ## How it works
 
-Write a fenced code block with the framework name as the language tag. Use `block: Label` to define each section, with content indented below. Switch to **Read View** to see the rendered canvas. Edit View shows the raw text.
+Write a fenced code block with the framework name as the language tag. Switch to **Live Preview** or **Reading View** to see the rendered canvas.
+
+**Grid canvases** use `block: Label` to define each section, with content indented below:
 
 ```
 block: Label
   Content line 1
   Content line 2
-  Content line 3
 ```
 
-Multi-line content needs no special syntax — just indent everything below the `block:` line.
+**In Live Preview**, click any block body to edit it inline. Changes are written back to the source file automatically when you click away (or press Escape to discard).
 
 ---
 
 ## Supported frameworks
 
-| Code block | Framework | Layout |
+| Code block | Framework | Type |
 |---|---|---|
-| ` ```bmc ` | Business Model Canvas | 5-column grid |
-| ` ```lean ` | Lean Canvas | 5-column grid |
-| ` ```opportunity ` | Opportunity Canvas | 5-column grid |
-| ` ```leanux ` | Lean UX Canvas | 5-column grid |
-| ` ```vpc ` | Value Proposition Canvas | 2-column grid |
-| ` ```kata ` | Product Kata | 2-column grid |
-| ` ```jobs ` | Jobs Canvas | 3-column grid |
-| ` ```rac ` | Riskiest Assumptions Canvas | 3-column grid |
-| ` ```ost ` | Opportunity Solution Tree | Top-down SVG tree |
-| ` ```impact ` | Impact Map | Hierarchical tree |
-| ` ```story ` | User Story Map | Nested activity/step/task grid with priority bands |
-| ` ```mindmap ` | Mind Map | Indented tree |
-| ` ```venn ` | Venn Diagram | 2- or 3-circle overlap diagram |
-| ` ```sipoc ` | SIPOC Diagram | Five-column process table |
-| ` ```carousel ` | Image Carousel | Navigable image gallery |
+| ` ```bmc ` | Business Model Canvas | Grid |
+| ` ```fourls ` | 4Ls Retrospective | Grid |
+| ` ```carousel ` | Image Carousel | Gallery |
+| ` ```impact ` | Impact Map | Tree |
+| ` ```jobs ` | Jobs Canvas | Grid |
+| ` ```kata ` | Product Kata | Grid |
+| ` ```lean ` | Lean Canvas | Grid |
+| ` ```leanux ` | Lean UX Canvas | Grid |
+| ` ```mindmap ` | Mind Map | Tree |
+| ` ```opportunity ` | Opportunity Canvas | Grid |
+| ` ```ost ` | Opportunity Solution Tree | Tree |
+| ` ```rac ` | Riskiest Assumptions Canvas | Grid |
+| ` ```sipoc ` | SIPOC Diagram | Table |
+| ` ```sipoc ` (type: flow) | SIPOC Flow Diagram | SVG flow |
+| ` ```story ` | User Story Map | Grid |
+| ` ```swot ` | SWOT Analysis | Grid |
+| ` ```vpc ` | Value Proposition Canvas | Grid |
+| ` ```venn ` | Venn Diagram | SVG overlap |
+| ` ```wardley ` | Wardley Map | SVG canvas |
 
 ---
 
@@ -52,6 +57,20 @@ Three ways to insert a fully structured empty template at your cursor:
 **Ribbon icon** — tap the template icon in the left sidebar to open the same fuzzy picker.
 
 On **mobile**, add any Vizardry command to the editor toolbar via Settings → Mobile → Edit toolbar for one-tap access above the keyboard.
+
+---
+
+## Inline block editing
+
+In **Live Preview**, every grid canvas block is editable:
+
+- **Click** the block body to open an inline textarea
+- **Type** to add or change content
+- **Click away (blur)** to save — the change is written to the source file immediately
+- **Escape** to discard the edit and restore the original content
+- **Tab** inserts two spaces inside the textarea
+
+In Reading View the canvas is rendered normally with no edit affordance.
 
 ---
 
@@ -92,6 +111,136 @@ block: Revenue Streams
 
 ---
 
+### 4Ls Retrospective
+
+~~~
+```fourls
+block: Liked
+  Fast deployment pipeline
+  Smooth cross-team collaboration
+  Clear sprint goal throughout
+
+block: Learned
+  Load testing should happen earlier
+  Async standups reduce context switching
+  Smaller PRs get reviewed faster
+
+block: Lacked
+  Clearer ownership for the API layer
+  Earlier design involvement in spec phase
+  Better documentation for onboarding
+
+block: Longed For
+  Dedicated time for tech debt each sprint
+  Shared retro board visible during the sprint
+  More pairing sessions
+
+block: Actions
+  - [ ] Schedule regular pairing slots -- owner: Alex
+  - [ ] Add tech debt items to each sprint -- owner: Team
+  - [ ] Involve design from ticket creation -- owner: Sam
+```
+~~~
+
+---
+
+### Image Carousel
+
+~~~
+```carousel
+![](image-one.png)
+![](image-two.png)
+![](image-three.png)
+```
+~~~
+
+**Rules:**
+- One image per line using standard Markdown image syntax
+- Blank lines and `#` comment lines are ignored
+- Fewer than 2 images shows a visible error message
+
+**Controls:** left/right arrow buttons, dot indicators, keyboard `←`/`→`, swipe on mobile.
+
+---
+
+### Impact Map
+
+~~~
+```impact
+goal: Increase 30-day retention by 15%
+
+actor: Product Team
+  impact: Reduce time-to-first-value
+    deliverable: Onboarding wizard
+    deliverable: Empty state templates
+  impact: Surface progress milestones
+    deliverable: Progress bar in dashboard
+    deliverable: Celebration moment at day 7
+
+actor: Marketing Team
+  impact: Re-engage dormant users
+    deliverable: Day-7 reactivation email sequence
+  impact: Set clearer expectations pre-signup
+    deliverable: Revised landing page copy
+    deliverable: Updated onboarding video
+
+actor: Customer Success
+  impact: Catch at-risk accounts early
+    deliverable: Health score dashboard
+    deliverable: Automated check-in workflow
+```
+~~~
+
+**Syntax:**
+- `goal:` — root, no indent, required, one only
+- `actor:` — no indent, repeatable
+- `impact:` — indented once under an actor
+- `deliverable:` — indented twice under an impact
+
+---
+
+### Jobs Canvas
+
+~~~
+```jobs
+block: Job Performer
+  Operations manager at a 50-person B2B SaaS company
+
+block: Main Job
+  Produce accurate weekly reports for leadership without stress
+
+block: Circumstances
+  End of week, under time pressure, data spread across three tools
+
+block: Functional Aspects
+  Pull data from three sources, calculate KPIs, format slides,
+  distribute to leadership by Friday at noon
+
+block: Emotional Aspects
+  Wants to feel in control and look competent in front of the CEO
+  Fears sending a report with a mistake
+
+block: Social Aspects
+  Known as the person who "always has the numbers ready"
+  Seen as a reliable, detail-oriented operator
+
+block: Current Solutions
+  Excel + manual copy-paste from dashboards + PowerPoint formatting
+  Slack reminders to chase down missing data from other teams
+
+block: Desired Outcomes
+  Done in under 30 minutes with no manual errors
+  Report looks polished without extra design work
+  No chasing people for data on Friday morning
+
+block: Obstacles
+  Data lives in three tools with no shared export format
+  KPI definitions are inconsistent across departments
+```
+~~~
+
+---
+
 ### Lean Canvas
 
 ~~~
@@ -124,6 +273,79 @@ block: Revenue Streams
   Monthly SaaS subscription
 ```
 ~~~
+
+---
+
+### Lean UX Canvas
+
+~~~
+```leanux
+block: Business Problem
+  Users drop off during onboarding before reaching their first value moment
+
+block: Business Outcomes
+  Increase 7-day retention by 20%
+
+block: Users
+  First-time SaaS buyers with no technical background
+
+block: User Outcomes & Benefits
+  Feel confident and productive within 10 minutes of signing up
+
+block: Solutions
+  Guided setup wizard, contextual tooltips, pre-loaded sample data
+
+block: Hypotheses
+  If we add a guided wizard, users will reach first value faster
+  If we show sample data, users will understand the product sooner
+  If we reduce setup steps, fewer users will abandon mid-flow
+
+block: Most Important Thing to Learn First
+  Do users abandon because setup feels overwhelming, or because
+  they don't understand the value of completing it?
+
+block: Minimum Experiment
+  A/B test: guided wizard vs blank start with 500 new signups
+```
+~~~
+
+---
+
+### Mind Map
+
+~~~
+```mindmap
+root: What makes a great PM?
+
+  Discovery
+    Talk to users weekly
+    Root Cause Analysis
+      5 Whys
+      Opportunity Canvas
+    Distinguish problem from solution
+
+  Delivery
+    Short feedback loops
+    Slice by outcome, not feature
+    Story Map before planning
+
+  Strategy
+    Understand trade-offs
+    Align on north-star metric
+    Kill features that don't serve the goal
+
+  Mindset
+    Comfort with ambiguity
+    Curiosity over certainty
+    Ship to learn
+```
+~~~
+
+**Syntax:**
+- `root:` — central node, no indent, required, one only
+- Indented lines — child nodes; indent level determines depth
+- Any consistent indent unit works (2 spaces, 4 spaces, tab)
+- Blank lines and `# comment` lines are ignored
 
 ---
 
@@ -183,73 +405,10 @@ outcome: Increase weekly active users by 20% in Q3.
 ```
 ~~~
 
----
-
-### Lean UX Canvas
-
-~~~
-```leanux
-block: Business Problem
-  Users drop off during onboarding before reaching their first value moment
-
-block: Business Outcomes
-  Increase 7-day retention by 20%
-
-block: Users
-  First-time SaaS buyers with no technical background
-
-block: User Outcomes & Benefits
-  Feel confident and productive within 10 minutes of signing up
-
-block: Solutions
-  Guided setup wizard, contextual tooltips, pre-loaded sample data
-
-block: Hypotheses
-  If we add a guided wizard, users will reach first value faster
-  If we show sample data, users will understand the product sooner
-  If we reduce setup steps, fewer users will abandon mid-flow
-
-block: Most Important Thing to Learn First
-  Do users abandon because setup feels overwhelming, or because
-  they don't understand the value of completing it?
-
-block: Minimum Experiment
-  A/B test: guided wizard vs blank start with 500 new signups
-```
-~~~
-
----
-
-### Value Proposition Canvas
-
-~~~
-```vpc
-block: Products & Services
-  Automated reporting suite
-  One-click export to PDF and Slides
-  Scheduled delivery to stakeholders
-
-block: Pain Relievers
-  Eliminates manual data gathering and copy-paste formatting
-  Removes dependency on the analyst for routine reports
-
-block: Gain Creators
-  Polished, on-brand reports ready in seconds instead of hours
-  More time for analysis and strategic thinking
-
-block: Customer Jobs
-  Produce accurate weekly status reports for senior leadership
-  Present data confidently without needing design support
-
-block: Pains
-  Repetitive, error-prone work that eats Friday afternoons
-  Reports look inconsistent across team members
-
-block: Gains
-  Look credible and prepared in front of the CEO
-  Free up time for higher-value work
-```
-~~~
+**Syntax:**
+- `outcome:` — root node, no indent, required, one only
+- Indented lines — child nodes; depth = 1 opportunity, 2 solution, 3 experiment, 4 assumption
+- Blank lines and `# comment` lines are ignored
 
 ---
 
@@ -277,48 +436,6 @@ block: Next Experiment
 block: Expected Outcome
   40% of new signups complete setup without contacting support
   within the first 14 days of the experiment
-```
-~~~
-
----
-
-### Jobs Canvas
-
-~~~
-```jobs
-block: Job Performer
-  Operations manager at a 50-person B2B SaaS company
-
-block: Main Job
-  Produce accurate weekly reports for leadership without stress
-
-block: Circumstances
-  End of week, under time pressure, data spread across three tools
-
-block: Functional Aspects
-  Pull data from three sources, calculate KPIs, format slides,
-  distribute to leadership by Friday at noon
-
-block: Emotional Aspects
-  Wants to feel in control and look competent in front of the CEO
-  Fears sending a report with a mistake
-
-block: Social Aspects
-  Known as the person who "always has the numbers ready"
-  Seen as a reliable, detail-oriented operator
-
-block: Current Solutions
-  Excel + manual copy-paste from dashboards + PowerPoint formatting
-  Slack reminders to chase down missing data from other teams
-
-block: Desired Outcomes
-  Done in under 30 minutes with no manual errors
-  Report looks polished without extra design work
-  No chasing people for data on Friday morning
-
-block: Obstacles
-  Data lives in three tools with no shared export format
-  KPI definitions are inconsistent across departments
 ```
 ~~~
 
@@ -361,43 +478,133 @@ block: Top Riskiest Assumptions
 ```
 ~~~
 
-Each assumption is rated: **P** = probability of being wrong (1–5), **I** = impact if wrong (1–10). Risk = P × I. The **Top Riskiest Assumptions** block collects the highest-scoring items across all themes for prioritised validation.
+Each assumption is rated: **P** = probability of being wrong (1–5), **I** = impact if wrong (1–10). Risk = P × I.
 
 ---
 
-### Impact Map
+### SIPOC Diagram
+
+A SIPOC maps the full scope of a process row by row — each row traces one chain from supplier to customer, making attribution immediately readable.
 
 ~~~
-```impact
-goal: Increase 30-day retention by 15%
+```sipoc
+row:
+  supplier: Dev team
+  input: Feature branch
+  process: Build & test artefact
+  output: Running service
+  customer: End users
 
-actor: Product Team
-  impact: Reduce time-to-first-value
-    deliverable: Onboarding wizard
-    deliverable: Empty state templates
-  impact: Surface progress milestones
-    deliverable: Progress bar in dashboard
-    deliverable: Celebration moment at day 7
+row:
+  supplier: CI/CD pipeline
+  input: Test suite
+  process: Run test suite
+  output: Deployment report
+  customer: On-call team
 
-actor: Marketing Team
-  impact: Re-engage dormant users
-    deliverable: Day-7 reactivation email sequence
-  impact: Set clearer expectations pre-signup
-    deliverable: Revised landing page copy
-    deliverable: Updated onboarding video
-
-actor: Customer Success
-  impact: Catch at-risk accounts early
-    deliverable: Health score dashboard
-    deliverable: Automated check-in workflow
+row:
+  supplier: Cloud provider
+  input: Docker image
+  process: Deploy to production
+  output: Alert rules
+  customer: Product owner
 ```
 ~~~
 
-**Impact Map syntax:**
-- `goal:` — root, no indent, required, one only
-- `actor:` — no indent, repeatable
-- `impact:` — indented once under an actor
-- `deliverable:` — indented twice under an impact
+**Syntax:**
+- `row:` — starts a new row at zero indent, repeatable
+- Indented `supplier:`, `input:`, `process:`, `output:`, `customer:` — the five cell keys (singular); all are optional per row
+- Missing cells render as `—`
+- Blank lines and `# comment` lines are ignored
+
+---
+
+### SIPOC Flow Diagram
+
+For processes with branching inputs, merging paths, and explicit connections between named nodes, use the flow variant by adding `type: flow` as the first line of a `sipoc` block.
+
+~~~
+```sipoc
+type: flow
+
+suppliers:
+  Supplier 1 [ellipse]
+  Supplier 2 [ellipse]
+
+inputs:
+  Data 1 [parallelogram]
+  Data 2 [parallelogram]
+  Data 3 [parallelogram]
+
+process:
+  Step 1 [rect]
+  Step 2 [rect]
+  Step 3 [rect]
+  Step 4 [rect]
+  Step 5 [rect]
+
+outputs:
+  Data 4 [parallelogram]
+  Data 5 [parallelogram]
+
+customers:
+  Customer 1 [ellipse]
+  Customer 2 [ellipse]
+  Customer 3 [ellipse]
+
+link: Supplier 1 -> Data 1
+link: Supplier 1 -> Data 2
+link: Supplier 2 -> Data 3
+link: Data 1 -> Step 1
+link: Data 2 -> Step 3
+link: Data 3 -> Step 3
+link: Step 1 -> Step 2
+link: Step 2 -> Step 3
+link: Step 3 -> Step 4
+link: Step 4 -> Step 5
+link: Step 2 -> Data 4
+link: Step 5 -> Data 5
+link: Data 4 -> Customer 1
+link: Data 4 -> Customer 2
+link: Data 5 -> Customer 3
+```
+~~~
+
+**Syntax:**
+- `type: flow` — first line; switches the block to flow rendering
+- `suppliers:`, `inputs:`, `process:`, `outputs:`, `customers:` — column section headers (plural)
+- Indented `Name [shape]` — declares a node; shape is `ellipse`, `parallelogram`, or `rect`
+- `link: A -> B` — directed arrow from node A to node B; links can go in any direction including backwards
+- Nodes with no links render as isolated nodes — not an error
+- Node names are case-insensitive in link declarations
+
+---
+
+### SWOT Analysis
+
+~~~
+```swot
+block: Strengths
+  Strong brand recognition
+  Experienced engineering team
+  Loyal early-adopter base
+
+block: Weaknesses
+  Limited marketing budget
+  Single-channel distribution
+  No enterprise sales motion yet
+
+block: Opportunities
+  Growing demand for async collaboration tools
+  Potential partnership with major LMS providers
+  Untapped international markets
+
+block: Threats
+  Well-funded competitors entering the space
+  Possible API pricing changes from key dependency
+  Economic downturn reducing SMB software spend
+```
+~~~
 
 ---
 
@@ -458,53 +665,46 @@ slice: V1.1
 ```
 ~~~
 
-**Story Map syntax:**
-- `user:` — optional one-line persona description shown in the header
-- `goal:` — optional one-line objective shown in the header
-- `activity: <name>` — top-level backbone group; becomes a column-spanning header
-- `step: <name>` — indented under an activity; each step is one grid column. Step names must be **globally unique** across all activities
-- `task: <name>` or `task: <name> | <subtitle>` — indented under a step; the optional subtitle (after `|`) is shown as secondary text in the task card. Task names must be unique within their parent step
-- `slice: <name>` — priority band; assigns tasks to it using `step: <name> | task A, task B`
-- Tasks not assigned to any slice appear in a catch-all **Backlog** band at the bottom
+**Syntax:**
+- `user:` / `goal:` — optional header metadata
+- `activity: <name>` — top-level backbone group spanning its step columns
+- `step: <name>` — one grid column; must be unique across all activities
+- `task: <name>` or `task: <name> | <subtitle>` — task card; optional subtitle after `|`
+- `slice: <name>` — priority band; `step: <name> | task A, task B` assigns tasks
+- Unassigned tasks collected into a **Backlog** band at the bottom
 
 ---
 
-### Mind Map
+### Value Proposition Canvas
 
 ~~~
-```mindmap
-root: What makes a great PM?
+```vpc
+block: Products & Services
+  Automated reporting suite
+  One-click export to PDF and Slides
+  Scheduled delivery to stakeholders
 
-  Discovery
-    Talk to users weekly
-    Root Cause Analysis
-      5 Whys
-      Opportunity Canvas
-    Distinguish problem from solution
+block: Pain Relievers
+  Eliminates manual data gathering and copy-paste formatting
+  Removes dependency on the analyst for routine reports
 
-  Delivery
-    Short feedback loops
-    Slice by outcome, not feature
-    Story Map before planning
+block: Gain Creators
+  Polished, on-brand reports ready in seconds instead of hours
+  More time for analysis and strategic thinking
 
-  Strategy
-    Understand trade-offs
-    Align on north-star metric
-    Kill features that don't serve the goal
+block: Customer Jobs
+  Produce accurate weekly status reports for senior leadership
+  Present data confidently without needing design support
 
-  Mindset
-    Comfort with ambiguity
-    Curiosity over certainty
-    Ship to learn
+block: Pains
+  Repetitive, error-prone work that eats Friday afternoons
+  Reports look inconsistent across team members
+
+block: Gains
+  Look credible and prepared in front of the CEO
+  Free up time for higher-value work
 ```
 ~~~
-
-**Mind Map syntax:**
-- `root:` — central node, no indent, required, one only
-- Indented lines — child nodes; indent level determines depth in the tree
-- Any consistent indent unit works (2 spaces, 4 spaces, tab)
-- Blank lines and `# comment` lines are ignored
-- Depth 1–3 get progressively lighter styling; depth 4+ uses a minimal leaf style
 
 ---
 
@@ -539,98 +739,46 @@ center:
 ```
 ~~~
 
-**Venn Diagram syntax:**
-- `circle: <name>` — defines a circle; 2 or 3 circles supported. Items below it (indented `- text`) appear in the circle's exclusive area
-- `intersection: A+B` — items placed in the overlap of the named circles; name matching is case-insensitive and order-insensitive
-- `center:` — 3-circle only; shorthand for the intersection of all three circles
-- `- [[Note|Alias]]` — renders a clickable chip showing the alias; tapping opens the linked note
-- `- [[Note]]` — same, using the note name as the display text
-- Regions with no items are simply left empty; all regions are optional
+**Syntax:**
+- `circle: <name>` — defines a circle (2 or 3 total)
+- `- item text` — indented bullet placed in the parent region
+- `- [[Note|Alias]]` — clickable chip linking to a note; alias is the display text
+- `intersection: A+B` — items in the overlap of named circles (order-insensitive)
+- `center:` — 3-circle only; shorthand for the triple intersection
 
 ---
 
-### SIPOC Diagram
+### Wardley Map
 
-A SIPOC maps the full scope of a process — who provides inputs, what the steps are, what comes out, and who receives the results — before diving into detailed process design. The **Process** column is the anchor: start there and work outward.
+A Wardley Map plots the components of a value chain on two axes: **visibility** (how visible to the user, top = visible) and **evolution** (how commoditised, right = commodity). It reveals which components to build, buy, or outsource.
 
 ~~~
-```sipoc
-suppliers:
-  Product team
-  Engineering team
-  Design team
-  Data & analytics
-  Legal & compliance
-  Customer success
+```wardley
+anchor: User
 
-inputs:
-  Validated user research
-  Approved product spec
-  Completed designs & prototypes
-  Passing automated test suite
-  Legal sign-off
-  Feature flag configuration
+component: User         [1.00, 0.10]
+component: Web App      [0.85, 0.35]
+component: Auth Service [0.60, 0.55]
+component: Database     [0.40, 0.60]
+component: Cloud Host   [0.15, 0.90]
 
-process:
-  Research & discovery
-  Problem scoping
-  Solution design
-  Build & test
-  Internal beta (dogfood)
-  Staged rollout (10 % → 50 % → 100 %)
-  Full release
-  Post-launch review
-
-outputs:
-  Shipped feature (behind feature flag)
-  Public release notes
-  In-app announcement
-  Help centre articles
-  Usage analytics dashboard
-  Retrospective report
-
-customers:
-  End users
-  Account admins
-  Customer success team
-  Sales (demo environments)
-  Marketing (communications)
-  Executive stakeholders
+link: User -> Web App
+link: Web App -> Auth Service
+link: Web App -> Database
+link: Database -> Cloud Host
 ```
 ~~~
 
-**SIPOC syntax:**
-- `suppliers:`, `inputs:`, `process:`, `outputs:`, `customers:` — the five section headers, each at zero indent
-- Indented lines below each header are list items — no bullet characters needed
-- `process:` items are rendered as a **numbered list** to emphasise sequence; all other columns render as bullet lists
-- Sections can appear in any order and empty sections are allowed (rendered as `—`)
-- Blank lines and `# comment` lines are ignored
+**Syntax:**
+- `anchor: <name>` — declares the user-facing anchor node (rendered filled); auto-creates a component at `[1.0, 0.0]` unless overridden by a `component:` line
+- `component: <name> [visibility, evolution]` — places a node on the canvas; both coordinates are 0–1
+- `link: A -> B` — dependency arrow from A to B
+- Inline `# comments` are stripped
+- Node names in links are case-sensitive and must match exactly
 
----
-
-## Image Carousel
-
-Use the `carousel` code block to render a navigable gallery of images inline in Read View.
-
-~~~
-```carousel
-![](image-one.png)
-![](image-two.png)
-![](image-three.png)
-```
-~~~
-
-**Rules:**
-- One image per line using standard Markdown image syntax
-- Blank lines and `#` comment lines are ignored
-- Fewer than 2 images shows a visible error message
-- Invalid lines show a visible error message with the line number
-
-**Controls:**
-- Left / right arrow buttons
-- Dot indicators — one per image, clickable to jump directly
-- Keyboard `←` / `→` when the carousel is focused
-- Swipe left / right on mobile
+**Axes:**
+- Y = Visibility (0 = invisible infrastructure, 1 = direct user need at top)
+- X = Evolution (0 = Genesis, 0.33 = Custom, 0.67 = Product, 1 = Commodity)
 
 ---
 
@@ -658,37 +806,33 @@ _links:
 
 - Block labels in `_links:` are case-insensitive
 - Heading text must match the document heading exactly
-- Only linked blocks show the icon
 - Works with any grid framework
 
 ---
 
 ## Exporting a canvas as PNG
 
-Each canvas has a **download icon** (↓) in its title bar, revealed on hover. Clicking it saves a PNG of the current canvas to your downloads folder. The image is captured at 2× resolution for sharp results on high-DPI screens.
+Each canvas has a **download icon** in its title bar, revealed on hover. Clicking it saves a PNG to your downloads folder at 2× resolution.
 
-- The title bar action buttons are excluded from the image — only the title and content are captured
-- The filename matches the framework label, e.g. `SIPOC Diagram.png`
-- Works for every canvas type: grid frameworks, SIPOC, Story Map, Venn Diagram, OST, Impact Map, Mind Map
+- Title bar controls are excluded from the image
+- The filename matches the framework label, e.g. `Wardley Map.png`
+- Works for every canvas type
 
 ---
 
 ## Presentation mode
 
-Each canvas has a small **expand icon** in its title bar. Tapping it opens a full-screen overlay covering the entire Obsidian UI — including sidebars and toolbars.
+Each canvas has an **expand icon** in its title bar. Tapping it opens a full-screen overlay — useful when presenting from your notes or mirroring to an external display.
 
-**On iPhone connected to Apple TV via screen mirroring**, this fills the TV output, giving you a clean single-canvas view directly from your notes.
-
-- Grid canvases show all blocks at once (mobile carousel is suspended)
+- Grid canvases show all blocks at once (mobile carousel suspended)
 - Larger type for readability at a distance
-- Impact Maps and Story Maps scroll vertically within the overlay
 - **Dismiss:** tap ✕, press Escape, or swipe down
 
 ---
 
 ## Syntax reference
 
-### Grid canvases (bmc, lean, opportunity, leanux, vpc, kata, jobs, rac)
+### Grid canvases (bmc, fourls, jobs, kata, lean, leanux, opportunity, rac, swot, vpc)
 
 | Syntax | Meaning |
 |---|---|
@@ -696,86 +840,94 @@ Each canvas has a small **expand icon** in its title bar. Tapping it opens a ful
 | Indented lines below | Block content (multi-line, no special syntax needed) |
 | `_links:` | Start the heading links section |
 | Indented `Label: Heading text` | Link a block to a document heading |
-| `# comment` | Ignored line |
-| Unknown block labels | Silently ignored |
+| `# comment` | Ignored |
+
+### Image Carousel (carousel)
+
+| Syntax | Meaning |
+|---|---|
+| One image per line | Standard Markdown: `![](image.png)` or `![Alt](image.png)` |
+| Blank lines / `#` comments | Ignored |
+| Fewer than 2 images | Error |
 
 ### Impact Map (impact)
 
 | Syntax | Meaning |
 |---|---|
-| `goal:` | Root node — no indent, required, one only |
+| `goal:` | Root — no indent, required, one only |
 | `actor:` | Level 1 — no indent, repeatable |
 | `impact:` | Level 2 — indented under an actor |
 | `deliverable:` | Level 3 — indented under an impact |
-
-### User Story Map (story)
-
-| Syntax | Meaning |
-|---|---|
-| `user: Description` | Optional persona — shown in the canvas header |
-| `goal: Description` | Optional objective — shown in the canvas header |
-| `activity: <name>` | Top-level backbone group; spans its child step columns |
-| `step: <name>` | Indented under activity; one grid column. Must be unique across all activities |
-| `task: <name>` or `task: <name> \| <subtitle>` | Indented under step; renders as a task card with optional subtitle after `\|`. Must be unique within its step |
-| `slice: <name>` | Priority band |
-| Indented `step: <name> \| task A, task B` | Assigns comma-separated tasks to this slice |
-| Unassigned tasks | Collected into a **Backlog** band at the bottom |
 
 ### Mind Map (mindmap)
 
 | Syntax | Meaning |
 |---|---|
 | `root: Text` | Central node — no indent, required, one only |
-| Indented lines | Child nodes; depth determined by indent level |
-| Blank lines | Ignored (use freely for readability) |
-| `# comment` | Ignored |
+| Indented lines | Child nodes at the indented depth |
+| Blank lines / `# comment` | Ignored |
 
 ### Opportunity Solution Tree (ost)
 
 | Syntax | Meaning |
 |---|---|
-| `outcome: <text>` | Root node — no indent, required, one only |
-| Indented lines | Child nodes; indent level determines depth (1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption) |
-| Blank lines | Ignored |
-| `# comment` | Ignored |
-
-Maximum depth is 5 levels (0–4). Any consistent indent unit works (2 spaces, 4 spaces, tab).
-
-### Image Carousel
-
-| Syntax | Meaning |
-|---|---|
-| ```carousel``` code block | Renders a navigable image carousel inline in Read View |
-| One image per line | Use standard Markdown image syntax: `![](image.png)` or `![Alt](image.png)` |
-| Blank lines and `#` comments | Ignored by the parser |
-| Fewer than 2 images | Shows a visible error message |
-| Invalid image syntax | Shows a visible error message with the line number |
-
-### Venn Diagram (venn)
-
-| Syntax | Meaning |
-|---|---|
-| `circle: <name>` | Defines a circle (2 or 3 total); items below appear in its exclusive area |
-| `- item text` | Indented bullet — a text item placed in the parent region |
-| `- [[Note\|Alias]]` | Clickable link chip; alias is the display text |
-| `intersection: A+B` | Items in the overlap of two named circles (order-insensitive) |
-| `intersection: A+B+C` | Items in the overlap of all three circles |
-| `center:` | 3-circle only — shorthand for the intersection of all three |
+| `outcome: <text>` | Root — no indent, required, one only |
+| Indented lines | Depth 1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption |
+| Blank lines / `# comment` | Ignored |
 
 ### SIPOC Diagram (sipoc)
 
 | Syntax | Meaning |
 |---|---|
-| `suppliers:` | Section header — who provides the inputs |
-| `inputs:` | Section header — what enters the process |
-| `process:` | Section header — the ordered steps of the process; rendered as a numbered list |
-| `outputs:` | Section header — what the process produces |
-| `customers:` | Section header — who receives the outputs |
-| Indented lines | Items for the current section; no bullet characters needed |
-| Blank lines | Ignored |
-| `# comment` | Ignored |
+| `row:` | Starts a new row at zero indent |
+| Indented `supplier:` | Supplier cell value |
+| Indented `input:` | Input cell value |
+| Indented `process:` | Process cell value |
+| Indented `output:` | Output cell value |
+| Indented `customer:` | Customer cell value |
+| Missing cell keys | Render as `—` |
+| Blank lines / `# comment` | Ignored |
 
-Section headers are case-insensitive and can appear in any order. Empty sections render a muted `—` placeholder.
+### SIPOC Flow Diagram (sipoc with type: flow)
+
+| Syntax | Meaning |
+|---|---|
+| `type: flow` | First line; enables flow rendering |
+| `suppliers:` / `inputs:` / `process:` / `outputs:` / `customers:` | Column section headers |
+| Indented `Name [shape]` | Node declaration; shape: `ellipse`, `parallelogram`, `rect` |
+| `link: A -> B` | Directed arrow; any direction allowed |
+| Blank lines / `# comment` | Ignored |
+
+### User Story Map (story)
+
+| Syntax | Meaning |
+|---|---|
+| `user: Description` | Optional persona in the canvas header |
+| `goal: Description` | Optional objective in the canvas header |
+| `activity: <name>` | Top-level backbone group |
+| `step: <name>` | One grid column; must be unique across all activities |
+| `task: <name>` or `task: <name> \| <subtitle>` | Task card with optional subtitle |
+| `slice: <name>` | Priority band |
+| Indented `step: <name> \| task A, task B` | Assigns tasks to this slice |
+
+### Venn Diagram (venn)
+
+| Syntax | Meaning |
+|---|---|
+| `circle: <name>` | Defines a circle (2 or 3 total) |
+| `- item text` | Item in the parent region |
+| `- [[Note\|Alias]]` | Clickable note link |
+| `intersection: A+B` | Items in the overlap of named circles |
+| `center:` | 3-circle triple intersection |
+
+### Wardley Map (wardley)
+
+| Syntax | Meaning |
+|---|---|
+| `anchor: <name>` | User-facing anchor node (rendered filled) |
+| `component: <name> [visibility, evolution]` | Node at normalised 0–1 coordinates |
+| `link: A -> B` | Dependency arrow |
+| `# comment` | Ignored |
 
 ---
 
