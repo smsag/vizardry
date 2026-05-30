@@ -34,6 +34,8 @@ import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
 import { renderSIPOCFlow } from "./sipoc-flow";
+import { renderVennDiagram } from "./venn";
+import { renderCarouselBlock } from "../carousel";
 
 import type {
   FrameworkDefinition,
@@ -45,6 +47,8 @@ import type {
   WardleyMap,
   SIPOCData,
   SIPOCFlowData,
+  VennDiagram,
+  CarouselBlock,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -425,5 +429,163 @@ describe("renderSIPOCFlow", () => {
       links: [{ from: "a", to: "ghost" }],
     };
     expect(() => renderSIPOCFlow(broken, el)).not.toThrow();
+  });
+});
+
+// ── renderVennDiagram ─────────────────────────────────────────────────────────
+
+describe("renderVennDiagram", () => {
+  const twoCircle: VennDiagram = {
+    circles: [{ name: "Design" }, { name: "Engineering" }],
+    regions: [
+      { key: "0", items: [{ text: "Research" }] },
+      { key: "1", items: [{ text: "Architecture" }] },
+      { key: "0+1", items: [{ text: "Prototyping" }] },
+    ],
+  };
+
+  const threeCircle: VennDiagram = {
+    circles: [{ name: "A" }, { name: "B" }, { name: "C" }],
+    regions: [
+      { key: "0", items: [{ text: "A only" }] },
+      { key: "1", items: [{ text: "B only" }] },
+      { key: "2", items: [{ text: "C only" }] },
+      { key: "0+1+2", items: [{ text: "Center" }] },
+    ],
+  };
+
+  it("renders SVG for a 2-circle diagram without throwing", () => {
+    const el = container();
+    expect(() => renderVennDiagram(twoCircle, el, vi.fn())).not.toThrow();
+    expect(el.querySelector("svg")).toBeTruthy();
+  });
+
+  it("renders one circle element per circle", () => {
+    const el = container();
+    renderVennDiagram(twoCircle, el, vi.fn());
+    const circles = el.querySelectorAll("circle");
+    expect(circles.length).toBe(2);
+  });
+
+  it("renders circle labels", () => {
+    const el = container();
+    renderVennDiagram(twoCircle, el, vi.fn());
+    const texts = Array.from(el.querySelectorAll("text")).map(t => t.textContent);
+    expect(texts).toContain("Design");
+    expect(texts).toContain("Engineering");
+  });
+
+  it("renders items in regions", () => {
+    const el = container();
+    renderVennDiagram(twoCircle, el, vi.fn());
+    const items = Array.from(el.querySelectorAll(".vzd-venn-item")).map(e => e.textContent);
+    expect(items).toContain("Research");
+    expect(items).toContain("Prototyping");
+  });
+
+  it("renders a 3-circle diagram without throwing", () => {
+    const el = container();
+    expect(() => renderVennDiagram(threeCircle, el, vi.fn())).not.toThrow();
+    expect(el.querySelectorAll("circle").length).toBe(3);
+  });
+
+  it("calls openLink when a wikilink item is clicked", () => {
+    const linked: VennDiagram = {
+      circles: [{ name: "X" }, { name: "Y" }],
+      regions: [
+        { key: "0+1", items: [{ text: "Shared", linkTarget: "Shared Note" }] },
+      ],
+    };
+    const el = container();
+    const openLink = vi.fn();
+    renderVennDiagram(linked, el, openLink);
+    const linkItem = el.querySelector<HTMLElement>(".vzd-venn-link");
+    linkItem?.click();
+    expect(openLink).toHaveBeenCalledWith("Shared Note");
+  });
+
+  it("renders without throwing when regions list is empty", () => {
+    const el = container();
+    const empty: VennDiagram = {
+      circles: [{ name: "X" }, { name: "Y" }],
+      regions: [],
+    };
+    expect(() => renderVennDiagram(empty, el, vi.fn())).not.toThrow();
+  });
+});
+
+// ── renderCarouselBlock ────────────────────────────────────────────────────────
+
+describe("renderCarouselBlock", () => {
+  const data: CarouselBlock = {
+    images: [
+      { src: "a.png", alt: "Slide 1" },
+      { src: "b.png", alt: "Slide 2" },
+      { src: "c.png", alt: "Slide 3" },
+    ],
+  };
+  const resolvePath = (src: string) => `/vault/${src}`;
+
+  it("renders carousel wrapper without throwing", () => {
+    const el = container();
+    expect(() => renderCarouselBlock(data, el, resolvePath)).not.toThrow();
+    expect(el.querySelector(".vzd-carousel")).toBeTruthy();
+  });
+
+  it("renders one slide per image", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const slides = el.querySelectorAll(".vzd-carousel-slide");
+    expect(slides).toHaveLength(3);
+  });
+
+  it("sets first slide active, others inactive", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const slides = el.querySelectorAll(".vzd-carousel-slide");
+    expect(slides[0].classList.contains("vzd-carousel-slide-active")).toBe(true);
+    expect(slides[1].classList.contains("vzd-carousel-slide-active")).toBe(false);
+  });
+
+  it("resolves image src via the provided callback", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const imgs = el.querySelectorAll<HTMLImageElement>("img");
+    expect(imgs[0].src).toContain("/vault/a.png");
+  });
+
+  it("renders one dot per image", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const dots = el.querySelectorAll(".vzd-carousel-dot");
+    expect(dots).toHaveLength(3);
+  });
+
+  it("advances to next slide on next button click", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const nextBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn:last-of-type");
+    nextBtn?.click();
+    const slides = el.querySelectorAll(".vzd-carousel-slide");
+    expect(slides[0].classList.contains("vzd-carousel-slide-active")).toBe(false);
+    expect(slides[1].classList.contains("vzd-carousel-slide-active")).toBe(true);
+  });
+
+  it("wraps around to last slide when prev clicked from first", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const prevBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn");
+    prevBtn?.click();
+    const slides = el.querySelectorAll(".vzd-carousel-slide");
+    expect(slides[2].classList.contains("vzd-carousel-slide-active")).toBe(true);
+  });
+
+  it("navigates directly via dot click", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const dots = el.querySelectorAll<HTMLButtonElement>(".vzd-carousel-dot");
+    dots[2].click();
+    const slides = el.querySelectorAll(".vzd-carousel-slide");
+    expect(slides[2].classList.contains("vzd-carousel-slide-active")).toBe(true);
   });
 });
