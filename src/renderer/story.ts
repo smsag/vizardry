@@ -48,15 +48,18 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
     }
   }
 
+  function renderTaskCard(cell: HTMLElement, task: StoryTask): void {
+    const card = cell.createEl("div", { cls: "vzd-story-task-card" });
+    card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+    if (task.subtitle) {
+      card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+    }
+  }
+
   function appendCards(cell: HTMLElement, step: StoryStep, taskKeys: string[]): void {
     for (const taskKey of taskKeys) {
       const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKey);
-      if (!task) continue;
-      const card = cell.createEl("div", { cls: "vzd-story-task-card" });
-      card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
-      if (task.subtitle) {
-        card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
-      }
+      if (task) renderTaskCard(cell, task);
     }
   }
 
@@ -107,13 +110,7 @@ export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
       if (tasks.length === 0) {
         cell.addClass("vzd-story-cell-empty");
       } else {
-        for (const task of tasks) {
-          const card = cell.createEl("div", { cls: "vzd-story-task-card" });
-          card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
-          if (task.subtitle) {
-            card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
-          }
-        }
+        for (const task of tasks) renderTaskCard(cell, task);
       }
       cellsByStep[i].push(cell);
     }
@@ -223,13 +220,16 @@ function setupStoryCarousel(
   // Remove the mq listener when the grid is detached from the DOM.
   // Without this, each re-render of the note accumulates a new listener on the
   // global MediaQueryList object, leaking the closure (and its DOM references).
+  // Observe only the immediate parent (not document.body with subtree:true) to
+  // avoid firing on every keystroke in the entire document.
   const removalObserver = new MutationObserver(() => {
     if (!grid.isConnected) {
       mq.removeEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
       removalObserver.disconnect();
     }
   });
-  removalObserver.observe(document.body, { childList: true, subtree: true });
+  const observationRoot = grid.closest(".workspace-leaf-content") ?? grid.parentElement ?? document.body;
+  removalObserver.observe(observationRoot, { childList: true });
 
   prevBtn.addEventListener("click", () => goTo(current - 1));
   nextBtn.addEventListener("click", () => goTo(current + 1));
