@@ -51,6 +51,13 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "impact.level.impact":      "Auswirkung",
   "impact.level.deliverable": "Lieferobjekt",
 
+  // ── Opportunity Solution Tree level labels ──────────────────────────────────
+  "ost.level.outcome":     "Ergebnis",
+  "ost.level.opportunity": "Chance",
+  "ost.level.solution":    "Lösung",
+  "ost.level.experiment":  "Experiment",
+  "ost.level.assumption":  "Annahme",
+
   // ── Story Map labels ────────────────────────────────────────────────────────
   "story.label.user":    "Nutzer",
   "story.label.goal":    "Ziel",

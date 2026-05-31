@@ -10,6 +10,7 @@ import type {
 } from "../types";
 import { createSvgEl } from "../shared/svg";
 import { t } from "../i18n";
+import type { TranslationKey } from "../i18n";
 
 function getTreeStyle(level: number, opts: TreeRenderOptions): TreeNodeStyle {
   return opts.levelStyles[Math.min(level, opts.levelStyles.length - 1)];
@@ -101,11 +102,11 @@ function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
   const label = node.text.length > opts.maxLabelChars
     ? `${node.text.slice(0, opts.maxLabelChars - 1)}…`
     : node.text;
-  const hasSublabel = !!node.sublabel;
 
+  // Main label — always vertically centred; sublabel sits in the corner independently
   const textEl = createSvgEl("text", {
     x: String(opts.nodeW / 2),
-    y: String(hasSublabel ? opts.nodeH / 2 - 7 : opts.nodeH / 2),
+    y: String(opts.nodeH / 2),
     "dominant-baseline": "middle",
     "text-anchor": "middle",
     fill: style.textVar,
@@ -114,13 +115,14 @@ function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
   textEl.textContent = label;
   group.appendChild(textEl);
 
+  // Sublabel — bottom-right corner, smaller and faint
   if (node.sublabel) {
     const sublabelEl = createSvgEl("text", {
-      x: String(opts.nodeW / 2),
-      y: String(opts.nodeH / 2 + 7),
-      "dominant-baseline": "middle",
-      "text-anchor": "middle",
-      fill: "var(--text-muted)",
+      x: String(opts.nodeW - 6),
+      y: String(opts.nodeH - 4),
+      "dominant-baseline": "auto",
+      "text-anchor": "end",
+      fill: "var(--text-faint)",
       class: "vzd-tree-text-sub",
     });
     sublabelEl.textContent = node.sublabel;
@@ -138,7 +140,7 @@ function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
 
 // INVARIANT: renderTree mutates TreeNode.x/y/width/height in place during layout.
 // The adapter functions (adaptOSTToTree etc.) always create fresh TreeNode objects,
-// so this is safe. Do not cache or reuse a TreeNode tree across two renderTree calls —
+// so this is safe. Do not cache or reuse a TreeNode tree across two renderTree calls --
 // the second call will inherit stale layout coordinates from the first.
 export function renderTree(tree: { root: TreeNode }, opts: TreeRenderOptions, el: HTMLElement): void {
   layoutTreeNode(tree.root, opts);
@@ -158,19 +160,27 @@ export function renderTree(tree: { root: TreeNode }, opts: TreeRenderOptions, el
   wrapper.appendChild(svg);
 }
 
-// ── Level-style configs ──────────────────────────────────────────────────────
+// -- Level-style configs -----------------------------------------------------
+//
+// OST and Impact Map share the same visual language:
+//   Level 0 -- accent fill (root / goal / outcome)
+//   Level 1 -- hover-bg + left accent bar (main branches)
+//   Level 2 -- secondary-bg, solid, r=6 (sub-branches)
+//   Level 3 -- secondary-bg, dashed pill, muted text (leaves / hypotheses)
+//
+// Dimensions are unified at 190x46 so both diagrams feel like one system.
 
 export const OST_TREE_OPTIONS: TreeRenderOptions = {
-  nodeW: 180, nodeH: 44, levelGap: 80, siblingGap: 20,
+  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
   canvasClass: "vizardry-ost",
   wrapperClass: "vizardry-ost-wrapper",
   levelStyles: [
     { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
-    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 8, dashed: false },
+    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 8, dashed: false, accentBar: true },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 22, dashed: false },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: true },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 6, dashed: true },
   ],
 };
 
@@ -187,24 +197,33 @@ export const MINDMAP_OPTS: TreeRenderOptions = {
 };
 
 export const IMPACT_MAP_OPTS: TreeRenderOptions = {
-  nodeW: 200, nodeH: 48, levelGap: 80, siblingGap: 16,
+  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
   canvasClass: "vizardry-impact",
   wrapperClass: "vizardry-impact-wrapper",
   levelStyles: [
     { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
     { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 5, dashed: false },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
   ],
 };
 
-// ── Domain → TreeNode adapters ───────────────────────────────────────────────
+// -- Domain -> TreeNode adapters ---------------------------------------------
+
+const OST_LEVEL_KEYS: TranslationKey[] = [
+  "ost.level.outcome",
+  "ost.level.opportunity",
+  "ost.level.solution",
+  "ost.level.experiment",
+  "ost.level.assumption",
+];
 
 export function adaptOSTToTree(tree: OSTTree): { root: TreeNode } {
   const convert = (node: OSTNode): TreeNode => ({
     text: node.text,
     level: node.level,
+    sublabel: t(OST_LEVEL_KEYS[Math.min(node.level, OST_LEVEL_KEYS.length - 1)]),
     children: node.children.map(convert),
     x: 0, y: 0, width: 0, height: 0,
   });

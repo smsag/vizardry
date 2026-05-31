@@ -58,6 +58,13 @@ export const en = {
   "impact.level.impact":      "Impact",
   "impact.level.deliverable": "Deliverable",
 
+  // ── Opportunity Solution Tree level labels ──────────────────────────────────
+  "ost.level.outcome":     "Outcome",
+  "ost.level.opportunity": "Opportunity",
+  "ost.level.solution":    "Solution",
+  "ost.level.experiment":  "Experiment",
+  "ost.level.assumption":  "Assumption",
+
   // ── Story Map labels ────────────────────────────────────────────────────────
   "story.label.user":    "User",
   "story.label.goal":    "Goal",
