@@ -213,6 +213,10 @@ export interface WardleyMap {
   anchor: string | null;
   components: WardleyComponent[];
   links: WardleyLink[];
+  /** Names of components declared with explicit [vis, evo] coordinates.
+   *  Anchor-only components (no component: line) are excluded — they have
+   *  no source line to write back to, so they cannot be dragged. */
+  explicitComponents: Set<string>;
 }
 
 export type WardleyResult = Result<WardleyMap>;

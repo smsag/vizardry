@@ -285,7 +285,7 @@ describe("renderStoryMap", () => {
 
 describe("renderWardleyMap", () => {
   const map: WardleyMap = {
-    anchor: "User",
+    anchor: "User", explicitComponents: new Set(["Auth", "Database"]),
     components: [
       { name: "User", visibility: 1.0, evolution: 0.8 },
       { name: "Auth", visibility: 0.6, evolution: 0.4 },
@@ -324,7 +324,7 @@ describe("renderWardleyMap", () => {
   it("ignores links referencing unknown components", () => {
     const el = container();
     const brokenMap: WardleyMap = {
-      anchor: null,
+      anchor: null, explicitComponents: new Set(["A"]),
       components: [{ name: "A", visibility: 0.5, evolution: 0.5 }],
       links: [{ from: "A", to: "Ghost" }],
     };
@@ -334,7 +334,7 @@ describe("renderWardleyMap", () => {
   it("renders 10 clustered components at [0.5, 0.5] without throwing", () => {
     const el = container();
     const clustered: WardleyMap = {
-      anchor: null,
+      anchor: null, explicitComponents: new Set(["A"]),
       components: Array.from({ length: 10 }, (_, i) => ({
         name: `Component ${i + 1}`,
         visibility: 0.5,
