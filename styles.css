@@ -783,6 +783,43 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   stroke-width: 1;
 }
 
+/* + handle: revealed when hovering a draggable node */
+.vzd-wardley-add-handle {
+  fill: var(--interactive-accent);
+  cursor: crosshair;
+}
+
+.vzd-wardley-add-handle-icon {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--text-on-accent);
+  pointer-events: none;
+}
+
+/* Ghost line — dashed, drawn while creating a new component */
+.vzd-wardley-link-draft {
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  fill: none;
+  pointer-events: none;
+}
+
+/* Ghost dot — dashed circle at the future component position */
+.vzd-wardley-node-draft {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Cursor for the whole SVG while drawing a link */
+.vzd-wardley-svg--drawing {
+  cursor: crosshair;
+}
+
 /* Drag tooltip: coordinate text */
 .vzd-wardley-drag-tooltip-text {
   font-family: var(--font-monospace);

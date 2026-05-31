@@ -4,7 +4,7 @@ import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX } from "../shared/constants";
-import { writeWardleyComponent } from "../shared/wardley-edit";
+import { writeWardleyComponent, addWardleyComponent } from "../shared/wardley-edit";
 
 // Canvas dimensions
 const W = 800;
@@ -327,5 +327,132 @@ export function renderWardleyMap(
 
       svg.addEventListener("touchend", () => endDrag());
     }
+
+    // ── + handle and link-draw gesture ──────────────────────────────────
+    // Hovering a draggable node reveals a small "+" handle at its right edge.
+    // Dragging from the handle creates a new connected component; Escape
+    // creates the component without a link.
+
+    // Shared "+" handle — one element repositioned to whichever node is hovered
+    const addHandleG = createSvgEl("g", { class: "vzd-wardley-add-handle-g" }) as SVGGElement;
+    addHandleG.style.display = "none";
+    const addHandleCircle = createSvgEl("circle", {
+      cx: "0", cy: "0", r: "7", class: "vzd-wardley-add-handle",
+    }) as SVGCircleElement;
+    const addHandlePlus = createSvgEl("text", {
+      x: "0", y: "0.5", class: "vzd-wardley-add-handle-icon",
+      "text-anchor": "middle", "dominant-baseline": "middle",
+    }) as SVGTextElement;
+    addHandlePlus.textContent = "+";
+    addHandleG.appendChild(addHandleCircle);
+    addHandleG.appendChild(addHandlePlus);
+    svg.appendChild(addHandleG);
+
+    type LinkDrawState = {
+      sourceRef: NodeRef;
+      ghostLine: SVGLineElement;
+      ghostDot: SVGCircleElement;
+      hasMoved: boolean;
+    };
+    let linkDraw: LinkDrawState | null = null;
+    let hideHandleTimer: ReturnType<typeof setTimeout> | null = null;
+    let handleTarget: NodeRef | null = null;
+
+    const positionHandle = (ref: NodeRef): void => {
+      const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
+      const cy = parseFloat(ref.circle.getAttribute("cy") ?? "0");
+      addHandleG.setAttribute("transform", `translate(${cx + NODE_R + 12}, ${cy})`);
+      addHandleG.style.display = "";
+      handleTarget = ref;
+    };
+
+    const scheduleHideHandle = (): void => {
+      if (hideHandleTimer) clearTimeout(hideHandleTimer);
+      hideHandleTimer = setTimeout(() => {
+        if (!linkDraw) { addHandleG.style.display = "none"; handleTarget = null; }
+      }, 120);
+    };
+
+    const cancelHideHandle = (): void => {
+      if (hideHandleTimer) { clearTimeout(hideHandleTimer); hideHandleTimer = null; }
+    };
+
+    for (const ref of nodeRefs) {
+      if (!data.explicitComponents.has(ref.comp.name)) continue;
+      ref.circle.addEventListener("mouseenter", () => {
+        if (drag) return;
+        cancelHideHandle();
+        positionHandle(ref);
+      });
+      ref.circle.addEventListener("mouseleave", () => scheduleHideHandle());
+    }
+    addHandleG.addEventListener("mouseenter", () => cancelHideHandle());
+    addHandleG.addEventListener("mouseleave", () => scheduleHideHandle());
+
+    const onLinkMove = (e: MouseEvent): void => {
+      if (!linkDraw) return;
+      const { x, y } = clientToSvg(svg, e.clientX, e.clientY);
+      const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, x));
+      const cy = Math.max(PLOT_Y, Math.min(PLOT_Y + PLOT_H, y));
+      linkDraw.ghostLine.setAttribute("x2", String(cx));
+      linkDraw.ghostLine.setAttribute("y2", String(cy));
+      linkDraw.ghostDot.setAttribute("cx", String(cx));
+      linkDraw.ghostDot.setAttribute("cy", String(cy));
+      if (!linkDraw.hasMoved) {
+        const srcCx = parseFloat(linkDraw.sourceRef.circle.getAttribute("cx") ?? "0");
+        const srcCy = parseFloat(linkDraw.sourceRef.circle.getAttribute("cy") ?? "0");
+        if (Math.hypot(cx - srcCx, cy - srcCy) > NODE_R * 2) linkDraw.hasMoved = true;
+      }
+    };
+
+    const endLinkDraw = (withLink: boolean): void => {
+      if (!linkDraw) return;
+      const { sourceRef, ghostLine, ghostDot, hasMoved } = linkDraw;
+      linkDraw = null;
+      ghostLine.remove();
+      ghostDot.remove();
+      addHandleG.style.display = "none";
+      svg.classList.remove("vzd-wardley-svg--drawing");
+      document.removeEventListener("mousemove", onLinkMove);
+      document.removeEventListener("mouseup", onLinkUp);
+      document.removeEventListener("keydown", onLinkKey);
+      if (!hasMoved) return; // no meaningful movement — cancel silently
+      const cx = parseFloat(ghostDot.getAttribute("cx") ?? "0");
+      const cy = parseFloat(ghostDot.getAttribute("cy") ?? "0");
+      const { visibility, evolution } = svgToData(cx, cy);
+      addWardleyComponent(app, ctx, wrap, sourceRef.comp.name, "New Component", visibility, evolution, withLink);
+    };
+
+    const onLinkUp = (): void => endLinkDraw(true);
+    const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false); };
+
+    addHandleCircle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!handleTarget) return;
+      const sourceRef = handleTarget;
+      const srcCx = parseFloat(sourceRef.circle.getAttribute("cx") ?? "0");
+      const srcCy = parseFloat(sourceRef.circle.getAttribute("cy") ?? "0");
+
+      const ghostLine = createSvgEl("line", {
+        x1: String(srcCx), y1: String(srcCy), x2: String(srcCx), y2: String(srcCy),
+        class: "vzd-wardley-link-draft",
+      }) as SVGLineElement;
+      svg.insertBefore(ghostLine, addHandleG);
+
+      const ghostDot = createSvgEl("circle", {
+        cx: String(srcCx), cy: String(srcCy), r: String(NODE_R),
+        class: "vzd-wardley-node-draft",
+      }) as SVGCircleElement;
+      svg.insertBefore(ghostDot, addHandleG);
+
+      linkDraw = { sourceRef, ghostLine, ghostDot, hasMoved: false };
+      addHandleG.style.display = "none";
+      svg.classList.add("vzd-wardley-svg--drawing");
+      document.addEventListener("mousemove", onLinkMove);
+      document.addEventListener("mouseup", onLinkUp);
+      document.addEventListener("keydown", onLinkKey);
+    });
   }
 }
+
