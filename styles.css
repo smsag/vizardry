@@ -820,6 +820,20 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   cursor: crosshair;
 }
 
+/* Inline rename input — positioned over the component label */
+.vzd-wardley-rename-input {
+  font-family: var(--font-interface);
+  font-size: var(--vzd-base, var(--font-ui-small));
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1.5px solid var(--interactive-accent);
+  border-radius: var(--radius-s);
+  padding: 1px 4px;
+  outline: none;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
 /* Drag tooltip: coordinate text */
 .vzd-wardley-drag-tooltip-text {
   font-family: var(--font-monospace);

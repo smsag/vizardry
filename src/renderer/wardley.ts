@@ -4,7 +4,7 @@ import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX } from "../shared/constants";
-import { writeWardleyComponent, addWardleyComponent } from "../shared/wardley-edit";
+import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent } from "../shared/wardley-edit";
 
 // Canvas dimensions
 const W = 800;
@@ -453,6 +453,61 @@ export function renderWardleyMap(
       document.addEventListener("mouseup", onLinkUp);
       document.addEventListener("keydown", onLinkKey);
     });
+
+    // ── Double-click to rename ─────────────────────────────────────────────
+    // Double-clicking any draggable component's circle or label opens a
+    // positioned <input> over the label so the user can rename it in-place.
+
+    const activateRename = (ref: NodeRef): void => {
+      // Don't open a second input while one is already active
+      if (wrap.querySelector(".vzd-wardley-rename-input")) return;
+
+      const textRect = ref.textEl.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = ref.comp.name;
+      input.className = "vzd-wardley-rename-input";
+      input.style.position = "absolute";
+      input.style.left = `${textRect.left - wrapRect.left + wrap.scrollLeft}px`;
+      input.style.top  = `${textRect.top  - wrapRect.top  + wrap.scrollTop  - 6}px`;
+      input.style.width = `${Math.max(100, textRect.width + 24)}px`;
+
+      wrap.appendChild(input);
+      input.focus();
+      input.select();
+
+      let committed = false;
+
+      const commit = (): void => {
+        if (committed) return;
+        committed = true;
+        input.remove();
+        const newName = input.value.trim();
+        if (newName && newName !== ref.comp.name) {
+          renameWardleyComponent(app, ctx, wrap, ref.comp.name, newName);
+        }
+      };
+
+      const cancel = (): void => {
+        committed = true;
+        input.remove();
+      };
+
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter")  { e.preventDefault(); commit(); }
+        if (e.key === "Escape") { e.preventDefault(); cancel(); }
+        e.stopPropagation(); // don't leak keystrokes to SVG handlers
+      });
+    };
+
+    for (const ref of nodeRefs) {
+      if (!data.explicitComponents.has(ref.comp.name)) continue;
+      ref.textEl.addEventListener("dblclick", (e) => { e.stopPropagation(); activateRename(ref); });
+      ref.circle.addEventListener("dblclick", (e) => { e.stopPropagation(); activateRename(ref); });
+    }
   }
 }
 
