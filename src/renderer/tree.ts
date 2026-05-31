@@ -10,7 +10,15 @@ import type {
 } from "../types";
 import { createSvgEl } from "../shared/svg";
 import { t } from "../i18n";
+import type { LinkResolver } from "../shared/links";
 import type { TranslationKey } from "../i18n";
+
+
+// Chain-link icon path drawn at 11x6px — appears on linked nodes.
+// Two half-ovals connected by a horizontal bar (no emoji, pure SVG path).
+const LINK_ICON_PATH = "M4 0.5H2.5C0.5 0.5 0.5 2 0.5 3C0.5 4 0.5 5.5 2.5 5.5H4 M7 0.5H8.5C10.5 0.5 10.5 2 10.5 3C10.5 4 10.5 5.5 8.5 5.5H7 M4 3H7";
+const LINK_ICON_W = 11;
+const LINK_ICON_H = 6;
 
 function getTreeStyle(level: number, opts: TreeRenderOptions): TreeNodeStyle {
   return opts.levelStyles[Math.min(level, opts.levelStyles.length - 1)];
@@ -94,7 +102,7 @@ function renderTreeEdges(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
   }
 }
 
-function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOptions): void {
+function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOptions, resolver?: LinkResolver, navigateTo?: (h: string) => void): void {
   const group = createSvgEl("g", { transform: `translate(${node.x}, ${node.y})` }) as SVGGElement;
   const style = getTreeStyle(node.level, opts);
   renderTreeNodeRect(group, node, opts);
@@ -133,16 +141,48 @@ function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
   title.textContent = node.text;
   group.appendChild(title);
 
+  // Link affordance — full node click + chain-link icon in the right margin
+  const heading = resolver?.resolve(node.text);
+  if (heading && navigateTo) {
+    group.setAttribute("data-linked", "true");
+    group.classList.add("vzd-tree-node--linked");
+    group.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigateTo(heading);
+    });
+
+    // Chain-link icon: right-aligned, vertically centred in the node
+    const iconG = createSvgEl("g", {
+      transform: `translate(${opts.nodeW - LINK_ICON_W - 5}, ${(opts.nodeH - LINK_ICON_H) / 2})`,
+      class: "vzd-tree-link-icon",
+      "aria-hidden": "true",
+    });
+    iconG.appendChild(createSvgEl("path", {
+      d: LINK_ICON_PATH,
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "1.2",
+      "stroke-linecap": "round",
+    }));
+    group.appendChild(iconG);
+  }
+
   svg.appendChild(group);
 
-  for (const child of node.children) renderTreeNodes(child, svg, opts);
+  for (const child of node.children) renderTreeNodes(child, svg, opts, resolver, navigateTo);
 }
 
 // INVARIANT: renderTree mutates TreeNode.x/y/width/height in place during layout.
 // The adapter functions (adaptOSTToTree etc.) always create fresh TreeNode objects,
 // so this is safe. Do not cache or reuse a TreeNode tree across two renderTree calls --
 // the second call will inherit stale layout coordinates from the first.
-export function renderTree(tree: { root: TreeNode }, opts: TreeRenderOptions, el: HTMLElement): void {
+export function renderTree(
+  tree: { root: TreeNode },
+  opts: TreeRenderOptions,
+  el: HTMLElement,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+): void {
   layoutTreeNode(tree.root, opts);
   const bounds = collectTreeBounds(tree.root);
   const svgW = bounds.maxX + opts.hPadding;
@@ -156,7 +196,7 @@ export function renderTree(tree: { root: TreeNode }, opts: TreeRenderOptions, el
   svg.setAttribute("class", opts.canvasClass);
 
   renderTreeEdges(tree.root, svg, opts);
-  renderTreeNodes(tree.root, svg, opts);
+  renderTreeNodes(tree.root, svg, opts, resolver, navigateTo);
   wrapper.appendChild(svg);
 }
 

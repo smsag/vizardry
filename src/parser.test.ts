@@ -36,11 +36,6 @@ describe("parseFrameworkSource", () => {
     expect(result.ok && result.data["goal"]).toBe("Value");
   });
 
-  it("parses _links section", () => {
-    const result = parseFrameworkSource("block: Goal\n  Value\n\n_links:\n  Goal: Heading text");
-    expect(result.ok && result.links).toEqual({ goal: "Heading text" });
-  });
-
   it("allows empty block content", () => {
     const result = parseFrameworkSource("block: Goal\n");
     expect(result).toEqual({ ok: true, data: { goal: "" }, links: {} });
@@ -61,8 +56,4 @@ describe("parseFrameworkSource", () => {
     expect(result).toEqual({ ok: false, error: expect.stringContaining("unexpected syntax") });
   });
 
-  it("returns error for invalid _links entry", () => {
-    const result = parseFrameworkSource("_links:\n  no colon here");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("invalid _links entry") });
-  });
 });

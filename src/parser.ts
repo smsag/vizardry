@@ -8,20 +8,16 @@ import type { ParseResult } from "./types";
  *     Content line 1
  *     Content line 2
  *
- *   _links:
- *     Label: Heading text in this document
- *
  * Rules:
  * - `block:` keyword followed by the block label (case-insensitive match at render time)
  * - Content is indented below the block line — no `|` scalar needed
- * - `_links:` section maps block labels to heading anchors
  * - Lines starting with `#` are comments (ignored)
  * - Unknown block labels are stored but silently ignored at render time
  * - Blank lines between blocks are ignored
+ * - Heading links use inline [[#Heading]] annotations on block lines (see shared/links.ts)
  */
 export function parseFrameworkSource(source: string): ParseResult {
   const data: Record<string, string> = {};
-  const links: Record<string, string> = {};
   const lines = source.split("\n");
   let i = 0;
 
@@ -75,28 +71,10 @@ export function parseFrameworkSource(source: string): ParseResult {
 
       data[key] = contentLines.join("\n");
 
-    } else if (trimmed.startsWith("_links:")) {
-      i++;
-      while (i < lines.length) {
-        const nested = lines[i];
-        const nestedTrimmed = nested.trim();
-        if (nestedTrimmed === "" || nestedTrimmed.startsWith("#")) { i++; continue; }
-        if (nested.search(/\S/) === 0) break; // back to root level
-
-        const colonIdx = nestedTrimmed.indexOf(":");
-        if (colonIdx === -1) {
-          return { ok: false, error: `Line ${i + 1}: invalid _links entry — "${nestedTrimmed}"` };
-        }
-        const linkLabel = nestedTrimmed.slice(0, colonIdx).trim().toLowerCase();
-        const linkTarget = nestedTrimmed.slice(colonIdx + 1).trim();
-        links[linkLabel] = linkTarget;
-        i++;
-      }
-
     } else {
       return { ok: false, error: `Line ${i + 1}: unexpected syntax — "${trimmed}". Use "block: Label"` };
     }
   }
 
-  return { ok: true, data, links };
+  return { ok: true, data, links: {} };
 }

@@ -5,6 +5,7 @@ import { initCanvas, markInteractive } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
 import { setupMobileCarousel } from "./grid-carousel";
 import { t } from "../i18n";
+import type { LinkResolver } from "../shared/links";
 
 export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");
@@ -15,8 +16,8 @@ export function renderError(message: string, container: HTMLElement): void {
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
-  links: Record<string, string>,
   container: HTMLElement,
+  resolver: LinkResolver,
   navigateTo: (heading: string) => void,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
@@ -37,7 +38,7 @@ export function renderCanvas(
     const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
     labelRow.createEl("span", { text: blockDef.label, cls: "vizardry-block-label" });
 
-    const heading = links[labelKey];
+    const heading = resolver.resolve(labelKey);
     if (heading) {
       const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
       setIcon(linkBtn, "link");

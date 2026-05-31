@@ -16,6 +16,7 @@
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { extractInlineLinks, buildLinkSupport } from "./shared/links";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
 import { parseMindMap } from "./mindmap";
@@ -63,19 +64,23 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     id: "impact",
     label: "Impact Map",
     template: IMPACT_MAP_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseImpactMap(source);
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseImpactMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderImpactMap(result.data, el);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderImpactMap(result.data, el, resolver, navigateTo);
     },
   },
   {
     id: "story",
     label: "User Story Map",
     template: STORY_MAP_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseStoryMap(source);
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseStoryMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
       renderStoryMap(result.data, el);
     },
   },
@@ -83,10 +88,12 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     id: "mindmap",
     label: "Mind Map",
     template: MIND_MAP_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseMindMap(source);
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseMindMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderMindMap(result.data, el);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderMindMap(result.data, el, resolver, navigateTo);
     },
   },
   {
@@ -94,7 +101,8 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Venn Diagram",
     template: VENN_TEMPLATE,
     createProcessor: (app) => (source, el, ctx) => {
-      const result = parseVennDiagram(source);
+      const { strippedSource } = extractInlineLinks(source);
+      const result = parseVennDiagram(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       renderVennDiagram(result.data, el, (target) => {
         void app.workspace.openLinkText(target, ctx.sourcePath, false);
@@ -105,10 +113,12 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     id: "ost",
     label: "Opportunity Solution Tree",
     template: OST_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseOST(source);
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseOST(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderOST(result.data, el);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderOST(result.data, el, resolver, navigateTo);
     },
   },
   {
@@ -116,7 +126,8 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Image Carousel",
     template: CAROUSEL_TEMPLATE,
     createProcessor: (app) => (source, el, ctx) => {
-      const result = parseCarouselBlock(source);
+      const { strippedSource: carouselSrc } = extractInlineLinks(source);
+      const result = parseCarouselBlock(carouselSrc);
       if (!result.ok) { renderError(result.error, el); return; }
       renderCarouselBlock(result.data, el, (src) => {
         const file = app.vault.getFileByPath(
@@ -134,17 +145,18 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     id: "sipoc",
     label: "SIPOC Diagram",
     template: SIPOC_TEMPLATE,
-    createProcessor: () => (source, el) => {
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource: src } = extractInlineLinks(source);
       // Detect flow variant: first non-blank, non-comment line is "type: flow"
-      const firstLine = source.split("\n").find(l => l.trim() && !l.trim().startsWith("#"))?.trim() ?? "";
+      const firstLine = src.split("\n").find(l => l.trim() && !l.trim().startsWith("#"))?.trim() ?? "";
       if (firstLine === "type: flow") {
-        const body = source.replace(/^\s*type:\s*flow\s*\n?/i, "");
+        const body = src.replace(/^\s*type:\s*flow\s*\n?/i, "");
         const result = parseSIPOCFlow(body);
         if (!result.ok) { renderError(result.error, el); return; }
         renderSIPOCFlow(result.data, el);
         return;
       }
-      const result = parseSIPOC(source);
+      const result = parseSIPOC(src);
       if (!result.ok) { renderError(result.error, el); return; }
       renderSIPOC(result.data, el);
     },
@@ -153,8 +165,9 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     id: "wardley",
     label: "Wardley Map",
     template: WARDLEY_TEMPLATE,
-    createProcessor: () => (source, el) => {
-      const result = parseWardleyMap(source);
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource } = extractInlineLinks(source);
+      const result = parseWardleyMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       renderWardleyMap(result.data, el);
     },

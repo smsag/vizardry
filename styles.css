@@ -733,6 +733,27 @@
   font-size: var(--vzd-base, var(--font-ui-small));
 }
 
+/* Linked tree node — full node is a click target */
+g.vzd-tree-node--linked {
+  cursor: pointer;
+}
+
+/* Subtle hover highlight on the node background rect */
+g.vzd-tree-node--linked:hover rect:first-child {
+  filter: brightness(0.94);
+}
+
+/* Chain-link icon — faint at rest, solid on hover */
+.vzd-tree-link-icon {
+  color: var(--text-accent);
+  opacity: 0.45;
+  transition: opacity 0.12s ease;
+}
+
+g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
+  opacity: 1;
+}
+
 /* Sub-label (e.g. "Outcome", "Actor") — bottom-right corner of node, visually unobtrusive */
 .vzd-tree-text-sub {
   font-family: var(--font-interface);

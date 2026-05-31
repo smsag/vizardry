@@ -1,18 +1,35 @@
 import type { ImpactMap, MindMap, OSTTree } from "../types";
 import { initCanvas } from "./controls";
 import { adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, IMPACT_MAP_OPTS, MINDMAP_OPTS, OST_TREE_OPTIONS, renderTree } from "./tree";
+import type { LinkResolver } from "../shared/links";
+import { NULL_RESOLVER } from "../shared/links";
 
-export function renderMindMap(map: MindMap, container: HTMLElement): void {
+export function renderMindMap(
+  map: MindMap,
+  container: HTMLElement,
+  resolver: LinkResolver = NULL_RESOLVER,
+  navigateTo?: (heading: string) => void,
+): void {
   initCanvas(container, "mindmap", "Mind Map");
-  renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container);
+  renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container, resolver, navigateTo);
 }
 
-export function renderImpactMap(map: ImpactMap, container: HTMLElement): void {
+export function renderImpactMap(
+  map: ImpactMap,
+  container: HTMLElement,
+  resolver: LinkResolver = NULL_RESOLVER,
+  navigateTo?: (heading: string) => void,
+): void {
   initCanvas(container, "impact", "Impact Map");
-  renderTree(adaptImpactMapToTree(map), IMPACT_MAP_OPTS, container);
+  renderTree(adaptImpactMapToTree(map), IMPACT_MAP_OPTS, container, resolver, navigateTo);
 }
 
-export function renderOST(tree: OSTTree, el: HTMLElement): void {
+export function renderOST(
+  tree: OSTTree,
+  el: HTMLElement,
+  resolver: LinkResolver = NULL_RESOLVER,
+  navigateTo?: (heading: string) => void,
+): void {
   initCanvas(el, "ost", "Opportunity Solution Tree");
-  renderTree(adaptOSTToTree(tree), OST_TREE_OPTIONS, el);
+  renderTree(adaptOSTToTree(tree), OST_TREE_OPTIONS, el, resolver, navigateTo);
 }

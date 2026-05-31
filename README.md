@@ -782,31 +782,61 @@ link: Database -> Cloud Host
 
 ---
 
-## Linking blocks to document headings
+## Linking elements to document headings
 
-Add a `_links:` section to connect canvas blocks to headings elsewhere in the same note. A small link icon appears on the block — tapping it navigates to that heading.
+Any canvas element can navigate to a heading in the same note. A small link icon signals the connection — clicking the block or node jumps to that heading.
+
+**Two ways to connect:**
+
+*Inline annotation* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, and Mind Map:
+
+~~~
+```lean
+block: Problem [[#Problem Discovery]]
+  Too many manual steps in the daily workflow
+
+block: Solution [[#Our Approach]]
+  One-click automation for recurring tasks
+```
+
+```ost
+outcome: Reduce churn [[#Retention Goals]]
+  Improve onboarding
+    Run onboarding experiment
+```
+
+```impact
+actor: Paid Users [[#User Research]]
+  impact: Upgrade plan
+```
+~~~
+
+*Auto-detection* — write a note heading that matches an element label exactly (case-insensitive) and the link appears with no extra syntax at all:
 
 ~~~
 ```lean
 block: Problem
-  Too many manual steps in the daily workflow
+  Too many manual steps
 
 block: Solution
-  One-click automation for recurring tasks
-
-block: Customer Segments
-  Solo founders and freelancers
-
-_links:
-  Problem: 1. Why? — Problem & Opportunity
-  Solution: 2. How? — Our Approach
-  Customer Segments: 3. Who? — Target Users
+  One-click automation
 ```
+
+## Problem
+
+Background on the problem space...
+
+## Solution
+
+Details of the approach...
 ~~~
 
-- Block labels in `_links:` are case-insensitive
-- Heading text must match the document heading exactly
-- Works with any grid framework
+The `Problem` and `Solution` blocks automatically get link icons because matching headings exist in the note.
+
+**Rules:**
+- Inline `[[#Heading]]` takes priority over auto-detection
+- Heading text is matched case-insensitively
+- `[[#Heading]]` is stripped from display — only the element name is shown
 
 ---
 
@@ -838,8 +868,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 |---|---|
 | `block: Label` | Start a block; label must match a framework block name |
 | Indented lines below | Block content (multi-line, no special syntax needed) |
-| `_links:` | Start the heading links section |
-| Indented `Label: Heading text` | Link a block to a document heading |
+| `block: Label [[#Heading]]` | Link block to a heading in this note (inline annotation) |
 | `# comment` | Ignored |
 
 ### Image Carousel (carousel)
