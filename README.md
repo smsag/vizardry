@@ -1,6 +1,8 @@
 # Vizardry
 
-An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in your notes — using fenced code blocks as input. Supports grid-based canvases, trees, diagrams, and flow charts. Canvases are **editable in Live Preview**: click any block to edit its content directly, without touching the source.
+An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in your notes — using fenced code blocks as input. Supports grid-based canvases, trees, diagrams, and flow charts.
+
+Canvases are **editable in Live Preview**: click any grid block to edit its content, or — for Wardley Maps — drag components to reposition them, draw new components from existing ones, and double-click to rename. No need to touch the source block directly.
 
 ---
 
@@ -774,11 +776,23 @@ link: Database -> Cloud Host
 - `component: <name> [visibility, evolution]` — places a node on the canvas; both coordinates are 0–1
 - `link: A -> B` — dependency arrow from A to B
 - Inline `# comments` are stripped
-- Node names in links are case-sensitive and must match exactly
 
 **Axes:**
 - Y = Visibility (0 = invisible infrastructure, 1 = direct user need at top)
 - X = Evolution (0 = Genesis, 0.33 = Custom, 0.67 = Product, 1 = Commodity)
+
+**Visual editing in Live Preview:**
+
+Wardley Maps are fully editable without touching the source block:
+
+| Action | Gesture |
+|---|---|
+| **Reposition** | Drag a component dot to a new position — coordinates update on release |
+| **Add + link** | Hover a node → `+` handle appears → drag to new position → new component + link inserted |
+| **Add without link** | Same as above, but press Escape before releasing |
+| **Rename** | Double-click any component's circle or label → type new name → Enter |
+
+All changes write back to the source block surgically — only the affected lines are patched.
 
 ---
 
@@ -837,6 +851,18 @@ The `Problem` and `Solution` blocks automatically get link icons because matchin
 - Inline `[[#Heading]]` takes priority over auto-detection
 - Heading text is matched case-insensitively
 - `[[#Heading]]` is stripped from display — only the element name is shown
+
+---
+
+## Wardley Map — visual editing
+
+In Live Preview, Wardley Maps support a full visual editing workflow:
+
+**Drag to reposition** — grab any component dot and drag it across the map. A live coordinate tooltip shows `vis / evo` values while dragging. The source block updates on release.
+
+**Add a component** — hover any node to reveal a `+` handle at its right edge. Drag from the handle to place a new connected component. The new component (`New Component`) and a link to the source are inserted into the source block automatically. Press Escape before releasing to create the component without a link.
+
+**Rename** — double-click any component's circle or label. An input appears over the label. Type the new name and press Enter (or click away). The rename propagates to all references — the `component:` line, any `anchor:` line, and all `link:` lines in both positions.
 
 ---
 

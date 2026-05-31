@@ -52,3 +52,6 @@ npm-debug.log*
 
 # Claude / AI session files
 .claude/
+
+# Local-only bootstrap tool — not for public repo
+scripts/bootstrap-repo.sh
