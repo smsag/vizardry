@@ -1,6 +1,7 @@
 import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
 import { MarkdownView, Notice, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
+import { extractInlineLinks, buildLinkSupport } from "./shared/links";
 import { renderCanvas, renderError } from "./renderer";
 import { resetInteractiveIdCounter } from "./renderer/controls";
 import { generateCanvasTemplate } from "./templates";
@@ -61,11 +62,12 @@ export default class VizardryPlugin extends Plugin {
     // ── Grid canvas renderers ──────────────────────────────────────────
     for (const [id, definition] of Object.entries(FRAMEWORKS)) {
       registerProcessor(id, (source, el, ctx) => {
-        const result = parseFrameworkSource(source);
+        const { strippedSource, inlineLinks } = extractInlineLinks(source);
+        const result = parseFrameworkSource(strippedSource);
         if (!result.ok) { renderError(result.error, el); return; }
-        safeRender(id, el, () => renderCanvas(definition, result.data, result.links, el, (heading) => {
-          void this.app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
-        }, this.app, ctx));
+        // result.links = _links: section (backward compat); inlineLinks = [[#Heading]] inline
+        const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks, result.links);
+        safeRender(id, el, () => renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx));
       });
     }
 
