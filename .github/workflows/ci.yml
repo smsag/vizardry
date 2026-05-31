@@ -27,5 +27,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Docs check
+        run: bash scripts/docs-check.sh
+
       - name: Build
         run: npm run build
