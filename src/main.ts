@@ -65,8 +65,7 @@ export default class VizardryPlugin extends Plugin {
         const { strippedSource, inlineLinks } = extractInlineLinks(source);
         const result = parseFrameworkSource(strippedSource);
         if (!result.ok) { renderError(result.error, el); return; }
-        // result.links = _links: section (backward compat); inlineLinks = [[#Heading]] inline
-        const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks, result.links);
+        const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks);
         safeRender(id, el, () => renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx));
       });
     }

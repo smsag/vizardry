@@ -837,7 +837,6 @@ The `Problem` and `Solution` blocks automatically get link icons because matchin
 - Inline `[[#Heading]]` takes priority over auto-detection
 - Heading text is matched case-insensitively
 - `[[#Heading]]` is stripped from display — only the element name is shown
-- The legacy `_links:` section still works in grid canvases (backward compatible)
 
 ---
 
@@ -870,7 +869,6 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `block: Label` | Start a block; label must match a framework block name |
 | Indented lines below | Block content (multi-line, no special syntax needed) |
 | `block: Label [[#Heading]]` | Link block to a heading in this note (inline annotation) |
-| `_links:` | Legacy heading links section (still supported) |
 | `# comment` | Ignored |
 
 ### Image Carousel (carousel)

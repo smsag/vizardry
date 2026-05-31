@@ -57,26 +57,21 @@ export function getFileHeadings(app: App, ctx: MarkdownPostProcessorContext): st
 }
 
 /**
- * Creates a LinkResolver that combines:
- *   - baseLinks: from _links: section (backward compat) or similar
- *   - inlineLinks: from [[#Heading]] inline annotations (higher priority)
- *   - headings: all headings in the note for exact-name auto-detection
+ * Creates a LinkResolver that combines inline annotations and auto-detected
+ * headings.
  *
  * Resolution order (first match wins):
- *   1. Inline [[#Heading]] annotation
- *   2. _links: section entry
- *   3. Note heading whose text exactly matches the label (case-insensitive)
+ *   1. Inline [[#Heading]] annotation on the element line
+ *   2. Note heading whose text exactly matches the label (case-insensitive)
  */
 export function createLinkResolver(
   inlineLinks: Record<string, string>,
-  baseLinks: Record<string, string>,
   headings: string[],
 ): LinkResolver {
   return {
     resolve(label: string): string | undefined {
       const key = label.toLowerCase().trim();
       if (key in inlineLinks) return inlineLinks[key];
-      if (key in baseLinks) return baseLinks[key];
       return headings.find(h => h.toLowerCase().trim() === key);
     },
   };
@@ -90,13 +85,12 @@ export function buildLinkSupport(
   app: App,
   ctx: MarkdownPostProcessorContext,
   inlineLinks: Record<string, string>,
-  baseLinks: Record<string, string> = {},
 ): {
   resolver: LinkResolver;
   navigateTo: (heading: string) => void;
 } {
   const headings = getFileHeadings(app, ctx);
-  const resolver = createLinkResolver(inlineLinks, baseLinks, headings);
+  const resolver = createLinkResolver(inlineLinks, headings);
   const navigateTo = (heading: string): void => {
     void app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
   };
