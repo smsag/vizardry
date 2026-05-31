@@ -17,3 +17,5 @@ export const WARDLEY_CHAR_W_PX = 7;
 export const WARDLEY_LABEL_MIN_GAP_PX = 14;
 /** Horizontal proximity threshold (px) within which two Wardley labels are considered overlapping. */
 export const WARDLEY_LABEL_OVERLAP_X_PX = 80;
+/** Maximum pixels a label may be nudged from its natural position before a leader line is drawn. */
+export const WARDLEY_LABEL_MAX_NUDGE_PX = 30;

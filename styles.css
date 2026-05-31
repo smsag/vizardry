@@ -1073,6 +1073,13 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   fill-opacity: 0.7;
 }
 
+/* Thin leader line connecting a node to its nudge-displaced label */
+.vzd-wardley-leader {
+  stroke: var(--background-modifier-border);
+  stroke-width: 0.8;
+  stroke-dasharray: 3 3;
+}
+
 .vzd-wardley-label {
   fill: var(--text-normal);
   font-size: 12px;

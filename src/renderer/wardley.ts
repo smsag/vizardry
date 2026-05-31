@@ -3,7 +3,7 @@ import type { WardleyMap, WardleyComponent } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { createSvgEl } from "../shared/svg";
-import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX } from "../shared/constants";
+import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX, WARDLEY_LABEL_MAX_NUDGE_PX } from "../shared/constants";
 import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent } from "../shared/wardley-edit";
 
 // Canvas dimensions
@@ -61,24 +61,38 @@ function labelAnchor(evo: number, vis: number): { dx: number; dy: number; anchor
 interface LabelSlot {
   textX: number;
   textY: number;
+  /** Natural (pre-nudge) y — used to detect displacement and draw leader lines. */
+  naturalY: number;
   anchor: string;
   name: string;
 }
 
 function nudgeLabels(slots: LabelSlot[]): void {
   slots.sort((a, b) => a.textX - b.textX || a.textY - b.textY);
+
   for (let i = 0; i < slots.length; i++) {
     for (let j = i + 1; j < slots.length; j++) {
       const a = slots[i], b = slots[j];
+
+      // Skip if b is already at its maximum allowed displacement
+      if (b.textY - b.naturalY >= WARDLEY_LABEL_MAX_NUDGE_PX) continue;
+
       const aW = a.name.length * WARDLEY_CHAR_W_PX;
       const bW = b.name.length * WARDLEY_CHAR_W_PX;
       const aLeft  = a.anchor === "end" ? a.textX - aW : a.textX;
       const aRight = a.anchor === "end" ? a.textX      : a.textX + aW;
       const bLeft  = b.anchor === "end" ? b.textX - bW : b.textX;
       const bRight = b.anchor === "end" ? b.textX      : b.textX + bW;
+
       if (aRight + WARDLEY_LABEL_OVERLAP_X_PX < bLeft || bRight + WARDLEY_LABEL_OVERLAP_X_PX < aLeft) continue;
+
       const gap = b.textY - a.textY;
-      if (gap < WARDLEY_LABEL_MIN_GAP_PX) b.textY += WARDLEY_LABEL_MIN_GAP_PX - gap;
+      if (gap < WARDLEY_LABEL_MIN_GAP_PX) {
+        const push = WARDLEY_LABEL_MIN_GAP_PX - gap;
+        // Cap so b never moves more than WARDLEY_LABEL_MAX_NUDGE_PX from its natural position
+        const remaining = WARDLEY_LABEL_MAX_NUDGE_PX - (b.textY - b.naturalY);
+        b.textY += Math.min(push, Math.max(0, remaining));
+      }
     }
   }
 }
@@ -180,7 +194,8 @@ export function renderWardleyMap(
   const labelSlots: LabelSlot[] = data.components.map(comp => {
     const cx = toSvgX(comp.evolution), cy = toSvgY(comp.visibility);
     const { dx, dy, anchor } = labelAnchor(comp.evolution, comp.visibility);
-    return { textX: cx + dx, textY: cy + dy, anchor, name: comp.name };
+    const textY = cy + dy;
+    return { textX: cx + dx, textY, naturalY: textY, anchor, name: comp.name };
   });
   nudgeLabels(labelSlots);
 
@@ -199,6 +214,18 @@ export function renderWardleyMap(
     svg.appendChild(circle);
 
     const slot = labelSlots[i];
+
+    // Leader line — drawn when the nudge has moved the label significantly
+    // from its natural position, keeping the visual connection to the node.
+    if (slot.textY - slot.naturalY > 6) {
+      const leaderX = cx + (slot.anchor === "end" ? -(NODE_R + 2) : NODE_R + 2);
+      svg.appendChild(createSvgEl("line", {
+        x1: String(leaderX), y1: String(cy),
+        x2: String(slot.textX), y2: String(slot.textY - 3),
+        class: "vzd-wardley-leader",
+      }));
+    }
+
     const textEl = createSvgEl("text", {
       x: String(slot.textX), y: String(slot.textY),
       class: "vzd-wardley-label", "text-anchor": slot.anchor,

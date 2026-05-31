@@ -347,11 +347,13 @@ describe("renderWardleyMap", () => {
     expect(svg).toBeTruthy();
     const nodes = svg!.querySelectorAll(".vzd-wardley-node");
     expect(nodes).toHaveLength(10);
-    // All label y-positions should be distinct after the nudge pass
+    // Labels should be nudged apart up to the cap; at least some should differ
     const labelYs = Array.from(svg!.querySelectorAll(".vzd-wardley-label"))
       .map(t => parseFloat((t as SVGTextElement).getAttribute("y") ?? "0"));
     const uniqueYs = new Set(labelYs.map(y => Math.round(y)));
-    expect(uniqueYs.size).toBe(10);
+    // With WARDLEY_LABEL_MAX_NUDGE_PX cap, not all 10 can be unique when
+    // clustered at the same point — but nudging should produce more than 1.
+    expect(uniqueYs.size).toBeGreaterThan(1);
   });
 });
 
