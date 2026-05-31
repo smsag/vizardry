@@ -139,3 +139,79 @@ export function addWardleyComponent(
 
   return true;
 }
+
+/** Escapes a string for use inside a RegExp. */
+function escRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Renames a Wardley Map component throughout its source block — updating the
+ * `component:` line, any `anchor:` line, and all `link:` references.
+ *
+ * All replacements are in-place (same line, different text) so line numbers
+ * do not shift and order does not matter.
+ *
+ * Returns false if the editor is unavailable or the component is not found.
+ */
+export function renameWardleyComponent(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  oldName: string,
+  newName: string,
+): boolean {
+  if (!newName.trim() || newName === oldName) return false;
+
+  const info = ctx.getSectionInfo(el);
+  if (!info) {
+    console.warn("Vizardry: renameWardleyComponent — no section info");
+    return false;
+  }
+
+  const file = app.vault.getFileByPath(ctx.sourcePath);
+  if (!file) {
+    console.warn(`Vizardry: renameWardleyComponent — file not found: ${ctx.sourcePath}`);
+    return false;
+  }
+
+  const leaf = app.workspace.getLeavesOfType("markdown").find(
+    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
+  );
+  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
+  if (!editor) {
+    console.warn("Vizardry: renameWardleyComponent — no live editor");
+    return false;
+  }
+
+  const { lineStart, lineEnd } = info;
+  const old = escRe(oldName);
+
+  // Patterns (case-insensitive so they work regardless of how the user typed the name)
+  const reComp   = new RegExp(`^(\\s*component:\\s*)${old}(\\s*\\[)`, "i");
+  const reAnchor = new RegExp(`^(\\s*anchor:\\s*)${old}\\s*$`, "i");
+  const reLinkFrom = new RegExp(`^(\\s*link:\\s*)${old}(\\s*->)`, "i");
+  const reLinkTo   = new RegExp(`(->[\\s]*)${old}(\\s*(?:#.*)?$)`, "i");
+
+  let found = false;
+
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+
+    let updated: string | null = null;
+    if (reComp.test(raw))    updated = raw.replace(reComp,   `$1${newName}$2`);
+    else if (reAnchor.test(raw)) updated = raw.replace(reAnchor, `$1${newName}`);
+    else if (reLinkFrom.test(raw)) updated = raw.replace(reLinkFrom, `$1${newName}$2`);
+    else if (reLinkTo.test(raw))   updated = raw.replace(reLinkTo,   `$1${newName}$2`);
+
+    if (updated !== null) {
+      editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+      found = true;
+    }
+  }
+
+  if (!found) {
+    console.warn(`Vizardry: renameWardleyComponent — "${oldName}" not found in source`);
+  }
+  return found;
+}
