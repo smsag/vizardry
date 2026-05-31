@@ -13,6 +13,7 @@ import type { WardleyComponent, WardleyLink, WardleyMap, WardleyResult } from ".
 export function parseWardleyMap(source: string): WardleyResult {
   const lines = source.split("\n");
   const components = new Map<string, WardleyComponent>();
+  const explicitComponents = new Set<string>(); // has an explicit component: line
   const links: WardleyLink[] = [];
   let anchor: string | null = null;
 
@@ -59,6 +60,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       } else {
         components.set(name, { name, visibility, evolution });
       }
+      explicitComponents.add(name);
       continue;
     }
 
@@ -96,6 +98,7 @@ export function parseWardleyMap(source: string): WardleyResult {
     anchor: anchor ?? null,
     components: [...components.values()],
     links,
+    explicitComponents,
   };
 
   return { ok: true, data };

@@ -761,6 +761,35 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   user-select: none;
 }
 
+
+/* Wardley Map — draggable nodes */
+.vzd-wardley-node--draggable {
+  cursor: grab;
+}
+
+.vzd-wardley-node--dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 0 4px var(--interactive-accent));
+}
+
+.vzd-wardley-svg--dragging {
+  cursor: grabbing;
+}
+
+/* Drag tooltip: background rect */
+.vzd-wardley-drag-tooltip-bg {
+  fill: var(--background-secondary);
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+
+/* Drag tooltip: coordinate text */
+.vzd-wardley-drag-tooltip-text {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  fill: var(--text-muted);
+}
+
 /* ══ Venn Diagram ════════════════════════════════════════════════════
    SVG circles drawn as a background layer; HTML region divs are
    absolutely positioned on top using percentage coordinates derived

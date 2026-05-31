@@ -169,7 +169,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const { strippedSource } = extractInlineLinks(source);
       const result = parseWardleyMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderWardleyMap(result.data, el);
+      renderWardleyMap(result.data, el, app, ctx);
     },
   },
 ];
