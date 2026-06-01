@@ -9,6 +9,7 @@
  */
 export const en = {
   // ── Framework descriptions (shown in the insert modal) ─────────────────────
+  "framework.raci.description":      "Tasks mapped to who is Responsible, Accountable, Consulted, and Informed.",
   "framework.bmc.description":        "Whole business model made visible.",
   "framework.carousel.description":   "Multiple images as a navigable carousel.",
   "framework.fourls.description":     "Liked, Learned, Lacked, Longed for — plus a shared action list.",
@@ -90,6 +91,13 @@ export const en = {
   "commands.insertCanvas":           "Insert canvas…",
   "commands.insertVizardryCanvas":   "Insert Vizardry canvas…",
   "commands.insertFramework":        "Insert {{label}}",
+
+  // ── RACI Matrix column labels ─────────────────────────────────────────────
+  "raci.col.task":        "Task",
+  "raci.col.responsible": "Responsible",
+  "raci.col.accountable": "Accountable",
+  "raci.col.consulted":   "Consulted",
+  "raci.col.informed":    "Informed",
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",

@@ -218,3 +218,24 @@ link: Web App -> Database
 link: Database -> Cloud Host
 \`\`\`
 `;
+
+export const RACI_TEMPLATE = `\`\`\`raci
+task: Define requirements
+  responsible: Developer
+  accountable: PM
+  consulted: QA
+  informed: Stakeholder
+
+task: Build feature
+  responsible: Developer
+  accountable: PM
+  consulted: QA
+  informed: Stakeholder, Client
+
+task: Test & sign off
+  responsible: QA
+  accountable: PM
+  consulted: Developer
+  informed: Stakeholder
+\`\`\`
+`;

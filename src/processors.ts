@@ -26,16 +26,17 @@ import { parseWardleyMap } from "./wardley";
 import { parseSIPOCFlow } from "./sipoc-flow";
 import { parseSIPOC } from "./sipoc";
 import { parseCarouselBlock } from "./carousel";
+import { parseRACIMatrix } from "./raci";
 import {
   renderImpactMap, renderStoryMap, renderMindMap, renderOST,
-  renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap,
+  renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
 import {
   IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
-  SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE,
+  SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
 } from "./templates";
 
 export type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
@@ -170,6 +171,17 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseWardleyMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       renderWardleyMap(result.data, el, app, ctx, source);
+    },
+  },
+  {
+    id: "raci",
+    label: "RACI Matrix",
+    template: RACI_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource } = extractInlineLinks(source);
+      const result = parseRACIMatrix(strippedSource);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderRACIMatrix(result.data, el, source, app, ctx);
     },
   },
 ];
