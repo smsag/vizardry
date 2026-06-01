@@ -188,24 +188,23 @@
 }
 
 .vzd-block-line {
-  padding-left: 1.1em;
-  text-indent: -1.1em;
+  padding-left: 0.9em;
+  text-indent: -0.9em;
 }
 
-/* Bullet marker — sits in the hanging-indent space so wrapped lines
-   remain clearly subordinate to their parent item.
-   Uses a middle dot (·) which is subtle but immediately scannable. */
+/* Arrow marker (›) — sits in the hanging-indent space so wrapped lines
+   remain clearly subordinate to their parent item. */
 .vzd-block-line::before {
-  content: "·";
+  content: "›";
   color: var(--text-faint);
-  margin-right: 0.35em;
-  font-size: 1.1em;
+  margin-right: 0.2em;
+  font-size: 0.95em;
   line-height: 1;
 }
 
-/* Small gap between items so the eye can separate them at a glance */
+/* Minimal gap between items — enough to separate, not enough to feel like a blank line */
 .vzd-block-line + .vzd-block-line {
-  margin-top: 0.22em;
+  margin-top: 0.11em;
 }
 
 /* ── Inline block editing ── */
