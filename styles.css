@@ -204,7 +204,7 @@
 
 /* Minimal gap between items — enough to separate, not enough to feel like a blank line */
 .vzd-block-line + .vzd-block-line {
-  margin-top: 0.11em;
+  margin-top: 0.22em;
 }
 
 /* ── Inline block editing ── */
