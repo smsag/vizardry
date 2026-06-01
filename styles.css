@@ -507,8 +507,11 @@
   background: var(--background-primary);
   display: flex;
   flex-direction: column;
-  /* Respect iPhone notch / home indicator */
-  padding-top: env(safe-area-inset-top, 0px);
+  /* Respect iPhone notch / home indicator (iOS) and Electron title bar (macOS).
+     env(titlebar-area-height) is the Electron-reported height of the native
+     traffic light / title bar area; falls back to 0 on platforms that don't
+     have one.  We take the max so both cases are handled without conflict. */
+  padding-top: max(env(safe-area-inset-top, 0px), env(titlebar-area-height, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
@@ -518,7 +521,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1.25rem;
+  /* On macOS the traffic lights occupy ~80px from the left edge.
+     Push the header content clear of them so buttons are always reachable. */
+  padding: 0.85rem 1.25rem 0.85rem max(1.25rem, env(titlebar-area-width, 0px));
   border-bottom: 1px solid var(--background-modifier-border);
   flex-shrink: 0;
 }
