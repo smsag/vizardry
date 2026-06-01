@@ -66,7 +66,7 @@ export default class VizardryPlugin extends Plugin {
         const result = parseFrameworkSource(strippedSource);
         if (!result.ok) { renderError(result.error, el); return; }
         const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks);
-        safeRender(id, el, () => renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx));
+        safeRender(id, el, () => renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx, source));
       });
     }
 

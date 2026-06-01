@@ -9,8 +9,9 @@ export function renderMindMap(
   container: HTMLElement,
   resolver: LinkResolver = NULL_RESOLVER,
   navigateTo?: (heading: string) => void,
+  source?: string,
 ): void {
-  initCanvas(container, "mindmap", "Mind Map");
+  initCanvas(container, "mindmap", "Mind Map", undefined, source);
   renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container, resolver, navigateTo);
 }
 
@@ -19,8 +20,9 @@ export function renderImpactMap(
   container: HTMLElement,
   resolver: LinkResolver = NULL_RESOLVER,
   navigateTo?: (heading: string) => void,
+  source?: string,
 ): void {
-  initCanvas(container, "impact", "Impact Map");
+  initCanvas(container, "impact", "Impact Map", undefined, source);
   renderTree(adaptImpactMapToTree(map), IMPACT_MAP_OPTS, container, resolver, navigateTo);
 }
 
@@ -29,7 +31,8 @@ export function renderOST(
   el: HTMLElement,
   resolver: LinkResolver = NULL_RESOLVER,
   navigateTo?: (heading: string) => void,
+  source?: string,
 ): void {
-  initCanvas(el, "ost", "Opportunity Solution Tree");
+  initCanvas(el, "ost", "Opportunity Solution Tree", undefined, source);
   renderTree(adaptOSTToTree(tree), OST_TREE_OPTIONS, el, resolver, navigateTo);
 }

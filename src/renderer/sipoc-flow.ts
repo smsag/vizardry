@@ -136,8 +136,8 @@ function drawArrow(svg: SVGElement, x1: number, y1: number, x2: number, y2: numb
 
 // ── Main renderer ──────────────────────────────────────────────────────────
 
-export function renderSIPOCFlow(data: SIPOCFlowData, container: HTMLElement): void {
-  initCanvas(container, "sipoc", "SIPOC Flow Diagram");
+export function renderSIPOCFlow(data: SIPOCFlowData, container: HTMLElement, source?: string): void {
+  initCanvas(container, "sipoc", "SIPOC Flow Diagram", undefined, source);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-flow-wrap" });
 

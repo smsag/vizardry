@@ -21,8 +21,9 @@ export function renderCanvas(
   navigateTo: (heading: string) => void,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  source?: string,
 ): void {
-  initCanvas(container, framework.id, framework.label);
+  initCanvas(container, framework.id, framework.label, undefined, source);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);

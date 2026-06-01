@@ -14,8 +14,8 @@ function getCols(): { key: ColKey; label: string }[] {
   ];
 }
 
-export function renderSIPOC(data: SIPOCData, container: HTMLElement): void {
-  initCanvas(container, "sipoc", "SIPOC Diagram");
+export function renderSIPOC(data: SIPOCData, container: HTMLElement, source?: string): void {
+  initCanvas(container, "sipoc", "SIPOC Diagram", undefined, source);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-sipoc-table" });

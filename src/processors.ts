@@ -69,7 +69,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseImpactMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderImpactMap(result.data, el, resolver, navigateTo);
+      renderImpactMap(result.data, el, resolver, navigateTo, source);
     },
   },
   {
@@ -93,7 +93,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseMindMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderMindMap(result.data, el, resolver, navigateTo);
+      renderMindMap(result.data, el, resolver, navigateTo, source);
     },
   },
   {
@@ -106,7 +106,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       if (!result.ok) { renderError(result.error, el); return; }
       renderVennDiagram(result.data, el, (target) => {
         void app.workspace.openLinkText(target, ctx.sourcePath, false);
-      });
+      }, source);
     },
   },
   {
@@ -118,7 +118,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseOST(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderOST(result.data, el, resolver, navigateTo);
+      renderOST(result.data, el, resolver, navigateTo, source);
     },
   },
   {
@@ -153,12 +153,12 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
         const body = src.replace(/^\s*type:\s*flow\s*\n?/i, "");
         const result = parseSIPOCFlow(body);
         if (!result.ok) { renderError(result.error, el); return; }
-        renderSIPOCFlow(result.data, el);
+        renderSIPOCFlow(result.data, el, source);
         return;
       }
       const result = parseSIPOC(src);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderSIPOC(result.data, el);
+      renderSIPOC(result.data, el, source);
     },
   },
   {
@@ -169,7 +169,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const { strippedSource } = extractInlineLinks(source);
       const result = parseWardleyMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderWardleyMap(result.data, el, app, ctx);
+      renderWardleyMap(result.data, el, app, ctx, source);
     },
   },
 ];

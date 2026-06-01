@@ -32,6 +32,7 @@ export const en = {
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
   "controls.increaseFontSize":  "Increase font size",
+  "controls.copySource":        "Copy canvas source",
   "controls.downloadPng":       "Download as PNG",
   "controls.presentFullscreen": "Present fullscreen",
   "controls.reloadCanvas":      "Reload canvas",
