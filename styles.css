@@ -51,23 +51,25 @@
    Presentation overlay buttons are always visible (the overlay is the
    focused context). Mobile nav buttons stay at 44 × 44 px for touch.
    ─────────────────────────────────────────────────────────────────── */
+/* Ghost icon button — matches Obsidian's native .clickable-icon style so
+   canvas controls feel native to the host application. Uses Obsidian's own
+   design tokens: --icon-color, --icon-opacity, --clickable-icon-radius,
+   --background-modifier-hover. */
 .vzd-btn {
   background: none;
   border: none;
   box-shadow: none;
   cursor: pointer;
-  color: var(--text-muted);
-  padding: 0;
-  width: 2rem;
-  height: 2rem;
+  color: var(--icon-color);
+  opacity: 0;
+  pointer-events: none;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: var(--radius-s);
-  opacity: 0;
-  pointer-events: none;
-  transition: color 0.1s ease, opacity 0.12s ease;
+  border-radius: var(--clickable-icon-radius, var(--radius-s));
+  transition: opacity 0.12s ease;
 }
 
 .vzd-btn svg {
@@ -82,7 +84,7 @@
 
 /* Reveal all buttons when the canvas is hovered */
 .vizardry-canvas:hover .vzd-btn {
-  opacity: 1;
+  opacity: var(--icon-opacity, 0.7);
   pointer-events: auto;
 }
 
@@ -91,14 +93,16 @@
   pointer-events: none;
 }
 
-/* On button hover: full-strength text colour */
+/* On button hover: Obsidian-standard hover fill + full icon opacity */
 .vzd-btn:hover:not(:disabled) {
-  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+  color: var(--icon-color-hover, var(--icon-color));
+  opacity: 1;
 }
 
 /* Presentation overlay: always visible */
 .vzd-presentation-overlay .vzd-btn {
-  opacity: 1;
+  opacity: var(--icon-opacity, 0.7);
   pointer-events: auto;
 }
 
@@ -110,7 +114,7 @@
 .vizardry-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.1rem;
   flex-shrink: 0;
 }
 
