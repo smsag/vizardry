@@ -188,8 +188,24 @@
 }
 
 .vzd-block-line {
-  padding-left: 1em;
-  text-indent: -1em;
+  padding-left: 1.1em;
+  text-indent: -1.1em;
+}
+
+/* Bullet marker — sits in the hanging-indent space so wrapped lines
+   remain clearly subordinate to their parent item.
+   Uses a middle dot (·) which is subtle but immediately scannable. */
+.vzd-block-line::before {
+  content: "·";
+  color: var(--text-faint);
+  margin-right: 0.35em;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* Small gap between items so the eye can separate them at a glance */
+.vzd-block-line + .vzd-block-line {
+  margin-top: 0.22em;
 }
 
 /* ── Inline block editing ── */
