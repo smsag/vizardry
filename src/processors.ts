@@ -158,7 +158,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       }
       const result = parseSIPOC(src);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderSIPOC(result.data, el, source);
+      renderSIPOC(result.data, el, source, app, ctx);
     },
   },
   {
