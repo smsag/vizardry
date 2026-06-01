@@ -44,7 +44,7 @@ for f in src/frameworks/*.ts; do
 done
 
 # Non-grid (custom renderer) IDs
-for id in impact story mindmap venn sipoc wardley carousel; do
+for id in impact story mindmap venn sipoc wardley carousel raci; do
   grep -qi "\b${id}\b" README.md || MISSING+=("$id")
 done
 

@@ -6,3 +6,4 @@ export { renderSIPOC } from "./renderer/sipoc";
 export { renderSIPOCFlow } from "./renderer/sipoc-flow";
 export { renderWardleyMap } from "./renderer/wardley";
 export { renderCarouselBlock } from "./renderer/carousel";
+export { renderRACIMatrix } from "./renderer/raci";

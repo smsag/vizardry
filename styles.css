@@ -56,10 +56,15 @@
    design tokens: --icon-color, --icon-opacity, --clickable-icon-radius,
    --background-modifier-hover. */
 .vzd-btn {
+  /* Full reset — prevents Obsidian themes from adding borders or outlines
+     to <button> elements that bleed through. */
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
   background: none;
   border: none;
+  outline: none;
   box-shadow: none;
-  cursor: pointer;
   color: var(--icon-color);
   opacity: 0;
   pointer-events: none;

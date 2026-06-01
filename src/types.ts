@@ -244,3 +244,19 @@ export interface SIPOCFlowData {
 }
 
 export type SIPOCFlowResult = Result<SIPOCFlowData>;
+
+// ── RACI Matrix ───────────────────────────────────────────────────────────────
+
+export interface RACIRow {
+  task: string;
+  responsible: string;
+  accountable: string;
+  consulted: string;
+  informed: string;
+}
+
+export interface RACIData {
+  rows: RACIRow[];
+}
+
+export type RACIResult = Result<RACIData>;

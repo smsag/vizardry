@@ -2,6 +2,7 @@ import type { TranslationKey } from "./en";
 
 export const de: Partial<Record<TranslationKey, string>> = {
   // ── Framework descriptions ──────────────────────────────────────────────────
+  "framework.raci.description":      "Aufgaben zugeordnet nach Verantwortlich, Rechenschaftspflichtig, Konsultiert und Informiert.",
   "framework.bmc.description":        "Das gesamte Geschäftsmodell auf einen Blick.",
   "framework.carousel.description":   "Mehrere Bilder als navigierbares Karussell.",
   "framework.fourls.description":     "Gefiel, Gelernt, Gefehlt, Gewünscht — plus eine gemeinsame Aktionsliste.",
@@ -83,6 +84,13 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "commands.insertCanvas":         "Canvas einfügen…",
   "commands.insertVizardryCanvas": "Vizardry-Canvas einfügen…",
   "commands.insertFramework":      "{{label}} einfügen",
+
+  // ── RACI Matrix column labels ─────────────────────────────────────────────
+  "raci.col.task":        "Aufgabe",
+  "raci.col.responsible": "Verantwortlich",
+  "raci.col.accountable": "Rechenschaftspflichtig",
+  "raci.col.consulted":   "Konsultiert",
+  "raci.col.informed":    "Informiert",
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",

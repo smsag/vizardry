@@ -38,6 +38,7 @@ block: Label
 | ` ```opportunity ` | Opportunity Canvas | Grid |
 | ` ```ost ` | Opportunity Solution Tree | Tree |
 | ` ```rac ` | Riskiest Assumptions Canvas | Grid |
+| ` ```raci ` | RACI Matrix | Table |
 | ` ```sipoc ` | SIPOC Diagram | Table |
 | ` ```sipoc ` (type: flow) | SIPOC Flow Diagram | SVG flow |
 | ` ```story ` | User Story Map | Grid |
