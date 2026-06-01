@@ -56,8 +56,11 @@
    design tokens: --icon-color, --icon-opacity, --clickable-icon-radius,
    --background-modifier-hover. */
 .vzd-btn {
-  /* Full reset — prevents Obsidian themes from adding borders or outlines
-     to <button> elements that bleed through. */
+  /* Strip all native OS/browser button chrome — this is what actually
+     causes the visible border in Electron. all:unset alone is insufficient
+     because it resets appearance to 'auto', which re-applies native styling. */
+  -webkit-appearance: none;
+  appearance: none;
   all: unset;
   box-sizing: border-box;
   cursor: pointer;
