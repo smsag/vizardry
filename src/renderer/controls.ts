@@ -74,22 +74,6 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   increaseBtn.addEventListener("click", (e) => { e.stopPropagation(); if (step < MAX_STEP) { step++; applyStep(); } });
   applyStep();
 
-  if (copyText !== undefined) {
-    const copyBtn = actions.createEl("button", { cls: "vizardry-copy-btn vzd-btn" }) as HTMLButtonElement;
-    setIcon(copyBtn, "copy");
-    copyBtn.setAttribute("aria-label", t("controls.copySource"));
-    copyBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      void navigator.clipboard.writeText(copyText).then(() => {
-        setIcon(copyBtn, "check");
-        setTimeout(() => setIcon(copyBtn, "copy"), 1000);
-      }).catch(err => {
-        const v = document.body.dataset.vizardryVersion ?? "?";
-        console.error(`Vizardry v${v}: copy failed`, err);
-      });
-    });
-  }
-
   const downloadBtn = actions.createEl("button", { cls: "vizardry-download-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(downloadBtn, "download");
   downloadBtn.setAttribute("aria-label", t("controls.downloadPng"));
@@ -120,6 +104,21 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   };
 
   downloadBtn.addEventListener("click", (e) => { e.stopPropagation(); void handleDownload(); });
+  if (copyText !== undefined) {
+    const copyBtn = actions.createEl("button", { cls: "vizardry-copy-btn vzd-btn" }) as HTMLButtonElement;
+    setIcon(copyBtn, "copy");
+    copyBtn.setAttribute("aria-label", t("controls.copySource"));
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void navigator.clipboard.writeText(copyText).then(() => {
+        setIcon(copyBtn, "check");
+        setTimeout(() => setIcon(copyBtn, "copy"), 1000);
+      }).catch(err => {
+        const v = document.body.dataset.vizardryVersion ?? "?";
+        console.error(`Vizardry v${v}: copy failed`, err);
+      });
+    });
+  }
 
   const presentBtn = actions.createEl("button", { cls: "vizardry-present-btn vzd-btn" });
   setIcon(presentBtn, "expand");
