@@ -83,9 +83,10 @@ function circleStyle(h: number, s: number, l: number): { fill: string; stroke: s
 export function renderVennDiagram(
   venn: VennDiagram,
   container: HTMLElement,
-  openLink: (target: string) => void
+  openLink: (target: string) => void,
+  source?: string,
 ): void {
-  initCanvas(container, "venn", "Venn Diagram");
+  initCanvas(container, "venn", "Venn Diagram", undefined, source);
 
   // Count Venn diagrams already rendered in the same workspace leaf to derive
   // the palette rotation. Scoped to the leaf so that diagrams in other open

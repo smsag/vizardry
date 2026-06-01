@@ -24,7 +24,8 @@ export function initCanvas(
   container: HTMLElement,
   frameworkId: string,
   title: string,
-  extraHeaderContent?: (header: HTMLElement) => void
+  extraHeaderContent?: (header: HTMLElement) => void,
+  source?: string,
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", frameworkId);
@@ -36,10 +37,16 @@ export function initCanvas(
   const header = container.createEl("div", { cls: "vizardry-header" });
   header.createEl("span", { text: title, cls: "vizardry-title" });
   extraHeaderContent?.(header);
-  addHeaderControls(header, container, title);
+  //   // Pre-construct the fenced code block text for the copy button.
+  // Uses string concatenation to avoid backtick-in-template-literal issues.
+  const fence = '```';
+  const copyText = source !== undefined
+    ? fence + frameworkId + '\n' + source + '\n' + fence
+    : undefined;
+  addHeaderControls(header, container, title, copyText);
 }
 
-export function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string): void {
+export function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string, copyText?: string): void {
   const actions = header.createEl("div", { cls: "vizardry-header-actions" });
 
   const STEP_PX = 2, MIN_STEP = -3, MAX_STEP = 6;
@@ -97,6 +104,21 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   };
 
   downloadBtn.addEventListener("click", (e) => { e.stopPropagation(); void handleDownload(); });
+  if (copyText !== undefined) {
+    const copyBtn = actions.createEl("button", { cls: "vizardry-copy-btn vzd-btn" }) as HTMLButtonElement;
+    setIcon(copyBtn, "copy");
+    copyBtn.setAttribute("aria-label", t("controls.copySource"));
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void navigator.clipboard.writeText(copyText).then(() => {
+        setIcon(copyBtn, "check");
+        setTimeout(() => setIcon(copyBtn, "copy"), 1000);
+      }).catch(err => {
+        const v = document.body.dataset.vizardryVersion ?? "?";
+        console.error(`Vizardry v${v}: copy failed`, err);
+      });
+    });
+  }
 
   const presentBtn = actions.createEl("button", { cls: "vizardry-present-btn vzd-btn" });
   setIcon(presentBtn, "expand");

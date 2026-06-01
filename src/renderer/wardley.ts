@@ -102,8 +102,9 @@ export function renderWardleyMap(
   container: HTMLElement,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  source?: string,
 ): void {
-  initCanvas(container, "wardley", "Wardley Map");
+  initCanvas(container, "wardley", "Wardley Map", undefined, source);
 
   const wrap = container.createEl("div", { cls: "vzd-wardley-wrap" });
 
