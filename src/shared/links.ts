@@ -16,29 +16,48 @@ export interface LinkResolver {
 export const NULL_RESOLVER: LinkResolver = { resolve: () => undefined };
 
 /**
- * Scans source for [[#Heading]] annotations on keyword lines and strips them.
+ * Scans source for heading-link annotations on keyword lines and strips them.
  *
- * Handles any line of the form:
- *   keyword: Label text [[#Heading text]]
+ * Two annotation styles are recognised on any line of the form
+ * `keyword: Label text <annotation>`:
+ *
+ *   1. Wiki-link:  [[#Heading text]]
+ *   2. Markdown:   [link text](#Anchor%20Text)   — anchor is URL-decoded
  *
  * Returns the source with annotations removed (so existing parsers are
  * unaffected) and a map of lowercased label → heading.
  *
- * Example:
+ * Examples:
  *   "block: Value Propositions [[#VP Research]]"
  *   → strippedSource: "block: Value Propositions"
  *   → inlineLinks: { "value propositions": "VP Research" }
+ *
+ *   "block: Next Experiment [Next Experiment](#Next%20Experiment)"
+ *   → strippedSource: "block: Next Experiment"
+ *   → inlineLinks: { "next experiment": "Next Experiment" }
  */
 export function extractInlineLinks(source: string): {
   strippedSource: string;
   inlineLinks: Record<string, string>;
 } {
   const inlineLinks: Record<string, string> = {};
-  const INLINE_RE = /^([a-z_-]+:\s*)(.*?)\s*\[\[#([^\]]+)\]\]\s*$/gm;
 
-  const strippedSource = source.replace(INLINE_RE, (_m, prefix, label, heading) => {
+  // 1. Wiki-link style: [[#Heading]]
+  // Use [ \t]* (not \s*) before the link so the regex cannot cross line boundaries.
+  const WIKI_RE = /^([a-z_-]+:\s*)(.*?)[ \t]*\[\[#([^\]]+)\]\][ \t]*$/gm;
+  let strippedSource = source.replace(WIKI_RE, (_m, prefix, label, heading) => {
     const key = label.trim().toLowerCase();
     if (key) inlineLinks[key] = heading.trim();
+    return prefix + label.trim();
+  });
+
+  // 2. Markdown link style: [text](#Anchor) — anchor is URL-decoded to get heading
+  // Use [ \t]* (not \s*) before the link so the regex cannot cross line boundaries.
+  const MD_RE = /^([a-z_-]+:\s*)(.*?)[ \t]*\[[^\]]*\]\(#([^)]+)\)[ \t]*$/gm;
+  strippedSource = strippedSource.replace(MD_RE, (_m, prefix, label, anchor) => {
+    const key = label.trim().toLowerCase();
+    const heading = decodeURIComponent(anchor.trim());
+    if (key) inlineLinks[key] = heading;
     return prefix + label.trim();
   });
 
