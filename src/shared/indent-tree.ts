@@ -10,7 +10,7 @@ export function extractMeaningfulLines(source: string): IndentLine[] {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("#") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
     result.push({ indent: raw.search(/\S/), text: trimmed, lineNum: i + 1 });
   }
   return result;

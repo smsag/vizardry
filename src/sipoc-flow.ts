@@ -28,7 +28,7 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("#") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
 
     const indent = raw.search(/\S/);
 
@@ -36,7 +36,7 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
       // Top-level: either a column header or a link directive
       if (trimmed.startsWith("link:")) {
         currentCol = null;
-        const rest = trimmed.slice("link:".length).trim().replace(/#.*$/, "").trim();
+        const rest = trimmed.slice("link:".length).trim();
         const arrowIdx = rest.indexOf("->");
         if (arrowIdx === -1) {
           return { ok: false, error: `Line ${i + 1}: link requires "->" separator, e.g. link: A -> B` };

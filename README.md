@@ -26,6 +26,7 @@ block: Label
 
 | Code block | Framework | Type |
 |---|---|---|
+| ` ```adkar ` | ADKAR Model | Grid |
 | ` ```bmc ` | Business Model Canvas | Grid |
 | ` ```fourls ` | 4Ls Retrospective | Grid |
 | ` ```carousel ` | Image Carousel | Gallery |
@@ -114,6 +115,34 @@ block: Revenue Streams
 
 ---
 
+### ADKAR Model
+
+~~~
+```adkar
+block: Awareness
+  Teams understand why the reporting workflow must change now
+  Leadership aligns on the cost of staying with manual exports
+
+block: Desire
+  Ops leads want the new workflow because it removes Friday rushes
+  Managers support rollout goals and reinforce adoption expectations
+
+block: Knowledge
+  Team knows the new reporting flow and where each metric lives
+  Owners know how to configure recurring exports and templates
+
+block: Ability
+  First two weekly reporting cycles run without manual spreadsheet work
+  Team can troubleshoot common import and mapping issues independently
+
+block: Reinforcement
+  Weekly review checks adoption and quality outcomes
+  Legacy spreadsheet path is retired after stable usage for one month
+```
+~~~
+
+---
+
 ### 4Ls Retrospective
 
 ~~~
@@ -159,7 +188,7 @@ block: Actions
 
 **Rules:**
 - One image per line using standard Markdown image syntax
-- Blank lines and `#` comment lines are ignored
+- Blank lines and `//` comment lines are ignored
 - Fewer than 2 images shows a visible error message
 
 **Controls:** left/right arrow buttons, dot indicators, keyboard `←`/`→`, swipe on mobile.
@@ -348,7 +377,7 @@ root: What makes a great PM?
 - `root:` — central node, no indent, required, one only
 - Indented lines — child nodes; indent level determines depth
 - Any consistent indent unit works (2 spaces, 4 spaces, tab)
-- Blank lines and `# comment` lines are ignored
+- Blank lines and `// comment` lines are ignored
 
 ---
 
@@ -411,7 +440,7 @@ outcome: Increase weekly active users by 20% in Q3.
 **Syntax:**
 - `outcome:` — root node, no indent, required, one only
 - Indented lines — child nodes; depth = 1 opportunity, 2 solution, 3 experiment, 4 assumption
-- Blank lines and `# comment` lines are ignored
+- Blank lines and `// comment` lines are ignored
 
 ---
 
@@ -518,7 +547,7 @@ row:
 - `row:` — starts a new row at zero indent, repeatable
 - Indented `supplier:`, `input:`, `process:`, `output:`, `customer:` — the five cell keys (singular); all are optional per row
 - Missing cells render as `—`
-- Blank lines and `# comment` lines are ignored
+- Blank lines and `// comment` lines are ignored
 
 ---
 
@@ -757,6 +786,8 @@ A Wardley Map plots the components of a value chain on two axes: **visibility** 
 
 ~~~
 ```wardley
+stages: Driver | Approver | Contributor | Informed
+
 anchor: User
 
 component: User         [1.00, 0.10]
@@ -773,10 +804,12 @@ link: Database -> Cloud Host
 ~~~
 
 **Syntax:**
+- `stages: Label A | Label B | ...` — optional custom x-axis labels (at least two labels)
+- `stages:` with indented `0..1: Label` entries — optional positioned x-axis labels (strictly increasing; each position must be strictly between 0 and 1; positions define interval boundaries and labels are centered within each interval)
 - `anchor: <name>` — declares the user-facing anchor node (rendered filled); auto-creates a component at `[1.0, 0.0]` unless overridden by a `component:` line
 - `component: <name> [visibility, evolution]` — places a node on the canvas; both coordinates are 0–1
 - `link: A -> B` — dependency arrow from A to B
-- Inline `# comments` are stripped
+- Full-line `// comments` are ignored
 
 **Axes:**
 - Y = Visibility (0 = invisible infrastructure, 1 = direct user need at top)
@@ -789,8 +822,8 @@ Wardley Maps are fully editable without touching the source block:
 | Action | Gesture |
 |---|---|
 | **Reposition** | Drag a component dot to a new position — coordinates update on release |
-| **Add + link** | Hover a node → `+` handle appears → drag to new position → new component + link inserted |
-| **Add without link** | Same as above, but press Escape before releasing |
+| **Add without link** | Hover a node → `+` handle appears → drag to new position → release to insert a new unlinked component |
+| **Add + link** | Same gesture, but hold Shift while releasing to insert a new component and a link from the source |
 | **Rename** | Double-click any component's circle or label → type new name → Enter |
 
 All changes write back to the source block surgically — only the affected lines are patched.
@@ -863,7 +896,7 @@ In Live Preview, Wardley Maps support a full visual editing workflow:
 
 **Add a component** — hover any node to reveal a `+` handle at its right edge. Drag from the handle to place a new connected component. The new component (`New Component`) and a link to the source are inserted into the source block automatically. Press Escape before releasing to create the component without a link.
 
-**Rename** — double-click any component's circle or label. An input appears over the label. Type the new name and press Enter (or click away). The rename propagates to all references — the `component:` line, any `anchor:` line, and all `link:` lines in both positions.
+**Rename** — double-click any component's circle or label. An inline input opens directly on that label. Type the new name and press Enter (or click away). The rename propagates to all references — the `component:` line, any `anchor:` line, and all `link:` lines in both positions.
 
 ---
 
@@ -896,14 +929,14 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `block: Label` | Start a block; label must match a framework block name |
 | Indented lines below | Block content (multi-line, no special syntax needed) |
 | `block: Label [[#Heading]]` | Link block to a heading in this note (inline annotation) |
-| `# comment` | Ignored |
+| `// comment` | Ignored |
 
 ### Image Carousel (carousel)
 
 | Syntax | Meaning |
 |---|---|
 | One image per line | Standard Markdown: `![](image.png)` or `![Alt](image.png)` |
-| Blank lines / `#` comments | Ignored |
+| Blank lines / `//` comments | Ignored |
 | Fewer than 2 images | Error |
 
 ### Impact Map (impact)
@@ -921,7 +954,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 |---|---|
 | `root: Text` | Central node — no indent, required, one only |
 | Indented lines | Child nodes at the indented depth |
-| Blank lines / `# comment` | Ignored |
+| Blank lines / `// comment` | Ignored |
 
 ### Opportunity Solution Tree (ost)
 
@@ -929,7 +962,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 |---|---|
 | `outcome: <text>` | Root — no indent, required, one only |
 | Indented lines | Depth 1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption |
-| Blank lines / `# comment` | Ignored |
+| Blank lines / `// comment` | Ignored |
 
 ### SIPOC Diagram (sipoc)
 
@@ -942,7 +975,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Indented `output:` | Output cell value |
 | Indented `customer:` | Customer cell value |
 | Missing cell keys | Render as `—` |
-| Blank lines / `# comment` | Ignored |
+| Blank lines / `// comment` | Ignored |
 
 ### SIPOC Flow Diagram (sipoc with type: flow)
 
@@ -952,7 +985,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `suppliers:` / `inputs:` / `process:` / `outputs:` / `customers:` | Column section headers |
 | Indented `Name [shape]` | Node declaration; shape: `ellipse`, `parallelogram`, `rect` |
 | `link: A -> B` | Directed arrow; any direction allowed |
-| Blank lines / `# comment` | Ignored |
+| Blank lines / `// comment` | Ignored |
 
 ### User Story Map (story)
 
@@ -980,10 +1013,12 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 | Syntax | Meaning |
 |---|---|
+| `stages: Label A \\| Label B ...` | Optional custom x-axis labels; overrides default stage names |
+| `stages:` + indented `0..1: Label` | Optional positioned x-axis labels; each position must be strictly between 0 and 1; positions define interval boundaries and labels are centered within each interval |
 | `anchor: <name>` | User-facing anchor node (rendered filled) |
 | `component: <name> [visibility, evolution]` | Node at normalised 0–1 coordinates |
 | `link: A -> B` | Dependency arrow |
-| `# comment` | Ignored |
+| `// comment` | Ignored |
 
 ---
 

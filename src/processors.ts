@@ -149,7 +149,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     createProcessor: (app) => (source, el, ctx) => {
       const { strippedSource: src } = extractInlineLinks(source);
       // Detect flow variant: first non-blank, non-comment line is "type: flow"
-      const firstLine = src.split("\n").find(l => l.trim() && !l.trim().startsWith("#"))?.trim() ?? "";
+      const firstLine = src.split("\n").find(l => l.trim() && !l.trim().startsWith("//"))?.trim() ?? "";
       if (firstLine === "type: flow") {
         const body = src.replace(/^\s*type:\s*flow\s*\n?/i, "");
         const result = parseSIPOCFlow(body);

@@ -9,6 +9,7 @@
  */
 export const en = {
   // ── Framework descriptions (shown in the insert modal) ─────────────────────
+  "framework.adkar.description":     "Five-step change model: Awareness, Desire, Knowledge, Ability, Reinforcement.",
   "framework.raci.description":      "Tasks mapped to who is Responsible, Accountable, Consulted, and Informed.",
   "framework.bmc.description":        "Whole business model made visible.",
   "framework.carousel.description":   "Multiple images as a navigable carousel.",

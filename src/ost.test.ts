@@ -67,7 +67,7 @@ outcome: Grow revenue
   });
 
   it("ignores blank lines and comments", () => {
-    const src = "# comment\noutcome: Root\n\n  # child comment\n  opportunity: Opp";
+    const src = "// comment\noutcome: Root\n\n  // child comment\n  opportunity: Opp";
     const result = parseOST(src);
     expect(result.ok).toBe(true);
     if (!result.ok) return;

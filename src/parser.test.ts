@@ -32,7 +32,7 @@ describe("parseFrameworkSource", () => {
   });
 
   it("ignores comment lines", () => {
-    const result = parseFrameworkSource("# top comment\nblock: Goal\n  # inner comment\n  Value");
+    const result = parseFrameworkSource("// top comment\nblock: Goal\n  // inner comment\n  Value");
     expect(result.ok && result.data["goal"]).toBe("Value");
   });
 

@@ -40,7 +40,7 @@ actor: Engineering
   });
 
   it("ignores comment lines", () => {
-    const src = "# preamble\ngoal: G\n# between\nactor: A\n  impact: I\n    deliverable: D";
+    const src = "// preamble\ngoal: G\n// between\nactor: A\n  impact: I\n    deliverable: D";
     const result = parseImpactMap(src);
     expect(result.ok).toBe(true);
   });

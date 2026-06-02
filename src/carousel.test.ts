@@ -26,7 +26,7 @@ describe("parseCarouselBlock", () => {
   });
 
   it("ignores comment lines", () => {
-    const result = parseCarouselBlock("# intro\n![](a.png)\n![](b.png)");
+    const result = parseCarouselBlock("// intro\n![](a.png)\n![](b.png)");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.data.images).toHaveLength(2);
