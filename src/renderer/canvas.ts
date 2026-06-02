@@ -7,6 +7,72 @@ import { setupMobileCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { onDisconnected } from "../shared/lifecycle";
+
+// ── Relink registry ───────────────────────────────────────────────────────────
+// Keeps track of rendered canvas blocks that need their link buttons refreshed
+// when the metadata cache updates with new headings.
+
+type RelinkFn = () => void;
+const relinkRegistry = new Map<string, Set<RelinkFn>>();
+
+/**
+ * Registers a relink callback for a given source file. The callback is
+ * removed automatically when `watchEl` is disconnected from the DOM (i.e.
+ * the canvas was replaced by a re-render or the note was closed).
+ */
+export function registerCanvasRelink(
+  sourcePath: string,
+  fn: RelinkFn,
+  watchEl: HTMLElement,
+): void {
+  if (!relinkRegistry.has(sourcePath)) relinkRegistry.set(sourcePath, new Set());
+  const set = relinkRegistry.get(sourcePath)!;
+  set.add(fn);
+  onDisconnected(watchEl, () => {
+    set.delete(fn);
+    if (set.size === 0) relinkRegistry.delete(sourcePath);
+  });
+}
+
+/**
+ * Fires all relink callbacks registered for `filePath`. Called by the
+ * metadataCache `changed` listener in main.ts.
+ */
+export function triggerRelink(filePath: string): void {
+  relinkRegistry.get(filePath)?.forEach(fn => fn());
+}
+
+/**
+ * Updates only the link buttons in an already-rendered canvas when the
+ * set of available headings has changed. Avoids a full re-render.
+ */
+export function relinkCanvas(
+  container: HTMLElement,
+  framework: FrameworkDefinition,
+  resolver: LinkResolver,
+  navigateTo: (heading: string) => void,
+): void {
+  for (const blockDef of framework.blocks) {
+    const block = container.querySelector<HTMLElement>(`[data-area="${blockDef.area}"]`);
+    if (!block) continue;
+    const labelRow = block.querySelector<HTMLElement>(".vizardry-block-label-row");
+    if (!labelRow) continue;
+
+    // Remove stale link button (if any) before re-evaluating
+    labelRow.querySelector(".vizardry-block-link-btn")?.remove();
+
+    const heading = resolver.resolve(blockDef.label.toLowerCase());
+    if (heading) {
+      const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
+      setIcon(linkBtn, "link");
+      linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
+      linkBtn.dataset.heading = heading;
+      markInteractive(linkBtn);
+      linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+    }
+  }
+}
 
 export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");

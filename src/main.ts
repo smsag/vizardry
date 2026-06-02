@@ -1,8 +1,9 @@
 import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
 import { MarkdownView, Notice, Plugin } from "obsidian";
 import { parseFrameworkSource } from "./parser";
-import { extractInlineLinks, buildLinkSupport } from "./shared/links";
+import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
 import { renderCanvas, renderError } from "./renderer";
+import { registerCanvasRelink, relinkCanvas, triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
 import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
@@ -67,9 +68,26 @@ export default class VizardryPlugin extends Plugin {
         const result = parseFrameworkSource(strippedSource);
         if (!result.ok) { renderError(result.error, el); return; }
         const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks);
-        safeRender(id, el, () => renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx, source));
+        safeRender(id, el, () => {
+          renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx, source);
+          // Re-evaluate link buttons whenever the note's headings change (e.g.
+          // a matching heading is added outside the code block after first render).
+          registerCanvasRelink(ctx.sourcePath, () => {
+            const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(this.app, ctx));
+            relinkCanvas(el, definition, freshResolver, navigateTo);
+          }, el);
+        });
       });
     }
+
+    // ── Heading change listener ────────────────────────────────────────
+    // When any file's metadata (headings) changes, refresh link buttons on
+    // all currently rendered canvas blocks belonging to that file.
+    this.registerEvent(
+      this.app.metadataCache.on("changed", (file) => {
+        triggerRelink(file.path);
+      }),
+    );
 
     // ── Custom renderers ───────────────────────────────────────────────
     for (const renderer of CUSTOM_RENDERERS) {
