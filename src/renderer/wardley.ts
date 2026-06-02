@@ -532,7 +532,7 @@ export function renderWardleyMap(
       addWardleyComponent(app, ctx, wrap, sourceRef.comp.name, "New Component", visibility, evolution, withLink);
     };
 
-    const onLinkUp = (e: MouseEvent): void => endLinkDraw(e.shiftKey);
+    const onLinkUp = (e: MouseEvent): void => endLinkDraw(!e.shiftKey);
     const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false); };
 
     addHandleG.addEventListener("mousedown", (e) => {
