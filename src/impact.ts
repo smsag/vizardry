@@ -13,7 +13,7 @@ export function parseImpactMap(source: string): ImpactMapResult {
     const raw = lines[i];
     const trimmed = raw.trim();
 
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
+    if (trimmed === "" || trimmed.startsWith("//")) continue;
 
     const indent = raw.search(/\S/);
 

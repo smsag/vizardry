@@ -1,7 +1,7 @@
 import type { CarouselBlock, CarouselImage, CarouselResult } from "./types";
 
 // Accepts standard Markdown image syntax, one image per line.
-// Blank lines and lines starting with # are ignored.
+// Blank lines and lines starting with // are ignored.
 // Any line that is not a Markdown image returns a parse error.
 //
 // Syntax:
@@ -14,7 +14,7 @@ export function parseCarouselBlock(source: string): CarouselResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
+    if (trimmed === "" || trimmed.startsWith("//")) continue;
 
     const match = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (!match) {

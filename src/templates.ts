@@ -204,6 +204,8 @@ link: Data 5 -> Customer 3
 `;
 
 export const WARDLEY_TEMPLATE = `\`\`\`wardley
+stages: Genesis | Custom | Product | Commodity
+
 anchor: User
 
 component: User         [1.00, 0.10]

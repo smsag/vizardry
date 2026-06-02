@@ -2,6 +2,7 @@ import type { TranslationKey } from "./en";
 
 export const de: Partial<Record<TranslationKey, string>> = {
   // ── Framework descriptions ──────────────────────────────────────────────────
+  "framework.adkar.description":     "Fünf-Stufen-Modell: Awareness, Desire, Knowledge, Ability, Reinforcement.",
   "framework.raci.description":      "Aufgaben zugeordnet nach Verantwortlich, Rechenschaftspflichtig, Konsultiert und Informiert.",
   "framework.bmc.description":        "Das gesamte Geschäftsmodell auf einen Blick.",
   "framework.carousel.description":   "Mehrere Bilder als navigierbares Karussell.",

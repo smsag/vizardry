@@ -74,7 +74,7 @@ slice: S1
   });
 
   it("ignores blank lines and comments", () => {
-    const src = "# top\nactivity: A\n  # mid\n  step: S\n    # inner\n    task: T";
+    const src = "// top\nactivity: A\n  // mid\n  step: S\n    // inner\n    task: T";
     const result = parseStoryMap(src);
     expect(result.ok).toBe(true);
   });

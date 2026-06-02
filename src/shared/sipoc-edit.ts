@@ -92,7 +92,7 @@ export function writeSIPOCCell(
     let insertAfter = rowLineStart;
     for (let ln = rowLineStart + 1; ln <= rowLineEnd; ln++) {
       const t = editor.getLine(ln).trim();
-      if (t && !t.startsWith("#")) insertAfter = ln;
+      if (t && !t.startsWith("//")) insertAfter = ln;
     }
     const insertLineText = editor.getLine(insertAfter);
     editor.replaceRange(

@@ -91,7 +91,7 @@ link: B -> A
   });
 
   it("ignores blank lines and comments", () => {
-    const src = `# header\nsuppliers:\n  A [ellipse]\n\ninputs:\nprocess:\noutputs:\ncustomers:`;
+    const src = `// header\nsuppliers:\n  A [ellipse]\n\ninputs:\nprocess:\noutputs:\ncustomers:`;
     const result = parseSIPOCFlow(src);
     expect(result.ok).toBe(true);
   });
@@ -127,7 +127,7 @@ link: B -> A
   });
 
   it("returns error when no nodes defined", () => {
-    const result = parseSIPOCFlow("# just a comment");
+    const result = parseSIPOCFlow("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No nodes") });
   });
 });

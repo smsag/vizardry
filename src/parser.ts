@@ -11,7 +11,7 @@ import type { ParseResult } from "./types";
  * Rules:
  * - `block:` keyword followed by the block label (case-insensitive match at render time)
  * - Content is indented below the block line — no `|` scalar needed
- * - Lines starting with `#` are comments (ignored)
+ * - Lines starting with `//` are comments (ignored)
  * - Unknown block labels are stored but silently ignored at render time
  * - Blank lines between blocks are ignored
  * - Heading links use inline [[#Heading]] annotations on block lines (see shared/links.ts)
@@ -25,7 +25,7 @@ export function parseFrameworkSource(source: string): ParseResult {
     const raw = lines[i];
     const trimmed = raw.trim();
 
-    if (trimmed === "" || trimmed.startsWith("#")) {
+    if (trimmed === "" || trimmed.startsWith("//")) {
       i++;
       continue;
     }
@@ -50,7 +50,7 @@ export function parseFrameworkSource(source: string): ParseResult {
         const blockRaw = lines[i];
         const blockTrimmed = blockRaw.trim();
 
-        if (blockTrimmed === "" || blockTrimmed.startsWith("#")) {
+        if (blockTrimmed === "" || blockTrimmed.startsWith("//")) {
           if (blockIndent !== -1) contentLines.push("");
           i++;
           continue;

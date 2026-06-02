@@ -39,9 +39,66 @@ link: User -> Feature
   });
 
   it("ignores blank lines and comments", () => {
-    const src = `# this is a map\nanchor: User\n\ncomponent: DB [0.2, 0.8] # a database`;
+    const src = `// this is a map\nanchor: User\n\ncomponent: DB [0.2, 0.8]`;
     const result = parseWardleyMap(src);
     expect(result.ok).toBe(true);
+  });
+
+  it("parses custom x-axis stages", () => {
+    const src = `stages: Driver | Approver | Contributor | Informed\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.stages).toEqual(["Driver", "Approver", "Contributor", "Informed"]);
+  });
+
+  it("parses positioned x-axis stages", () => {
+    const src = `stages:\n  0.05: Driver\n  0.28: Approver\n  0.62: Contributor\n  0.95: Informed\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.stages).toEqual(["Driver", "Approver", "Contributor", "Informed"]);
+    expect(result.data.stagePositions).toEqual([0.05, 0.28, 0.62, 0.95]);
+  });
+
+  it("returns error when positioned stages are not strictly increasing", () => {
+    const src = `stages:\n  0.4: Product\n  0.2: Custom\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("strictly increasing") });
+  });
+
+  it("returns error when positioned stages include duplicates", () => {
+    const src = `stages:\n  0.4: Product\n  0.4: Commodity\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("duplicate stages position") });
+  });
+
+  it("returns error when positioned stages use out-of-range values", () => {
+    const src = `stages:\n  1.2: Commodity\n  0.8: Product\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("between 0 and 1") });
+  });
+
+  it("returns error when positioned stages include 0 endpoint", () => {
+    const src = `stages:\n  0: Driver\n  0.5: Contributor\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("exclusive") });
+  });
+
+  it("returns error when positioned stages include 1 endpoint", () => {
+    const src = `stages:\n  0.4: Product\n  1: Commodity\ncomponent: API [0.5, 0.5]`;
+    const result = parseWardleyMap(src);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("exclusive") });
+  });
+
+  it("returns error when stages has empty labels", () => {
+    const result = parseWardleyMap("stages: Driver |  | Informed\ncomponent: API [0.5, 0.5]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("empty label") });
+  });
+
+  it("returns error when stages has fewer than two labels", () => {
+    const result = parseWardleyMap("stages: Driver\ncomponent: API [0.5, 0.5]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("at least two labels") });
   });
 
   it("returns error for component missing coordinates", () => {
@@ -70,7 +127,7 @@ link: User -> Feature
   });
 
   it("returns error when no components defined", () => {
-    const result = parseWardleyMap("# just a comment");
+    const result = parseWardleyMap("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No components") });
   });
 });

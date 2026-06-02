@@ -9,6 +9,7 @@ import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
 import type { ProcessorFn } from "./processors";
+import { ADKAR } from "./frameworks/adkar";
 import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
 import { OPPORTUNITY } from "./frameworks/opportunity";
@@ -27,7 +28,7 @@ import { t, tFrameworkDescription } from "./i18n";
 // The map is derived from the id field on each definition — no duplicate key.
 
 const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC, SWOT,
+  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC, SWOT,
 ];
 
 const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
