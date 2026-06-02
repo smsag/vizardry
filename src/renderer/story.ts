@@ -6,7 +6,16 @@ import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
-import { addStoryTask, moveStoryTaskSlice, reorderStoryTask } from "../shared/story-edit";
+import {
+  addStoryTask,
+  moveStoryTaskSlice,
+  moveStoryTaskCrossColumn,
+  reorderStoryTask,
+  renameStoryActivity,
+  renameStoryStep,
+  renameStoryTask,
+  writeStoryMeta,
+} from "../shared/story-edit";
 
 const BACKLOG_SLICE = "__backlog__";
 
@@ -23,10 +32,15 @@ export function renderStoryMap(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "story", title, map.user || map.goal ? header => {
+
+  // In edit mode always show the meta header so user/goal badges are clickable
+  // even when both fields are currently empty.
+  const showMeta = !!(map.user || map.goal) || isEditMode;
+
+  initCanvas(container, "story", title, showMeta ? header => {
     const meta = header.createEl("div", { cls: "vzd-story-meta" });
-    if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `${t("story.label.user")}: ${map.user}` });
-    if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `${t("story.label.goal")}: ${map.goal}` });
+    renderMetaBadge(meta, "user", t("story.label.user"), map.user, isEditMode, app, ctx, container);
+    renderMetaBadge(meta, "goal", t("story.label.goal"), map.goal, isEditMode, app, ctx, container);
   } : undefined, source, onTitleEdit);
 
   const allSteps = map.activities.flatMap(a => a.steps);
@@ -36,6 +50,48 @@ export function renderStoryMap(
   const grid = container.createEl("div", { cls: "vzd-story-grid" });
   grid.style.setProperty("--vzd-story-cols", String(totalCols));
 
+  // ── Shared inline-edit helper ─────────────────────────────────────────────
+  function activateInlineEdit(
+    el: HTMLElement,
+    currentValue: string,
+    onCommit: (newValue: string) => void,
+  ): void {
+    if (el.classList.contains("vzd-editing")) return;
+    el.classList.add("vzd-editing");
+    el.textContent = "";
+    const input = el.createEl("input", { cls: "vzd-inline-input", type: "text" });
+    input.value = currentValue;
+    input.focus();
+    input.select();
+    let committed = false;
+    const commit = (): void => {
+      if (committed) return;
+      committed = true;
+      el.classList.remove("vzd-editing");
+      const v = input.value.trim();
+      if (v && v !== currentValue) {
+        onCommit(v);
+        // The writeback triggers a re-render; optimistically restore text in
+        // case re-render is slightly delayed.
+        el.textContent = v;
+      } else {
+        el.textContent = currentValue;
+      }
+    };
+    const cancel = (): void => {
+      if (committed) return;
+      committed = true;
+      el.classList.remove("vzd-editing");
+      el.textContent = currentValue;
+    };
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commit(); }
+      if (e.key === "Escape") { e.preventDefault(); cancel(); }
+    });
+  }
+
+  // ── Activity headers ──────────────────────────────────────────────────────
   type ActivityHeaderRef = { el: HTMLElement; start: number; end: number; origGridCol: string };
   const activityHeaderRefs: ActivityHeaderRef[] = [];
   let colOffset = 1;
@@ -48,13 +104,35 @@ export function renderStoryMap(
     activityHeaderRefs.push({ el, start: stepOffset, end: stepOffset + activity.steps.length - 1, origGridCol });
     colOffset += activity.steps.length;
     stepOffset += activity.steps.length;
+
+    if (isEditMode && app && ctx) {
+      el.classList.add("vzd-story-activity-header--editable");
+      el.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        activateInlineEdit(el, activity.name, (newName) => {
+          renameStoryActivity(app, ctx, container, activity.name, newName);
+        });
+      });
+    }
   }
 
+  // ── Step headers ──────────────────────────────────────────────────────────
   const stepHeaderEls: HTMLElement[] = [];
   for (let i = 0; i < allSteps.length; i++) {
-    const el = grid.createEl("div", { cls: "vzd-story-step-header", text: allSteps[i].name });
+    const step = allSteps[i];
+    const el = grid.createEl("div", { cls: "vzd-story-step-header", text: step.name });
     el.dataset.stepCol = String(i);
     stepHeaderEls.push(el);
+
+    if (isEditMode && app && ctx) {
+      el.classList.add("vzd-story-step-header--editable");
+      el.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        activateInlineEdit(el, step.name, (newName) => {
+          renameStoryStep(app, ctx, container, step.name, newName);
+        });
+      });
+    }
   }
 
   const assignedKeys = new Set<string>();
@@ -71,18 +149,21 @@ export function renderStoryMap(
     card: HTMLElement;
     taskName: string;
     stepName: string;
-    fromSlice: string | null;  // null = backlog
+    fromSlice: string | null;
     fromIndex: number;
     ghost: HTMLElement;
     placeholder: HTMLElement;
+    toStepName: string;
     toSlice: string | null;
     toIndex: number;
+    overGrid: boolean;
   };
   let drag: DragState | null = null;
 
   function endDrag(): void {
     if (!drag) return;
-    const { card, taskName, stepName, fromSlice, fromIndex, ghost, placeholder, toSlice, toIndex } = drag;
+    const { card, taskName, stepName, fromSlice, fromIndex, ghost, placeholder } = drag;
+    const { toStepName, toSlice, toIndex, overGrid } = drag;
     drag = null;
 
     ghost.remove();
@@ -92,59 +173,57 @@ export function renderStoryMap(
     document.removeEventListener("mousemove", onDocMouseMove);
     document.removeEventListener("mouseup", onDocMouseUp);
 
-    if (!app || !ctx) return;
+    if (!app || !ctx || !overGrid) return;
 
-    if (toSlice !== fromSlice) {
+    if (toStepName !== stepName) {
+      moveStoryTaskCrossColumn(app, ctx, container, taskName, stepName, toStepName, toSlice);
+    } else if (toSlice !== fromSlice) {
       moveStoryTaskSlice(app, ctx, container, taskName, stepName, fromSlice, toSlice);
     } else if (toIndex !== fromIndex) {
       reorderStoryTask(app, ctx, container, stepName, fromSlice, fromIndex, toIndex);
     }
   }
 
-  function findDropTarget(clientX: number, clientY: number): { cell: HTMLElement; sliceName: string | null; index: number } | null {
-    // Find the topmost vzd-story-cell under the pointer
+  function findDropTarget(clientX: number, clientY: number): { cell: HTMLElement; sliceName: string | null; stepName: string; index: number } | null {
     const els = document.elementsFromPoint(clientX, clientY);
     const cell = els.find(e => e.classList.contains("vzd-story-cell")) as HTMLElement | undefined;
     if (!cell) return null;
 
-    // Identify the slice band containing this cell
     let band: HTMLElement | null = cell;
     while (band && !band.classList.contains("vzd-story-slice-band")) {
       band = band.parentElement;
     }
-    const sliceName = band?.dataset.sliceName ?? null;
+    const sliceName = (band?.dataset.sliceName === BACKLOG_SLICE ? null : band?.dataset.sliceName) ?? null;
+    const stepName = cell.dataset.stepName ?? "";
 
-    // Find where among the existing cards the pointer falls
     const cards = Array.from(cell.querySelectorAll<HTMLElement>(
       ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--placeholder):not(.vzd-story-task-card--hidden)"
     ));
     let index = cards.length;
     for (let i = 0; i < cards.length; i++) {
       const rect = cards[i].getBoundingClientRect();
-      if (clientY < rect.top + rect.height / 2) {
-        index = i;
-        break;
-      }
+      if (clientY < rect.top + rect.height / 2) { index = i; break; }
     }
 
-    return { cell, sliceName, index };
+    return { cell, sliceName, stepName, index };
   }
 
-  function onDocMouseMove(e: MouseEvent): void {
+  function updateDragPosition(clientX: number, clientY: number): void {
     if (!drag) return;
-    drag.ghost.style.left = `${e.clientX + 8}px`;
-    drag.ghost.style.top = `${e.clientY + 8}px`;
+    drag.ghost.style.left = `${clientX + 8}px`;
+    drag.ghost.style.top = `${clientY + 8}px`;
 
-    const target = findDropTarget(e.clientX, e.clientY);
-    if (!target) return;
+    const target = findDropTarget(clientX, clientY);
+    if (!target) {
+      drag.overGrid = false;
+      return;
+    }
 
-    // Only allow drops within the same step column
-    if (target.cell.dataset.stepCol !== String(allSteps.findIndex(s => s.name === drag!.stepName))) return;
-
+    drag.overGrid = true;
+    drag.toStepName = target.stepName;
     drag.toSlice = target.sliceName;
     drag.toIndex = target.index;
 
-    // Move placeholder into position
     const cards = Array.from(target.cell.querySelectorAll<HTMLElement>(
       ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--hidden)"
     ));
@@ -155,10 +234,13 @@ export function renderStoryMap(
     }
   }
 
+  function onDocMouseMove(e: MouseEvent): void { updateDragPosition(e.clientX, e.clientY); }
   const onDocMouseUp = (): void => endDrag();
 
   function startDrag(card: HTMLElement, e: MouseEvent | Touch): void {
     if (!isEditMode || !app || !ctx) return;
+    // Don't start drag if an inline-edit input is active inside this card
+    if (card.querySelector(".vzd-inline-input")) return;
 
     const taskName = card.dataset.taskName ?? "";
     const stepName = card.dataset.stepName ?? "";
@@ -175,53 +257,58 @@ export function renderStoryMap(
     const placeholder = card.parentElement!.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--placeholder" });
     placeholder.style.height = `${rect.height}px`;
     card.parentElement!.insertBefore(placeholder, card);
-
     card.classList.add("vzd-story-task-card--hidden");
 
-    drag = { card, taskName, stepName, fromSlice, fromIndex, ghost, placeholder, toSlice: fromSlice, toIndex: fromIndex };
+    drag = {
+      card, taskName, stepName, fromSlice, fromIndex,
+      ghost, placeholder,
+      toStepName: stepName, toSlice: fromSlice, toIndex: fromIndex,
+      overGrid: false,
+    };
 
     document.addEventListener("mousemove", onDocMouseMove);
     document.addEventListener("mouseup", onDocMouseUp);
   }
 
+  // ── Task card rendering ───────────────────────────────────────────────────
   function renderTaskCard(cell: HTMLElement, task: StoryTask, sliceName: string | null, index: number): void {
     const card = cell.createEl("div", { cls: "vzd-story-task-card" });
-    card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+    const nameDiv = card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
     if (task.subtitle) {
       card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
     }
-    if (isEditMode) {
+    if (isEditMode && app && ctx) {
       card.dataset.taskName = task.name;
       card.dataset.stepName = cell.dataset.stepName ?? "";
       card.dataset.sliceName = sliceName ?? BACKLOG_SLICE;
       card.dataset.taskIndex = String(index);
       card.classList.add("vzd-story-task-card--draggable");
+
+      // Double-click on name to rename
+      nameDiv.classList.add("vzd-story-task-name--editable");
+      nameDiv.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        activateInlineEdit(nameDiv, task.name, (newName) => {
+          renameStoryTask(app, ctx, container, task.name, newName);
+        });
+      });
+
+      // Drag to move
       card.addEventListener("mousedown", (e) => {
+        if (card.querySelector(".vzd-inline-input")) return;
         e.preventDefault();
         e.stopPropagation();
         startDrag(card, e);
       });
       card.addEventListener("touchstart", (e) => {
+        if (card.querySelector(".vzd-inline-input")) return;
         e.preventDefault();
         startDrag(card, e.touches[0]);
         const onTouchMove = (ev: TouchEvent): void => {
           if (!drag) return;
           ev.preventDefault();
-          drag.ghost.style.left = `${ev.touches[0].clientX + 8}px`;
-          drag.ghost.style.top = `${ev.touches[0].clientY + 8}px`;
-          const target = findDropTarget(ev.touches[0].clientX, ev.touches[0].clientY);
-          if (!target) return;
-          if (target.cell.dataset.stepCol !== (card.closest(".vzd-story-cell") as HTMLElement | null)?.dataset.stepCol) return;
-          drag.toSlice = target.sliceName;
-          drag.toIndex = target.index;
-          const cards = Array.from(target.cell.querySelectorAll<HTMLElement>(
-            ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--hidden)"
-          ));
-          if (target.index >= cards.length) {
-            target.cell.appendChild(drag.placeholder);
-          } else {
-            target.cell.insertBefore(drag.placeholder, cards[target.index]);
-          }
+          updateDragPosition(ev.touches[0].clientX, ev.touches[0].clientY);
         };
         const onTouchEnd = (): void => {
           endDrag();
@@ -241,6 +328,7 @@ export function renderStoryMap(
     }
   }
 
+  // ── Slice bands ───────────────────────────────────────────────────────────
   const cellsByStep: HTMLElement[][] = Array.from({ length: totalCols }, () => []);
 
   for (const slice of map.slices) {
@@ -257,15 +345,13 @@ export function renderStoryMap(
       const cell = cellsRow.createEl("div", { cls: "vzd-story-cell" });
       cell.dataset.stepCol = String(i);
       cell.dataset.stepName = step.name;
-      if (taskKeys.length === 0) {
-        cell.addClass("vzd-story-cell-empty");
-      } else {
-        appendCards(cell, step, taskKeys, slice.name);
-      }
+      if (taskKeys.length === 0) cell.addClass("vzd-story-cell-empty");
+      else appendCards(cell, step, taskKeys, slice.name);
       cellsByStep[i].push(cell);
     }
   }
 
+  // ── Backlog band ──────────────────────────────────────────────────────────
   const backlogByStep = new Map<string, typeof allSteps[number]["tasks"]>();
   for (const step of allSteps) {
     const stepKey = step.name.toLowerCase().trim();
@@ -289,9 +375,8 @@ export function renderStoryMap(
       const cell = backlogCellsRow.createEl("div", { cls: "vzd-story-cell" });
       cell.dataset.stepCol = String(i);
       cell.dataset.stepName = step.name;
-      if (tasks.length === 0 && !isEditMode) {
-        cell.addClass("vzd-story-cell-empty");
-      } else {
+      if (tasks.length === 0 && !isEditMode) cell.addClass("vzd-story-cell-empty");
+      else {
         for (let j = 0; j < tasks.length; j++) renderTaskCard(cell, tasks[j], null, j);
       }
       if (isEditMode) {
@@ -315,6 +400,63 @@ export function renderStoryMap(
   setupStoryCarousel(container, grid, stepMeta, activityHeaderRefs, stepHeaderEls, cellsByStep);
 }
 
+// ── Meta badge (user / goal) ──────────────────────────────────────────────
+
+function renderMetaBadge(
+  parent: HTMLElement,
+  key: "user" | "goal",
+  label: string,
+  value: string,
+  isEditMode: boolean,
+  app: App | undefined,
+  ctx: MarkdownPostProcessorContext | undefined,
+  container: HTMLElement,
+): void {
+  // Always render in edit mode; in read mode skip empty fields.
+  if (!value && !isEditMode) return;
+
+  const displayText = value ? `${label}: ${value}` : `${label}: —`;
+  const span = parent.createEl("span", {
+    cls: "vzd-story-meta-item" + (isEditMode ? " vzd-story-meta-item--editable" : ""),
+    text: displayText,
+  });
+
+  if (!isEditMode || !app || !ctx) return;
+
+  span.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (span.classList.contains("vzd-editing")) return;
+    span.classList.add("vzd-editing");
+    span.textContent = "";
+    const input = span.createEl("input", { cls: "vzd-inline-input", type: "text" });
+    input.value = value;
+    input.focus();
+    input.select();
+    let committed = false;
+    const commit = (): void => {
+      if (committed) return;
+      committed = true;
+      span.classList.remove("vzd-editing");
+      const v = input.value.trim();
+      writeStoryMeta(app, ctx, container, key, v);
+      span.textContent = v ? `${label}: ${v}` : `${label}: —`;
+    };
+    const cancel = (): void => {
+      if (committed) return;
+      committed = true;
+      span.classList.remove("vzd-editing");
+      span.textContent = displayText;
+    };
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") { ev.preventDefault(); commit(); }
+      if (ev.key === "Escape") { ev.preventDefault(); cancel(); }
+    });
+  });
+}
+
+// ── Carousel (unchanged) ──────────────────────────────────────────────────
+
 function setupStoryCarousel(
   container: HTMLElement,
   grid: HTMLElement,
@@ -329,7 +471,6 @@ function setupStoryCarousel(
   let current = 0;
   const mq = window.matchMedia("(max-width: 600px)");
 
-  // All inner cell-row grids (one per slice band, including backlog)
   const sliceCellsEls = Array.from(
     grid.querySelectorAll(".vzd-story-slice-cells")
   ) as HTMLElement[];
@@ -345,7 +486,6 @@ function setupStoryCarousel(
 
   function applyMobile(col: number): void {
     grid.style.gridTemplateColumns = "1fr";
-    // Collapse each slice's inner grid to a single column
     sliceCellsEls.forEach(el => { el.style.gridTemplateColumns = "1fr"; });
 
     activityHeaderRefs.forEach(({ el, start, end }) => {
@@ -408,9 +548,6 @@ function setupStoryCarousel(
   mq.addEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
   onMediaChange(mq);
 
-  // Remove the mq listener when the grid is detached from the DOM.
-  // Without this, each re-render of the note accumulates a new listener on the
-  // global MediaQueryList object, leaking the closure (and its DOM references).
   onDisconnected(grid, () => {
     mq.removeEventListener("change", onMediaChange as (e: MediaQueryListEvent) => void);
   });

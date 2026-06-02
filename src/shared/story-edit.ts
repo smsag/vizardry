@@ -28,6 +28,73 @@ function resolveEditor(
   return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
 }
 
+/** Escapes a string for safe use inside a RegExp. */
+function escRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+interface StepBlock {
+  stepLine: number;
+  stepIndent: number;
+  taskIndent: number;
+  lastTaskLine: number;
+  taskIndentStr: string;
+}
+
+/**
+ * Finds the block boundaries of a `step: <stepName>` declaration within
+ * the activity section of a code block (not slice section — activity steps
+ * have indent > 0 and no pipe character after the step name).
+ */
+function findStepBlock(
+  editor: { getLine: (n: number) => string },
+  lineStart: number,
+  lineEnd: number,
+  stepName: string,
+): StepBlock | null {
+  const stepKey = stepName.toLowerCase().trim();
+  let stepLine = -1;
+  let stepIndent = 0;
+  let taskIndent = -1;
+  let lastTaskLine = -1;
+
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    const indent = raw.search(/\S/);
+
+    if (stepLine === -1) {
+      if (indent === 0) continue;
+      // Activity step: indented, starts with "step:", NO pipe (slice steps have pipes)
+      if (trimmed.toLowerCase().startsWith("step:")) {
+        const afterStep = trimmed.slice("step:".length).trim();
+        if (!afterStep.includes("|")) {
+          const name = afterStep.trim().toLowerCase();
+          if (name === stepKey) {
+            stepLine = ln;
+            stepIndent = indent;
+          }
+        }
+      }
+      continue;
+    }
+
+    // Inside the target step
+    if (indent <= stepIndent && trimmed) break;
+    if (trimmed.toLowerCase().startsWith("task:")) {
+      if (taskIndent === -1) taskIndent = indent;
+      lastTaskLine = ln;
+    }
+  }
+
+  if (stepLine === -1) return null;
+  const taskIndentStr = taskIndent !== -1
+    ? " ".repeat(taskIndent)
+    : " ".repeat(stepIndent + 2);
+  return { stepLine, stepIndent, taskIndent, lastTaskLine, taskIndentStr };
+}
+
 /**
  * Appends a new `task: <taskName>` line at the end of the named step's task
  * list. Deduplicates the name by appending " 2", " 3" etc. if needed.
@@ -43,65 +110,25 @@ export function addStoryTask(
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
 
-  const stepKey = stepName.toLowerCase().trim();
-  let stepLine = -1;
-  let stepIndent = 0;
-  let taskIndent = -1;
-  let lastTaskLine = -1;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-    if (!trimmed || trimmed.startsWith("//")) continue;
-
-    const indent = raw.search(/\S/);
-
-    if (stepLine === -1) {
-      if (indent === 0) continue; // activity/slice/etc lines
-      if (trimmed.toLowerCase().startsWith("step:")) {
-        const name = trimmed.slice("step:".length).trim().split("|")[0].trim().toLowerCase();
-        if (name === stepKey) {
-          stepLine = ln;
-          stepIndent = indent;
-        }
-      }
-      continue;
-    }
-
-    // We're inside the target step
-    if (indent <= stepIndent && trimmed) {
-      break; // Left the step block
-    }
-    if (trimmed.toLowerCase().startsWith("task:")) {
-      if (taskIndent === -1) taskIndent = indent;
-      lastTaskLine = ln;
-    }
-  }
-
-  if (stepLine === -1) {
+  const block = findStepBlock(editor, lineStart, lineEnd, stepName);
+  if (!block) {
     console.warn(`Vizardry: addStoryTask — step "${stepName}" not found`);
     return false;
   }
-
-  const taskIndentStr = taskIndent !== -1
-    ? " ".repeat(taskIndent)
-    : " ".repeat(stepIndent + 2);
+  const { stepLine, stepIndent, lastTaskLine, taskIndentStr } = block;
 
   // Collect existing task names for deduplication
   const existingTasks = new Set<string>();
-  if (lastTaskLine !== -1) {
-    for (let ln = stepLine + 1; ln <= lineEnd; ln++) {
-      const raw = editor.getLine(ln);
-      const trimmed = raw.trim();
-      if (!trimmed || trimmed.startsWith("//")) continue;
-      const indent = raw.search(/\S/);
-      if (indent <= stepIndent) break;
-      if (trimmed.toLowerCase().startsWith("task:")) {
-        const rest = trimmed.slice("task:".length).trim();
-        const pipeIdx = rest.indexOf("|");
-        const name = (pipeIdx === -1 ? rest : rest.slice(0, pipeIdx)).trim().toLowerCase();
-        if (name) existingTasks.add(name);
-      }
+  for (let ln = stepLine + 1; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    if (raw.search(/\S/) <= stepIndent) break;
+    if (trimmed.toLowerCase().startsWith("task:")) {
+      const rest = trimmed.slice("task:".length).trim();
+      const pipeIdx = rest.indexOf("|");
+      const name = (pipeIdx === -1 ? rest : rest.slice(0, pipeIdx)).trim().toLowerCase();
+      if (name) existingTasks.add(name);
     }
   }
 
@@ -118,6 +145,200 @@ export function addStoryTask(
     `\n${taskIndentStr}task: ${uniqueName}`,
     { line: insertAfter, ch: insertLine.length },
   );
+  return true;
+}
+
+/**
+ * Writes or removes a top-level `user:` or `goal:` line.
+ * If value is empty the existing line is deleted. If no line exists and value
+ * is non-empty, a new line is inserted right after any `title:` line
+ * (or after the opening fence if there is no title line).
+ */
+export function writeStoryMeta(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  key: "user" | "goal",
+  value: string,
+): boolean {
+  const resolved = resolveEditor(app, ctx, el, "writeStoryMeta");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const trimmedValue = value.trim();
+
+  // Find existing key line
+  let foundLine = -1;
+  for (let ln = lineStart + 1; ln < lineEnd; ln++) {
+    if (editor.getLine(ln).trim().toLowerCase().startsWith(`${key}:`)) {
+      foundLine = ln;
+      break;
+    }
+  }
+
+  if (!trimmedValue) {
+    if (foundLine !== -1) {
+      editor.replaceRange("", { line: foundLine, ch: 0 }, { line: foundLine + 1, ch: 0 });
+    }
+    return true;
+  }
+
+  const newLineText = `${key}: ${trimmedValue}`;
+
+  if (foundLine !== -1) {
+    const raw = editor.getLine(foundLine);
+    editor.replaceRange(newLineText, { line: foundLine, ch: 0 }, { line: foundLine, ch: raw.length });
+    return true;
+  }
+
+  // No existing line — insert after title: (line lineStart+1) if present, else at lineStart+1
+  let insertAt = lineStart + 1;
+  const firstContent = editor.getLine(lineStart + 1).trim().toLowerCase();
+  if (firstContent.startsWith("title:")) insertAt = lineStart + 2;
+
+  editor.replaceRange(`${newLineText}\n`, { line: insertAt, ch: 0 });
+  return true;
+}
+
+/**
+ * Renames an `activity: <oldName>` line in-place.
+ * Activity names are not referenced elsewhere so no cascade is needed.
+ */
+export function renameStoryActivity(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  oldName: string,
+  newName: string,
+): boolean {
+  if (!newName.trim() || newName === oldName) return false;
+
+  const resolved = resolveEditor(app, ctx, el, "renameStoryActivity");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const re = new RegExp(`^(activity:\\s*)${escRe(oldName)}\\s*$`, "i");
+
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    if (re.test(raw.trim())) {
+      editor.replaceRange(
+        `activity: ${newName}`,
+        { line: ln, ch: 0 }, { line: ln, ch: raw.length },
+      );
+      return true;
+    }
+  }
+
+  console.warn(`Vizardry: renameStoryActivity — "${oldName}" not found`);
+  return false;
+}
+
+/**
+ * Renames a step throughout the source block:
+ * - The `step: <oldName>` declaration inside its activity block
+ * - All `step: <oldName>` or `step: <oldName> | ...` lines inside slice blocks
+ */
+export function renameStoryStep(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  oldName: string,
+  newName: string,
+): boolean {
+  if (!newName.trim() || newName === oldName) return false;
+
+  const resolved = resolveEditor(app, ctx, el, "renameStoryStep");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  // Match `step: <oldName>` with optional trailing `| ...` (case-insensitive on the name)
+  // Used for BOTH activity declarations (no pipe) and slice cells (may have pipe).
+  const re = new RegExp(`^(\\s*step:\\s*)${escRe(oldName)}(\\s*(?:\\|.*)?$)`, "i");
+
+  type Edit = { line: number; newText: string };
+  const edits: Edit[] = [];
+
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    if (re.test(raw)) {
+      edits.push({ line: ln, newText: raw.replace(re, `$1${newName}$2`) });
+    }
+  }
+
+  if (edits.length === 0) {
+    console.warn(`Vizardry: renameStoryStep — "${oldName}" not found`);
+    return false;
+  }
+
+  // Apply bottom-up
+  edits.sort((a, b) => b.line - a.line);
+  for (const edit of edits) {
+    const raw = editor.getLine(edit.line);
+    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+  }
+  return true;
+}
+
+/**
+ * Renames a task throughout the source block:
+ * - The `task: <oldName>` or `task: <oldName> | subtitle` declaration line
+ * - All slice cell references that use the old lowercased task key
+ */
+export function renameStoryTask(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  oldName: string,
+  newName: string,
+): boolean {
+  if (!newName.trim() || newName === oldName) return false;
+
+  const resolved = resolveEditor(app, ctx, el, "renameStoryTask");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const oldKey = oldName.toLowerCase().trim();
+  const newKey = newName.toLowerCase().trim();
+
+  type Edit = { line: number; newText: string };
+  const edits: Edit[] = [];
+
+  // Phase A — task declaration line
+  const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(oldName)}(\\s*(?:\\|.*)?$)`, "i");
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    if (taskRe.test(raw)) {
+      edits.push({ line: ln, newText: raw.replace(taskRe, `$1${newName}$2`) });
+      break; // task names are unique per step; first match is correct
+    }
+  }
+
+  // Phase B — slice cell references (comma-separated lowercase keys)
+  const slices = parseSlices(editor, lineStart, lineEnd);
+  for (const slice of slices) {
+    for (const cell of slice.cells) {
+      if (!cell.taskKeys.includes(oldKey)) continue;
+      const newKeys = cell.taskKeys.map(k => k === oldKey ? newKey : k);
+      // Reconstruct the cell line preserving the original step display name
+      const rest = cell.raw.trim().slice("step:".length).trim();
+      const pipeIdx = rest.indexOf("|");
+      const stepDisplayName = pipeIdx === -1 ? rest : rest.slice(0, pipeIdx).trim();
+      const newLine = `${" ".repeat(cell.indent)}step: ${stepDisplayName} | ${newKeys.join(", ")}`;
+      edits.push({ line: cell.line, newText: newLine });
+    }
+  }
+
+  if (edits.length === 0) {
+    console.warn(`Vizardry: renameStoryTask — "${oldName}" not found`);
+    return false;
+  }
+
+  edits.sort((a, b) => b.line - a.line);
+  for (const edit of edits) {
+    const raw = editor.getLine(edit.line);
+    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+  }
   return true;
 }
 
@@ -172,11 +393,6 @@ function parseSlices(
 
 /**
  * Moves a task from one slice band to another within the same step column.
- * The task's `task:` line in the activities block is unchanged; only the
- * slice cell references are updated.
- *
- * Pass `null` for `toSliceName` to move a task to the backlog (unsliced).
- * Pass `null` for `fromSliceName` to move a task from the backlog into a slice.
  */
 export function moveStoryTaskSlice(
   app: App,
@@ -195,14 +411,11 @@ export function moveStoryTaskSlice(
 
   const taskKey = taskName.toLowerCase().trim();
   const stepKey = stepName.toLowerCase().trim();
-
   const slices = parseSlices(editor, lineStart, lineEnd);
 
-  // Collect edits and apply bottom-up
   type Edit = { line: number; newText: string };
   const edits: Edit[] = [];
 
-  // -- Remove from old slice --
   if (fromSliceName !== null) {
     const fromSlice = slices.find(s => s.sliceName === fromSliceName);
     if (fromSlice) {
@@ -217,31 +430,22 @@ export function moveStoryTaskSlice(
     }
   }
 
-  // -- Add to new slice --
   if (toSliceName !== null) {
     const toSlice = slices.find(s => s.sliceName === toSliceName);
     if (toSlice) {
       const cell = toSlice.cells.find(c => c.stepKey === stepKey);
       if (cell) {
-        // Check we're not adding a duplicate
         if (!cell.taskKeys.includes(taskKey)) {
           const newKeys = [...cell.taskKeys, taskKey];
           const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${newKeys.join(", ")}`;
-          // If we already have an edit for this line (from the remove step), merge
           const existing = edits.find(e => e.line === cell.line);
-          if (existing) {
-            existing.newText = newLine;
-          } else {
-            edits.push({ line: cell.line, newText: newLine });
-          }
+          if (existing) { existing.newText = newLine; }
+          else { edits.push({ line: cell.line, newText: newLine }); }
         }
       } else {
-        // No cell for this step yet in the target slice — insert one
-        // Determine the indent from the slice's other cells or default to 2
         const indentStr = toSlice.cells.length > 0
           ? " ".repeat(toSlice.cells[0].indent)
           : "  ";
-        // Insert after the last cell under this slice (or after the header if no cells)
         const insertAfterLine = toSlice.cells.length > 0
           ? toSlice.cells[toSlice.cells.length - 1].line
           : toSlice.headerLine;
@@ -259,19 +463,16 @@ export function moveStoryTaskSlice(
 
   if (edits.length === 0) return true;
 
-  // Apply bottom-up by line number
   edits.sort((a, b) => b.line - a.line);
   for (const edit of edits) {
     const raw = editor.getLine(edit.line);
     editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
   }
-
   return true;
 }
 
 /**
  * Reorders a task within the same slice's cell list for a given step.
- * Moves the item at `fromIndex` to `toIndex` in the comma-separated task list.
  */
 export function reorderStoryTask(
   app: App,
@@ -283,7 +484,7 @@ export function reorderStoryTask(
   toIndex: number,
 ): boolean {
   if (fromIndex === toIndex) return true;
-  if (sliceName === null) return true; // backlog order is derived from task declaration order
+  if (sliceName === null) return true;
 
   const resolved = resolveEditor(app, ctx, el, "reorderStoryTask");
   if (!resolved) return false;
@@ -292,10 +493,7 @@ export function reorderStoryTask(
   const stepKey = stepName.toLowerCase().trim();
   const slices = parseSlices(editor, lineStart, lineEnd);
   const slice = slices.find(s => s.sliceName === sliceName);
-  if (!slice) {
-    console.warn(`Vizardry: reorderStoryTask — slice "${sliceName}" not found`);
-    return false;
-  }
+  if (!slice) return true;
 
   const cell = slice.cells.find(c => c.stepKey === stepKey);
   if (!cell || cell.taskKeys.length < 2) return true;
@@ -307,5 +505,188 @@ export function reorderStoryTask(
   const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${keys.join(", ")}`;
   const raw = editor.getLine(cell.line);
   editor.replaceRange(newLine, { line: cell.line, ch: 0 }, { line: cell.line, ch: raw.length });
+  return true;
+}
+
+/**
+ * Moves a task to a different step column (cross-column drag):
+ * - Removes the `task:` line from `fromStepName`'s activity block
+ * - Appends the `task:` line (preserving subtitle) to `toStepName`'s activity block
+ * - Updates all slice cell references: moves the task key from the old step key
+ *   to the new step key within each slice that had it.
+ * - If `toSliceName` is provided, adds the task to that slice under the new step.
+ * - If `toSliceName` is null, the task lands in the backlog (unsliced).
+ */
+export function moveStoryTaskCrossColumn(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  taskName: string,
+  fromStepName: string,
+  toStepName: string,
+  toSliceName: string | null,
+): boolean {
+  if (fromStepName === toStepName) return true;
+
+  const resolved = resolveEditor(app, ctx, el, "moveStoryTaskCrossColumn");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const taskKey = taskName.toLowerCase().trim();
+  const fromStepKey = fromStepName.toLowerCase().trim();
+  const toStepKey = toStepName.toLowerCase().trim();
+
+  // Find the task declaration line in fromStep
+  const fromBlock = findStepBlock(editor, lineStart, lineEnd, fromStepName);
+  if (!fromBlock) {
+    console.warn(`Vizardry: moveStoryTaskCrossColumn — fromStep "${fromStepName}" not found`);
+    return false;
+  }
+
+  let taskLine = -1;
+  let taskRaw = "";
+  const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(taskName)}(\\s*(?:\\|.*)?$)`, "i");
+  for (let ln = fromBlock.stepLine + 1; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    if (raw.search(/\S/) <= fromBlock.stepIndent) break;
+    if (taskRe.test(raw)) {
+      taskLine = ln;
+      taskRaw = trimmed; // `task: Name | subtitle`
+      break;
+    }
+  }
+
+  if (taskLine === -1) {
+    console.warn(`Vizardry: moveStoryTaskCrossColumn — task "${taskName}" not found in step "${fromStepName}"`);
+    return false;
+  }
+
+  // Find the insertion point in toStep
+  const toBlock = findStepBlock(editor, lineStart, lineEnd, toStepName);
+  if (!toBlock) {
+    console.warn(`Vizardry: moveStoryTaskCrossColumn — toStep "${toStepName}" not found`);
+    return false;
+  }
+  const insertAfterLine = toBlock.lastTaskLine !== -1 ? toBlock.lastTaskLine : toBlock.stepLine;
+  const newTaskLine = `${toBlock.taskIndentStr}${taskRaw}`;
+
+  // Slice cell edits — collect before modifying line numbers
+  const slices = parseSlices(editor, lineStart, lineEnd);
+
+  type Edit = { line: number; newText: string };
+  const sliceEdits: Edit[] = [];
+
+  for (const slice of slices) {
+    const fromCell = slice.cells.find(c => c.stepKey === fromStepKey);
+    if (!fromCell || !fromCell.taskKeys.includes(taskKey)) continue;
+
+    // Remove from old step key in this slice
+    const newFromKeys = fromCell.taskKeys.filter(k => k !== taskKey);
+    const newFromLine = newFromKeys.length > 0
+      ? `${" ".repeat(fromCell.indent)}step: ${fromStepName} | ${newFromKeys.join(", ")}`
+      : `${" ".repeat(fromCell.indent)}step: ${fromStepName}`;
+    sliceEdits.push({ line: fromCell.line, newText: newFromLine });
+
+    // Add to new step key only in the target slice (if specified)
+    if (toSliceName !== null && slice.sliceName === toSliceName) {
+      const toCell = slice.cells.find(c => c.stepKey === toStepKey);
+      if (toCell) {
+        if (!toCell.taskKeys.includes(taskKey)) {
+          const newToKeys = [...toCell.taskKeys, taskKey];
+          const newToLine = `${" ".repeat(toCell.indent)}step: ${toStepName} | ${newToKeys.join(", ")}`;
+          const existing = sliceEdits.find(e => e.line === toCell.line);
+          if (existing) { existing.newText = newToLine; }
+          else { sliceEdits.push({ line: toCell.line, newText: newToLine }); }
+        }
+      } else {
+        // Insert new cell for toStep in this slice
+        const indentStr = slice.cells.length > 0
+          ? " ".repeat(slice.cells[0].indent)
+          : "  ";
+        const insertAfter = slice.cells.length > 0
+          ? slice.cells[slice.cells.length - 1].line
+          : slice.headerLine;
+        const afterText = editor.getLine(insertAfter);
+        sliceEdits.push({
+          line: insertAfter,
+          newText: afterText + `\n${indentStr}step: ${toStepName} | ${taskKey}`,
+        });
+      }
+    }
+  }
+
+  // If toSliceName is specified but the task wasn't in that slice yet under fromStepKey,
+  // we still need to add it to toSliceName under toStepKey.
+  if (toSliceName !== null) {
+    const targetSlice = slices.find(s => s.sliceName === toSliceName);
+    if (targetSlice) {
+      const toCell = targetSlice.cells.find(c => c.stepKey === toStepKey);
+      const alreadyAdded = sliceEdits.some(e => {
+        // Check if we already have an edit adding the task to toCell or inserting a new cell
+        if (toCell) return e.line === toCell.line && e.newText.toLowerCase().includes(taskKey);
+        return false;
+      });
+      if (!alreadyAdded) {
+        const fromCellInTarget = targetSlice.cells.find(c => c.stepKey === fromStepKey);
+        if (!fromCellInTarget || !fromCellInTarget.taskKeys.includes(taskKey)) {
+          // Task was not in this slice under fromStep, add it under toStep
+          if (toCell) {
+            if (!toCell.taskKeys.includes(taskKey)) {
+              const newToKeys = [...toCell.taskKeys, taskKey];
+              const newToLine = `${" ".repeat(toCell.indent)}step: ${toStepName} | ${newToKeys.join(", ")}`;
+              const existing = sliceEdits.find(e => e.line === toCell.line);
+              if (existing) { existing.newText = newToLine; }
+              else { sliceEdits.push({ line: toCell.line, newText: newToLine }); }
+            }
+          } else {
+            const indentStr = targetSlice.cells.length > 0
+              ? " ".repeat(targetSlice.cells[0].indent)
+              : "  ";
+            const insertAfter = targetSlice.cells.length > 0
+              ? targetSlice.cells[targetSlice.cells.length - 1].line
+              : targetSlice.headerLine;
+            const afterText = editor.getLine(insertAfter);
+            sliceEdits.push({
+              line: insertAfter,
+              newText: afterText + `\n${indentStr}step: ${toStepName} | ${taskKey}`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Apply all edits bottom-up.
+  // Slice edits are always below activity edits in the source.
+  // Within activity edits: apply the higher line first.
+  sliceEdits.sort((a, b) => b.line - a.line);
+  for (const edit of sliceEdits) {
+    const raw = editor.getLine(edit.line);
+    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+  }
+
+  // Now apply the task line move (in the activities section).
+  // Apply delete then insert or insert then delete, always higher line first.
+  if (taskLine > insertAfterLine) {
+    // Delete first (higher), then insert (lower)
+    editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
+    const afterText = editor.getLine(insertAfterLine);
+    editor.replaceRange(
+      `\n${newTaskLine}`,
+      { line: insertAfterLine, ch: afterText.length },
+    );
+  } else {
+    // Insert first (higher), then delete (lower)
+    const afterText = editor.getLine(insertAfterLine);
+    editor.replaceRange(
+      `\n${newTaskLine}`,
+      { line: insertAfterLine, ch: afterText.length },
+    );
+    // taskLine is now shifted by +1 due to the insertion
+    editor.replaceRange("", { line: taskLine + 1, ch: 0 }, { line: taskLine + 2, ch: 0 });
+  }
+
   return true;
 }
