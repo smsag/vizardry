@@ -6,6 +6,9 @@ import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { addStoryTask, moveStoryTaskSlice, reorderStoryTask } from "../shared/story-edit";
+
+const BACKLOG_SLICE = "__backlog__";
 
 export function renderStoryMap(
   map: StoryMap,
@@ -14,6 +17,7 @@ export function renderStoryMap(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && source !== undefined);
   const defaultTitle = "User Story Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = (app && ctx && source !== undefined)
@@ -62,18 +66,178 @@ export function renderStoryMap(
     }
   }
 
-  function renderTaskCard(cell: HTMLElement, task: StoryTask): void {
+  // ── Drag-to-move state ────────────────────────────────────────────────────
+  type DragState = {
+    card: HTMLElement;
+    taskName: string;
+    stepName: string;
+    fromSlice: string | null;  // null = backlog
+    fromIndex: number;
+    ghost: HTMLElement;
+    placeholder: HTMLElement;
+    toSlice: string | null;
+    toIndex: number;
+  };
+  let drag: DragState | null = null;
+
+  function endDrag(): void {
+    if (!drag) return;
+    const { card, taskName, stepName, fromSlice, fromIndex, ghost, placeholder, toSlice, toIndex } = drag;
+    drag = null;
+
+    ghost.remove();
+    placeholder.remove();
+    card.classList.remove("vzd-story-task-card--hidden");
+
+    document.removeEventListener("mousemove", onDocMouseMove);
+    document.removeEventListener("mouseup", onDocMouseUp);
+
+    if (!app || !ctx) return;
+
+    if (toSlice !== fromSlice) {
+      moveStoryTaskSlice(app, ctx, container, taskName, stepName, fromSlice, toSlice);
+    } else if (toIndex !== fromIndex) {
+      reorderStoryTask(app, ctx, container, stepName, fromSlice, fromIndex, toIndex);
+    }
+  }
+
+  function findDropTarget(clientX: number, clientY: number): { cell: HTMLElement; sliceName: string | null; index: number } | null {
+    // Find the topmost vzd-story-cell under the pointer
+    const els = document.elementsFromPoint(clientX, clientY);
+    const cell = els.find(e => e.classList.contains("vzd-story-cell")) as HTMLElement | undefined;
+    if (!cell) return null;
+
+    // Identify the slice band containing this cell
+    let band: HTMLElement | null = cell;
+    while (band && !band.classList.contains("vzd-story-slice-band")) {
+      band = band.parentElement;
+    }
+    const sliceName = band?.dataset.sliceName ?? null;
+
+    // Find where among the existing cards the pointer falls
+    const cards = Array.from(cell.querySelectorAll<HTMLElement>(
+      ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--placeholder):not(.vzd-story-task-card--hidden)"
+    ));
+    let index = cards.length;
+    for (let i = 0; i < cards.length; i++) {
+      const rect = cards[i].getBoundingClientRect();
+      if (clientY < rect.top + rect.height / 2) {
+        index = i;
+        break;
+      }
+    }
+
+    return { cell, sliceName, index };
+  }
+
+  function onDocMouseMove(e: MouseEvent): void {
+    if (!drag) return;
+    drag.ghost.style.left = `${e.clientX + 8}px`;
+    drag.ghost.style.top = `${e.clientY + 8}px`;
+
+    const target = findDropTarget(e.clientX, e.clientY);
+    if (!target) return;
+
+    // Only allow drops within the same step column
+    if (target.cell.dataset.stepCol !== String(allSteps.findIndex(s => s.name === drag!.stepName))) return;
+
+    drag.toSlice = target.sliceName;
+    drag.toIndex = target.index;
+
+    // Move placeholder into position
+    const cards = Array.from(target.cell.querySelectorAll<HTMLElement>(
+      ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--hidden)"
+    ));
+    if (target.index >= cards.length) {
+      target.cell.appendChild(drag.placeholder);
+    } else {
+      target.cell.insertBefore(drag.placeholder, cards[target.index]);
+    }
+  }
+
+  const onDocMouseUp = (): void => endDrag();
+
+  function startDrag(card: HTMLElement, e: MouseEvent | Touch): void {
+    if (!isEditMode || !app || !ctx) return;
+
+    const taskName = card.dataset.taskName ?? "";
+    const stepName = card.dataset.stepName ?? "";
+    const fromSlice = card.dataset.sliceName === BACKLOG_SLICE ? null : (card.dataset.sliceName ?? null);
+    const fromIndex = parseInt(card.dataset.taskIndex ?? "0", 10);
+
+    const rect = card.getBoundingClientRect();
+    const ghost = document.body.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--ghost" });
+    ghost.style.width = `${rect.width}px`;
+    ghost.innerHTML = card.innerHTML;
+    ghost.style.left = `${e.clientX + 8}px`;
+    ghost.style.top = `${e.clientY + 8}px`;
+
+    const placeholder = card.parentElement!.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--placeholder" });
+    placeholder.style.height = `${rect.height}px`;
+    card.parentElement!.insertBefore(placeholder, card);
+
+    card.classList.add("vzd-story-task-card--hidden");
+
+    drag = { card, taskName, stepName, fromSlice, fromIndex, ghost, placeholder, toSlice: fromSlice, toIndex: fromIndex };
+
+    document.addEventListener("mousemove", onDocMouseMove);
+    document.addEventListener("mouseup", onDocMouseUp);
+  }
+
+  function renderTaskCard(cell: HTMLElement, task: StoryTask, sliceName: string | null, index: number): void {
     const card = cell.createEl("div", { cls: "vzd-story-task-card" });
     card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
     if (task.subtitle) {
       card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
     }
+    if (isEditMode) {
+      card.dataset.taskName = task.name;
+      card.dataset.stepName = cell.dataset.stepName ?? "";
+      card.dataset.sliceName = sliceName ?? BACKLOG_SLICE;
+      card.dataset.taskIndex = String(index);
+      card.classList.add("vzd-story-task-card--draggable");
+      card.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startDrag(card, e);
+      });
+      card.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        startDrag(card, e.touches[0]);
+        const onTouchMove = (ev: TouchEvent): void => {
+          if (!drag) return;
+          ev.preventDefault();
+          drag.ghost.style.left = `${ev.touches[0].clientX + 8}px`;
+          drag.ghost.style.top = `${ev.touches[0].clientY + 8}px`;
+          const target = findDropTarget(ev.touches[0].clientX, ev.touches[0].clientY);
+          if (!target) return;
+          if (target.cell.dataset.stepCol !== (card.closest(".vzd-story-cell") as HTMLElement | null)?.dataset.stepCol) return;
+          drag.toSlice = target.sliceName;
+          drag.toIndex = target.index;
+          const cards = Array.from(target.cell.querySelectorAll<HTMLElement>(
+            ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--hidden)"
+          ));
+          if (target.index >= cards.length) {
+            target.cell.appendChild(drag.placeholder);
+          } else {
+            target.cell.insertBefore(drag.placeholder, cards[target.index]);
+          }
+        };
+        const onTouchEnd = (): void => {
+          endDrag();
+          document.removeEventListener("touchmove", onTouchMove);
+          document.removeEventListener("touchend", onTouchEnd);
+        };
+        document.addEventListener("touchmove", onTouchMove, { passive: false });
+        document.addEventListener("touchend", onTouchEnd);
+      }, { passive: false });
+    }
   }
 
-  function appendCards(cell: HTMLElement, step: StoryStep, taskKeys: string[]): void {
-    for (const taskKey of taskKeys) {
-      const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKey);
-      if (task) renderTaskCard(cell, task);
+  function appendCards(cell: HTMLElement, step: StoryStep, taskKeys: string[], sliceName: string | null): void {
+    for (let i = 0; i < taskKeys.length; i++) {
+      const task = step.tasks.find(t => t.name.toLowerCase().trim() === taskKeys[i]);
+      if (task) renderTaskCard(cell, task, sliceName, i);
     }
   }
 
@@ -81,6 +245,7 @@ export function renderStoryMap(
 
   for (const slice of map.slices) {
     const band = grid.createEl("div", { cls: "vzd-story-slice-band" });
+    band.dataset.sliceName = slice.name;
     band.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
     const cellsRow = band.createEl("div", { cls: "vzd-story-slice-cells" });
     cellsRow.style.setProperty("--vzd-story-cols", String(totalCols));
@@ -91,10 +256,11 @@ export function renderStoryMap(
       const taskKeys = slice.cells[stepKey] ?? [];
       const cell = cellsRow.createEl("div", { cls: "vzd-story-cell" });
       cell.dataset.stepCol = String(i);
+      cell.dataset.stepName = step.name;
       if (taskKeys.length === 0) {
         cell.addClass("vzd-story-cell-empty");
       } else {
-        appendCards(cell, step, taskKeys);
+        appendCards(cell, step, taskKeys, slice.name);
       }
       cellsByStep[i].push(cell);
     }
@@ -106,11 +272,12 @@ export function renderStoryMap(
     const unassigned = step.tasks.filter(
       t => !assignedKeys.has(`${stepKey}\0${t.name.toLowerCase().trim()}`)
     );
-    if (unassigned.length > 0) backlogByStep.set(stepKey, unassigned);
+    if (unassigned.length > 0 || isEditMode) backlogByStep.set(stepKey, unassigned);
   }
 
   if (backlogByStep.size > 0) {
     const backlogBand = grid.createEl("div", { cls: "vzd-story-slice-band vzd-story-backlog-band" });
+    backlogBand.dataset.sliceName = BACKLOG_SLICE;
     backlogBand.createEl("div", { cls: "vzd-story-slice-label vzd-story-backlog-label", text: t("story.backlog") });
     const backlogCellsRow = backlogBand.createEl("div", { cls: "vzd-story-slice-cells" });
     backlogCellsRow.style.setProperty("--vzd-story-cols", String(totalCols));
@@ -121,10 +288,20 @@ export function renderStoryMap(
       const tasks = backlogByStep.get(stepKey) ?? [];
       const cell = backlogCellsRow.createEl("div", { cls: "vzd-story-cell" });
       cell.dataset.stepCol = String(i);
-      if (tasks.length === 0) {
+      cell.dataset.stepName = step.name;
+      if (tasks.length === 0 && !isEditMode) {
         cell.addClass("vzd-story-cell-empty");
       } else {
-        for (const task of tasks) renderTaskCard(cell, task);
+        for (let j = 0; j < tasks.length; j++) renderTaskCard(cell, tasks[j], null, j);
+      }
+      if (isEditMode) {
+        const btn = cell.createEl("button", { cls: "vzd-story-add-task vzd-btn" });
+        setIcon(btn, "plus");
+        btn.setAttribute("aria-label", t("story.addTask"));
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          addStoryTask(app!, ctx!, container, step.name, t("story.newTask"));
+        });
       }
       cellsByStep[i].push(cell);
     }

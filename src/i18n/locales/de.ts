@@ -68,6 +68,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "story.label.user":    "Nutzer",
   "story.label.goal":    "Ziel",
   "story.backlog":       "Backlog",
+  "story.addTask":       "Aufgabe hinzufügen",
+  "story.newTask":       "Neue Aufgabe",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
   "sipoc.col.suppliers": "Lieferanten",
