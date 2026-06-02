@@ -36,6 +36,11 @@ export function parseFrameworkSource(source: string): ParseResult {
       return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
     }
 
+    if (trimmed.toLowerCase().startsWith("title:")) {
+      i++;
+      continue;
+    }
+
     if (trimmed.startsWith("block:")) {
       const label = trimmed.slice("block:".length).trim();
       if (!label) {

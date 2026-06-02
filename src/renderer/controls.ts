@@ -2,6 +2,7 @@ import { setIcon } from "obsidian";
 import { applyFullWidth } from "./full-width";
 import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
+import { TITLE_MAX_LENGTH } from "../shared/title-edit";
 
 let nextId = 0;
 
@@ -26,6 +27,7 @@ export function initCanvas(
   title: string,
   extraHeaderContent?: (header: HTMLElement) => void,
   source?: string,
+  onTitleEdit?: (newTitle: string) => void,
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", frameworkId);
@@ -35,15 +37,69 @@ export function initCanvas(
   requestAnimationFrame(() => applyFullWidth(container));
 
   const header = container.createEl("div", { cls: "vizardry-header" });
-  header.createEl("span", { text: title, cls: "vizardry-title" });
+
+  if (onTitleEdit) {
+    renderEditableTitle(header, title, onTitleEdit);
+  } else {
+    header.createEl("span", { text: title, cls: "vizardry-title" });
+  }
+
   extraHeaderContent?.(header);
-  //   // Pre-construct the fenced code block text for the copy button.
-  // Uses string concatenation to avoid backtick-in-template-literal issues.
   const fence = '```';
   const copyText = source !== undefined
     ? fence + frameworkId + '\n' + source + '\n' + fence
     : undefined;
   addHeaderControls(header, container, title, copyText);
+}
+
+function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (newTitle: string) => void): void {
+  const span = header.createEl("span", { text: title, cls: "vizardry-title vizardry-title--editable" });
+  span.setAttribute("title", t("title.clickToEdit"));
+
+  span.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (span.classList.contains("vizardry-title--editing")) return;
+
+    span.classList.add("vizardry-title--editing");
+    span.setAttribute("contenteditable", "true");
+    span.setAttribute("spellcheck", "false");
+    span.focus();
+
+    // Place cursor at end
+    const range = document.createRange();
+    range.selectNodeContents(span);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    const commit = (): void => {
+      if (!span.classList.contains("vizardry-title--editing")) return;
+      span.classList.remove("vizardry-title--editing");
+      span.removeAttribute("contenteditable");
+      span.removeAttribute("spellcheck");
+
+      const newTitle = (span.textContent ?? "").trim().slice(0, TITLE_MAX_LENGTH) || title;
+      span.textContent = newTitle;
+      onTitleEdit(newTitle);
+    };
+
+    const cancel = (): void => {
+      if (!span.classList.contains("vizardry-title--editing")) return;
+      span.classList.remove("vizardry-title--editing");
+      span.removeAttribute("contenteditable");
+      span.removeAttribute("spellcheck");
+      span.textContent = title;
+    };
+
+    const onKeyDown = (ev: KeyboardEvent): void => {
+      if (ev.key === "Enter") { ev.preventDefault(); commit(); }
+      if (ev.key === "Escape") { ev.preventDefault(); cancel(); }
+    };
+
+    span.addEventListener("keydown", onKeyDown);
+    span.addEventListener("blur", commit, { once: true });
+  });
 }
 
 export function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string, copyText?: string): void {

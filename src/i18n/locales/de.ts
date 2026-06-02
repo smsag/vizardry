@@ -48,6 +48,9 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "edit.clickToEdit": "Zum Bearbeiten klicken",
   "edit.writeFailed": "Bearbeitung konnte nicht gespeichert werden — öffne die Notiz im Bearbeitungsmodus",
 
+  // ── Title editing ────────────────────────────────────────────────────────────
+  "title.clickToEdit": "Zum Umbenennen klicken",
+
   // ── Impact Map level labels ─────────────────────────────────────────────────
   "impact.level.goal":        "Ziel",
   "impact.level.actor":       "Akteur",
