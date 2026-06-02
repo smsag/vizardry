@@ -536,6 +536,27 @@ describe("renderWardleyMap", () => {
     expect(addSpy).toHaveBeenCalledTimes(1);
     expect(addSpy.mock.calls[0][7]).toBe(false);
   });
+
+  it("renders an unlink button on links when app/ctx provided and calls removeWardleyLink on click", () => {
+    const removeSpy = vi.spyOn(wardleyEdit, "removeWardleyLink").mockReturnValue(true);
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const btn = el.querySelector(".vzd-wardley-unlink-btn") as SVGGElement | null;
+    expect(btn).toBeTruthy();
+
+    btn!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(removeSpy).toHaveBeenCalledTimes(1);
+    expect(removeSpy.mock.calls[0][3]).toBe("User");
+    expect(removeSpy.mock.calls[0][4]).toBe("Auth");
+  });
+
+  it("does not render unlink buttons when app/ctx are absent", () => {
+    const el = container();
+    renderWardleyMap(map, el);
+
+    expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
+  });
 });
 
 // ── renderSIPOC ───────────────────────────────────────────────────────────────

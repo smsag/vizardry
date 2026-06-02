@@ -5,7 +5,7 @@ import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX, WARDLEY_LABEL_MAX_NUDGE_PX } from "../shared/constants";
-import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent } from "../shared/wardley-edit";
+import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, removeWardleyLink } from "../shared/wardley-edit";
 
 // Canvas dimensions
 const W = 800;
@@ -248,11 +248,45 @@ export function renderWardleyMap(
     const dx = x2 - x1, dy = y2 - y1;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     const ex = (dx / dist) * (NODE_R + 2), ey = (dy / dist) * (NODE_R + 2);
-    svg.appendChild(createSvgEl("line", {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+
+    const linkG = createSvgEl("g", { class: "vzd-wardley-link-g" });
+    linkG.appendChild(createSvgEl("line", {
       x1: String(x1 + ex), y1: String(y1 + ey),
       x2: String(x2 - ex), y2: String(y2 - ey),
       class: "vzd-wardley-link", "marker-end": "url(#vzd-wardley-arrow)",
     }));
+
+    if (app && ctx) {
+      // Invisible wider hit area so the hover target is easy to acquire
+      linkG.appendChild(createSvgEl("line", {
+        x1: String(x1 + ex), y1: String(y1 + ey),
+        x2: String(x2 - ex), y2: String(y2 - ey),
+        class: "vzd-wardley-link-hit",
+      }));
+
+      const deleteBtn = createSvgEl("g", { class: "vzd-wardley-unlink-btn" });
+      deleteBtn.appendChild(createSvgEl("circle", {
+        cx: String(mx), cy: String(my), r: "8",
+        class: "vzd-wardley-unlink-circle",
+      }));
+      const xText = createSvgEl("text", {
+        x: String(mx), y: String(my),
+        class: "vzd-wardley-unlink-icon",
+        "text-anchor": "middle", "dominant-baseline": "central",
+      });
+      xText.textContent = "×";
+      deleteBtn.appendChild(xText);
+
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeWardleyLink(app, ctx, wrap, link.from, link.to);
+      });
+
+      linkG.appendChild(deleteBtn);
+    }
+
+    svg.appendChild(linkG);
   }
 
   // ── Nodes ──────────────────────────────────────────────────────────────
