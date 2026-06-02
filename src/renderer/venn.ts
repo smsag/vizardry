@@ -1,5 +1,7 @@
 import type { VennDiagram, VennItem } from "../types";
+import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { initCanvas, markInteractive } from "./controls";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
 
 // Obsidian exposes its App instance on window.app, but there is no official
@@ -85,8 +87,15 @@ export function renderVennDiagram(
   container: HTMLElement,
   openLink: (target: string) => void,
   source?: string,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
 ): void {
-  initCanvas(container, "venn", "Venn Diagram", undefined, source);
+  const defaultTitle = "Venn Diagram";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "venn", title, undefined, source, onTitleEdit);
 
   // Count Venn diagrams already rendered in the same workspace leaf to derive
   // the palette rotation. Scoped to the leaf so that diagrams in other open

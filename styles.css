@@ -131,6 +131,25 @@
   letter-spacing: 0.05em;
 }
 
+.vizardry-title--editable {
+  cursor: text;
+  border-radius: var(--radius-s);
+  padding: 0 4px;
+  transition: background 0.1s ease;
+}
+
+.vizardry-canvas:hover .vizardry-title--editable:not(.vizardry-title--editing):hover {
+  background: var(--background-modifier-hover);
+}
+
+.vizardry-title--editing {
+  outline: 1px solid var(--interactive-accent);
+  background: var(--background-primary);
+  cursor: text;
+  min-width: 4em;
+  white-space: nowrap;
+}
+
 /* ── Grid (desktop) ── */
 .vizardry-grid {
   display: grid;

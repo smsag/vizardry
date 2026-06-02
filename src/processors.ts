@@ -70,7 +70,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseImpactMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderImpactMap(result.data, el, resolver, navigateTo, source);
+      renderImpactMap(result.data, el, resolver, navigateTo, source, app, ctx);
     },
   },
   {
@@ -82,7 +82,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseStoryMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderStoryMap(result.data, el);
+      renderStoryMap(result.data, el, source, app, ctx);
     },
   },
   {
@@ -94,7 +94,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseMindMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderMindMap(result.data, el, resolver, navigateTo, source);
+      renderMindMap(result.data, el, resolver, navigateTo, source, app, ctx);
     },
   },
   {
@@ -107,7 +107,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       if (!result.ok) { renderError(result.error, el); return; }
       renderVennDiagram(result.data, el, (target) => {
         void app.workspace.openLinkText(target, ctx.sourcePath, false);
-      }, source);
+      }, source, app, ctx);
     },
   },
   {
@@ -119,7 +119,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseOST(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderOST(result.data, el, resolver, navigateTo, source);
+      renderOST(result.data, el, resolver, navigateTo, source, app, ctx);
     },
   },
   {
@@ -154,7 +154,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
         const body = src.replace(/^\s*type:\s*flow\s*\n?/i, "");
         const result = parseSIPOCFlow(body);
         if (!result.ok) { renderError(result.error, el); return; }
-        renderSIPOCFlow(result.data, el, source);
+        renderSIPOCFlow(result.data, el, source, app, ctx);
         return;
       }
       const result = parseSIPOC(src);

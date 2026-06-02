@@ -1,16 +1,29 @@
 import { setIcon } from "obsidian";
+import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 
-export function renderStoryMap(map: StoryMap, container: HTMLElement): void {
-  initCanvas(container, "story", "User Story Map", map.user || map.goal ? header => {
+export function renderStoryMap(
+  map: StoryMap,
+  container: HTMLElement,
+  source?: string,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+): void {
+  const defaultTitle = "User Story Map";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "story", title, map.user || map.goal ? header => {
     const meta = header.createEl("div", { cls: "vzd-story-meta" });
     if (map.user) meta.createEl("span", { cls: "vzd-story-meta-item", text: `${t("story.label.user")}: ${map.user}` });
     if (map.goal) meta.createEl("span", { cls: "vzd-story-meta-item", text: `${t("story.label.goal")}: ${map.goal}` });
-  } : undefined);
+  } : undefined, source, onTitleEdit);
 
   const allSteps = map.activities.flatMap(a => a.steps);
   const totalCols = allSteps.length;

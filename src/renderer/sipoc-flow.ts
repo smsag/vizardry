@@ -1,6 +1,8 @@
+import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowNode, SIPOCNodeShape } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
 import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
 
@@ -136,8 +138,19 @@ function drawArrow(svg: SVGElement, x1: number, y1: number, x2: number, y2: numb
 
 // ── Main renderer ──────────────────────────────────────────────────────────
 
-export function renderSIPOCFlow(data: SIPOCFlowData, container: HTMLElement, source?: string): void {
-  initCanvas(container, "sipoc", "SIPOC Flow Diagram", undefined, source);
+export function renderSIPOCFlow(
+  data: SIPOCFlowData,
+  container: HTMLElement,
+  source?: string,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+): void {
+  const defaultTitle = "SIPOC Flow Diagram";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-flow-wrap" });
 

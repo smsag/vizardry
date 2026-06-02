@@ -3,6 +3,7 @@ import type { SIPOCData, SIPOCRow } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { writeSIPOCCell } from "../shared/sipoc-edit";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 
 type ColKey = keyof SIPOCRow;
 
@@ -75,7 +76,12 @@ export function renderSIPOC(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  initCanvas(container, "sipoc", "SIPOC Diagram", undefined, source);
+  const defaultTitle = "SIPOC Diagram";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-sipoc-table" });

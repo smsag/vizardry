@@ -6,6 +6,7 @@ import { renderBlockBody, activateBlockEdit } from "./block-editor";
 import { setupMobileCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 
 export function renderError(message: string, container: HTMLElement): void {
   container.addClass("vizardry-error");
@@ -23,7 +24,12 @@ export function renderCanvas(
   ctx?: MarkdownPostProcessorContext,
   source?: string,
 ): void {
-  initCanvas(container, framework.id, framework.label, undefined, source);
+  const defaultTitle = framework.label;
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, framework.id, title, undefined, source, onTitleEdit);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);

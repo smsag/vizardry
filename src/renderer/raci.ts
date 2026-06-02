@@ -3,6 +3,7 @@ import type { RACIData } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { writeRACICell } from "../shared/raci-edit";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
 
@@ -75,7 +76,12 @@ export function renderRACIMatrix(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  initCanvas(container, "raci", "RACI Matrix", undefined, source);
+  const defaultTitle = "RACI Matrix";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "raci", title, undefined, source, onTitleEdit);
 
   const wrap = container.createEl("div", { cls: "vzd-raci-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-raci-table" });

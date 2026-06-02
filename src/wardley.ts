@@ -20,7 +20,7 @@ export function parseWardleyMap(source: string): WardleyResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
+    if (trimmed === "" || trimmed.startsWith("#") || trimmed.toLowerCase().startsWith("title:")) continue;
 
     if (trimmed.startsWith("anchor:")) {
       const name = trimmed.slice("anchor:".length).trim();

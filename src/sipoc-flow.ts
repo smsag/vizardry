@@ -28,7 +28,7 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
+    if (trimmed === "" || trimmed.startsWith("#") || trimmed.toLowerCase().startsWith("title:")) continue;
 
     const indent = raw.search(/\S/);
 

@@ -54,6 +54,9 @@ export const en = {
   "edit.clickToEdit":  "Click to edit",
   "edit.writeFailed":  "Edit could not be saved — open the note in editing mode",
 
+  // ── Title editing ────────────────────────────────────────────────────────────
+  "title.clickToEdit": "Click to rename",
+
   // ── Impact Map level labels ─────────────────────────────────────────────────
   "impact.level.goal":        "Goal",
   "impact.level.actor":       "Actor",
