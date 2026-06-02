@@ -1,6 +1,31 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 
+function resolveUniqueComponentName(
+  editor: { getLine: (line: number) => string },
+  lineStart: number,
+  lineEnd: number,
+  baseName: string,
+): string {
+  const existingNames = new Set<string>();
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln).trim();
+    const match = raw.match(/^component:\s*(.*?)\s*\[/i);
+    if (!match) continue;
+    const name = match[1].trim().toLowerCase();
+    if (name) existingNames.add(name);
+  }
+
+  const normalizedBase = baseName.trim() || "New Component";
+  if (!existingNames.has(normalizedBase.toLowerCase())) return normalizedBase;
+
+  let index = 2;
+  while (existingNames.has(`${normalizedBase} ${index}`.toLowerCase())) {
+    index++;
+  }
+  return `${normalizedBase} ${index}`;
+}
+
 /**
  * Writes updated [visibility, evolution] coordinates for a Wardley Map
  * component back into its source code block.
@@ -106,6 +131,7 @@ export function addWardleyComponent(
 
   const { lineStart, lineEnd } = info;
   const sourcePrefix = `component: ${sourceComponentName.toLowerCase()}`;
+  const resolvedName = resolveUniqueComponentName(editor, lineStart, lineEnd, newName);
   let sourceCompLine = -1;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
@@ -126,14 +152,14 @@ export function addWardleyComponent(
   // insert component after source line (lower line) — avoids line-shift issues.
   if (withLink) {
     editor.replaceRange(
-      `link: ${sourceComponentName} -> ${newName}\n`,
+      `link: ${sourceComponentName} -> ${resolvedName}\n`,
       { line: lineEnd, ch: 0 },
     );
   }
 
   const sourceLineText = editor.getLine(sourceCompLine);
   editor.replaceRange(
-    `\ncomponent: ${newName} ${coords}`,
+    `\ncomponent: ${resolvedName} ${coords}`,
     { line: sourceCompLine, ch: sourceLineText.length },
   );
 

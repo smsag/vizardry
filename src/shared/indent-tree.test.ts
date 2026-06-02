@@ -6,7 +6,7 @@ const make = (text: string): Node => ({ text, children: [] });
 
 describe("extractMeaningfulLines", () => {
   it("strips blank lines and comments", () => {
-    const result = extractMeaningfulLines("# comment\n\nroot\n  child");
+    const result = extractMeaningfulLines("// comment\n\nroot\n  child");
     expect(result).toEqual([
       { indent: 0, text: "root", lineNum: 3 },
       { indent: 2, text: "child", lineNum: 4 },

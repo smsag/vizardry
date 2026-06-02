@@ -213,6 +213,10 @@ export interface WardleyMap {
   anchor: string | null;
   components: WardleyComponent[];
   links: WardleyLink[];
+  /** Optional custom x-axis evolution stage labels from `stages:` directive. */
+  stages?: string[];
+  /** Optional normalized x-axis positions (0–1) aligned to `stages`. */
+  stagePositions?: number[];
   /** Names of components declared with explicit [vis, evo] coordinates.
    *  Anchor-only components (no component: line) are excluded — they have
    *  no source line to write back to, so they cannot be dragged. */

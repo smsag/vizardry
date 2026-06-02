@@ -56,8 +56,11 @@
    design tokens: --icon-color, --icon-opacity, --clickable-icon-radius,
    --background-modifier-hover. */
 .vzd-btn {
-  /* Full reset — prevents Obsidian themes from adding borders or outlines
-     to <button> elements that bleed through. */
+  /* Strip all native OS/browser button chrome — this is what actually
+     causes the visible border in Electron. all:unset alone is insufficient
+     because it resets appearance to 'auto', which re-applies native styling. */
+  -webkit-appearance: none;
+  appearance: none;
   all: unset;
   box-sizing: border-box;
   cursor: pointer;
@@ -813,6 +816,12 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 }
 
 /* + handle: revealed when hovering a draggable node */
+.vzd-wardley-add-handle-hit {
+  fill: var(--interactive-accent);
+  opacity: 0;
+  cursor: crosshair;
+}
+
 .vzd-wardley-add-handle {
   fill: var(--interactive-accent);
   cursor: crosshair;
@@ -849,17 +858,25 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   cursor: crosshair;
 }
 
-/* Inline rename input — positioned over the component label */
+/* Inline rename input — rendered inside SVG foreignObject at label position */
+.vzd-wardley-rename-host {
+  width: 100%;
+  height: 100%;
+}
+
 .vzd-wardley-rename-input {
+  width: 100%;
+  height: 100%;
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   color: var(--text-normal);
   background: var(--background-primary);
   border: 1.5px solid var(--interactive-accent);
   border-radius: var(--radius-s);
-  padding: 1px 4px;
+  padding: 1px 6px;
   outline: none;
   z-index: 10;
+  box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
@@ -1093,8 +1110,10 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 
 .vzd-wardley-stage-line {
   stroke: var(--background-modifier-border);
-  stroke-width: 1;
-  stroke-dasharray: 4 3;
+  stroke-width: 1.25;
+  stroke-dasharray: none;
+  shape-rendering: crispEdges;
+  opacity: 0.95;
 }
 
 .vzd-wardley-stage-label {

@@ -58,7 +58,7 @@ row:
   });
 
   it("ignores blank lines and comments", () => {
-    const src = `# comment\n\nrow:\n  supplier: A\n  # another comment\n  customer: Z`;
+    const src = `// comment\n\nrow:\n  supplier: A\n  // another comment\n  customer: Z`;
     const result = parseSIPOC(src);
     expect(result.ok).toBe(true);
   });
@@ -94,7 +94,7 @@ row:
   });
 
   it("returns error when no rows defined", () => {
-    const result = parseSIPOC("# just a comment");
+    const result = parseSIPOC("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No rows") });
   });
 });

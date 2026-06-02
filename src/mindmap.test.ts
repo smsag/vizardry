@@ -23,7 +23,7 @@ describe("parseMindMap", () => {
   });
 
   it("ignores comment lines", () => {
-    const src = "# comment\nroot: Topic\n  # nested comment\n  Branch";
+    const src = "// comment\nroot: Topic\n  // nested comment\n  Branch";
     const result = parseMindMap(src);
     expect(result.ok && result.data.root.children).toHaveLength(1);
   });

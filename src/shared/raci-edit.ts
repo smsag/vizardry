@@ -99,7 +99,7 @@ export function writeRACICell(
     let insertAfter = taskLineStart;
     for (let ln = taskLineStart + 1; ln <= taskLineEnd; ln++) {
       const t = editor.getLine(ln).trim();
-      if (t && !t.startsWith("#")) insertAfter = ln;
+      if (t && !t.startsWith("//")) insertAfter = ln;
     }
     const insertLineText = editor.getLine(insertAfter);
     editor.replaceRange(

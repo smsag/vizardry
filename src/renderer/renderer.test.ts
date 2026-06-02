@@ -37,6 +37,7 @@ import { renderSIPOCFlow } from "./sipoc-flow";
 import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { NULL_RESOLVER } from "../shared/links";
+import * as wardleyEdit from "../shared/wardley-edit";
 
 import type {
   FrameworkDefinition,
@@ -62,6 +63,7 @@ function container(): HTMLElement {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  vi.restoreAllMocks();
 });
 
 // ── renderError ───────────────────────────────────────────────────────────────
@@ -307,6 +309,56 @@ describe("renderWardleyMap", () => {
     expect(texts).toContain("Commodity");
   });
 
+  it("renders custom stage labels when provided", () => {
+    const el = container();
+    const customStagesMap: WardleyMap = {
+      ...map,
+      stages: ["Driver", "Approver", "Contributor", "Informed"],
+    };
+    renderWardleyMap(customStagesMap, el);
+    const svg = el.querySelector("svg");
+    const texts = Array.from(svg!.querySelectorAll("text")).map(t => t.textContent);
+    expect(texts).toContain("Driver");
+    expect(texts).toContain("Informed");
+    expect(texts).not.toContain("Genesis");
+  });
+
+  it("renders positioned stage labels at non-even x coordinates", () => {
+    const el = container();
+    const positionedStagesMap: WardleyMap = {
+      ...map,
+      stages: ["Driver", "Approver", "Contributor", "Informed"],
+      stagePositions: [0.05, 0.28, 0.62, 0.95],
+    };
+    renderWardleyMap(positionedStagesMap, el);
+    const svg = el.querySelector("svg")!;
+    const labels = Array.from(svg.querySelectorAll(".vzd-wardley-stage-label")) as SVGTextElement[];
+    const xs = labels.map((label) => parseFloat(label.getAttribute("x") ?? "0"));
+    expect(xs).toHaveLength(4);
+    expect(xs[0]).toBeLessThan(xs[1]);
+    expect(xs[1]).toBeLessThan(xs[2]);
+    expect(xs[2]).toBeLessThan(xs[3]);
+    const d1 = Math.round((xs[1] - xs[0]) * 100) / 100;
+    const d2 = Math.round((xs[2] - xs[1]) * 100) / 100;
+    const d3 = Math.round((xs[3] - xs[2]) * 100) / 100;
+    expect(new Set([d1, d2, d3]).size).toBeGreaterThan(1);
+  });
+
+  it("keeps positioned stage label coordinates finite for boundary-like inputs", () => {
+    const el = container();
+    const boundaryStagesMap: WardleyMap = {
+      ...map,
+      stages: ["Driver", "Approver", "Contributor", "Informed"],
+      stagePositions: [0, 0.3, 0.7, 1],
+    };
+    renderWardleyMap(boundaryStagesMap, el);
+    const svg = el.querySelector("svg")!;
+    const labels = Array.from(svg.querySelectorAll(".vzd-wardley-stage-label")) as SVGTextElement[];
+    const xs = labels.map((label) => Number(label.getAttribute("x")));
+    expect(xs).toHaveLength(4);
+    expect(xs.every((x) => Number.isFinite(x))).toBe(true);
+  });
+
   it("renders a node for each component", () => {
     const el = container();
     renderWardleyMap(map, el);
@@ -354,6 +406,135 @@ describe("renderWardleyMap", () => {
     // With WARDLEY_LABEL_MAX_NUDGE_PX cap, not all 10 can be unique when
     // clustered at the same point — but nudging should produce more than 1.
     expect(uniqueYs.size).toBeGreaterThan(1);
+  });
+
+  it("keeps each label attached to its own component after nudge sorting", () => {
+    const el = container();
+    const adjacent: WardleyMap = {
+      anchor: null,
+      explicitComponents: new Set(["A", "B", "C"]),
+      components: [
+        { name: "A", visibility: 0.60, evolution: 0.20 },
+        { name: "B", visibility: 0.59, evolution: 0.21 },
+        { name: "C", visibility: 0.58, evolution: 0.22 },
+      ],
+      links: [],
+    };
+    renderWardleyMap(adjacent, el);
+    const svg = el.querySelector("svg")!;
+    const labels = Array.from(svg.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
+    const circles = Array.from(svg.querySelectorAll(".vzd-wardley-node")) as SVGCircleElement[];
+
+    expect(labels).toHaveLength(3);
+    expect(circles).toHaveLength(3);
+
+    labels.forEach((label, idx) => {
+      const circle = circles[idx];
+      const expectedName = adjacent.components[idx].name;
+      expect(label.textContent).toBe(expectedName);
+      const labelX = parseFloat(label.getAttribute("x") ?? "0");
+      const circleX = parseFloat(circle.getAttribute("cx") ?? "0");
+      if ((label.getAttribute("text-anchor") ?? "start") === "end") {
+        expect(labelX).toBeLessThan(circleX);
+      } else {
+        expect(labelX).toBeGreaterThan(circleX);
+      }
+    });
+  });
+
+  it("opens inline rename editor anchored in SVG and cancels with Escape", () => {
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const labels = Array.from(el.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
+    const authLabel = labels.find((label) => label.textContent === "Auth");
+    expect(authLabel).toBeTruthy();
+
+    authLabel!.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+    const foreignObject = el.querySelector(".vzd-wardley-rename-fo") as SVGForeignObjectElement | null;
+    const input = el.querySelector(".vzd-wardley-rename-input") as HTMLInputElement | null;
+    expect(foreignObject).toBeTruthy();
+    expect(input).toBeTruthy();
+    expect(input!.value).toBe("Auth");
+
+    input!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(el.querySelector(".vzd-wardley-rename-input")).toBeNull();
+    expect(el.querySelector(".vzd-wardley-rename-fo")).toBeNull();
+  });
+
+  it("does not start dragging while label rename editor is active", () => {
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const labels = Array.from(el.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
+    const authLabel = labels.find((label) => label.textContent === "Auth");
+    expect(authLabel).toBeTruthy();
+    authLabel!.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+    const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
+    expect(draggable).toBeTruthy();
+    draggable!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 100, clientY: 100 }));
+
+    expect(draggable!.classList.contains("vzd-wardley-node--dragging")).toBe(false);
+  });
+
+  it("keeps add handle visible when moving mouse from node to handle", () => {
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
+    const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
+    expect(draggable).toBeTruthy();
+    expect(handle).toBeTruthy();
+
+    draggable!.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    expect(handle!.style.display).toBe("");
+
+    draggable!.dispatchEvent(new MouseEvent("mouseleave", {
+      bubbles: true,
+      relatedTarget: handle!,
+    }));
+
+    expect(handle!.style.display).toBe("");
+  });
+
+  it("adds new component without link by default on mouse release", () => {
+    const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
+    const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
+    expect(draggable).toBeTruthy();
+    expect(handle).toBeTruthy();
+
+    draggable!.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    handle!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 120, clientY: 120 }));
+    document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 260, clientY: 260 }));
+    document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 260, clientY: 260 }));
+
+    expect(addSpy).toHaveBeenCalledTimes(1);
+    expect(addSpy.mock.calls[0][7]).toBe(false);
+  });
+
+  it("adds linked component when Shift is held on mouse release", () => {
+    const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
+    const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
+    expect(draggable).toBeTruthy();
+    expect(handle).toBeTruthy();
+
+    draggable!.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    handle!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 120, clientY: 120 }));
+    document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 260, clientY: 260 }));
+    document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 260, clientY: 260, shiftKey: true }));
+
+    expect(addSpy).toHaveBeenCalledTimes(1);
+    expect(addSpy.mock.calls[0][7]).toBe(true);
   });
 });
 
