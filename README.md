@@ -2,7 +2,7 @@
 
 An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in your notes — using fenced code blocks as input. Supports grid-based canvases, trees, diagrams, and flow charts.
 
-Canvases are **editable in Live Preview**: click any grid block to edit its content, or — for Wardley Maps — drag components to reposition them, draw new components from existing ones, and double-click to rename. No need to touch the source block directly.
+Canvases are **editable in Live Preview**: click any grid block to edit its content; for Wardley Maps drag components to reposition them, draw new components, and double-click to rename; for User Story Maps add task cards, drag them between slice bands and across step columns, and double-click any element to rename it. No need to touch the source block directly.
 
 ---
 
@@ -705,6 +705,20 @@ slice: V1.1
 - `slice: <name>` — priority band; `step: <name> | task A, task B` assigns tasks
 - Unassigned tasks collected into a **Backlog** band at the bottom
 
+**Visual editing in Live Preview:**
+
+| Action | Gesture |
+|---|---|
+| **Add a task** | In edit mode, `+` button appears on hover in each step's Backlog cell |
+| **Reorder within a slice** | Drag a task card up or down within the same slice band |
+| **Move to another slice** | Drag a task card to a different slice band in the same column |
+| **Move to another column** | Drag a task card to any cell in a different step column — task declaration and slice references update automatically |
+| **Rename user / goal** | Click the badge in the canvas header |
+| **Rename activity** | Double-click an activity header |
+| **Rename step** | Double-click a step header — all slice cell references cascade |
+| **Rename task** | Double-click a task card name — all slice key references cascade |
+| **Cancel a drag** | Release outside the story map grid — card snaps back, no change |
+
 ---
 
 ### Value Proposition Canvas
@@ -834,9 +848,9 @@ All changes write back to the source block surgically — only the affected line
 
 Any canvas element can navigate to a heading in the same note. A small link icon signals the connection — clicking the block or node jumps to that heading.
 
-**Two ways to connect:**
+**Three ways to connect:**
 
-*Inline annotation* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, and Mind Map:
+*Inline wiki-link* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, and Mind Map:
 
 ~~~
 ```lean
@@ -846,20 +860,18 @@ block: Problem [[#Problem Discovery]]
 block: Solution [[#Our Approach]]
   One-click automation for recurring tasks
 ```
+~~~
 
-```ost
-outcome: Reduce churn [[#Retention Goals]]
-  Improve onboarding
-    Run onboarding experiment
-```
+*Inline Markdown link* — use standard Markdown anchor syntax `[label](#Anchor%20Text)` on the same line. The anchor is URL-decoded to match the heading:
 
-```impact
-actor: Paid Users [[#User Research]]
-  impact: Upgrade plan
+~~~
+```kata
+block: Next Experiment [Next Experiment](#Next%20Experiment)
+  Ship a 5-step guided wizard
 ```
 ~~~
 
-*Auto-detection* — write a note heading that matches an element label exactly (case-insensitive) and the link appears with no extra syntax at all:
+*Auto-detection* — write a note heading that matches an element label exactly (case-insensitive) and the link appears with no extra syntax at all. The link icon updates live whenever headings change — no need to edit the code block:
 
 ~~~
 ```lean
@@ -882,9 +894,10 @@ Details of the approach...
 The `Problem` and `Solution` blocks automatically get link icons because matching headings exist in the note.
 
 **Rules:**
-- Inline `[[#Heading]]` takes priority over auto-detection
+- Inline annotations (`[[#Heading]]` or `[text](#Anchor)`) take priority over auto-detection
 - Heading text is matched case-insensitively
-- `[[#Heading]]` is stripped from display — only the element name is shown
+- Annotations are stripped from display — only the element name is shown
+- Auto-detected links update immediately when headings are added or renamed (no re-render of the code block needed)
 
 ---
 
@@ -928,7 +941,8 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 |---|---|
 | `block: Label` | Start a block; label must match a framework block name |
 | Indented lines below | Block content (multi-line, no special syntax needed) |
-| `block: Label [[#Heading]]` | Link block to a heading in this note (inline annotation) |
+| `block: Label [[#Heading]]` | Link block to a heading in this note (wiki-link annotation) |
+| `block: Label [text](#Anchor%20Text)` | Link block to a heading via Markdown anchor (URL-decoded) |
 | `// comment` | Ignored |
 
 ### Image Carousel (carousel)
