@@ -499,7 +499,7 @@ describe("renderWardleyMap", () => {
     expect(handle!.style.display).toBe("");
   });
 
-  it("adds new component without link by default on mouse release", () => {
+  it("adds new component with link by default on mouse release", () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
     renderWardleyMap(map, el, {} as any, {} as any);
@@ -515,10 +515,10 @@ describe("renderWardleyMap", () => {
     document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 260, clientY: 260 }));
 
     expect(addSpy).toHaveBeenCalledTimes(1);
-    expect(addSpy.mock.calls[0][7]).toBe(false);
+    expect(addSpy.mock.calls[0][7]).toBe(true);
   });
 
-  it("adds linked component when Shift is held on mouse release", () => {
+  it("adds component without link when Shift is held on mouse release", () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
     renderWardleyMap(map, el, {} as any, {} as any);
@@ -534,7 +534,28 @@ describe("renderWardleyMap", () => {
     document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 260, clientY: 260, shiftKey: true }));
 
     expect(addSpy).toHaveBeenCalledTimes(1);
-    expect(addSpy.mock.calls[0][7]).toBe(true);
+    expect(addSpy.mock.calls[0][7]).toBe(false);
+  });
+
+  it("renders an unlink button on links when app/ctx provided and calls removeWardleyLink on click", () => {
+    const removeSpy = vi.spyOn(wardleyEdit, "removeWardleyLink").mockReturnValue(true);
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const btn = el.querySelector(".vzd-wardley-unlink-btn") as SVGGElement | null;
+    expect(btn).toBeTruthy();
+
+    btn!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(removeSpy).toHaveBeenCalledTimes(1);
+    expect(removeSpy.mock.calls[0][3]).toBe("User");
+    expect(removeSpy.mock.calls[0][4]).toBe("Auth");
+  });
+
+  it("does not render unlink buttons when app/ctx are absent", () => {
+    const el = container();
+    renderWardleyMap(map, el);
+
+    expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
   });
 });
 

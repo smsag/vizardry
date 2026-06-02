@@ -1153,6 +1153,45 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   fill: none;
 }
 
+.vzd-wardley-link-hit {
+  stroke: transparent;
+  stroke-width: 14;
+  fill: none;
+}
+
+.vzd-wardley-unlink-btn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.vzd-wardley-link-g:hover .vzd-wardley-unlink-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vzd-wardley-unlink-circle {
+  fill: var(--background-primary);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.vzd-wardley-unlink-btn:hover .vzd-wardley-unlink-circle {
+  fill: var(--background-modifier-error);
+  stroke: var(--background-modifier-error);
+}
+
+.vzd-wardley-unlink-icon {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-interface);
+  pointer-events: none;
+}
+
+.vzd-wardley-unlink-btn:hover .vzd-wardley-unlink-icon {
+  fill: var(--text-on-accent);
+}
+
 .vzd-wardley-arrowhead {
   fill: var(--text-muted);
 }

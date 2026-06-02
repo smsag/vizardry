@@ -241,3 +241,52 @@ export function renameWardleyComponent(
   }
   return found;
 }
+
+/**
+ * Removes a `link: from -> to` line from the source block.
+ * Matches case-insensitively to be consistent with how links are stored.
+ * Returns false if the editor is unavailable or the link line cannot be found.
+ */
+export function removeWardleyLink(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  fromName: string,
+  toName: string,
+): boolean {
+  const info = ctx.getSectionInfo(el);
+  if (!info) {
+    console.warn("Vizardry: removeWardleyLink — no section info");
+    return false;
+  }
+
+  const file = app.vault.getFileByPath(ctx.sourcePath);
+  if (!file) {
+    console.warn(`Vizardry: removeWardleyLink — file not found: ${ctx.sourcePath}`);
+    return false;
+  }
+
+  const leaf = app.workspace.getLeavesOfType("markdown").find(
+    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
+  );
+  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
+  if (!editor) {
+    console.warn("Vizardry: removeWardleyLink — no live editor");
+    return false;
+  }
+
+  const { lineStart, lineEnd } = info;
+  const from = escRe(fromName);
+  const to = escRe(toName);
+  const reLink = new RegExp(`^\\s*link:\\s*${from}\\s*->\\s*${to}\\s*(?://.*)?$`, "i");
+
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    if (reLink.test(editor.getLine(ln))) {
+      editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+      return true;
+    }
+  }
+
+  console.warn(`Vizardry: removeWardleyLink — link "${fromName} -> ${toName}" not found`);
+  return false;
+}
