@@ -497,6 +497,51 @@
   line-height: 1.3;
 }
 
+/* Edit-mode drag states */
+.vzd-story-task-card--draggable {
+  cursor: grab;
+}
+
+.vzd-story-task-card--draggable:active {
+  cursor: grabbing;
+}
+
+.vzd-story-task-card--ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.75;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.vzd-story-task-card--placeholder {
+  border: 2px dashed var(--color-accent);
+  background: transparent;
+  opacity: 0.5;
+  min-height: 2rem;
+}
+
+.vzd-story-task-card--hidden {
+  visibility: hidden;
+}
+
+/* Add task button */
+.vzd-story-add-task {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.2rem;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.vzd-story-cell:hover .vzd-story-add-task {
+  opacity: 1;
+}
+
 /* Presentation mode */
 .vzd-presentation-wrap .vzd-story-grid {
   width: 100%;

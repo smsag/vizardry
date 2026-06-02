@@ -75,6 +75,8 @@ export const en = {
   "story.label.user":    "User",
   "story.label.goal":    "Goal",
   "story.backlog":       "Backlog",
+  "story.addTask":       "Add task",
+  "story.newTask":       "New Task",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
   "sipoc.col.suppliers": "Suppliers",
