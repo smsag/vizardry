@@ -211,7 +211,7 @@ export function renderStoryMap(
           drag.ghost.style.top = `${ev.touches[0].clientY + 8}px`;
           const target = findDropTarget(ev.touches[0].clientX, ev.touches[0].clientY);
           if (!target) return;
-          if (target.cell.dataset.stepCol !== card.closest(".vzd-story-cell")?.dataset.stepCol) return;
+          if (target.cell.dataset.stepCol !== (card.closest(".vzd-story-cell") as HTMLElement | null)?.dataset.stepCol) return;
           drag.toSlice = target.sliceName;
           drag.toIndex = target.index;
           const cards = Array.from(target.cell.querySelectorAll<HTMLElement>(
