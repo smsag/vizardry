@@ -717,6 +717,14 @@
    are wrapped automatically; isolated single images are unchanged.
    ══════════════════════════════════════════════════════════════════ */
 
+/* Obsidian adds a border/outline to .block-language-* containers on hover.
+   Cancel it for the carousel — the image itself is the visual boundary. */
+.block-language-carousel:hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .vzd-carousel {
   margin: 1rem 0;
   outline: none;
@@ -785,11 +793,16 @@
   align-items: center;
   gap: 0.1rem;
   flex-shrink: 0;
+  /* Push left to clear Obsidian's absolutely-positioned </> edit-source button */
+  margin-right: 1.75rem;
 }
 
 .vzd-carousel-btn {
-  background: none;
-  border: none;
+  /* Strip all native OS/Electron button chrome (same treatment as .vzd-btn) */
+  -webkit-appearance: none;
+  appearance: none;
+  all: unset;
+  box-sizing: border-box;
   color: var(--text-muted);
   font-size: 1.25rem;
   line-height: 1;
