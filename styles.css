@@ -771,11 +771,11 @@
   object-fit: contain;
 }
 
-/* Header row: description (left) + nav arrows (right) */
+/* Header row: title (left) + nav arrows (left, after title) */
 .vzd-carousel-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.5rem;
   margin-bottom: 0.25rem;
 }
@@ -793,15 +793,15 @@
   align-items: center;
   gap: 0.1rem;
   flex-shrink: 0;
-  /* Push left to clear Obsidian's absolutely-positioned </> edit-source button */
-  margin-right: 1.75rem;
 }
 
 .vzd-carousel-btn {
-  /* Strip all native OS/Electron button chrome (same treatment as .vzd-btn) */
+  /* all: unset must come first; appearance: none must come after so it isn't
+     itself reset — all: unset resets appearance back to 'auto', which is what
+     was causing the native OS/Electron button border to survive. */
+  all: unset;
   -webkit-appearance: none;
   appearance: none;
-  all: unset;
   box-sizing: border-box;
   color: var(--text-muted);
   font-size: 1.25rem;
