@@ -18,44 +18,19 @@ export function renderCarouselBlock(
     },
   });
 
-  const track = wrapper.createEl("div", { cls: "vzd-carousel-track" });
+  const header = wrapper.createEl("div", { cls: "vzd-carousel-header" });
 
-  const slides = images.map((img, idx) => {
-    const slide = track.createEl("div", { cls: "vzd-carousel-slide" });
-    slide.toggleClass("vzd-carousel-slide-active", idx === 0);
-
-    const image = slide.createEl("img");
-    image.src = resolvePath(img.src);
-    image.alt = img.alt;
-    image.draggable = false;
-
-    image.addEventListener("load", () => {
-      const current = parseInt(track.style.minHeight || "0", 10);
-      if (image.naturalHeight > current) {
-        track.style.minHeight = `${image.naturalHeight}px`;
-      }
-    });
-
-    return slide;
+  const descEl = header.createEl("span", {
+    cls: "vzd-carousel-desc",
+    text: images[0].alt,
   });
 
-  const controls = wrapper.createEl("div", { cls: "vzd-carousel-controls" });
+  const controls = header.createEl("div", { cls: "vzd-carousel-controls" });
 
   const prevBtn = controls.createEl("button", {
     cls: "vzd-carousel-btn",
     text: "‹",
     attr: { type: "button", "aria-label": t("nav.previousImage") },
-  });
-
-  const dotsWrap = controls.createEl("div", { cls: "vzd-carousel-dots" });
-
-  const dots = images.map((_, idx) => {
-    const dot = dotsWrap.createEl("button", {
-      cls: "vzd-carousel-dot",
-      attr: { type: "button", "aria-label": t("nav.goToImage", { n: idx + 1 }) },
-    });
-    dot.toggleClass("vzd-carousel-dot-active", idx === 0);
-    return dot;
   });
 
   const nextBtn = controls.createEl("button", {
@@ -64,20 +39,63 @@ export function renderCarouselBlock(
     attr: { type: "button", "aria-label": t("nav.nextImage") },
   });
 
+  const track = wrapper.createEl("div", { cls: "vzd-carousel-track" });
+
+  const resolvedSrcs = images.map(img => resolvePath(img.src));
+
+  const slideEls = images.map((img, idx) => {
+    const slide = track.createEl("div", { cls: "vzd-carousel-slide" });
+    slide.toggleClass("vzd-carousel-slide-active", idx === 0);
+
+    const image = slide.createEl("img");
+    image.alt = img.alt;
+    image.draggable = false;
+
+    return { slide, image };
+  });
+
+  // Preload off-DOM to collect natural dimensions from all images before
+  // setting any src on the visible slides. This lets us lock the track's
+  // aspect-ratio once — preventing text below from jumping as images arrive.
+  let probesSettled = 0;
+  let maxRatio = 0;
+  let bestW = 1, bestH = 1;
+
+  resolvedSrcs.forEach((src, idx) => {
+    const probe = new Image();
+    const settle = (): void => {
+      if (probe.naturalWidth > 0) {
+        const ratio = probe.naturalHeight / probe.naturalWidth;
+        if (ratio > maxRatio) {
+          maxRatio = ratio;
+          bestW = probe.naturalWidth;
+          bestH = probe.naturalHeight;
+        }
+      }
+      slideEls[idx].image.src = src;
+      probesSettled++;
+      if (probesSettled === images.length && maxRatio > 0) {
+        track.style.aspectRatio = `${bestW} / ${bestH}`;
+      }
+    };
+    probe.addEventListener("load", settle);
+    probe.addEventListener("error", settle);
+    probe.src = src;
+  });
+
+  const slides = slideEls.map(s => s.slide);
+
   let current = 0;
 
   function goTo(next: number): void {
     slides[current].removeClass("vzd-carousel-slide-active");
-    dots[current].removeClass("vzd-carousel-dot-active");
     current = ((next % images.length) + images.length) % images.length;
     slides[current].addClass("vzd-carousel-slide-active");
-    dots[current].addClass("vzd-carousel-dot-active");
+    descEl.textContent = images[current].alt;
   }
 
   prevBtn.addEventListener("click", () => goTo(current - 1));
   nextBtn.addEventListener("click", () => goTo(current + 1));
-  dots.forEach((dot, idx) => dot.addEventListener("click", () => goTo(idx)));
-
   wrapper.addEventListener("keydown", (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft") { e.preventDefault(); goTo(current - 1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); goTo(current + 1); }

@@ -753,16 +753,27 @@ describe("renderCarouselBlock", () => {
 
   it("resolves image src via the provided callback", () => {
     const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const imgs = el.querySelectorAll<HTMLImageElement>("img");
-    expect(imgs[0].src).toContain("/vault/a.png");
+    const spy = vi.fn((src: string) => `/vault/${src}`);
+    renderCarouselBlock(data, el, spy);
+    expect(spy).toHaveBeenCalledWith("a.png");
+    expect(spy).toHaveBeenCalledWith("b.png");
+    expect(spy).toHaveBeenCalledWith("c.png");
   });
 
-  it("renders one dot per image", () => {
+  it("renders description from first image alt", () => {
     const el = container();
     renderCarouselBlock(data, el, resolvePath);
-    const dots = el.querySelectorAll(".vzd-carousel-dot");
-    expect(dots).toHaveLength(3);
+    const desc = el.querySelector(".vzd-carousel-desc");
+    expect(desc?.textContent).toBe("Slide 1");
+  });
+
+  it("updates description to current slide alt on navigation", () => {
+    const el = container();
+    renderCarouselBlock(data, el, resolvePath);
+    const nextBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn:last-of-type");
+    nextBtn?.click();
+    const desc = el.querySelector(".vzd-carousel-desc");
+    expect(desc?.textContent).toBe("Slide 2");
   });
 
   it("advances to next slide on next button click", () => {
@@ -780,15 +791,6 @@ describe("renderCarouselBlock", () => {
     renderCarouselBlock(data, el, resolvePath);
     const prevBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn");
     prevBtn?.click();
-    const slides = el.querySelectorAll(".vzd-carousel-slide");
-    expect(slides[2].classList.contains("vzd-carousel-slide-active")).toBe(true);
-  });
-
-  it("navigates directly via dot click", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const dots = el.querySelectorAll<HTMLButtonElement>(".vzd-carousel-dot");
-    dots[2].click();
     const slides = el.querySelectorAll(".vzd-carousel-slide");
     expect(slides[2].classList.contains("vzd-carousel-slide-active")).toBe(true);
   });

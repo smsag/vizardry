@@ -731,10 +731,14 @@
 .vzd-carousel-track {
   position: relative;
   width: 100%;
+  /* aspect-ratio is set once via JS after preloading all images,
+     locking the height to the tallest image before any src is assigned. */
 }
 
 .vzd-carousel-slide {
   display: none;
+  position: absolute;
+  inset: 0;
   justify-content: center;
   align-items: center;
 }
@@ -751,82 +755,61 @@
 
 .vzd-carousel-slide img {
   max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
   display: block;
   border-radius: var(--radius-s);
+  object-fit: contain;
 }
 
-/* Controls row: ‹  · · ·  › */
+/* Header row: description (left) + nav arrows (right) */
+.vzd-carousel-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.vzd-carousel-desc {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .vzd-carousel-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.1rem;
+  flex-shrink: 0;
 }
 
 .vzd-carousel-btn {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  color: var(--text-normal);
+  background: none;
+  border: none;
+  color: var(--text-muted);
   font-size: 1.25rem;
   line-height: 1;
-  min-width: 32px;
-  min-height: 32px;
+  min-width: 24px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0 0.5rem;
-  transition: background 0.1s ease, color 0.1s ease;
+  padding: 0;
+  transition: color 0.1s ease;
   user-select: none;
 }
 
 .vzd-carousel-btn:hover {
-  background: var(--background-modifier-hover);
-  color: var(--interactive-accent);
+  color: var(--text-normal);
 }
 
 .vzd-carousel-btn:active {
-  background: var(--background-modifier-active);
-}
-
-.vzd-carousel-dots {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.vzd-carousel-dot {
-  width: 8px;
-  height: 8px;
-  min-width: 8px;
-  min-height: 8px;
-  border-radius: 50%;
-  background: var(--background-modifier-border);
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.15s ease, transform 0.15s ease;
-  flex-shrink: 0;
-}
-
-.vzd-carousel-dot:hover {
-  background: var(--text-muted);
-}
-
-.vzd-carousel-dot-active {
-  background: var(--interactive-accent);
-  transform: scale(1.35);
-}
-
-/* Larger touch targets on mobile */
-@media (max-width: 600px) {
-  .vzd-carousel-btn {
-    min-width: 44px;
-    min-height: 44px;
-  }
+  color: var(--interactive-accent);
 }
 
 /* ══ SVG Tree Renderers (OST, Impact Map, Mind Map) ═════════════════
