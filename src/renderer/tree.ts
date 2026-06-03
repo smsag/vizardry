@@ -4,6 +4,7 @@ import type {
   MindMapNode,
   OSTNode,
   OSTTree,
+  TreeEditHandlers,
   TreeNode,
   TreeNodeStyle,
   TreeRenderOptions,
@@ -102,7 +103,18 @@ function renderTreeEdges(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
   }
 }
 
-function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOptions, resolver?: LinkResolver, navigateTo?: (h: string) => void): void {
+type RenameState = { fo: SVGForeignObjectElement | null };
+
+function renderTreeNodes(
+  node: TreeNode,
+  svg: SVGSVGElement,
+  opts: TreeRenderOptions,
+  resolver: LinkResolver | undefined,
+  navigateTo: ((h: string) => void) | undefined,
+  editHandlers: TreeEditHandlers | undefined,
+  renameState: RenameState,
+  closeRename: () => void,
+): void {
   const group = createSvgEl("g", { transform: `translate(${node.x}, ${node.y})` }) as SVGGElement;
   const style = getTreeStyle(node.level, opts);
   renderTreeNodeRect(group, node, opts);
@@ -167,9 +179,113 @@ function renderTreeNodes(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOpt
     group.appendChild(iconG);
   }
 
+  // ── Edit interactions ────────────────────────────────────────────────────────
+  if (editHandlers) {
+    group.classList.add("vzd-tree-node--editable");
+
+    // "+" button: appears below the node on hover — adds a child
+    const addBtn = createSvgEl("g", {
+      class: "vzd-tree-edit-add",
+      transform: `translate(${opts.nodeW / 2}, ${opts.nodeH + 10})`,
+      "aria-label": t("tree.addChild"),
+    }) as SVGGElement;
+    addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-tree-edit-add-circle" }));
+    const plusText = createSvgEl("text", {
+      x: "0", y: "0",
+      "dominant-baseline": "middle",
+      "text-anchor": "middle",
+      class: "vzd-tree-edit-add-plus",
+    });
+    plusText.textContent = "+";
+    addBtn.appendChild(plusText);
+    group.appendChild(addBtn);
+
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeRename();
+      editHandlers.onAddChild(node);
+    });
+
+    // "×" button: top-right corner, only on leaf nodes — deletes the node
+    if (node.children.length === 0) {
+      const delBtn = createSvgEl("g", {
+        class: "vzd-tree-edit-del",
+        transform: `translate(${opts.nodeW - 5}, 5)`,
+        "aria-label": t("tree.deleteNode"),
+      }) as SVGGElement;
+      delBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
+      const delText = createSvgEl("text", {
+        x: "0", y: "0",
+        "dominant-baseline": "middle",
+        "text-anchor": "middle",
+        class: "vzd-tree-edit-del-x",
+      });
+      delText.textContent = "×";
+      delBtn.appendChild(delText);
+      group.appendChild(delBtn);
+
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeRename();
+        editHandlers.onDelete(node);
+      });
+    }
+
+    // Double-click to rename: show inline foreignObject input over the node
+    group.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      closeRename();
+
+      const fo = createSvgEl("foreignObject", {
+        x: String(node.x),
+        y: String(node.y),
+        width: String(opts.nodeW),
+        height: String(opts.nodeH),
+        class: "vzd-tree-rename-fo",
+      }) as SVGForeignObjectElement;
+
+      const host = document.createElement("div");
+      host.className = "vzd-tree-rename-host";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = node.text;
+      input.className = "vzd-tree-rename-input";
+      host.appendChild(input);
+      fo.appendChild(host);
+      svg.appendChild(fo);
+      renameState.fo = fo;
+
+      input.focus();
+      input.select();
+
+      let committed = false;
+      const commit = (): void => {
+        if (committed) return;
+        committed = true;
+        closeRename();
+        const newText = input.value.trim();
+        if (newText && newText !== node.text) editHandlers.onRename(node, newText);
+      };
+      const cancel = (): void => {
+        if (committed) return;
+        committed = true;
+        closeRename();
+      };
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter")  { ev.preventDefault(); commit(); }
+        if (ev.key === "Escape") { ev.preventDefault(); cancel(); }
+        ev.stopPropagation();
+      });
+    });
+  }
+
   svg.appendChild(group);
 
-  for (const child of node.children) renderTreeNodes(child, svg, opts, resolver, navigateTo);
+  for (const child of node.children) {
+    renderTreeNodes(child, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename);
+  }
 }
 
 // INVARIANT: renderTree mutates TreeNode.x/y/width/height in place during layout.
@@ -182,11 +298,13 @@ export function renderTree(
   el: HTMLElement,
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
+  editHandlers?: TreeEditHandlers,
 ): void {
   layoutTreeNode(tree.root, opts);
   const bounds = collectTreeBounds(tree.root);
   const svgW = bounds.maxX + opts.hPadding;
-  const svgH = bounds.maxY + opts.vPadding;
+  // Extra bottom padding when editable so "+" buttons below leaf nodes are not clipped
+  const svgH = bounds.maxY + opts.vPadding + (editHandlers ? 24 : 0);
 
   const wrapper = el.createEl("div", { cls: opts.wrapperClass });
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
@@ -194,9 +312,16 @@ export function renderTree(
   svg.setAttribute("height", String(svgH));
   svg.setAttribute("viewBox", `0 0 ${svgW} ${svgH}`);
   svg.setAttribute("class", opts.canvasClass);
+  if (editHandlers) svg.classList.add("vzd-tree--editable");
+
+  const renameState: RenameState = { fo: null };
+  const closeRename = (): void => { renameState.fo?.remove(); renameState.fo = null; };
+
+  // Clicking the SVG background dismisses any open inline rename
+  svg.addEventListener("click", closeRename);
 
   renderTreeEdges(tree.root, svg, opts);
-  renderTreeNodes(tree.root, svg, opts, resolver, navigateTo);
+  renderTreeNodes(tree.root, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename);
   wrapper.appendChild(svg);
 }
 

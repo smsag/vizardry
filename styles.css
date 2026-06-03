@@ -781,8 +781,11 @@
 }
 
 .vzd-carousel-desc {
-  font-size: 0.85em;
-  color: var(--text-muted);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.15);
+  font-weight: 600;
+  color: var(--text-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -796,23 +799,15 @@
 }
 
 .vzd-carousel-btn {
-  /* all: unset must come first; appearance: none must come after so it isn't
-     itself reset — all: unset resets appearance back to 'auto', which is what
-     was causing the native OS/Electron button border to survive. */
-  all: unset;
-  -webkit-appearance: none;
-  appearance: none;
-  box-sizing: border-box;
+  /* <span> not <button> — zero native chrome by design */
   color: var(--text-muted);
-  font-size: 1.25rem;
+  font-size: 1.1em;
   line-height: 1;
-  min-width: 24px;
-  min-height: 24px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
+  padding: 0 2px;
   transition: color 0.1s ease;
   user-select: none;
 }
@@ -871,6 +866,98 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   font-family: var(--font-interface);
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
   user-select: none;
+}
+
+/* ── Tree live-edit interactions ─────────────────────────────────────────────
+   Edit affordances: dblclick-to-rename, "+" add-child, "×" delete.
+   Controls are hidden at rest and revealed on node hover via opacity
+   so they don't clutter the read-only view.
+   ──────────────────────────────────────────────────────────────────────── */
+
+g.vzd-tree-node--editable {
+  cursor: text;
+}
+
+/* "+" add-child button — small accent circle below the node */
+.vzd-tree-edit-add {
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
+  opacity: 1;
+}
+
+.vzd-tree-edit-add-circle {
+  fill: var(--interactive-accent);
+}
+
+.vzd-tree-edit-add-plus {
+  font-family: var(--font-interface);
+  font-size: 13px;
+  fill: var(--text-on-accent);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* "×" delete button — small muted circle at top-right corner of leaf nodes */
+.vzd-tree-edit-del {
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
+  opacity: 1;
+}
+
+.vzd-tree-edit-del-circle {
+  fill: var(--text-error, #e05050);
+}
+
+.vzd-tree-edit-del-x {
+  font-family: var(--font-interface);
+  font-size: 10px;
+  fill: white;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Inline rename input — foreignObject overlaid on the node rect */
+.vzd-tree-rename-fo {
+  overflow: visible;
+}
+
+.vzd-tree-rename-host {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.vzd-tree-rename-input {
+  width: 100%;
+  font-family: var(--font-interface);
+  font-size: var(--vzd-base, var(--font-ui-small));
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1.5px solid var(--interactive-accent);
+  border-radius: var(--radius-s);
+  padding: 2px 6px;
+  outline: none;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Write-failed inline notice */
+.vzd-tree-write-notice {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-error, #e05050);
+  padding: 4px 8px;
+  margin-top: 4px;
+  background: var(--background-modifier-error, rgba(224, 80, 80, 0.1));
+  border-radius: var(--radius-s);
 }
 
 

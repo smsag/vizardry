@@ -33,6 +33,12 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "controls.reloadCanvas":      "Canvas neu laden",
   "controls.exitPresentation":  "Präsentation beenden",
 
+  // ── Tree node editing ───────────────────────────────────────────────────────
+  "tree.addChild":    "Kindknoten hinzufügen",
+  "tree.deleteNode":  "Knoten löschen",
+  "tree.newNode":     "Neuer Knoten",
+  "tree.writeFailed": "Konnte nicht gespeichert werden — öffne die Notiz im Bearbeitungsmodus",
+
   // ── Navigation aria-labels ──────────────────────────────────────────────────
   "nav.previousBlock":    "Vorheriger Block",
   "nav.nextBlock":        "Nächster Block",

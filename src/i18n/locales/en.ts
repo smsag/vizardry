@@ -40,6 +40,12 @@ export const en = {
   "controls.reloadCanvas":      "Reload canvas",
   "controls.exitPresentation":  "Exit presentation",
 
+  // ── Tree node editing ───────────────────────────────────────────────────────
+  "tree.addChild":   "Add child node",
+  "tree.deleteNode": "Delete node",
+  "tree.newNode":    "New Node",
+  "tree.writeFailed": "Could not save — open the note in editing mode",
+
   // ── Navigation aria-labels ──────────────────────────────────────────────────
   "nav.previousBlock":    "Previous block",
   "nav.nextBlock":        "Next block",

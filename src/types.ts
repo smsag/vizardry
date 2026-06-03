@@ -167,6 +167,13 @@ export interface TreeRenderOptions {
   wrapperClass: string;
 }
 
+/** Callbacks supplied by the caller when tree nodes should be editable. */
+export interface TreeEditHandlers {
+  onRename: (node: TreeNode, newText: string) => void;
+  onAddChild: (node: TreeNode) => void;
+  onDelete: (node: TreeNode) => void;
+}
+
 // ── SIPOC ────────────────────────────────────────────────────────────────────
 
 export interface SIPOCRow {
