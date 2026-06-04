@@ -84,13 +84,109 @@ function drawNode(
     const poly = createSvgEl("polygon", { points: pts, class: cls });
     svg.appendChild(poly);
 
+  } else if (shape === "diamond") {
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+    const pts = [
+      `${cx},${cy - hh}`,
+      `${cx + hw},${cy}`,
+      `${cx},${cy + hh}`,
+      `${cx - hw},${cy}`,
+    ].join(" ");
+    svg.appendChild(createSvgEl("polygon", { points: pts, class: cls }));
+
+  } else if (shape === "circle") {
+    svg.appendChild(createSvgEl("circle", {
+      cx: String(cx), cy: String(cy),
+      r: String(NODE_H / 2),
+      class: cls,
+    }));
+
+  } else if (shape === "trapezoid") {
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+    const s = PARA_SKEW;
+    const pts = [
+      `${cx - hw + s},${cy - hh}`,
+      `${cx + hw - s},${cy - hh}`,
+      `${cx + hw},${cy + hh}`,
+      `${cx - hw},${cy + hh}`,
+    ].join(" ");
+    svg.appendChild(createSvgEl("polygon", { points: pts, class: cls }));
+
+  } else if (shape === "hexagon") {
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+    const tip = hw * 0.25; // horizontal offset of the side tips
+    const pts = [
+      `${cx - hw},${cy}`,
+      `${cx - hw + tip},${cy - hh}`,
+      `${cx + hw - tip},${cy - hh}`,
+      `${cx + hw},${cy}`,
+      `${cx + hw - tip},${cy + hh}`,
+      `${cx - hw + tip},${cy + hh}`,
+    ].join(" ");
+    svg.appendChild(createSvgEl("polygon", { points: pts, class: cls }));
+
+  } else if (shape === "pentagon") {
+    // Right-pointing arrow chevron (predefined-process convention)
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+    const tip = hw * 0.25;
+    const pts = [
+      `${cx - hw},${cy - hh}`,
+      `${cx + hw - tip},${cy - hh}`,
+      `${cx + hw},${cy}`,
+      `${cx + hw - tip},${cy + hh}`,
+      `${cx - hw},${cy + hh}`,
+    ].join(" ");
+    svg.appendChild(createSvgEl("polygon", { points: pts, class: cls }));
+
+  } else if (shape === "cylinder") {
+    const CAP_RY = 5;
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+    // body rect (no top/bottom rounding — caps provide the shape)
+    svg.appendChild(createSvgEl("rect", {
+      x: String(cx - hw), y: String(cy - hh),
+      width: String(NODE_W), height: String(NODE_H),
+      class: cls,
+    }));
+    // bottom cap (drawn first so top cap overlaps it)
+    svg.appendChild(createSvgEl("ellipse", {
+      cx: String(cx), cy: String(cy + hh),
+      rx: String(hw), ry: String(CAP_RY),
+      class: cls,
+    }));
+    // top cap
+    svg.appendChild(createSvgEl("ellipse", {
+      cx: String(cx), cy: String(cy - hh),
+      rx: String(hw), ry: String(CAP_RY),
+      class: cls,
+    }));
+
+  } else if (shape === "document") {
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+    const waveH = 6; // amplitude of the wavy bottom
+    // Path: top-left → top-right → bottom-right → wavy bottom → close
+    const d = [
+      `M${cx - hw},${cy - hh}`,
+      `H${cx + hw}`,
+      `V${cy + hh - waveH}`,
+      // one full sine-wave approximation via two cubic beziers
+      `C${cx + hw * 0.75},${cy + hh + waveH} ${cx + hw * 0.25},${cy + hh - waveH} ${cx},${cy + hh}`,
+      `C${cx - hw * 0.25},${cy + hh + waveH} ${cx - hw * 0.75},${cy + hh - waveH} ${cx - hw},${cy + hh - waveH}`,
+      "Z",
+    ].join(" ");
+    svg.appendChild(createSvgEl("path", { d, class: cls }));
+
   } else {
-    // rect
-    const rx = 4;
+    // rect (default)
     const rect = createSvgEl("rect", {
       x: String(cx - NODE_W / 2), y: String(cy - NODE_H / 2),
       width: String(NODE_W), height: String(NODE_H),
-      rx: String(rx),
+      rx: "4",
       class: cls,
     });
     svg.appendChild(rect);

@@ -1,7 +1,11 @@
 import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowLink, SIPOCFlowNode, SIPOCFlowResult, SIPOCNodeShape } from "./types";
 
 const COLUMNS: SIPOCColumn[] = ["suppliers", "inputs", "process", "outputs", "customers"];
-const SHAPES: SIPOCNodeShape[] = ["ellipse", "parallelogram", "rect"];
+const SHAPES: SIPOCNodeShape[] = [
+  "ellipse", "parallelogram", "rect",
+  "diamond", "cylinder", "document",
+  "trapezoid", "pentagon", "circle", "hexagon",
+];
 
 function normalise(label: string): string {
   return label.toLowerCase().trim();

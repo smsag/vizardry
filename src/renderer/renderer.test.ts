@@ -634,6 +634,27 @@ describe("renderSIPOCFlow", () => {
     };
     expect(() => renderSIPOCFlow(broken, el)).not.toThrow();
   });
+
+  it("renders all new shape types without throwing", () => {
+    const el = container();
+    const data: SIPOCFlowData = {
+      nodes: [
+        { id: "d1", label: "Diamond",    shape: "diamond",     column: "suppliers" },
+        { id: "d2", label: "Cylinder",   shape: "cylinder",    column: "inputs" },
+        { id: "d3", label: "Document",   shape: "document",    column: "process" },
+        { id: "d4", label: "Trapezoid",  shape: "trapezoid",   column: "outputs" },
+        { id: "d5", label: "Pentagon",   shape: "pentagon",    column: "customers" },
+        { id: "d6", label: "Circle",     shape: "circle",      column: "suppliers" },
+        { id: "d7", label: "Hexagon",    shape: "hexagon",     column: "inputs" },
+      ],
+      links: [],
+    };
+    expect(() => renderSIPOCFlow(data, el)).not.toThrow();
+    const svg = el.querySelector("svg");
+    expect(svg).toBeTruthy();
+    // cylinder emits 3 elements (rect + 2 caps); all others emit 1 each → 6 + 3 = 9
+    expect(svg!.querySelectorAll(".vzd-sf-node").length).toBeGreaterThanOrEqual(7);
+  });
 });
 
 // ── renderVennDiagram ─────────────────────────────────────────────────────────
