@@ -234,7 +234,10 @@ export type WardleyResult = Result<WardleyMap>;
 
 // ── SIPOC Flow ────────────────────────────────────────────────────────────────
 
-export type SIPOCNodeShape = "ellipse" | "parallelogram" | "rect";
+export type SIPOCNodeShape =
+  | "ellipse" | "parallelogram" | "rect"
+  | "diamond" | "cylinder" | "document"
+  | "trapezoid" | "pentagon" | "circle" | "hexagon";
 export type SIPOCColumn = "suppliers" | "inputs" | "process" | "outputs" | "customers";
 
 export interface SIPOCFlowNode {

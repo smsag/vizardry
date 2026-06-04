@@ -1,7 +1,17 @@
 import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowLink, SIPOCFlowNode, SIPOCFlowResult, SIPOCNodeShape } from "./types";
 
 const COLUMNS: SIPOCColumn[] = ["suppliers", "inputs", "process", "outputs", "customers"];
-const SHAPES: SIPOCNodeShape[] = ["ellipse", "parallelogram", "rect"];
+const SHAPES: SIPOCNodeShape[] = [
+  "ellipse", "parallelogram", "rect",
+  "diamond", "cylinder", "document",
+  "trapezoid", "pentagon", "circle", "hexagon",
+];
+
+/** Aliases that map alternative spellings to a canonical SIPOCNodeShape. */
+const SHAPE_ALIASES: Record<string, SIPOCNodeShape> = {
+  rectangle: "rect",
+  process:   "rect",
+};
 
 function normalise(label: string): string {
   return label.toLowerCase().trim();
@@ -70,12 +80,14 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
       return { ok: false, error: `Line ${i + 1}: node requires a shape, e.g. "${trimmed} [rect]" — valid shapes: ${SHAPES.join(", ")}` };
     }
     const label = bracketMatch[1].trim();
-    const shapeRaw = bracketMatch[2].trim().toLowerCase() as SIPOCNodeShape;
+    const shapeInput = bracketMatch[2].trim().toLowerCase();
+    const shapeRaw: SIPOCNodeShape = (SHAPE_ALIASES[shapeInput] ?? shapeInput) as SIPOCNodeShape;
     if (!label) {
       return { ok: false, error: `Line ${i + 1}: node requires a label` };
     }
     if (!(SHAPES as string[]).includes(shapeRaw)) {
-      return { ok: false, error: `Line ${i + 1}: unknown shape "${shapeRaw}" — valid shapes: ${SHAPES.join(", ")}` };
+      const allValid = [...SHAPES, ...Object.keys(SHAPE_ALIASES)].join(", ");
+      return { ok: false, error: `Line ${i + 1}: unknown shape "${shapeInput}" — valid shapes: ${allValid}` };
     }
 
     const id = normalise(label);

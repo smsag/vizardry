@@ -102,8 +102,8 @@ link: B -> A
   });
 
   it("returns error for unknown shape", () => {
-    const result = parseSIPOCFlow("suppliers:\n  X [diamond]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("diamond") });
+    const result = parseSIPOCFlow("suppliers:\n  X [starfish]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("starfish") });
   });
 
   it("returns error for unknown section", () => {
@@ -129,5 +129,50 @@ link: B -> A
   it("returns error when no nodes defined", () => {
     const result = parseSIPOCFlow("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No nodes") });
+  });
+
+  it("accepts 'rectangle' and 'process' as aliases for rect", () => {
+    const src = [
+      "suppliers:",
+      "  A [rectangle]",
+      "inputs:",
+      "  B [process]",
+      "process:",
+      "outputs:",
+      "customers:",
+    ].join("\n");
+    const result = parseSIPOCFlow(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.nodes.find(n => n.id === "a")?.shape).toBe("rect");
+    expect(result.data.nodes.find(n => n.id === "b")?.shape).toBe("rect");
+  });
+
+  it("parses all new shape keywords without error", () => {
+    const src = [
+      "suppliers:",
+      "  S1 [diamond]",
+      "  S2 [cylinder]",
+      "  S3 [document]",
+      "inputs:",
+      "  I1 [trapezoid]",
+      "  I2 [pentagon]",
+      "  I3 [circle]",
+      "process:",
+      "  P1 [hexagon]",
+      "outputs:",
+      "customers:",
+    ].join("\n");
+    const result = parseSIPOCFlow(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const shapes = result.data.nodes.map(n => n.shape);
+    expect(shapes).toContain("diamond");
+    expect(shapes).toContain("cylinder");
+    expect(shapes).toContain("document");
+    expect(shapes).toContain("trapezoid");
+    expect(shapes).toContain("pentagon");
+    expect(shapes).toContain("circle");
+    expect(shapes).toContain("hexagon");
   });
 });
