@@ -607,9 +607,9 @@ describe("renderSIPOCFlow", () => {
     const svg = el.querySelector("svg");
     expect(svg).toBeTruthy();
     const labels = Array.from(svg!.querySelectorAll(".vzd-sf-header-label")).map(t => t.textContent);
-    expect(labels).toContain("Suppliers");
+    expect(labels).toContain("Supplier");
     expect(labels).toContain("Process");
-    expect(labels).toContain("Customers");
+    expect(labels).toContain("Customer");
   });
 
   it("renders one shape per node", () => {

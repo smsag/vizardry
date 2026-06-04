@@ -51,6 +51,16 @@ function leftPort(cx: number, cy: number, shape: SIPOCNodeShape): { x: number; y
   return { x: cx - NODE_W / 2 - skew, y: cy };
 }
 
+/** Bottom-centre connection point (for downward same-column arrows). */
+function bottomPort(cx: number, cy: number): { x: number; y: number } {
+  return { x: cx, y: cy + NODE_H / 2 };
+}
+
+/** Top-centre connection point (for upward same-column arrows). */
+function topPort(cx: number, cy: number): { x: number; y: number } {
+  return { x: cx, y: cy - NODE_H / 2 };
+}
+
 // ── Shape drawing ──────────────────────────────────────────────────────────
 
 function drawNode(
@@ -216,14 +226,32 @@ function drawNode(
 
 /**
  * Draws a cubic-bezier arrow from (x1,y1) to (x2,y2).
- * The control points pull horizontally so the path curves smoothly
- * across columns without crossing node bodies.
+ *
+ * Horizontal mode (cross-column): control points pull along the x-axis.
+ * Vertical mode (same-column): control points pull along the y-axis so the
+ * curve reads as a clean downward/upward arc within the column band.
  */
-function drawArrow(svg: SVGElement, x1: number, y1: number, x2: number, y2: number, goingRight: boolean): void {
-  const tension = Math.abs(x2 - x1) * 0.45;
-  const cp1x = goingRight ? x1 + tension : x1 - tension;
-  const cp2x = goingRight ? x2 - tension : x2 + tension;
-  const d = `M${x1},${y1} C${cp1x},${y1} ${cp2x},${y2} ${x2},${y2}`;
+function drawArrow(
+  svg: SVGElement,
+  x1: number, y1: number,
+  x2: number, y2: number,
+  direction: "right" | "left" | "vertical",
+): void {
+  let d: string;
+
+  if (direction === "vertical") {
+    const tension = Math.max(Math.abs(y2 - y1) * 0.45, 20);
+    const goingDown = y2 >= y1;
+    const cp1y = goingDown ? y1 + tension : y1 - tension;
+    const cp2y = goingDown ? y2 - tension : y2 + tension;
+    d = `M${x1},${y1} C${x1},${cp1y} ${x2},${cp2y} ${x2},${y2}`;
+  } else {
+    const tension = Math.abs(x2 - x1) * 0.45;
+    const cp1x = direction === "right" ? x1 + tension : x1 - tension;
+    const cp2x = direction === "right" ? x2 - tension : x2 + tension;
+    d = `M${x1},${y1} C${cp1x},${y1} ${cp2x},${y2} ${x2},${y2}`;
+  }
+
   const path = createSvgEl("path", {
     d,
     class: "vzd-sf-link",
@@ -332,16 +360,24 @@ export function renderSIPOCFlow(
 
     const fromNode = data.nodes.find(n => n.id === link.from)!;
     const toNode = data.nodes.find(n => n.id === link.to)!;
-    const goingRight = colIndex[fromNode.column] <= colIndex[toNode.column];
 
-    const src = goingRight
-      ? rightPort(from.cx, from.cy, from.shape)
-      : leftPort(from.cx, from.cy, from.shape);
-    const dst = goingRight
-      ? leftPort(to.cx, to.cy, to.shape)
-      : rightPort(to.cx, to.cy, to.shape);
+    let src: { x: number; y: number };
+    let dst: { x: number; y: number };
+    let direction: "right" | "left" | "vertical";
 
-    drawArrow(svg, src.x, src.y, dst.x, dst.y, goingRight);
+    if (fromNode.column === toNode.column) {
+      const goingDown = from.cy <= to.cy;
+      src = goingDown ? bottomPort(from.cx, from.cy) : topPort(from.cx, from.cy);
+      dst = goingDown ? topPort(to.cx, to.cy)        : bottomPort(to.cx, to.cy);
+      direction = "vertical";
+    } else {
+      const goingRight = colIndex[fromNode.column] < colIndex[toNode.column];
+      src = goingRight ? rightPort(from.cx, from.cy, from.shape) : leftPort(from.cx, from.cy, from.shape);
+      dst = goingRight ? leftPort(to.cx, to.cy, to.shape)        : rightPort(to.cx, to.cy, to.shape);
+      direction = goingRight ? "right" : "left";
+    }
+
+    drawArrow(svg, src.x, src.y, dst.x, dst.y, direction);
   }
 
   // ── Draw nodes (on top of links) ──────────────────────────────────────

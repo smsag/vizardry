@@ -20,23 +20,23 @@ export function renderCarouselBlock(
 
   const header = wrapper.createEl("div", { cls: "vzd-carousel-header" });
 
+  const controls = header.createEl("div", { cls: "vzd-carousel-controls" });
+
+  const prevBtn = controls.createEl("span", {
+    cls: "vzd-carousel-btn",
+    text: "‹",
+    attr: { role: "button", tabindex: "0", "aria-label": t("nav.previousImage") },
+  });
+
+  const nextBtn = controls.createEl("span", {
+    cls: "vzd-carousel-btn",
+    text: "›",
+    attr: { role: "button", tabindex: "0", "aria-label": t("nav.nextImage") },
+  });
+
   const descEl = header.createEl("span", {
     cls: "vzd-carousel-desc",
     text: images[0].alt,
-  });
-
-  const controls = header.createEl("div", { cls: "vzd-carousel-controls" });
-
-  const prevBtn = controls.createEl("button", {
-    cls: "vzd-carousel-btn",
-    text: "‹",
-    attr: { type: "button", "aria-label": t("nav.previousImage") },
-  });
-
-  const nextBtn = controls.createEl("button", {
-    cls: "vzd-carousel-btn",
-    text: "›",
-    attr: { type: "button", "aria-label": t("nav.nextImage") },
   });
 
   const track = wrapper.createEl("div", { cls: "vzd-carousel-track" });
@@ -96,6 +96,9 @@ export function renderCarouselBlock(
 
   prevBtn.addEventListener("click", () => goTo(current - 1));
   nextBtn.addEventListener("click", () => goTo(current + 1));
+  // Spans need explicit keyboard activation (buttons get this for free)
+  prevBtn.addEventListener("keydown", (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(current - 1); } });
+  nextBtn.addEventListener("keydown", (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(current + 1); } });
   wrapper.addEventListener("keydown", (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft") { e.preventDefault(); goTo(current - 1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); goTo(current + 1); }
