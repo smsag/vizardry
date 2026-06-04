@@ -103,3 +103,65 @@ export function writeSIPOCCell(
 
   return true;
 }
+
+/**
+ * Inserts a blank `row:` block immediately after the Nth row in the source.
+ * If rowIndex is -1, inserts before the first row (prepend).
+ *
+ * Returns false if the editor is unavailable or the row cannot be located.
+ */
+export function insertSIPOCRowAfter(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  rowIndex: number,
+): boolean {
+  const info = ctx.getSectionInfo(el);
+  if (!info) {
+    console.warn("Vizardry: insertSIPOCRowAfter — no section info");
+    return false;
+  }
+
+  const leaf = app.workspace.getLeavesOfType("markdown").find(
+    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
+  );
+  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
+  if (!editor) {
+    console.warn("Vizardry: insertSIPOCRowAfter — no live editor");
+    return false;
+  }
+
+  const { lineStart, lineEnd } = info;
+
+  // Collect start lines of every `row:` block within the code fence
+  const rowStarts: number[] = [];
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    if (editor.getLine(ln).trim().toLowerCase() === "row:") {
+      rowStarts.push(ln);
+    }
+  }
+
+  let insertAfterLine: number;
+
+  if (rowIndex < 0 || rowStarts.length === 0) {
+    // Insert before first row (or at end of fence if no rows exist)
+    insertAfterLine = rowStarts.length > 0 ? rowStarts[0] - 1 : lineEnd - 1;
+  } else {
+    // End of the Nth row = line before the next row's `row:`, or lineEnd - 1
+    const nextRowStart = rowStarts[rowIndex + 1];
+    insertAfterLine = nextRowStart !== undefined ? nextRowStart - 1 : lineEnd - 1;
+
+    // Walk back past trailing blank lines so the new row sits flush
+    while (insertAfterLine > rowStarts[rowIndex] && editor.getLine(insertAfterLine).trim() === "") {
+      insertAfterLine--;
+    }
+  }
+
+  const lineText = editor.getLine(insertAfterLine);
+  editor.replaceRange(
+    `\nrow:`,
+    { line: insertAfterLine, ch: lineText.length },
+  );
+
+  return true;
+}

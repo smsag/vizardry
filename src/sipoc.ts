@@ -1,10 +1,10 @@
 import type { SIPOCData, SIPOCResult, SIPOCRow } from "./types";
 
-const CELL_KEYS = ["supplier", "input", "process", "output", "customer"] as const;
+const CELL_KEYS = ["supplier", "input", "process", "output", "customer", "owner", "metric"] as const;
 type CellKey = typeof CELL_KEYS[number];
 
 function emptyRow(): SIPOCRow {
-  return { supplier: "", input: "", process: "", output: "", customer: "" };
+  return { supplier: "", input: "", process: "", output: "", customer: "", owner: "", metric: "" };
 }
 
 /**

@@ -52,6 +52,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
 
   // ── Inline editing ──────────────────────────────────────────────────────────
   "edit.clickToEdit": "Zum Bearbeiten klicken",
+  "sipoc.addRowBelow": "Zeile darunter einfügen",
   "edit.writeFailed": "Bearbeitung konnte nicht gespeichert werden — öffne die Notiz im Bearbeitungsmodus",
 
   // ── Title editing ────────────────────────────────────────────────────────────
@@ -84,6 +85,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "sipoc.col.process":   "Prozess",
   "sipoc.col.outputs":   "Ausgaben",
   "sipoc.col.customers": "Kunden",
+  "sipoc.col.owner":     "Verantwortlicher",
+  "sipoc.col.metric":    "Kennzahl",
 
   // ── Wardley Map labels ──────────────────────────────────────────────────────
   "wardley.stage.genesis":   "Genesis",
