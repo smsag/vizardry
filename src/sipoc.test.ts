@@ -22,6 +22,8 @@ describe("parseSIPOC", () => {
       process: "Step one",
       output: "Product",
       customer: "End user",
+      owner: "",
+      metric: "",
     });
   });
 
@@ -96,5 +98,22 @@ row:
   it("returns error when no rows defined", () => {
     const result = parseSIPOC("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No rows") });
+  });
+
+  it("parses owner and metric when present", () => {
+    const src = `row:\n  supplier: A\n  owner: Alice\n  metric: 99%`;
+    const result = parseSIPOC(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.rows[0].owner).toBe("Alice");
+    expect(result.data.rows[0].metric).toBe("99%");
+  });
+
+  it("leaves owner and metric empty when absent", () => {
+    const result = parseSIPOC(MINIMAL);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.rows[0].owner).toBe("");
+    expect(result.data.rows[0].metric).toBe("");
   });
 });
