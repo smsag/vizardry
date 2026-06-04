@@ -566,8 +566,8 @@ describe("renderSIPOC", () => {
     const el = container();
     const data: SIPOCData = {
       rows: [
-        { supplier: "Dev team", input: "Requirements", process: "Build", output: "Feature", customer: "User" },
-        { supplier: "QA", input: "Test cases", process: "Test", output: "Report", customer: "PM" },
+        { supplier: "Dev team", input: "Requirements", process: "Build", output: "Feature", customer: "User", owner: "", metric: "" },
+        { supplier: "QA", input: "Test cases", process: "Test", output: "Report", customer: "PM", owner: "", metric: "" },
       ],
     };
     expect(() => renderSIPOC(data, el)).not.toThrow();

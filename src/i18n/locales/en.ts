@@ -59,6 +59,7 @@ export const en = {
 
   // ── Inline editing ──────────────────────────────────────────────────────────
   "edit.clickToEdit":  "Click to edit",
+  "sipoc.addRowBelow": "Add row below",
   "edit.writeFailed":  "Edit could not be saved — open the note in editing mode",
 
   // ── Title editing ────────────────────────────────────────────────────────────
@@ -91,6 +92,8 @@ export const en = {
   "sipoc.col.process":   "Process",
   "sipoc.col.outputs":   "Outputs",
   "sipoc.col.customers": "Customers",
+  "sipoc.col.owner":     "Owner",
+  "sipoc.col.metric":    "Metric",
 
   // ── Wardley Map labels ──────────────────────────────────────────────────────
   "wardley.stage.genesis":   "Genesis",

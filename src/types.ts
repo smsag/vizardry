@@ -182,6 +182,8 @@ export interface SIPOCRow {
   process: string;
   output: string;
   customer: string;
+  owner: string;
+  metric: string;
 }
 
 export interface SIPOCData {
