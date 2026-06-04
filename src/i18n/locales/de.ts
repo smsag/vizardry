@@ -80,11 +80,11 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "story.clickToEdit":   "Zum Bearbeiten klicken",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
-  "sipoc.col.suppliers": "Lieferanten",
-  "sipoc.col.inputs":    "Eingaben",
+  "sipoc.col.suppliers": "Lieferant",
+  "sipoc.col.inputs":    "Eingabe",
   "sipoc.col.process":   "Prozess",
-  "sipoc.col.outputs":   "Ausgaben",
-  "sipoc.col.customers": "Kunden",
+  "sipoc.col.outputs":   "Ausgabe",
+  "sipoc.col.customers": "Kunde",
   "sipoc.col.owner":     "Verantwortlicher",
   "sipoc.col.metric":    "Kennzahl",
 

@@ -87,11 +87,11 @@ export const en = {
   "story.clickToEdit":   "Click to edit",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
-  "sipoc.col.suppliers": "Suppliers",
-  "sipoc.col.inputs":    "Inputs",
+  "sipoc.col.suppliers": "Supplier",
+  "sipoc.col.inputs":    "Input",
   "sipoc.col.process":   "Process",
-  "sipoc.col.outputs":   "Outputs",
-  "sipoc.col.customers": "Customers",
+  "sipoc.col.outputs":   "Output",
+  "sipoc.col.customers": "Customer",
   "sipoc.col.owner":     "Owner",
   "sipoc.col.metric":    "Metric",
 

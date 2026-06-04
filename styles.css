@@ -132,6 +132,12 @@
   color: var(--text-normal);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.5rem;
 }
 
 .vizardry-title--editable {
@@ -645,6 +651,12 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-normal);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.5rem;
 }
 
 
@@ -653,6 +665,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 /* .vzd-presentation-close and .vzd-presentation-reload inherit from .vzd-btn.
@@ -1252,6 +1265,11 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-sipoc-td--process {
   border-left: 2px solid var(--interactive-accent);
   border-right: 2px solid var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+}
+
+.vzd-sipoc-row--alt .vzd-sipoc-td--process {
+  background: color-mix(in srgb, var(--interactive-accent) 15%, var(--background-secondary));
 }
 
 .vzd-sipoc-row--alt .vzd-sipoc-td {
@@ -1428,9 +1446,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-sipoc-flow-svg {
   width: 100%;
   min-width: 560px;
-  max-width: 960px;
   display: block;
-  margin: 0 auto;
 }
 
 /* Column band backgrounds */
