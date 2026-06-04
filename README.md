@@ -545,9 +545,12 @@ row:
 
 **Syntax:**
 - `row:` — starts a new row at zero indent, repeatable
-- Indented `supplier:`, `input:`, `process:`, `output:`, `customer:` — the five cell keys (singular); all are optional per row
+- Indented `supplier:`, `input:`, `process:`, `output:`, `customer:` — the five core cell keys; all are optional per row
+- Indented `owner:`, `metric:` — two optional extended columns; both columns are hidden when no row in the diagram uses them
 - Missing cells render as `—`
 - Blank lines and `// comment` lines are ignored
+
+**Live Edit:** click any cell to edit it inline. The Process column is visually accented with your theme's accent colour.
 
 ---
 
@@ -605,10 +608,12 @@ link: Data 5 -> Customer 3
 **Syntax:**
 - `type: flow` — first line; switches the block to flow rendering
 - `suppliers:`, `inputs:`, `process:`, `outputs:`, `customers:` — column section headers (plural)
-- Indented `Name [shape]` — declares a node; shape is `ellipse`, `parallelogram`, or `rect`
+- Indented `Name [shape]` — declares a node; available shapes: `ellipse`, `parallelogram`, `rect`, `diamond`, `cylinder`, `document`, `trapezoid`, `pentagon`, `circle`, `hexagon`
 - `link: A -> B` — directed arrow from node A to node B; links can go in any direction including backwards
+- Same-column links (e.g. process step → process step) route vertically within the column band
 - Nodes with no links render as isolated nodes — not an error
 - Node names are case-insensitive in link declarations
+- Blank lines and `// comment` lines are ignored
 
 ---
 
@@ -985,9 +990,11 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `row:` | Starts a new row at zero indent |
 | Indented `supplier:` | Supplier cell value |
 | Indented `input:` | Input cell value |
-| Indented `process:` | Process cell value |
+| Indented `process:` | Process cell value (column accented with theme colour) |
 | Indented `output:` | Output cell value |
 | Indented `customer:` | Customer cell value |
+| Indented `owner:` | Owner cell — column hidden when unused by all rows |
+| Indented `metric:` | Metric cell — column hidden when unused by all rows |
 | Missing cell keys | Render as `—` |
 | Blank lines / `// comment` | Ignored |
 
@@ -997,8 +1004,8 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 |---|---|
 | `type: flow` | First line; enables flow rendering |
 | `suppliers:` / `inputs:` / `process:` / `outputs:` / `customers:` | Column section headers |
-| Indented `Name [shape]` | Node declaration; shape: `ellipse`, `parallelogram`, `rect` |
-| `link: A -> B` | Directed arrow; any direction allowed |
+| Indented `Name [shape]` | Node declaration; shape: `ellipse`, `parallelogram`, `rect`, `diamond`, `cylinder`, `document`, `trapezoid`, `pentagon`, `circle`, `hexagon` |
+| `link: A -> B` | Directed arrow; any direction allowed; same-column links route vertically |
 | Blank lines / `// comment` | Ignored |
 
 ### User Story Map (story)
