@@ -131,6 +131,23 @@ link: B -> A
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No nodes") });
   });
 
+  it("accepts 'rectangle' and 'process' as aliases for rect", () => {
+    const src = [
+      "suppliers:",
+      "  A [rectangle]",
+      "inputs:",
+      "  B [process]",
+      "process:",
+      "outputs:",
+      "customers:",
+    ].join("\n");
+    const result = parseSIPOCFlow(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.nodes.find(n => n.id === "a")?.shape).toBe("rect");
+    expect(result.data.nodes.find(n => n.id === "b")?.shape).toBe("rect");
+  });
+
   it("parses all new shape keywords without error", () => {
     const src = [
       "suppliers:",
