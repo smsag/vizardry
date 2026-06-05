@@ -33,18 +33,18 @@ class LinearService {
     return this.plugin.settings.linearEnabled;
   }
 
-  private getLinearApiKey(): Promise<string | null> {
+  private getLinearApiKey(): string | null {
     return loadSecret(this.plugin.app, this.plugin.settings.linearSecretName);
   }
 
-  private getLlmApiKey(): Promise<string | null> {
+  private getLlmApiKey(): string | null {
     return loadSecret(this.plugin.app, this.plugin.settings.llmSecretName);
   }
 
   async getStatus(issueKey: string): Promise<LinearState | null> {
     if (!this.isEnabled()) return null;
 
-    const linearApiKey = await this.getLinearApiKey();
+    const linearApiKey = this.getLinearApiKey();
     if (!linearApiKey) return null;
 
     const { statusTtlMinutes, linearBaseUrl } = this.plugin.settings;
@@ -73,7 +73,8 @@ class LinearService {
   async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; updatedAt: string } | null> {
     if (!this.isEnabled()) return null;
 
-    const [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
+    const linearApiKey = this.getLinearApiKey();
+    const llmApiKey = this.getLlmApiKey();
     if (!linearApiKey || !llmApiKey) return null;
 
     const { summaryTtlHours, linearBaseUrl, llmProvider, llmModel } = this.plugin.settings;

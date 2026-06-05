@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
-import { PluginSettingTab, Setting } from "obsidian";
+import { Modal, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
-import { saveSecret, loadSecret } from "./shared/keychain";
+import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
 
 export interface PluginSettings {
   // Linear
@@ -42,47 +42,171 @@ const OPENAI_MODELS = [
   { value: "gpt-4o",      label: "GPT-4o (balanced)" },
 ];
 
+// ── Secret picker modal ───────────────────────────────────────────────────────
+
+class SecretPickerModal extends Modal {
+  private onSelect: (name: string) => void;
+  private currentName: string;
+  private selected: string;
+
+  constructor(app: App, currentName: string, onSelect: (name: string) => void) {
+    super(app);
+    this.currentName = currentName;
+    this.selected = currentName;
+    this.onSelect = onSelect;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("vzd-secret-picker");
+    contentEl.createEl("h2", { text: "Select secret" });
+
+    // Search
+    const search = contentEl.createEl("input", {
+      cls: "vzd-secret-search",
+      attr: { type: "text", placeholder: "Search secrets…" },
+    });
+
+    // List
+    const listEl = contentEl.createEl("div", { cls: "vzd-secret-list" });
+
+    const allNames = listSecrets(this.app);
+
+    const render = (filter: string): void => {
+      listEl.empty();
+      const names = filter
+        ? allNames.filter(n => n.toLowerCase().includes(filter.toLowerCase()))
+        : allNames;
+
+      if (names.length === 0) {
+        listEl.createEl("div", { cls: "vzd-secret-empty", text: "No secrets stored yet." });
+        return;
+      }
+
+      for (const name of names) {
+        const row = listEl.createEl("label", { cls: "vzd-secret-row" });
+        if (name === this.selected) row.addClass("vzd-secret-row--selected");
+
+        const radio = row.createEl("input", { attr: { type: "radio", name: "vzd-secret" } }) as HTMLInputElement;
+        radio.checked = name === this.selected;
+
+        row.createEl("span", { cls: "vzd-secret-name", text: name });
+        row.createEl("span", { cls: "vzd-secret-dots", text: "••••••••" });
+
+        if (name === this.selected) {
+          row.createEl("span", { cls: "vzd-secret-badge", text: "Selected" });
+        }
+
+        radio.addEventListener("change", () => {
+          this.selected = name;
+          listEl.querySelectorAll(".vzd-secret-row").forEach(r => r.removeClass("vzd-secret-row--selected"));
+          listEl.querySelectorAll(".vzd-secret-badge").forEach(b => b.remove());
+          row.addClass("vzd-secret-row--selected");
+          row.createEl("span", { cls: "vzd-secret-badge", text: "Selected" });
+        });
+      }
+    };
+
+    render("");
+    search.addEventListener("input", () => render(search.value));
+
+    // Footer
+    const footer = contentEl.createEl("div", { cls: "vzd-secret-footer" });
+
+    const saveBtn = footer.createEl("button", { cls: "mod-cta", text: "Save" });
+    saveBtn.addEventListener("click", () => {
+      this.onSelect(this.selected);
+      this.close();
+    });
+
+    const cancelBtn = footer.createEl("button", { text: "Cancel" });
+    cancelBtn.addEventListener("click", () => this.close());
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+// ── Secret setting row ────────────────────────────────────────────────────────
+
 /**
- * Renders a password-style text field that stores its value in app.secretStorage.
- * - Shows "••••••••" as placeholder when a secret is already stored.
- * - Reveals the real value on focus.
- * - Saves to secretStorage (and re-masks) on blur.
+ * Renders a single settings row for a secret:
+ * - Displays the currently linked secret name with a "Key found ✓" / "Not set" badge.
+ * - "Link…" button opens SecretPickerModal to choose from existing secrets.
+ * - Password field to enter a new value directly (creates a new secret under the current name).
  */
-function addSecretField(
-  setting: Setting,
+function addSecretRow(
+  containerEl: HTMLElement,
   app: App,
-  secretName: string,
-  placeholder: string,
+  label: string,
+  valuePlaceholder: string,
+  getName: () => string,
+  setName: (n: string) => void,
 ): void {
-  setting.addText(text => {
-    text.inputEl.setAttribute("type", "password");
-    text.setPlaceholder(placeholder);
+  let currentName = getName();
 
-    // Show mask if a secret is already stored, empty field otherwise
-    void loadSecret(app, secretName).then(existing => {
-      text.setValue(existing ? "••••••••" : "");
+  const refreshRow = (): void => {
+    setting.clear();
+    const value = loadSecret(app, currentName);
+    const hasKey = !!value;
+
+    setting.setDesc(
+      `Secret name: ${currentName}`,
+    );
+
+    // Status badge
+    const badge = setting.nameEl.createEl("span", {
+      cls: "vzd-secret-status " + (hasKey ? "vzd-secret-found" : "vzd-secret-missing"),
+      text: hasKey ? "Key found ✓" : "Not set",
     });
+    // Keep badge after the label text
+    setting.nameEl.insertBefore(badge, setting.nameEl.firstChild);
+    setting.nameEl.insertBefore(document.createTextNode(label + "  "), setting.nameEl.firstChild);
 
-    // Reveal on focus
-    text.inputEl.addEventListener("focus", () => {
-      if (text.getValue() === "••••••••") {
-        void loadSecret(app, secretName).then(v => text.setValue(v ?? ""));
-      }
-    });
-
-    // Save and re-mask on blur
-    text.inputEl.addEventListener("blur", () => {
-      const v = text.getValue().trim();
-      if (v && v !== "••••••••") {
-        void saveSecret(app, secretName, v);
-      }
-      // Re-check storage to decide whether to show mask or empty
-      void loadSecret(app, secretName).then(stored => {
-        text.setValue(stored ? "••••••••" : "");
+    // Link button
+    setting.addButton(btn => {
+      btn.setButtonText("Link…").onClick(() => {
+        new SecretPickerModal(app, currentName, (name) => {
+          currentName = name;
+          setName(name);
+          refreshRow();
+        }).open();
       });
     });
-  });
+
+    // Password field for direct entry
+    setting.addText(text => {
+      text.inputEl.setAttribute("type", "password");
+      text.setPlaceholder(valuePlaceholder);
+      text.setValue(hasKey ? "••••••••" : "");
+
+      text.inputEl.addEventListener("focus", () => {
+        if (text.getValue() === "••••••••") {
+          text.setValue(loadSecret(app, currentName) ?? "");
+        }
+      });
+
+      text.inputEl.addEventListener("blur", () => {
+        const v = text.getValue().trim();
+        if (v && v !== "••••••••") {
+          saveSecret(app, currentName, v);
+        }
+        const stored = loadSecret(app, currentName);
+        text.setValue(stored ? "••••••••" : "");
+        // refresh badge without full redraw
+        badge.textContent = stored ? "Key found ✓" : "Not set";
+        badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
+      });
+    });
+  };
+
+  const setting = new Setting(containerEl).setName("");
+  refreshRow();
 }
+
+// ── Settings tab ──────────────────────────────────────────────────────────────
 
 export class VizardrySettingTab extends PluginSettingTab {
   private plugin: VizardryPlugin;
@@ -111,13 +235,13 @@ export class VizardrySettingTab extends PluginSettingTab {
           }),
       );
 
-    addSecretField(
-      new Setting(containerEl)
-        .setName("Linear API key")
-        .setDesc("Stored in the OS keychain via Obsidian's secure storage — never written to data.json."),
+    addSecretRow(
+      containerEl,
       this.app,
-      this.plugin.settings.linearSecretName,
+      "Linear API key",
       "lin_api_…",
+      () => this.plugin.settings.linearSecretName,
+      (n) => { this.plugin.settings.linearSecretName = n; void this.plugin.saveSettings(); },
     );
 
     new Setting(containerEl)
@@ -136,7 +260,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     // ── AI Summaries ───────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: "AI summaries" });
 
-    let modelDropdown: any; // Obsidian's DropdownComponent type is not easily expressible here
+    let modelDropdown: any;
 
     const updateModelOptions = (provider: "anthropic" | "openai"): void => {
       const models = provider === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;
@@ -179,13 +303,13 @@ export class VizardrySettingTab extends PluginSettingTab {
         });
       });
 
-    addSecretField(
-      new Setting(containerEl)
-        .setName("AI API key")
-        .setDesc("Stored in the OS keychain via Obsidian's secure storage — never written to data.json."),
+    addSecretRow(
+      containerEl,
       this.app,
-      this.plugin.settings.llmSecretName,
+      "AI API key",
       "sk-… or sk-ant-…",
+      () => this.plugin.settings.llmSecretName,
+      (n) => { this.plugin.settings.llmSecretName = n; void this.plugin.saveSettings(); },
     );
 
     new Setting(containerEl)

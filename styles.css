@@ -1719,6 +1719,92 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
 }
 
+/* ── Settings: secret row & picker modal ────────────────────────────────── */
+.vzd-secret-status {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: var(--font-ui-smaller);
+  border-radius: var(--radius-s);
+  padding: 1px 6px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.vzd-secret-found {
+  color: var(--color-green);
+  background: color-mix(in srgb, var(--color-green) 15%, transparent);
+}
+.vzd-secret-missing {
+  color: var(--text-muted);
+  background: var(--background-secondary);
+}
+
+/* Picker modal */
+.vzd-secret-picker h2 { margin-bottom: 0.75rem; }
+
+.vzd-secret-search {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+.vzd-secret-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  margin-bottom: 1rem;
+}
+
+.vzd-secret-empty {
+  padding: 1rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+.vzd-secret-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.vzd-secret-row:last-child { border-bottom: none; }
+.vzd-secret-row:hover { background: var(--background-secondary); }
+.vzd-secret-row--selected { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+
+.vzd-secret-name {
+  flex: 1;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+.vzd-secret-dots {
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+  font-size: var(--font-ui-smaller);
+}
+.vzd-secret-badge {
+  font-size: var(--font-ui-smaller);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border-radius: var(--radius-s);
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.vzd-secret-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 /* ── Linear key badge (global — any canvas or code fence) ───────────────── */
 .vzd-linear-key {
   font-family: var(--font-monospace);
