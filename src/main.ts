@@ -2,7 +2,8 @@ import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
 import { MarkdownView, Notice, Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
 import type { PluginSettings } from "./settings";
-import { initLinearService } from "./linear";
+import { initLinearService, getLinearService } from "./linear";
+import { enrichLinearKeys } from "./shared/linear-enrichment";
 import { parseFrameworkSource } from "./parser";
 import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
 import { renderCanvas, renderError } from "./renderer";
@@ -111,6 +112,13 @@ export default class VizardryPlugin extends Plugin {
         safeRender(renderer.id, el, () => inner(source, el, ctx));
       });
     }
+
+    // ── Global Linear key enrichment ──────────────────────────────────
+    // Runs after all code-block processors so vizardry canvases are already
+    // rendered when this post-processor scans for Linear keys.
+    this.registerMarkdownPostProcessor((el) => {
+      if (getLinearService()?.isEnabled()) enrichLinearKeys(el);
+    });
 
     // ── Framework options (modal + commands) ───────────────────────────
     const frameworkOptions: FrameworkOption[] = [

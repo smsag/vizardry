@@ -2,11 +2,23 @@ import { requestUrl } from "obsidian";
 import type { LinearIssue } from "./types";
 
 const SYSTEM_PROMPT =
-  "Summarise this Linear issue for a product roadmap in 2–3 sentences. " +
-  "Focus on scope, user impact, and current status. Be concise and factual.";
+  "You are a product assistant writing BLUF (Bottom Line Up Front) status updates for a roadmap. " +
+  "Given a Linear issue, write a single short paragraph of at most 360 characters that covers: " +
+  "(1) the intent — what problem this issue solves and why it matters, and " +
+  "(2) the current state — progress made, what is blocking it, or what the next step is. " +
+  "Use plain prose. No bullet points. No markdown. Do not exceed 360 characters.";
+
+const MAX_CHARS = 360;
+
+/** Truncates a summary to MAX_CHARS at the nearest word boundary, appending "…". */
+function enforce(text: string): string {
+  if (text.length <= MAX_CHARS) return text;
+  const cut = text.slice(0, MAX_CHARS).replace(/\s+\S*$/, "");
+  return cut + "…";
+}
 
 /**
- * Generates a short LLM summary of a Linear issue.
+ * Generates a BLUF status update for a Linear issue (≤360 chars).
  * Supports Anthropic (claude-*) and OpenAI (gpt-*) models.
  */
 export async function summarizeIssue(
@@ -24,10 +36,10 @@ export async function summarizeIssue(
     `Description: ${issue.description || "(no description)"}` +
     commentSection;
 
-  if (provider === "anthropic") {
-    return summarizeAnthropic(userMessage, apiKey, model);
-  }
-  return summarizeOpenAI(userMessage, apiKey, model);
+  const raw = provider === "anthropic"
+    ? await summarizeAnthropic(userMessage, apiKey, model)
+    : await summarizeOpenAI(userMessage, apiKey, model);
+  return enforce(raw);
 }
 
 async function summarizeAnthropic(
@@ -47,7 +59,7 @@ async function summarizeAnthropic(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 256,
+        max_tokens: 128,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
       }),
@@ -81,7 +93,7 @@ async function summarizeOpenAI(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 256,
+        max_tokens: 128,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userMessage },
