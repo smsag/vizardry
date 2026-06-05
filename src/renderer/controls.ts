@@ -130,6 +130,18 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   increaseBtn.addEventListener("click", (e) => { e.stopPropagation(); if (step < MAX_STEP) { step++; applyStep(); } });
   applyStep();
 
+  const editSourceBtn = actions.createEl("button", { cls: "vizardry-edit-source-btn vzd-btn" }) as HTMLButtonElement;
+  setIcon(editSourceBtn, "code");
+  editSourceBtn.setAttribute("aria-label", t("controls.editSource"));
+  editSourceBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    // Delegate to Obsidian's own "Edit block" button that lives inside the
+    // .cm-embed-block wrapper — this avoids re-implementing the CM6 toggle.
+    const embedBlock = container.closest(".cm-embed-block");
+    const nativeBtn = embedBlock?.querySelector<HTMLElement>(".edit-block-button");
+    nativeBtn?.click();
+  });
+
   const downloadBtn = actions.createEl("button", { cls: "vizardry-download-btn vzd-btn" }) as HTMLButtonElement;
   setIcon(downloadBtn, "download");
   downloadBtn.setAttribute("aria-label", t("controls.downloadPng"));

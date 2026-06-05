@@ -28,6 +28,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "controls.decreaseFontSize":  "Schriftgröße verringern",
   "controls.increaseFontSize":  "Schriftgröße vergrößern",
   "controls.copySource":        "Canvas-Quelltext kopieren",
+  "controls.editSource":        "Quelltext bearbeiten",
   "controls.downloadPng":       "Als PNG herunterladen",
   "controls.presentFullscreen": "Vollbild-Präsentation",
   "controls.reloadCanvas":      "Canvas neu laden",

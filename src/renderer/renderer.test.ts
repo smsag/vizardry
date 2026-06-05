@@ -791,7 +791,7 @@ describe("renderCarouselBlock", () => {
   it("updates description to current slide alt on navigation", () => {
     const el = container();
     renderCarouselBlock(data, el, resolvePath);
-    const nextBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn:last-of-type");
+    const nextBtn = el.querySelector<HTMLButtonElement>('[data-action="next"]');
     nextBtn?.click();
     const desc = el.querySelector(".vzd-carousel-desc");
     expect(desc?.textContent).toBe("Slide 2");
@@ -800,7 +800,7 @@ describe("renderCarouselBlock", () => {
   it("advances to next slide on next button click", () => {
     const el = container();
     renderCarouselBlock(data, el, resolvePath);
-    const nextBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn:last-of-type");
+    const nextBtn = el.querySelector<HTMLButtonElement>('[data-action="next"]');
     nextBtn?.click();
     const slides = el.querySelectorAll(".vzd-carousel-slide");
     expect(slides[0].classList.contains("vzd-carousel-slide-active")).toBe(false);

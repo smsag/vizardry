@@ -123,12 +123,46 @@ export function addImpactChild(
     if (trimmed.slice(parentPrefix.length).trim() !== parentText) continue;
 
     const parentIndent = raw.search(/\S/);
-    const childIndent = parentIndent + indentUnit;
+    // `actor:` must be at root level (indent 0) — same as `goal:`.
+    // All other child keywords are indented one unit deeper than their parent.
+    const childIndent = childKeyword === "actor" ? 0 : parentIndent + indentUnit;
     const childIndentStr = " ".repeat(childIndent);
-    const subtreeLast = subtreeEnd(editor, ln, parentIndent, lineEnd);
+    // For goal→actor: actors sit at indent 0 (same as goal), so subtreeEnd
+    // would stop at the first actor line. Instead scan the whole block to find
+    // the last line that belongs to the goal's logical subtree (everything up
+    // to the closing fence).
+    const subtreeLast = childKeyword === "actor"
+      ? (() => {
+          let last = ln;
+          for (let i = ln + 1; i <= lineEnd; i++) {
+            const t = editor.getLine(i).trim();
+            if (t.startsWith("```")) break;
+            last = i;
+          }
+          return last;
+        })()
+      : subtreeEnd(editor, ln, parentIndent, lineEnd);
+
+    // Collect all existing node values so the new child gets a unique name.
+    const existingTexts = new Set<string>();
+    for (let i = lineStart; i <= lineEnd; i++) {
+      const t = editor.getLine(i).trim();
+      for (const kw of ["goal", "actor", "impact", "deliverable", "title"]) {
+        if (t.toLowerCase().startsWith(`${kw}:`)) {
+          existingTexts.add(t.slice(kw.length + 1).trim().toLowerCase());
+          break;
+        }
+      }
+    }
+    let childText = newChildText;
+    if (existingTexts.has(childText.toLowerCase())) {
+      let idx = 2;
+      while (existingTexts.has(`${childText} ${idx}`.toLowerCase())) idx++;
+      childText = `${childText} ${idx}`;
+    }
 
     editor.replaceRange(
-      `${childIndentStr}${childKeyword}: ${newChildText}\n`,
+      `${childIndentStr}${childKeyword}: ${childText}\n`,
       { line: subtreeLast + 1, ch: 0 },
     );
     return true;

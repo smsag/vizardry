@@ -678,14 +678,15 @@ export function moveStoryTaskCrossColumn(
       { line: insertAfterLine, ch: afterText.length },
     );
   } else {
-    // Insert first (higher), then delete (lower)
+    // taskLine < insertAfterLine: insert at the lower position first, then
+    // delete the original line. The insertion is BELOW taskLine so taskLine
+    // does NOT shift — delete it as-is (no +1 adjustment).
     const afterText = editor.getLine(insertAfterLine);
     editor.replaceRange(
       `\n${newTaskLine}`,
       { line: insertAfterLine, ch: afterText.length },
     );
-    // taskLine is now shifted by +1 due to the insertion
-    editor.replaceRange("", { line: taskLine + 1, ch: 0 }, { line: taskLine + 2, ch: 0 });
+    editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
   }
 
   return true;
