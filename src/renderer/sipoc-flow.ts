@@ -21,8 +21,8 @@ function colLabels(): Record<SIPOCColumn, string> {
 
 const W = 900;
 const HEADER_H = 44;
-const PAD = { top: 16, right: 12, bottom: 20, left: 12 };
-const COL_W = (W - PAD.left - PAD.right) / COLS.length; // 175.2
+const PAD = { top: 16, right: 0, bottom: 20, left: 0 };
+const COL_W = (W - PAD.left - PAD.right) / COLS.length; // 180
 const ROW_H = 68;
 const NODE_W = 120;
 const NODE_H = 36;

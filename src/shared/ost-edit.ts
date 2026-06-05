@@ -101,8 +101,23 @@ export function addOSTChild(
     const childIndentStr = " ".repeat(parentIndent + indentUnit);
     const subtreeLast = subtreeEnd(editor, ln, parentIndent, lineEnd);
 
+    // Collect all existing node texts so the new child gets a unique name.
+    const existingTexts = new Set<string>();
+    for (let i = lineStart; i <= lineEnd; i++) {
+      const t = editor.getLine(i).trim();
+      if (t && !t.startsWith("//") && !t.startsWith("```") && !/^(outcome:|title:)/i.test(t)) {
+        existingTexts.add(t.toLowerCase());
+      }
+    }
+    let childText = newChildText;
+    if (existingTexts.has(childText.toLowerCase())) {
+      let idx = 2;
+      while (existingTexts.has(`${childText} ${idx}`.toLowerCase())) idx++;
+      childText = `${childText} ${idx}`;
+    }
+
     editor.replaceRange(
-      `${childIndentStr}${newChildText}\n`,
+      `${childIndentStr}${childText}\n`,
       { line: subtreeLast + 1, ch: 0 },
     );
     return true;

@@ -35,6 +35,7 @@ export const en = {
   "controls.decreaseFontSize":  "Decrease font size",
   "controls.increaseFontSize":  "Increase font size",
   "controls.copySource":        "Copy canvas source",
+  "controls.editSource":        "Edit source",
   "controls.downloadPng":       "Download as PNG",
   "controls.presentFullscreen": "Present fullscreen",
   "controls.reloadCanvas":      "Reload canvas",

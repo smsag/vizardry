@@ -49,6 +49,7 @@ function renderTreeNodeRect(group: SVGGElement, node: TreeNode, opts: TreeRender
   }
 }
 
+/** Top-down layout: depth → Y, siblings spread along X. */
 function layoutTreeNode(node: TreeNode, opts: TreeRenderOptions): void {
   function layout(n: TreeNode, level: number, left: number): number {
     if (n.children.length === 0) {
@@ -78,6 +79,41 @@ function layoutTreeNode(node: TreeNode, opts: TreeRenderOptions): void {
   layout(node, node.level, opts.hPadding);
 }
 
+/** Horizontal layout: depth → X, siblings spread along Y. Used for "right" and "left". */
+function layoutTreeNodeH(node: TreeNode, opts: TreeRenderOptions): void {
+  function layout(n: TreeNode, level: number, top: number): number {
+    n.x = opts.hPadding + level * (opts.nodeW + opts.levelGap);
+    n.width = opts.nodeW;
+    n.height = opts.nodeH;
+
+    if (n.children.length === 0) {
+      n.y = top;
+      return opts.nodeH;
+    }
+
+    const childHeights = n.children.map(c => layout(c, level + 1, 0));
+    const childSpan = childHeights.reduce((s, h) => s + h, 0) + opts.siblingGap * (n.children.length - 1);
+    const height = Math.max(opts.nodeH, childSpan);
+
+    n.y = top + (height - opts.nodeH) / 2;
+
+    let cursor = top + (height - childSpan) / 2;
+    for (let i = 0; i < n.children.length; i++) {
+      layout(n.children[i], level + 1, cursor);
+      cursor += childHeights[i] + opts.siblingGap;
+    }
+    return height;
+  }
+  layout(node, node.level, opts.vPadding);
+}
+
+/** RTL post-pass: mirror every node's X so the root ends up on the right.
+ *  extraLeft shifts all nodes right to make room for "+" buttons on leaf nodes. */
+function mirrorTreeH(node: TreeNode, totalW: number, extraLeft: number): void {
+  node.x = totalW - node.x - node.width + extraLeft;
+  for (const child of node.children) mirrorTreeH(child, totalW, extraLeft);
+}
+
 function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
   const bounds = { maxX: node.x + node.width, maxY: node.y + node.height };
   for (const child of node.children) {
@@ -88,18 +124,37 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
   return bounds;
 }
 
-function renderTreeEdges(node: TreeNode, svg: SVGSVGElement, opts: TreeRenderOptions): void {
+function renderTreeEdges(
+  node: TreeNode,
+  svg: SVGSVGElement,
+  opts: TreeRenderOptions,
+  direction: "down" | "right" | "left",
+): void {
   for (const child of node.children) {
-    const x1 = node.x + opts.nodeW / 2, y1 = node.y + opts.nodeH;
-    const x2 = child.x + opts.nodeW / 2, y2 = child.y;
-    const cy = (y1 + y2) / 2;
+    let d: string;
+    if (direction === "down") {
+      const x1 = node.x + opts.nodeW / 2,  y1 = node.y + opts.nodeH;
+      const x2 = child.x + opts.nodeW / 2, y2 = child.y;
+      const cy = (y1 + y2) / 2;
+      d = `M ${x1} ${y1} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${y2}`;
+    } else {
+      // Horizontal: connect right edge of parent → left edge of child (LTR)
+      // or left edge of parent → right edge of child (RTL, after mirror).
+      const fromRight = direction === "right";
+      const x1 = fromRight ? node.x + opts.nodeW : node.x;
+      const y1 = node.y + opts.nodeH / 2;
+      const x2 = fromRight ? child.x : child.x + opts.nodeW;
+      const y2 = child.y + opts.nodeH / 2;
+      const cx = (x1 + x2) / 2;
+      d = `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`;
+    }
     svg.appendChild(createSvgEl("path", {
-      d: `M ${x1} ${y1} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${y2}`,
+      d,
       fill: "none",
       stroke: "var(--background-modifier-border)",
       "stroke-width": "1.5",
     }));
-    renderTreeEdges(child, svg, opts);
+    renderTreeEdges(child, svg, opts, direction);
   }
 }
 
@@ -114,6 +169,7 @@ function renderTreeNodes(
   editHandlers: TreeEditHandlers | undefined,
   renameState: RenameState,
   closeRename: () => void,
+  direction: "down" | "right" | "left" = "down",
 ): void {
   const group = createSvgEl("g", { transform: `translate(${node.x}, ${node.y})` }) as SVGGElement;
   const style = getTreeStyle(node.level, opts);
@@ -183,13 +239,19 @@ function renderTreeNodes(
   if (editHandlers) {
     group.classList.add("vzd-tree-node--editable");
 
-    // "+" button: appears below the node on hover — adds a child
+    // "+" button: position depends on layout direction
+    const addBtnTransform = direction === "right"
+      ? `translate(${opts.nodeW + 10}, ${opts.nodeH / 2})`
+      : direction === "left"
+        ? `translate(-10, ${opts.nodeH / 2})`
+        : `translate(${opts.nodeW / 2}, ${opts.nodeH + 10})`;
     const addBtn = createSvgEl("g", {
       class: "vzd-tree-edit-add",
-      transform: `translate(${opts.nodeW / 2}, ${opts.nodeH + 10})`,
+      transform: addBtnTransform,
       "aria-label": t("tree.addChild"),
     }) as SVGGElement;
-    addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-tree-edit-add-circle" }));
+    addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "16", class: "vzd-tree-edit-add-hit" }));
+    addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "10", class: "vzd-tree-edit-add-circle" }));
     const plusText = createSvgEl("text", {
       x: "0", y: "0",
       "dominant-baseline": "middle",
@@ -284,7 +346,7 @@ function renderTreeNodes(
   svg.appendChild(group);
 
   for (const child of node.children) {
-    renderTreeNodes(child, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename);
+    renderTreeNodes(child, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename, direction);
   }
 }
 
@@ -300,11 +362,34 @@ export function renderTree(
   navigateTo?: (heading: string) => void,
   editHandlers?: TreeEditHandlers,
 ): void {
-  layoutTreeNode(tree.root, opts);
+  const direction = opts.direction ?? "down";
+  const isHorizontal = direction === "right" || direction === "left";
+
+  // ── Layout ────────────────────────────────────────────────────────────────
+  if (isHorizontal) {
+    layoutTreeNodeH(tree.root, opts);
+    if (direction === "left") {
+      const preMirror = collectTreeBounds(tree.root);
+      // extraLeft reserves space for "+" buttons on the leftmost (deepest) nodes
+      const extraLeft = editHandlers ? 32 : 0;
+      mirrorTreeH(tree.root, preMirror.maxX + opts.hPadding, extraLeft);
+    }
+  } else {
+    layoutTreeNode(tree.root, opts);
+  }
+
+  // ── Canvas size ───────────────────────────────────────────────────────────
   const bounds = collectTreeBounds(tree.root);
-  const svgW = bounds.maxX + opts.hPadding;
-  // Extra bottom padding when editable so "+" buttons below leaf nodes are not clipped
-  const svgH = bounds.maxY + opts.vPadding + (editHandlers ? 24 : 0);
+  let svgW: number, svgH: number;
+  if (isHorizontal) {
+    // Extra right padding for "right" direction (room for "+" buttons on leaf nodes)
+    svgW = bounds.maxX + opts.hPadding + (direction === "right" && editHandlers ? 32 : 0);
+    svgH = bounds.maxY + opts.vPadding;
+  } else {
+    svgW = bounds.maxX + opts.hPadding;
+    // Extra bottom padding for "+" buttons below leaf nodes
+    svgH = bounds.maxY + opts.vPadding + (editHandlers ? 24 : 0);
+  }
 
   const wrapper = el.createEl("div", { cls: opts.wrapperClass });
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
@@ -320,8 +405,8 @@ export function renderTree(
   // Clicking the SVG background dismisses any open inline rename
   svg.addEventListener("click", closeRename);
 
-  renderTreeEdges(tree.root, svg, opts);
-  renderTreeNodes(tree.root, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename);
+  renderTreeEdges(tree.root, svg, opts, direction);
+  renderTreeNodes(tree.root, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename, direction);
   wrapper.appendChild(svg);
 }
 
@@ -352,6 +437,7 @@ export const OST_TREE_OPTIONS: TreeRenderOptions = {
 export const MINDMAP_OPTS: TreeRenderOptions = {
   nodeW: 180, nodeH: 40, levelGap: 70, siblingGap: 16,
   hPadding: 24, vPadding: 24, maxLabelChars: 24,
+  direction: "right",
   canvasClass: "vizardry-mindmap",
   wrapperClass: "vizardry-mindmap-wrapper",
   levelStyles: [
@@ -364,6 +450,7 @@ export const MINDMAP_OPTS: TreeRenderOptions = {
 export const IMPACT_MAP_OPTS: TreeRenderOptions = {
   nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
+  direction: "left",
   canvasClass: "vizardry-impact",
   wrapperClass: "vizardry-impact-wrapper",
   levelStyles: [

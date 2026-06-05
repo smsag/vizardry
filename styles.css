@@ -2,7 +2,11 @@
 .el-pre:has(> .vizardry-canvas),
 .el-pre:has(> .vizardry-canvas):hover,
 .cm-embed-block:has(.vizardry-canvas),
-.cm-embed-block:has(.vizardry-canvas):hover {
+.cm-embed-block:has(.vizardry-canvas):hover,
+.el-pre:has(> .vzd-carousel),
+.el-pre:has(> .vzd-carousel):hover,
+.cm-embed-block:has(.vzd-carousel),
+.cm-embed-block:has(.vzd-carousel):hover {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
@@ -12,7 +16,9 @@
 
 /* ── Hide Obsidian's native "Edit block" button overlay on vizardry blocks ── */
 .cm-embed-block:has(.vizardry-canvas) .edit-block-button,
-.cm-embed-block:has(.vizardry-canvas) .block-flair {
+.cm-embed-block:has(.vizardry-canvas) .block-flair,
+.cm-embed-block:has(.vzd-carousel) .edit-block-button,
+.cm-embed-block:has(.vzd-carousel) .block-flair {
   display: none !important;
 }
 
@@ -40,6 +46,7 @@
 
 .vizardry-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.5rem;
@@ -388,7 +395,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 0.2rem;
+  flex-basis: 100%;
+  margin-top: 0.1rem;
 }
 
 .vzd-story-meta-item {
@@ -556,16 +564,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  margin-top: 0.3rem;
-  padding: 0.2rem;
-  color: var(--text-faint);
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  margin: 0.3rem auto 0;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
   opacity: 0;
   transition: opacity 0.15s;
 }
 
 .vzd-story-cell:hover .vzd-story-add-task {
   opacity: 1;
+}
+
+.vzd-story-add-task:hover {
+  background: var(--interactive-accent-hover);
+  opacity: 1 !important;
 }
 
 /* Presentation mode */
@@ -635,12 +651,11 @@
 }
 
 .vzd-presentation-header {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  /* On macOS the traffic lights occupy ~80px from the left edge.
-     Push the header content clear of them so buttons are always reachable. */
-  padding: 0.85rem 1.25rem 0.85rem max(1.25rem, env(titlebar-area-width, 0px));
+  justify-content: center;
+  padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--background-modifier-border);
   flex-shrink: 0;
 }
@@ -651,17 +666,23 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-normal);
-  flex: 1;
+  /* 5rem (~80px) each side clears macOS traffic lights on the left and the
+     reload/close button group on the right regardless of window width. */
+  padding: 0 5rem;
+  flex: none;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.5rem;
+  text-align: center;
 }
 
-
-
 .vzd-presentation-btn-group {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -683,7 +704,9 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 1.25rem;
+  /* Left/right padding matches the header title's left offset (1.25rem) plus
+     a 0.75rem indent so all canvas content sits visually inside the title. */
+  padding: 1.25rem 2rem 1.5rem 2rem;
   display: flex;
   flex-direction: column;
 }
@@ -833,6 +856,100 @@
   color: var(--interactive-accent);
 }
 
+.vzd-carousel-btn--fullscreen {
+  margin-left: 0.25rem;
+  opacity: 0.5;
+  transition: opacity 0.1s ease;
+}
+
+.vzd-carousel-btn--fullscreen:hover {
+  opacity: 1;
+  color: var(--text-normal);
+}
+
+/* ── Carousel fullscreen overlay ── */
+.vzd-carousel-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vzd-carousel-fs-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-m);
+  display: block;
+  user-select: none;
+}
+
+.vzd-carousel-fs-caption {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--font-ui-small);
+  text-align: center;
+  max-width: 60vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.vzd-carousel-fs-counter {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--font-ui-small);
+  pointer-events: none;
+}
+
+.vzd-carousel-fs-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 2.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 1rem;
+  user-select: none;
+  transition: color 0.1s ease;
+}
+
+.vzd-carousel-fs-btn:hover {
+  color: #fff;
+}
+
+.vzd-carousel-fs-btn--prev { left: 0.5rem; }
+.vzd-carousel-fs-btn--next { right: 0.5rem; }
+
+.vzd-carousel-fs-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.1s ease;
+}
+
+.vzd-carousel-fs-close:hover {
+  color: #fff;
+}
+
 /* ══ SVG Tree Renderers (OST, Impact Map, Mind Map) ═════════════════
    All three use the shared renderTree() SVG pipeline. Wrapper
    overflow and text typography are defined here so font-size responds
@@ -900,6 +1017,11 @@ g.vzd-tree-node--editable {
 
 g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
   opacity: 1;
+}
+
+.vzd-tree-edit-add-hit {
+  fill: transparent;
+  pointer-events: all;
 }
 
 .vzd-tree-edit-add-circle {
@@ -1104,11 +1226,11 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-sipoc-add-row {
   position: absolute;
   top: 50%;
-  right: -14px;
+  right: -16px;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  padding: 0;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1268,12 +1390,12 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
 }
 
-.vzd-sipoc-row--alt .vzd-sipoc-td--process {
-  background: color-mix(in srgb, var(--interactive-accent) 15%, var(--background-secondary));
-}
-
 .vzd-sipoc-row--alt .vzd-sipoc-td {
   background: var(--background-secondary);
+}
+
+.vzd-sipoc-row--alt .vzd-sipoc-td--process {
+  background: color-mix(in srgb, var(--interactive-accent) 15%, var(--background-secondary));
 }
 
 .vzd-sipoc-cell-value {

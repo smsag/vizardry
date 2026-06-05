@@ -165,6 +165,9 @@ export interface TreeRenderOptions {
   levelStyles: TreeNodeStyle[];
   canvasClass: string;
   wrapperClass: string;
+  /** Layout direction. "down" (default) = root at top. "right" = root at left.
+   *  "left" = root at right (RTL). */
+  direction?: "down" | "right" | "left";
 }
 
 /** Callbacks supplied by the caller when tree nodes should be editable. */

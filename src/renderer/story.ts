@@ -61,7 +61,7 @@ export function renderStoryMap(
     el.textContent = "";
     const input = el.createEl("input", { cls: "vzd-inline-input", type: "text" });
     input.value = currentValue;
-    input.focus();
+    input.focus({ preventScroll: true });
     input.select();
     let committed = false;
     const commit = (): void => {
@@ -175,6 +175,11 @@ export function renderStoryMap(
 
     if (!app || !ctx || !overGrid) return;
 
+    // Preserve scroll position — editor.replaceRange() moves the CM6 cursor
+    // to the edited line which causes Obsidian to scroll there.
+    const savedScrollY = window.scrollY;
+    const savedScrollX = window.scrollX;
+
     if (toStepName !== stepName) {
       moveStoryTaskCrossColumn(app, ctx, container, taskName, stepName, toStepName, toSlice);
     } else if (toSlice !== fromSlice) {
@@ -182,6 +187,8 @@ export function renderStoryMap(
     } else if (toIndex !== fromIndex) {
       reorderStoryTask(app, ctx, container, stepName, fromSlice, fromIndex, toIndex);
     }
+
+    requestAnimationFrame(() => window.scrollTo(savedScrollX, savedScrollY));
   }
 
   function findDropTarget(clientX: number, clientY: number): { cell: HTMLElement; sliceName: string | null; stepName: string; index: number } | null {
@@ -224,8 +231,12 @@ export function renderStoryMap(
     drag.toSlice = target.sliceName;
     drag.toIndex = target.index;
 
+    // Remove placeholder from its current position before re-inserting so
+    // there's never more than one placeholder in the DOM at once.
+    drag.placeholder.remove();
+
     const cards = Array.from(target.cell.querySelectorAll<HTMLElement>(
-      ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--hidden)"
+      ".vzd-story-task-card:not(.vzd-story-task-card--ghost):not(.vzd-story-task-card--placeholder):not(.vzd-story-task-card--hidden)"
     ));
     if (target.index >= cards.length) {
       target.cell.appendChild(drag.placeholder);
@@ -294,12 +305,34 @@ export function renderStoryMap(
         });
       });
 
-      // Drag to move
+      // Drag to move — only initiate after the pointer moves > 5 px so that
+      // a plain click or double-click never triggers the drag machinery.
       card.addEventListener("mousedown", (e) => {
         if (card.querySelector(".vzd-inline-input")) return;
         e.preventDefault();
         e.stopPropagation();
-        startDrag(card, e);
+
+        const originX = e.clientX;
+        const originY = e.clientY;
+        const THRESHOLD = 5;
+        let started = false;
+
+        const onPreMove = (mv: MouseEvent): void => {
+          if (started) return;
+          if (Math.abs(mv.clientX - originX) > THRESHOLD || Math.abs(mv.clientY - originY) > THRESHOLD) {
+            started = true;
+            document.removeEventListener("mousemove", onPreMove);
+            document.removeEventListener("mouseup", onPreCancel);
+            startDrag(card, mv);
+          }
+        };
+        const onPreCancel = (): void => {
+          document.removeEventListener("mousemove", onPreMove);
+          document.removeEventListener("mouseup", onPreCancel);
+        };
+
+        document.addEventListener("mousemove", onPreMove);
+        document.addEventListener("mouseup", onPreCancel);
       });
       card.addEventListener("touchstart", (e) => {
         if (card.querySelector(".vzd-inline-input")) return;
@@ -430,7 +463,7 @@ function renderMetaBadge(
     span.textContent = "";
     const input = span.createEl("input", { cls: "vzd-inline-input", type: "text" });
     input.value = value;
-    input.focus();
+    input.focus({ preventScroll: true });
     input.select();
     let committed = false;
     const commit = (): void => {
