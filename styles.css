@@ -1588,3 +1588,133 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-presentation-wrap .vzd-sf-header-label {
   font-size: 13px;
 }
+
+/* ── Now/Next/Later Roadmap ──────────────────────────────────────────────── */
+
+.vzd-roadmap-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.vzd-roadmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vzd-roadmap-col-header {
+  border-radius: var(--radius-m);
+  padding: 0.35rem 0.6rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.vzd-roadmap-col[data-col-id="now"] .vzd-roadmap-col-header {
+  background: color-mix(in srgb, var(--color-green) 15%, transparent);
+  color: var(--color-green);
+}
+
+.vzd-roadmap-col[data-col-id="next"] .vzd-roadmap-col-header {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
+}
+
+.vzd-roadmap-col[data-col-id="later"] .vzd-roadmap-col-header {
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-muted);
+}
+
+.vzd-roadmap-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 2rem;
+}
+
+.vzd-roadmap-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, var(--radius-m));
+  padding: 0.3rem 0.5rem;
+}
+
+.vzd-roadmap-card-title {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  font-weight: 500;
+  color: var(--text-normal);
+  line-height: 1.3;
+}
+
+.vzd-roadmap-card-subtitle {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.75);
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+  line-height: 1.3;
+}
+
+.vzd-roadmap-card-title--editable { cursor: text; }
+
+.vzd-roadmap-card--draggable { cursor: grab; }
+.vzd-roadmap-card--draggable:active { cursor: grabbing; }
+
+.vzd-roadmap-card--ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.75;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.vzd-roadmap-card--placeholder {
+  border: 2px dashed var(--interactive-accent);
+  background: transparent;
+  opacity: 0.5;
+  min-height: 2rem;
+  border-radius: var(--radius-s, var(--radius-m));
+}
+
+.vzd-roadmap-card--hidden { visibility: hidden; }
+
+.vzd-roadmap-add-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: var(--radius-s);
+  margin-top: 0.1rem;
+  pointer-events: none;
+}
+
+.vzd-roadmap-col:hover .vzd-roadmap-add-item {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vzd-roadmap-add-item:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-roadmap-grid {
+  width: 100%;
+}
+
+.vzd-presentation-wrap .vzd-roadmap-card-title {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.05);
+}
+
+.vzd-presentation-wrap .vzd-roadmap-card-subtitle {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
+}

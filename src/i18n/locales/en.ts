@@ -116,6 +116,16 @@ export const en = {
   "raci.col.consulted":   "Consulted",
   "raci.col.informed":    "Informed",
 
+  // ── Roadmap labels ───────────────────────────────────────────────────────────
+  "roadmap.col.now":   "Now",
+  "roadmap.col.next":  "Next",
+  "roadmap.col.later": "Later",
+  "roadmap.addItem":   "Add item",
+  "roadmap.newItem":   "New Item",
+
+  // ── Framework description ────────────────────────────────────────────────────
+  "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
+
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",
 } as const;

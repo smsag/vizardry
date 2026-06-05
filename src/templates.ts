@@ -221,6 +221,23 @@ link: Database -> Cloud Host
 \`\`\`
 `;
 
+export const ROADMAP_TEMPLATE = `\`\`\`roadmap
+now:
+  item: Ship login flow
+    subtitle: Auth + session management
+  item: Fix checkout bug
+
+next:
+  item: Onboarding redesign
+    subtitle: New user first-run experience
+  item: Performance audit
+
+later:
+  item: Internationalisation
+  item: Dark mode
+\`\`\`
+`;
+
 export const RACI_TEMPLATE = `\`\`\`raci
 task: Define requirements
   responsible: Developer
