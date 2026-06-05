@@ -9,9 +9,7 @@ export function parseRoadmap(source: string): RoadmapResult {
   const colMap = new Map<ColId, RoadmapItem[]>(COLUMN_IDS.map(id => [id, []]));
 
   let currentColId: ColId | null = null;
-  let currentItem: RoadmapItem | null = null;
   let blockIndent = -1;
-  let subtitleIndent = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -21,9 +19,7 @@ export function parseRoadmap(source: string): RoadmapResult {
     const indent = raw.search(/\S/);
 
     if (indent === 0) {
-      currentItem = null;
       blockIndent = -1;
-      subtitleIndent = -1;
 
       const lower = trimmed.toLowerCase();
       if (lower === "now:" || lower === "next:" || lower === "later:") {
@@ -36,24 +32,15 @@ export function parseRoadmap(source: string): RoadmapResult {
       if (blockIndent === -1) blockIndent = indent;
 
       if (indent === blockIndent) {
-        subtitleIndent = -1;
         if (!trimmed.toLowerCase().startsWith("item:")) {
           return { ok: false, error: `Line ${i + 1}: expected "item: <title>" — "${trimmed}"` };
         }
-        const title = trimmed.slice("item:".length).trim();
+        const rest = trimmed.slice("item:".length);
+        const pipeIdx = rest.indexOf("|");
+        const title    = pipeIdx === -1 ? rest.trim() : rest.slice(0, pipeIdx).trim();
+        const subtitle = pipeIdx === -1 ? ""          : rest.slice(pipeIdx + 1).trim();
         if (!title) return { ok: false, error: `Line ${i + 1}: item requires a title` };
-        currentItem = { title, subtitle: "" };
-        colMap.get(currentColId)!.push(currentItem);
-
-      } else if (indent > blockIndent && currentItem !== null) {
-        if (subtitleIndent === -1) subtitleIndent = indent;
-        if (indent !== subtitleIndent) {
-          return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
-        }
-        if (!trimmed.toLowerCase().startsWith("subtitle:")) {
-          return { ok: false, error: `Line ${i + 1}: expected "subtitle: <text>" — "${trimmed}"` };
-        }
-        currentItem.subtitle = trimmed.slice("subtitle:".length).trim();
+        colMap.get(currentColId)!.push({ title, subtitle });
 
       } else {
         return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };

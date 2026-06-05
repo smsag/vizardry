@@ -28,9 +28,14 @@ function resolveEditor(
   return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
 }
 
+/** Escapes a string for safe use inside a RegExp. */
+function escRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 interface ItemRef {
   titleLine: number;
-  subtitleLine: number; // -1 if no subtitle
+  /** Full title (without pipe or subtitle). */
   title: string;
 }
 
@@ -40,6 +45,11 @@ interface ColBlock {
   indent: number; // indent of "item:" lines
 }
 
+/**
+ * Parses column blocks from the editor source, extracting item title lines.
+ * Items use the pipe convention: `item: <title> | <optional-key>`.
+ * `title` contains only the part before `|`.
+ */
 function parseColBlocks(
   editor: { getLine: (n: number) => string },
   lineStart: number,
@@ -47,7 +57,6 @@ function parseColBlocks(
 ): Map<string, ColBlock> {
   const result = new Map<string, ColBlock>();
   let current: ColBlock | null = null;
-  let currentColId: string | null = null;
   let blockIndent = -1;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
@@ -59,31 +68,26 @@ function parseColBlocks(
     if (indent === 0) {
       const lower = trimmed.toLowerCase();
       if (lower === "now:" || lower === "next:" || lower === "later:") {
-        currentColId = lower.slice(0, -1);
+        const colId = lower.slice(0, -1);
         current = { headerLine: ln, items: [], indent: -1 };
-        result.set(currentColId, current);
+        result.set(colId, current);
         blockIndent = -1;
       } else {
         current = null;
-        currentColId = null;
         blockIndent = -1;
       }
       continue;
     }
 
     if (!current) continue;
-
     if (blockIndent === -1) blockIndent = indent;
     if (current.indent === -1) current.indent = blockIndent;
 
     if (indent === blockIndent && trimmed.toLowerCase().startsWith("item:")) {
-      const title = trimmed.slice("item:".length).trim();
-      current.items.push({ titleLine: ln, subtitleLine: -1, title });
-    } else if (indent > blockIndent && current.items.length > 0) {
-      const lastItem = current.items[current.items.length - 1];
-      if (trimmed.toLowerCase().startsWith("subtitle:")) {
-        lastItem.subtitleLine = ln;
-      }
+      const rest = trimmed.slice("item:".length);
+      const pipeIdx = rest.indexOf("|");
+      const title = pipeIdx === -1 ? rest.trim() : rest.slice(0, pipeIdx).trim();
+      current.items.push({ titleLine: ln, title });
     }
   }
 
@@ -119,7 +123,7 @@ export function addRoadmapItem(
 
   const indentStr = block.indent !== -1 ? " ".repeat(block.indent) : "  ";
   const insertAfterLine = block.items.length > 0
-    ? Math.max(...block.items.map(i => i.subtitleLine !== -1 ? i.subtitleLine : i.titleLine))
+    ? block.items[block.items.length - 1].titleLine
     : block.headerLine;
   const afterText = editor.getLine(insertAfterLine);
   editor.replaceRange(
@@ -154,12 +158,10 @@ export function renameRoadmapItem(
   }
 
   const raw = editor.getLine(item.titleLine);
-  const indentStr = " ".repeat(raw.search(/\S/));
-  editor.replaceRange(
-    `${indentStr}item: ${newTitle.trim()}`,
-    { line: item.titleLine, ch: 0 },
-    { line: item.titleLine, ch: raw.length },
-  );
+  // Regex matches `item: <oldTitle>` and preserves any trailing ` | <key>` suffix.
+  const re = new RegExp(`^(\\s*item:\\s*)${escRe(oldTitle)}(\\s*(?:\\|.*)?$)`, "i");
+  const newLine = raw.replace(re, `$1${newTitle.trim()}$2`);
+  editor.replaceRange(newLine, { line: item.titleLine, ch: 0 }, { line: item.titleLine, ch: raw.length });
   return true;
 }
 
@@ -186,68 +188,39 @@ export function moveRoadmapItem(
   if (fromIndex < 0 || fromIndex >= fromBlock.items.length) return false;
 
   const item = fromBlock.items[fromIndex];
-
-  // Collect the lines to move (title + optional subtitle)
-  const linesToMove: string[] = [editor.getLine(item.titleLine)];
-  if (item.subtitleLine !== -1) linesToMove.push(editor.getLine(item.subtitleLine));
+  const rawLine = editor.getLine(item.titleLine);
 
   // Re-indent for target column
   const targetIndent = toBlock.indent !== -1 ? " ".repeat(toBlock.indent) : "  ";
-  const movedLines = linesToMove.map(l => `${targetIndent}${l.trim()}`);
+  const movedLine = `${targetIndent}${rawLine.trim()}`;
 
-  // Determine insertion point in target column (after same-column move adjustments)
-  let actualToIndex = fromColId === toColId
-    ? (fromIndex < toIndex ? toIndex : toIndex)
-    : toIndex;
-  if (fromColId === toColId && fromIndex < toIndex) actualToIndex = toIndex;
-
+  // Determine insertion point in target column
   const targetItems = fromColId === toColId
     ? fromBlock.items.filter((_, i) => i !== fromIndex)
     : toBlock.items;
+
+  let actualToIndex = toIndex;
+  if (fromColId === toColId && fromIndex < toIndex) actualToIndex = toIndex;
 
   let insertAfterLine: number;
   if (actualToIndex <= 0 || targetItems.length === 0) {
     insertAfterLine = toBlock.headerLine;
   } else {
     const refIdx = Math.min(actualToIndex - 1, targetItems.length - 1);
-    const refItem = targetItems[refIdx];
-    insertAfterLine = refItem.subtitleLine !== -1 ? refItem.subtitleLine : refItem.titleLine;
+    insertAfterLine = targetItems[refIdx].titleLine;
   }
 
-  // For same-column reorder, insertAfterLine might be < or > item lines
-  // Collect edits and apply bottom-up
-  type Edit =
-    | { kind: "delete"; line: number }
-    | { kind: "insert"; afterLine: number; text: string };
-  const edits: Edit[] = [];
-
-  // Delete source lines (bottom-up within item)
-  if (item.subtitleLine !== -1) edits.push({ kind: "delete", line: item.subtitleLine });
-  edits.push({ kind: "delete", line: item.titleLine });
-
-  edits.push({ kind: "insert", afterLine: insertAfterLine, text: movedLines.join("\n") });
-
-  // Apply: sort so higher lines come first, insertions before deletions on same line
-  const sortedEdits = [...edits].sort((a, b) => {
-    const lineA = a.kind === "delete" ? a.line : a.afterLine;
-    const lineB = b.kind === "delete" ? b.line : b.afterLine;
-    if (lineB !== lineA) return lineB - lineA;
-    // same line: insert before delete
-    if (a.kind === "insert" && b.kind === "delete") return -1;
-    if (a.kind === "delete" && b.kind === "insert") return 1;
-    return 0;
-  });
-
-  for (const edit of sortedEdits) {
-    if (edit.kind === "delete") {
-      editor.replaceRange("", { line: edit.line, ch: 0 }, { line: edit.line + 1, ch: 0 });
-    } else {
-      const afterText = editor.getLine(edit.afterLine);
-      editor.replaceRange(
-        `\n${edit.text}`,
-        { line: edit.afterLine, ch: afterText.length },
-      );
-    }
+  // Apply edits bottom-up to preserve line numbers
+  if (item.titleLine > insertAfterLine) {
+    // Delete first (higher line), then insert (lower line)
+    editor.replaceRange("", { line: item.titleLine, ch: 0 }, { line: item.titleLine + 1, ch: 0 });
+    const afterText = editor.getLine(insertAfterLine);
+    editor.replaceRange(`\n${movedLine}`, { line: insertAfterLine, ch: afterText.length });
+  } else {
+    // Insert first (lower line), then delete (higher line — now shifted +1)
+    const afterText = editor.getLine(insertAfterLine);
+    editor.replaceRange(`\n${movedLine}`, { line: insertAfterLine, ch: afterText.length });
+    editor.replaceRange("", { line: item.titleLine, ch: 0 }, { line: item.titleLine + 1, ch: 0 });
   }
 
   return true;

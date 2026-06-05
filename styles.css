@@ -1718,3 +1718,94 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-presentation-wrap .vzd-roadmap-card-subtitle {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
 }
+
+/* ── Roadmap Linear badges ───────────────────────────────────────────────── */
+.vzd-roadmap-card-meta {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  margin-top: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.vzd-roadmap-linear-key {
+  font-family: var(--font-monospace);
+  font-size: 0.7em;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-radius: 3px;
+  padding: 1px 4px;
+  cursor: default;
+}
+
+.vzd-roadmap-linear-status {
+  font-size: 0.7em;
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: #fff;
+  white-space: nowrap;
+  /* background-color set inline from Linear state color */
+}
+
+/* ── Roadmap hover popover ───────────────────────────────────────────────── */
+.vzd-roadmap-preview {
+  position: fixed;
+  z-index: 1000;
+  max-width: 320px;
+  min-width: 220px;
+  padding: 0.75rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  font-size: var(--font-ui-small);
+  pointer-events: none;
+  animation: vzd-fade-in 0.12s ease;
+}
+
+.vzd-roadmap-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.vzd-roadmap-preview-title {
+  font-weight: 600;
+  color: var(--text-normal);
+  flex: 1;
+}
+
+.vzd-roadmap-preview-body {
+  margin-top: 0.5rem;
+}
+
+.vzd-roadmap-preview-summary {
+  color: var(--text-normal);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.vzd-roadmap-preview-loading {
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.vzd-roadmap-preview-error {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.vzd-roadmap-preview-footer {
+  margin-top: 0.4rem;
+}
+
+.vzd-roadmap-preview-updated {
+  color: var(--text-faint);
+  font-size: 0.85em;
+}
+
+@keyframes vzd-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}

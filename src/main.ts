@@ -1,5 +1,8 @@
 import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
 import { MarkdownView, Notice, Plugin } from "obsidian";
+import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
+import type { PluginSettings } from "./settings";
+import { initLinearService } from "./linear";
 import { parseFrameworkSource } from "./parser";
 import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
 import { renderCanvas, renderError } from "./renderer";
@@ -35,7 +38,19 @@ const ALL_FRAMEWORKS: FrameworkDefinition[] = [
 const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
 
 export default class VizardryPlugin extends Plugin {
+  settings: PluginSettings = DEFAULT_SETTINGS;
+
+  async saveSettings(): Promise<void> {
+    const existing = ((await this.loadData()) ?? {}) as Record<string, unknown>;
+    // Preserve linearCache alongside settings
+    await this.saveData({ ...existing, ...this.settings });
+  }
+
   async onload(): Promise<void> {
+    const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
+    this.settings = { ...DEFAULT_SETTINGS, ...rawData } as PluginSettings;
+    initLinearService(this as Parameters<typeof initLinearService>[0]);
+    this.addSettingTab(new VizardrySettingTab(this.app, this));
     // Expose version on body for bug reports and renderer error attribution.
     document.body.dataset.vizardryVersion = this.manifest.version;
 
@@ -159,5 +174,6 @@ export default class VizardryPlugin extends Plugin {
 
   onunload(): void {
     resetInteractiveIdCounter();
+    initLinearService(null);
   }
 }

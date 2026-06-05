@@ -223,13 +223,11 @@ link: Database -> Cloud Host
 
 export const ROADMAP_TEMPLATE = `\`\`\`roadmap
 now:
-  item: Ship login flow
-    subtitle: Auth + session management
+  item: Ship login flow | CORE-1234
   item: Fix checkout bug
 
 next:
-  item: Onboarding redesign
-    subtitle: New user first-run experience
+  item: Onboarding redesign | CORE-5678
   item: Performance audit
 
 later:

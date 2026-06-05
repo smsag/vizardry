@@ -123,6 +123,11 @@ export const en = {
   "roadmap.addItem":   "Add item",
   "roadmap.newItem":   "New Item",
 
+  // ── Roadmap Linear integration ───────────────────────────────────────────────
+  "roadmap.linear.loading":   "Loading summary…",
+  "roadmap.linear.error":     "Could not load summary",
+  "roadmap.linear.noSummary": "No summary available",
+
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
 
