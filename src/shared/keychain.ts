@@ -18,6 +18,3 @@ export async function loadSecret(app: App, name: string): Promise<string | null>
   return (await app.secretStorage.getSecret(name)) ?? null;
 }
 
-export async function deleteSecret(app: App, name: string): Promise<void> {
-  await app.secretStorage.deleteSecret(name);
-}
