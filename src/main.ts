@@ -3,6 +3,7 @@ import { MarkdownView, Notice, Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
 import type { PluginSettings } from "./settings";
 import { initLinearService } from "./linear";
+import { clearLegacyLocalStorageKeys } from "./shared/keychain";
 import { parseFrameworkSource } from "./parser";
 import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
 import { renderCanvas, renderError } from "./renderer";
@@ -49,6 +50,7 @@ export default class VizardryPlugin extends Plugin {
   async onload(): Promise<void> {
     const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     this.settings = { ...DEFAULT_SETTINGS, ...rawData } as PluginSettings;
+    clearLegacyLocalStorageKeys(this); // one-time cleanup of old Electron safeStorage blobs
     initLinearService(this as Parameters<typeof initLinearService>[0]);
     this.addSettingTab(new VizardrySettingTab(this.app, this));
     // Expose version on body for bug reports and renderer error attribution.
