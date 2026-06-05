@@ -6,7 +6,9 @@ import { onDisconnected } from "./lifecycle";
 const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 
 // Tags whose content should never be enriched
-const SKIP_TAGS = new Set(["CODE", "PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
+// PRE skips multi-line code blocks (and their CODE children). Inline CODE is
+// intentionally kept so `` `CORE-1234` `` enriches on hover.
+const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
 
 // ── DOM walking ──────────────────────────────────────────────────────────────
 

@@ -116,9 +116,11 @@ export default class VizardryPlugin extends Plugin {
     // ── Global Linear key enrichment ──────────────────────────────────
     // Runs after all code-block processors so vizardry canvases are already
     // rendered when this post-processor scans for Linear keys.
+    // Sort order 1000 ensures this runs after all code-block processors (sort 0),
+    // so vizardry canvases are fully rendered before we scan for Linear keys.
     this.registerMarkdownPostProcessor((el) => {
       if (getLinearService()?.isEnabled()) enrichLinearKeys(el);
-    });
+    }, 1000);
 
     // ── Framework options (modal + commands) ───────────────────────────
     const frameworkOptions: FrameworkOption[] = [
