@@ -109,6 +109,16 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "raci.col.consulted":   "Konsultiert",
   "raci.col.informed":    "Informiert",
 
+  // ── Roadmap labels ───────────────────────────────────────────────────────────
+  "roadmap.col.now":   "Jetzt",
+  "roadmap.col.next":  "Demnächst",
+  "roadmap.col.later": "Später",
+  "roadmap.addItem":   "Element hinzufügen",
+  "roadmap.newItem":   "Neues Element",
+
+  // ── Framework description ────────────────────────────────────────────────────
+  "framework.roadmap.description": "Jetzt, Demnächst und Später Prioritäten auf einen Blick.",
+
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
 };
