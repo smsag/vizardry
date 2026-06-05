@@ -1719,36 +1719,20 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
 }
 
-/* ── Roadmap Linear badges ───────────────────────────────────────────────── */
-.vzd-roadmap-card-meta {
-  display: flex;
-  gap: 0.3rem;
-  align-items: center;
-  margin-top: 0.3rem;
-  flex-wrap: wrap;
-}
-
-.vzd-roadmap-linear-key {
+/* ── Linear key badge (global — any canvas or code fence) ───────────────── */
+.vzd-linear-key {
   font-family: var(--font-monospace);
-  font-size: 0.7em;
+  font-size: 0.75em;
   color: var(--text-muted);
   background: var(--background-secondary);
   border-radius: 3px;
   padding: 1px 4px;
   cursor: default;
-}
-
-.vzd-roadmap-linear-status {
-  font-size: 0.7em;
-  border-radius: 3px;
-  padding: 1px 5px;
-  color: #fff;
   white-space: nowrap;
-  /* background-color set inline from Linear state color */
 }
 
-/* ── Roadmap hover popover ───────────────────────────────────────────────── */
-.vzd-roadmap-preview {
+/* ── Linear hover popover ────────────────────────────────────────────────── */
+.vzd-linear-preview {
   position: fixed;
   z-index: 1000;
   max-width: 320px;
@@ -1763,44 +1747,53 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   animation: vzd-fade-in 0.12s ease;
 }
 
-.vzd-roadmap-preview-header {
+.vzd-linear-preview-header {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
 }
 
-.vzd-roadmap-preview-title {
+.vzd-linear-preview-status {
+  font-size: 0.7em;
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: #fff;
+  white-space: nowrap;
+  /* background-color set inline from Linear state color */
+}
+
+.vzd-linear-preview-title {
   font-weight: 600;
   color: var(--text-normal);
   flex: 1;
 }
 
-.vzd-roadmap-preview-body {
+.vzd-linear-preview-body {
   margin-top: 0.5rem;
 }
 
-.vzd-roadmap-preview-summary {
+.vzd-linear-preview-summary {
   color: var(--text-normal);
   line-height: 1.5;
   margin: 0;
 }
 
-.vzd-roadmap-preview-loading {
+.vzd-linear-preview-loading {
   color: var(--text-muted);
   letter-spacing: 0.1em;
 }
 
-.vzd-roadmap-preview-error {
+.vzd-linear-preview-error {
   color: var(--text-muted);
   font-style: italic;
 }
 
-.vzd-roadmap-preview-footer {
+.vzd-linear-preview-footer {
   margin-top: 0.4rem;
 }
 
-.vzd-roadmap-preview-updated {
+.vzd-linear-preview-updated {
   color: var(--text-faint);
   font-size: 0.85em;
 }
