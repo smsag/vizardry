@@ -1,4 +1,5 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import type { App } from "obsidian";
+import { PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret } from "./shared/keychain";
 
@@ -58,14 +59,14 @@ function addSecretField(
     text.setPlaceholder(placeholder);
 
     // Show mask if a secret is already stored, empty field otherwise
-    loadSecret(app, secretName).then(existing => {
+    void loadSecret(app, secretName).then(existing => {
       text.setValue(existing ? "••••••••" : "");
     });
 
     // Reveal on focus
     text.inputEl.addEventListener("focus", () => {
       if (text.getValue() === "••••••••") {
-        loadSecret(app, secretName).then(v => text.setValue(v ?? ""));
+        void loadSecret(app, secretName).then(v => text.setValue(v ?? ""));
       }
     });
 
@@ -76,7 +77,7 @@ function addSecretField(
         void saveSecret(app, secretName, v);
       }
       // Re-check storage to decide whether to show mask or empty
-      loadSecret(app, secretName).then(stored => {
+      void loadSecret(app, secretName).then(stored => {
         text.setValue(stored ? "••••••••" : "");
       });
     });
@@ -135,8 +136,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     // ── AI Summaries ───────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: "AI summaries" });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let modelDropdown: any;
+    let modelDropdown: any; // Obsidian's DropdownComponent type is not easily expressible here
 
     const updateModelOptions = (provider: "anthropic" | "openai"): void => {
       const models = provider === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;
