@@ -1,37 +1,60 @@
-import type { App } from "obsidian";
+import type { Plugin } from "obsidian";
 
 /**
- * Thin wrappers around Obsidian's built-in `app.secretStorage`, which on
- * desktop delegates to the OS keychain (macOS Keychain, Windows Credential
- * Manager, Linux libsecret). Secret material never touches data.json or any
- * syncable file.
- *
- * The `name` parameter is a logical secret identifier (e.g. "vzd-linear-key").
- * Only this name is stored in PluginSettings / data.json — not the key itself.
+ * Returns Electron's safeStorage module if available.
+ * In Obsidian (nodeIntegration: true), `require('electron')` is accessible
+ * from the renderer process. safeStorage encrypts values using the OS keychain
+ * (macOS Schlüsselbund, Windows Credential Store, Linux libsecret).
  */
-
-export async function saveSecret(app: App, name: string, value: string): Promise<void> {
-  await app.secretStorage.setSecret(name, value);
-}
-
-export async function loadSecret(app: App, name: string): Promise<string | null> {
-  const v = await app.secretStorage.getSecret(name);
-  return v ?? null;
-}
-
-export async function deleteSecret(app: App, name: string): Promise<void> {
-  await app.secretStorage.deleteSecret(name);
-}
-
-/**
- * One-time migration: wipe any remnants from the old Electron-safeStorage /
- * localStorage approach so stale blobs don't accumulate.
- *
- * Called from VizardryPlugin.onload() — safe to call even if keys never
- * existed (the calls are no-ops in that case).
- */
-export function clearLegacyLocalStorageKeys(plugin: { saveLocalStorage(key: string, value: unknown): void }): void {
-  for (const key of ["vzd-linear-key", "vzd-linear-key-enc", "vzd-llm-key", "vzd-llm-key-enc"]) {
-    plugin.saveLocalStorage(key, null);
+function getSafeStorage(): { isEncryptionAvailable(): boolean; encryptString(s: string): Buffer; decryptString(b: Buffer): string } | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const electron = (window as any).require?.("electron");
+    if (electron?.safeStorage?.isEncryptionAvailable()) return electron.safeStorage;
+  } catch {
+    // safeStorage unavailable (mobile / web / test environment)
   }
+  return null;
+}
+
+/**
+ * Saves a secret using the OS keychain when available.
+ * The encrypted blob is stored in Obsidian's vault-scoped localStorage under
+ * `<key>-enc`. If encryption is unavailable (mobile, CI) it falls back to
+ * plain localStorage under `<key>` — callers should warn the user in that case.
+ *
+ * Using `localStorage` rather than `data.json` keeps the secret out of any
+ * file that could be accidentally synced or committed.
+ */
+export function saveSecret(plugin: Plugin, key: string, value: string): void {
+  const ss = getSafeStorage();
+  if (ss) {
+    const enc = Buffer.from(ss.encryptString(value)).toString("base64");
+    plugin.saveLocalStorage(`${key}-enc`, enc);
+    plugin.saveLocalStorage(key, null); // clear any legacy plaintext
+  } else {
+    plugin.saveLocalStorage(key, value);
+  }
+}
+
+/**
+ * Loads a secret that was previously saved with `saveSecret`.
+ * Tries the encrypted form first; falls back to legacy plaintext.
+ */
+export function loadSecret(plugin: Plugin, key: string): string | null {
+  const ss = getSafeStorage();
+  const enc = plugin.loadLocalStorage(`${key}-enc`) as string | null;
+  if (enc && ss) {
+    try {
+      return ss.decryptString(Buffer.from(enc, "base64"));
+    } catch {
+      // decryption failed (key changed, corruption) — fall through
+    }
+  }
+  return (plugin.loadLocalStorage(key) as string | null) ?? null;
+}
+
+/** Returns true when OS-level encryption is available. */
+export function isKeychainAvailable(): boolean {
+  return getSafeStorage() !== null;
 }

@@ -1,21 +1,12 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
-import { saveSecret, loadSecret } from "./shared/keychain";
+import { saveSecret, loadSecret, isKeychainAvailable } from "./shared/keychain";
 
 export interface PluginSettings {
-  // Linear
   linearEnabled: boolean;
   linearBaseUrl: string;
-  /** Logical name under which the Linear API key is stored in app.secretStorage. */
-  linearSecretName: string;
-
-  // LLM
   llmProvider: "anthropic" | "openai";
   llmModel: string;
-  /** Logical name under which the LLM API key is stored in app.secretStorage. */
-  llmSecretName: string;
-
-  // Cache TTLs
   summaryTtlHours: number;
   statusTtlMinutes: number;
 }
@@ -23,16 +14,14 @@ export interface PluginSettings {
 export const DEFAULT_SETTINGS: PluginSettings = {
   linearEnabled: false,
   linearBaseUrl: "https://api.linear.app/graphql",
-  linearSecretName: "vzd-linear-key",
   llmProvider: "anthropic",
   llmModel: "claude-haiku-20240307",
-  llmSecretName: "vzd-llm-key",
   summaryTtlHours: 24,
   statusTtlMinutes: 5,
 };
 
 const ANTHROPIC_MODELS = [
-  { value: "claude-haiku-20240307",      label: "Claude Haiku (fast, cheap)" },
+  { value: "claude-haiku-20240307",  label: "Claude Haiku (fast, cheap)" },
   { value: "claude-3-5-sonnet-20241022", label: "Claude Sonnet (balanced)" },
 ];
 
@@ -70,34 +59,26 @@ export class VizardrySettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Linear API key")
-      .setDesc("Stored in the OS keychain via Obsidian's secure storage (never written to data.json).")
+      .setDesc(
+        isKeychainAvailable()
+          ? "Stored encrypted in the OS keychain (macOS Keychain / Windows Credential Store / libsecret)."
+          : "Stored in local browser storage (OS keychain unavailable on this platform).",
+      )
       .addText(text => {
+        const stored = loadSecret(this.plugin, "vzd-linear-key");
         text
           .setPlaceholder("lin_api_…")
-          .setValue("••••••••")
+          .setValue(stored ? "••••••••" : "")
           .inputEl.setAttribute("type", "password");
-
-        // Reveal actual value on focus
         text.inputEl.addEventListener("focus", () => {
-          if (text.getValue() === "••••••••") {
-            loadSecret(this.app, this.plugin.settings.linearSecretName).then(v => {
-              text.setValue(v ?? "");
-            });
-          }
+          if (text.getValue() === "••••••••") text.setValue(loadSecret(this.plugin, "vzd-linear-key") ?? "");
         });
-
-        // Persist to OS keychain and re-mask on blur
         text.inputEl.addEventListener("blur", () => {
           const v = text.getValue().trim();
           if (v && v !== "••••••••") {
-            void saveSecret(this.app, this.plugin.settings.linearSecretName, v);
+            saveSecret(this.plugin, "vzd-linear-key", v);
+            text.setValue("••••••••");
           }
-          text.setValue("••••••••");
-        });
-
-        // Show empty field when no key is stored yet
-        loadSecret(this.app, this.plugin.settings.linearSecretName).then(v => {
-          if (!v) text.setValue("");
         });
       });
 
@@ -117,10 +98,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     // ── AI Summaries ───────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: "AI summaries" });
 
-    // modelDropdown is assigned inside the addDropdown callback below;
-    // TypeScript needs a concrete type rather than the deep infer pattern.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let modelDropdown: any;
+    let modelDropdown: ReturnType<Setting["addDropdown"]> extends (cb: (d: infer D) => unknown) => unknown ? D : never;
 
     const updateModelOptions = (provider: "anthropic" | "openai"): void => {
       const models = provider === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;
@@ -128,6 +106,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       for (const { value, label } of models) {
         modelDropdown.addOption(value, label);
       }
+      // Set to first option if current model doesn't belong to this provider
       const validValues = models.map(m => m.value);
       if (!validValues.includes(this.plugin.settings.llmModel)) {
         this.plugin.settings.llmModel = models[0].value;
@@ -157,7 +136,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       .addDropdown(drop => {
         modelDropdown = drop;
         updateModelOptions(this.plugin.settings.llmProvider);
-        drop.onChange(async (value: string) => {
+        drop.onChange(async (value) => {
           this.plugin.settings.llmModel = value;
           await this.plugin.saveSettings();
         });
@@ -165,31 +144,26 @@ export class VizardrySettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("AI API key")
-      .setDesc("Stored in the OS keychain via Obsidian's secure storage (never written to data.json).")
+      .setDesc(
+        isKeychainAvailable()
+          ? "Stored encrypted in the OS keychain."
+          : "Stored in local browser storage.",
+      )
       .addText(text => {
+        const stored = loadSecret(this.plugin, "vzd-llm-key");
         text
           .setPlaceholder("sk-… or sk-ant-…")
-          .setValue("••••••••")
+          .setValue(stored ? "••••••••" : "")
           .inputEl.setAttribute("type", "password");
-
         text.inputEl.addEventListener("focus", () => {
-          if (text.getValue() === "••••••••") {
-            loadSecret(this.app, this.plugin.settings.llmSecretName).then(v => {
-              text.setValue(v ?? "");
-            });
-          }
+          if (text.getValue() === "••••••••") text.setValue(loadSecret(this.plugin, "vzd-llm-key") ?? "");
         });
-
         text.inputEl.addEventListener("blur", () => {
           const v = text.getValue().trim();
           if (v && v !== "••••••••") {
-            void saveSecret(this.app, this.plugin.settings.llmSecretName, v);
+            saveSecret(this.plugin, "vzd-llm-key", v);
+            text.setValue("••••••••");
           }
-          text.setValue("••••••••");
-        });
-
-        loadSecret(this.app, this.plugin.settings.llmSecretName).then(v => {
-          if (!v) text.setValue("");
         });
       });
 
