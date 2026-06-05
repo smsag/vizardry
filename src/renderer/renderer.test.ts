@@ -810,7 +810,7 @@ describe("renderCarouselBlock", () => {
   it("wraps around to last slide when prev clicked from first", () => {
     const el = container();
     renderCarouselBlock(data, el, resolvePath);
-    const prevBtn = el.querySelector<HTMLButtonElement>(".vzd-carousel-btn");
+    const prevBtn = el.querySelector<HTMLButtonElement>('[data-action="prev"]');
     prevBtn?.click();
     const slides = el.querySelectorAll(".vzd-carousel-slide");
     expect(slides[2].classList.contains("vzd-carousel-slide-active")).toBe(true);

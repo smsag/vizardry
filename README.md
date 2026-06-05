@@ -191,7 +191,7 @@ block: Actions
 - Blank lines and `//` comment lines are ignored
 - Fewer than 2 images shows a visible error message
 
-**Controls:** left/right arrow buttons, dot indicators, keyboard `←`/`→`, swipe on mobile.
+**Controls:** left/right arrow buttons, dot indicators, keyboard `←`/`→`, swipe on mobile. A **fullscreen** button (expand icon) in the title bar opens the current image full-screen with its caption — dismiss with ✕, Escape, or swipe.
 
 ---
 
@@ -222,6 +222,8 @@ actor: Customer Success
     deliverable: Automated check-in workflow
 ```
 ~~~
+
+**Layout:** Renders as a horizontal tree — goal on the right, actors and impacts flowing to the left.
 
 **Syntax:**
 - `goal:` — root, no indent, required, one only
@@ -372,6 +374,8 @@ root: What makes a great PM?
     Ship to learn
 ```
 ~~~
+
+**Layout:** Renders as a horizontal tree — root on the left, branches growing to the right.
 
 **Syntax:**
 - `root:` — central node, no indent, required, one only
@@ -550,7 +554,7 @@ row:
 - Missing cells render as `—`
 - Blank lines and `// comment` lines are ignored
 
-**Live Edit:** click any cell to edit it inline. The Process column is visually accented with your theme's accent colour.
+**Live Edit:** click any cell to edit it inline. The Process column is visually accented with your theme's accent colour. Hover any row to reveal a **+** button at the right edge — click it to insert a new empty row below.
 
 ---
 
@@ -915,6 +919,18 @@ In Live Preview, Wardley Maps support a full visual editing workflow:
 **Add a component** — hover any node to reveal a `+` handle at its right edge. Drag from the handle to place a new connected component. The new component (`New Component`) and a link to the source are inserted into the source block automatically. Press Escape before releasing to create the component without a link.
 
 **Rename** — double-click any component's circle or label. An inline input opens directly on that label. Type the new name and press Enter (or click away). The rename propagates to all references — the `component:` line, any `anchor:` line, and all `link:` lines in both positions.
+
+---
+
+## Canvas title bar controls
+
+Each canvas title bar reveals a set of icon buttons on hover:
+
+| Button | Action |
+|---|---|
+| **Edit source** (code icon) | Opens the code block in the editor for direct text editing |
+| **Download** (arrow-down icon) | Saves a PNG of the canvas to your downloads folder at 2× resolution |
+| **Present** (expand icon) | Opens a full-screen presentation overlay |
 
 ---
 

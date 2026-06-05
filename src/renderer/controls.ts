@@ -44,12 +44,12 @@ export function initCanvas(
     header.createEl("span", { text: title, cls: "vizardry-title" });
   }
 
-  extraHeaderContent?.(header);
   const fence = '```';
   const copyText = source !== undefined
     ? fence + frameworkId + '\n' + source + '\n' + fence
     : undefined;
   addHeaderControls(header, container, title, copyText);
+  extraHeaderContent?.(header);
 }
 
 function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (newTitle: string) => void): void {

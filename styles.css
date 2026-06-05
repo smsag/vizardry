@@ -807,65 +807,8 @@
   object-fit: contain;
 }
 
-/* Header row: title (left) + nav arrows (left, after title) */
-.vzd-carousel-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.vzd-carousel-desc {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.15);
-  font-weight: 600;
-  color: var(--text-normal);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.vzd-carousel-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.1rem;
-  flex-shrink: 0;
-}
-
-.vzd-carousel-btn {
-  /* <span> not <button> — zero native chrome by design */
-  color: var(--text-muted);
-  font-size: 1.1em;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0 2px;
-  transition: color 0.1s ease;
-  user-select: none;
-}
-
-.vzd-carousel-btn:hover {
-  color: var(--text-normal);
-}
-
-.vzd-carousel-btn:active {
-  color: var(--interactive-accent);
-}
-
-.vzd-carousel-btn--fullscreen {
-  margin-left: 0.25rem;
-  opacity: 0.5;
-  transition: opacity 0.1s ease;
-}
-
-.vzd-carousel-btn--fullscreen:hover {
-  opacity: 1;
-  color: var(--text-normal);
-}
+/* .vzd-carousel-desc carries the current image alt text; visual styling
+   comes from .vizardry-title which is co-applied in the renderer. */
 
 /* ── Carousel fullscreen overlay ── */
 .vzd-carousel-fs {
