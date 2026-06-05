@@ -1,3 +1,4 @@
+import { setIcon } from "obsidian";
 import type { CarouselBlock } from "../types";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { t } from "../i18n";
@@ -11,40 +12,41 @@ export function renderCarouselBlock(
   const { images } = data;
 
   const wrapper = el.createEl("div", {
-    cls: "vzd-carousel",
+    cls: "vzd-carousel vizardry-canvas",
     attr: {
       tabindex: "0",
       role: "region",
       "aria-label": t("nav.imageCarousel", { n: images.length }),
+      "data-framework": "carousel",
     },
   });
 
-  const header = wrapper.createEl("div", { cls: "vzd-carousel-header" });
-
-  const controls = header.createEl("div", { cls: "vzd-carousel-controls" });
-
-  const prevBtn = controls.createEl("span", {
-    cls: "vzd-carousel-btn",
-    text: "‹",
-    attr: { role: "button", tabindex: "0", "aria-label": t("nav.previousImage"), "data-action": "prev" },
-  });
-
-  const nextBtn = controls.createEl("span", {
-    cls: "vzd-carousel-btn",
-    text: "›",
-    attr: { role: "button", tabindex: "0", "aria-label": t("nav.nextImage"), "data-action": "next" },
-  });
-
-  const fullscreenBtn = controls.createEl("span", {
-    cls: "vzd-carousel-btn vzd-carousel-btn--fullscreen",
-    attr: { role: "button", tabindex: "0", "aria-label": t("controls.presentFullscreen") },
-  });
-  fullscreenBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+  const header = wrapper.createEl("div", { cls: "vizardry-header" });
 
   const descEl = header.createEl("span", {
-    cls: "vzd-carousel-desc",
+    cls: "vizardry-title vzd-carousel-desc",
     text: images[0].alt,
   });
+
+  const actions = header.createEl("div", { cls: "vizardry-header-actions" });
+
+  const fullscreenBtn = actions.createEl("button", {
+    cls: "vzd-btn",
+    attr: { "aria-label": t("controls.presentFullscreen") },
+  }) as HTMLButtonElement;
+  setIcon(fullscreenBtn, "expand");
+
+  const prevBtn = actions.createEl("button", {
+    cls: "vzd-btn",
+    attr: { "aria-label": t("nav.previousImage"), "data-action": "prev" },
+  }) as HTMLButtonElement;
+  setIcon(prevBtn, "chevron-left");
+
+  const nextBtn = actions.createEl("button", {
+    cls: "vzd-btn",
+    attr: { "aria-label": t("nav.nextImage"), "data-action": "next" },
+  }) as HTMLButtonElement;
+  setIcon(nextBtn, "chevron-right");
 
   const track = wrapper.createEl("div", { cls: "vzd-carousel-track" });
 
@@ -167,16 +169,13 @@ export function renderCarouselBlock(
     onDisconnected(wrapper, dismiss);
   }
 
+  // Native <button> elements handle Enter/Space keyboard activation automatically
   fullscreenBtn.addEventListener("click", openFullscreen);
-  fullscreenBtn.addEventListener("keydown", (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFullscreen(); } });
   // Double-click the image track also opens fullscreen
   track.addEventListener("dblclick", openFullscreen);
 
   prevBtn.addEventListener("click", () => goTo(current - 1));
   nextBtn.addEventListener("click", () => goTo(current + 1));
-  // Spans need explicit keyboard activation (buttons get this for free)
-  prevBtn.addEventListener("keydown", (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(current - 1); } });
-  nextBtn.addEventListener("keydown", (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(current + 1); } });
   wrapper.addEventListener("keydown", (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft") { e.preventDefault(); goTo(current - 1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); goTo(current + 1); }
