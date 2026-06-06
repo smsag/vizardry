@@ -28,10 +28,11 @@ import { parseSIPOC } from "./sipoc";
 import { parseCarouselBlock } from "./carousel";
 import { parseRACIMatrix } from "./raci";
 import { parseRoadmap } from "./roadmap";
+import { parsePaceLayers } from "./pacelayers";
 import {
   renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap,
+  renderRoadmap, renderPaceLayers,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -39,7 +40,7 @@ import {
   IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
-  ROADMAP_TEMPLATE,
+  ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE,
 } from "./templates";
 
 export type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
@@ -195,6 +196,16 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseRoadmap(source);
       if (!result.ok) { renderError(result.error, el); return; }
       renderRoadmap(result.data, el, source, app, ctx);
+    },
+  },
+  {
+    id: "pacelayers",
+    label: "Pace Layer Analysis",
+    template: PACE_LAYERS_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const result = parsePaceLayers(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderPaceLayers(result.data, el, source, app, ctx);
     },
   },
 ];

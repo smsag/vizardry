@@ -1719,6 +1719,210 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
 }
 
+/* ── Pace Layers Canvas ─────────────────────────────────────────────────── */
+
+.vzd-pl-context {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary-alt);
+}
+
+/* ── Stack ── */
+.vzd-pl-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Row ── */
+.vzd-pl-row {
+  display: flex;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.vzd-pl-row:last-child {
+  border-bottom: none;
+}
+
+/* Row heights — encoding pace of change */
+.vzd-pl-row--xs  { min-height: 48px;  }
+.vzd-pl-row--sm  { min-height: 72px;  }
+.vzd-pl-row--md  { min-height: 96px;  }
+.vzd-pl-row--lg  { min-height: 120px; }
+.vzd-pl-row--xl  { min-height: 152px; }
+.vzd-pl-row--xxl {
+  min-height: 80px;
+  background: var(--background-secondary);
+}
+
+/* Culture accent border — signals belief layer */
+.vzd-pl-row--accent {
+  border-left: 3px solid var(--interactive-accent);
+}
+
+/* ── Label column ── */
+.vzd-pl-label-col {
+  width: 148px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.vzd-pl-layer-name {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vzd-pl-speed-cue {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.vzd-pl-type-translation {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* ── Cells column ── */
+.vzd-pl-cells-col {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+/* Single note cell (Fashion, Commerce, Nature) */
+.vzd-pl-note {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-content: start;
+}
+
+/* Trio layout (Infrastructure, Governance, Culture) */
+.vzd-pl-trio {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  min-width: 0;
+}
+
+.vzd-pl-cell {
+  display: flex;
+  flex-direction: column;
+  align-content: start;
+  padding: 0.5rem 0.65rem;
+  border-right: 1px solid var(--background-modifier-border);
+  min-width: 0;
+}
+
+.vzd-pl-cell:last-child {
+  border-right: none;
+}
+
+/* Cell type accents — subtle left border only */
+.vzd-pl-cell--obs  { border-left: 2px solid var(--text-faint); }
+.vzd-pl-cell--feed { border-left: 2px solid var(--text-muted); }
+.vzd-pl-cell--idea { border-left: 2px solid var(--interactive-accent); }
+
+/* Cell header label */
+.vzd-pl-cell-header {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+}
+
+/* Cell content */
+.vzd-pl-cell-content {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  flex: 1;
+}
+
+/* Empty state */
+.vzd-pl-empty {
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+}
+
+/* Placeholder (shown when empty + not editing) */
+.vzd-pl-cell-content[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-faint);
+  font-style: italic;
+  font-size: var(--font-ui-smaller);
+  pointer-events: none;
+}
+
+/* Inline edit textarea */
+.vzd-pl-textarea {
+  width: 100%;
+  min-height: 2.5rem;
+  background: transparent;
+  border: 1px solid var(--interactive-accent);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  padding: 0.2rem 0.3rem;
+  box-sizing: border-box;
+}
+
+/* Editable affordance */
+.vzd-block-editable.vzd-pl-note:hover,
+.vzd-block-editable.vzd-pl-cell:hover {
+  background: var(--background-modifier-hover);
+  cursor: text;
+}
+
+/* ── Mobile carousel ── */
+@media (max-width: 600px) {
+  .vzd-pl-stack {
+    display: block;
+  }
+  .vzd-pl-row {
+    display: none;
+    flex-direction: column;
+  }
+  .vzd-pl-row.vzd-pl-row--active {
+    display: flex;
+  }
+  .vzd-pl-label-col {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--background-modifier-border);
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .vzd-pl-trio {
+    grid-template-columns: 1fr;
+  }
+  .vzd-pl-cell {
+    border-right: none;
+    border-bottom: 1px solid var(--background-modifier-border);
+  }
+}
+
 /* ── Settings: secret row & picker modal ────────────────────────────────── */
 .vzd-secret-status {
   display: inline-block;
