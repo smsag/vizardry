@@ -215,7 +215,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, venn, ost, mindmap, impact
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-sipoc-wrap, .vzd-sipoc-flow-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-sipoc-wrap, .vzd-sipoc-flow-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack"
     );
     if (!contentEl) return;
 
@@ -223,6 +223,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
 
     // Restore mobile carousel state — show all blocks
     clone.querySelectorAll(".vizardry-block").forEach(b => b.classList.add("vizardry-block-active"));
+    clone.querySelectorAll(".vzd-pl-row").forEach(r => r.classList.add("vzd-pl-row--active"));
 
     // Restore story step carousel state — show full grid
     if (clone.classList.contains("vzd-story-grid")) {

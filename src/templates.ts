@@ -256,3 +256,34 @@ task: Test & sign off
   informed: Stakeholder
 \`\`\`
 `;
+
+export const PACE_LAYERS_TEMPLATE = `\`\`\`pacelayers
+// type: shearing | product | retro
+type: shearing
+context:
+
+layer: Fashion
+  note:
+
+layer: Commerce
+  note:
+
+layer: Infrastructure
+  obs:
+  feed:
+  idea:
+
+layer: Governance
+  obs:
+  feed:
+  idea:
+
+layer: Culture
+  obs:
+  feed:
+  idea:
+
+layer: Nature
+  note:
+\`\`\`
+`;

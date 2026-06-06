@@ -30,6 +30,7 @@ export const en = {
   "framework.venn.description":       "Overlaps and gaps clearly identified.",
   "framework.vpc.description":        "Features match real customer needs.",
   "framework.wardley.description":    "Value chain plotted against evolution to reveal strategic moves.",
+  "framework.pacelayers.description": "Six pace layers — Fashion to Nature — mapped with observations, feedback, and ideas.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
