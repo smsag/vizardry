@@ -7,6 +7,15 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
 
+/** Definition shown as placeholder when a column has no data. */
+const RACI_DEFINITIONS: Record<CellKey, string> = {
+  task:        "Name of the activity or deliverable",
+  responsible: "Who does the work",
+  accountable: "Who owns the outcome — one person per task",
+  consulted:   "Whose input is needed before deciding",
+  informed:    "Who is kept in the loop but not involved",
+};
+
 function getCols(): { key: CellKey; label: string; accent?: boolean }[] {
   return [
     { key: "task",        label: t("raci.col.task") },
@@ -17,8 +26,8 @@ function getCols(): { key: CellKey; label: string; accent?: boolean }[] {
   ];
 }
 
-function activateCellEdit(
-  td: HTMLElement,
+function activateItemEdit(
+  item: HTMLElement,
   cellKey: CellKey,
   rowIndex: number,
   currentValue: string,
@@ -26,11 +35,11 @@ function activateCellEdit(
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
 ): void {
-  if (td.hasClass("vzd-raci-editing")) return;
-  td.addClass("vzd-raci-editing");
-  td.empty();
+  if (item.hasClass("vzd-raci-editing")) return;
+  item.addClass("vzd-raci-editing");
+  item.empty();
 
-  const textarea = td.createEl("textarea", { cls: "vzd-raci-textarea" });
+  const textarea = item.createEl("textarea", { cls: "vzd-raci-textarea" });
   textarea.value = currentValue;
 
   const resize = (): void => {
@@ -44,13 +53,14 @@ function activateCellEdit(
 
   let committed = false;
 
-  const restoreCell = (value: string): void => {
-    td.removeClass("vzd-raci-editing");
-    td.empty();
+  const restoreItem = (value: string): void => {
+    item.removeClass("vzd-raci-editing");
+    item.empty();
     if (value) {
-      td.createEl("span", { cls: "vzd-raci-cell-value", text: value });
+      item.removeClass("vzd-raci-item--empty");
+      item.createEl("span", { cls: "vzd-raci-item-value", text: value });
     } else {
-      td.createEl("span", { cls: "vzd-raci-cell-empty", text: "—" });
+      item.addClass("vzd-raci-item--empty");
     }
   };
 
@@ -59,12 +69,12 @@ function activateCellEdit(
     committed = true;
     const newValue = textarea.value.trim();
     writeRACICell(app, ctx, container, rowIndex, cellKey, newValue);
-    restoreCell(newValue);
+    restoreItem(newValue);
   };
 
   textarea.addEventListener("blur", commit);
   textarea.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { committed = true; restoreCell(currentValue); }
+    if (e.key === "Escape") { committed = true; restoreItem(currentValue); }
     if (e.key === "Tab")    { e.preventDefault(); commit(); }
   });
 }
@@ -83,42 +93,51 @@ export function renderRACIMatrix(
     : undefined;
   initCanvas(container, "raci", title, undefined, source, onTitleEdit);
 
-  const wrap = container.createEl("div", { cls: "vzd-raci-wrap" });
-  const table = wrap.createEl("table", { cls: "vzd-raci-table" });
+  const rows = data?.rows ?? [];
 
-  // Header
-  const thead = table.createEl("thead");
-  const headerRow = thead.createEl("tr");
+  // Use the same grid structure as all other canvases
+  const grid = container.createEl("div", { cls: "vizardry-grid" });
+  grid.style.setProperty("--vzd-template", '"task responsible accountable consulted informed"');
+  grid.style.setProperty("--vzd-columns", "repeat(5, 1fr)");
+  grid.style.setProperty("--vzd-rows", "1fr");
+
   getCols().forEach((col) => {
-    headerRow.createEl("th", {
-      cls: `vzd-raci-th${col.accent ? " vzd-raci-th--accent" : ""}`,
-      text: col.label,
+    // Use vizardry-block so the design is identical to all other canvases
+    const block = grid.createEl("div", {
+      cls: `vizardry-block${col.accent ? " vzd-raci-col--accent" : ""}`,
     });
-  });
+    block.style.gridArea = col.key;
 
-  // Body
-  const tbody = table.createEl("tbody");
-  data.rows.forEach((row, rowIdx) => {
-    const tr = tbody.createEl("tr", {
-      cls: rowIdx % 2 === 1 ? "vzd-raci-row vzd-raci-row--alt" : "vzd-raci-row",
-    });
+    // Label row — identical structure to renderCanvas()
+    const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
+    labelRow.createEl("span", { cls: "vizardry-block-label", text: col.label });
 
-    getCols().forEach((col) => {
-      const value = col.key === "task" ? row.task : row[col.key];
-      const td = tr.createEl("td", {
-        cls: `vzd-raci-td${col.accent ? " vzd-raci-td--accent" : ""}${col.key === "task" ? " vzd-raci-td--task" : ""}`,
+    // Body — mirrors vizardry-block-body; override white-space for item list
+    const body = block.createEl("div", { cls: "vizardry-block-body vzd-raci-body" });
+
+    if (rows.length === 0) {
+      // Initial state: show definition as faint italic placeholder (same ::before CSS as other canvases)
+      body.addClass("vizardry-block-empty");
+      body.setAttribute("data-placeholder", RACI_DEFINITIONS[col.key]);
+      return;
+    }
+
+    rows.forEach((row, rowIdx) => {
+      const raw = col.key === "task" ? row.task : row[col.key];
+      const value = raw ?? "";
+
+      const item = body.createEl("div", {
+        cls: `vzd-raci-item${!value ? " vzd-raci-item--empty" : ""}`,
       });
 
       if (value) {
-        td.createEl("span", { cls: "vzd-raci-cell-value", text: value });
-      } else {
-        td.createEl("span", { cls: "vzd-raci-cell-empty", text: "—" });
+        item.createEl("span", { cls: "vzd-raci-item-value", text: value });
       }
 
       if (app && ctx) {
-        td.addClass("vzd-raci-td--editable");
-        td.addEventListener("click", () => {
-          activateCellEdit(td, col.key, rowIdx, value ?? "", app, ctx, container);
+        item.addClass("vzd-raci-item--editable");
+        item.addEventListener("click", () => {
+          activateItemEdit(item, col.key, rowIdx, value, app, ctx, container);
         });
       }
     });

@@ -71,9 +71,6 @@ export function parseRACIMatrix(source: string): RACIResult {
     current[key] = value;
   }
 
-  if (rows.length === 0) {
-    return { ok: false, error: `No tasks defined — start each task with "task: <name>"` };
-  }
-
+  // Empty is valid — the renderer shows column definitions as placeholder
   return { ok: true, data: { rows } };
 }
