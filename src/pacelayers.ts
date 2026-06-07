@@ -21,6 +21,38 @@ export const LAYER_CONFIG: LayerConfig[] = [
   { name: 'Nature',         speedLabel: 'Structural',      heightClass: 'vzd-pl-row--xxl', cellMode: 'note', accentBorder: false },
 ];
 
+/**
+ * Primary display label for each layer per type.
+ * The internal YAML key (layer: Fashion / Commerce / …) is unchanged for
+ * back-compat; only the rendered label changes.
+ */
+export const LAYER_LABELS: Record<PaceLayerType, Record<PaceLayerName, string>> = {
+  shearing: {
+    Fashion:        'Trends',
+    Commerce:       'Markets',
+    Infrastructure: 'Systems',
+    Governance:     'Governance',
+    Culture:        'Culture',
+    Nature:         'Nature',
+  },
+  product: {
+    Fashion:        'Experiments',
+    Commerce:       'Features',
+    Infrastructure: 'Architecture',
+    Governance:     'Operations',
+    Culture:        'Culture',
+    Nature:         'Mission',
+  },
+  retro: {
+    Fashion:        'Actions',
+    Commerce:       'Practices',
+    Infrastructure: 'Tooling',
+    Governance:     'Agreements',
+    Culture:        'Values',
+    Nature:         'Purpose',
+  },
+};
+
 export const TYPE_TRANSLATIONS: Record<PaceLayerType, Record<PaceLayerName, string>> = {
   shearing: {
     Fashion:        'Opinions & reactions',
@@ -53,70 +85,70 @@ type PromptTable = Record<PaceLayerType, Partial<Record<PromptKey, string>>>;
 
 export const PROMPTS: Record<PaceLayerName, PromptTable> = {
   Fashion: {
-    shearing: { note: 'What opinion, mood, or reaction showed up on the surface this period?' },
-    product:  { note: 'What changed at the UI or campaign level? What was shipping fast?' },
-    retro:    { note: 'What was the team\'s energy? What got said in standups?' },
+    shearing: { note: 'What are you reacting to right now — mood, opinion, or stance that feels current?' },
+    product:  { note: 'What is shipping fast right now — UI changes, copy, campaigns?' },
+    retro:    { note: "What was the team's energy this sprint? What got said in standups — not in the retro?" },
   },
   Commerce: {
-    shearing: { note: 'What goal did I set or decision did I consciously make?' },
-    product:  { note: 'What was on the roadmap? Which OKRs were active?' },
-    retro:    { note: 'What did the team commit to? What trade-offs were made?' },
+    shearing: { note: 'What goals feel alive and genuinely chosen right now, not inherited?' },
+    product:  { note: 'What is live on the roadmap? What OKRs are driving decisions this quarter?' },
+    retro:    { note: 'What did the team commit to? What was traded off — and was that trade-off made consciously?' },
   },
   Infrastructure: {
     shearing: {
-      obs:  'What did I repeatedly do without consciously deciding to?',
-      feed: 'What did someone notice about how I work — patterns, pace, style?',
-      idea: 'What recurring pattern am I noticing across these observations?',
+      obs:  'What do you default to doing — without consciously deciding to?',
+      feed: "What have people around you named about how you work, your pace, or your style?",
+      idea: 'Which recurring pattern here is a resource — and which is a constraint?',
     },
     product: {
-      obs:  'What did the system actually do under pressure or load?',
-      feed: 'What did users or teammates report about friction or reliability?',
-      idea: 'Where might tech debt or structural friction be masking a deeper constraint?',
+      obs:  'What does the system actually do under real load — not what the docs say?',
+      feed: 'What friction or reliability issues are users or engineers naming right now?',
+      idea: 'Where is tech debt quietly limiting what you can safely change?',
     },
     retro: {
       obs:  'How did the team actually work, versus the stated process?',
-      feed: 'What did someone say about how the team functions day-to-day?',
-      idea: 'What recurring working pattern should the team name explicitly?',
+      feed: 'What friction in tools, workflows, or coordination got named out loud?',
+      idea: 'What working pattern served the team well enough to keep?',
     },
   },
   Governance: {
     shearing: {
-      obs:  'What rule or principle did I follow without questioning it?',
-      feed: 'What did someone reflect back about my limits, standards, or commitments?',
-      idea: 'Is this rule still serving me — or is it inherited and unexamined?',
+      obs:  'What rule or standard are you currently operating from without questioning it?',
+      feed: 'Where have others pushed back on your limits or commitments?',
+      idea: 'Does this rule still serve you — or is it inherited and unexamined?',
     },
     product: {
-      obs:  'What process was followed even when it created friction?',
-      feed: 'What did a stakeholder say about how decisions get made here?',
-      idea: 'Which governance layer is misaligned with how the team actually operates?',
+      obs:  'What processes are people actually following — not the documented ones?',
+      feed: 'Where are stakeholders frustrated with how decisions get made?',
+      idea: 'Which process exists to manage a problem that no longer exists?',
     },
     retro: {
-      obs:  'What did the team treat as a rule, even without it being written down?',
-      feed: 'What did someone flag about process, norms, or fairness?',
-      idea: 'Which implicit agreement should be made explicit?',
+      obs:  'What did the team treat as a rule — without writing it down?',
+      feed: 'Where was there friction around fairness, process, or who gets to decide?',
+      idea: 'Which implicit agreement should be made explicit before next sprint?',
     },
   },
   Culture: {
     shearing: {
-      obs:  'What belief showed up in my behaviour this period — not what I said I believed?',
-      feed: 'What did someone reflect back about who I am, or how I show up?',
-      idea: 'Where is the gap between what I say I believe and how I actually acted?',
+      obs:  'What do you actually prioritise — as shown by your calendar and choices, not your words?',
+      feed: 'What has someone close reflected back about who you are or how you show up?',
+      idea: 'Where is the gap between what you say matters and how you actually act?',
     },
     product: {
-      obs:  'What value showed up in a tough prioritisation or hiring decision?',
-      feed: 'What did a resignation, a conflict, or a customer escalation reveal?',
-      idea: 'What do we actually optimise for, versus what we say we optimise for?',
+      obs:  'What does the company actually optimise for in a hard tradeoff — speed, quality, margin, users?',
+      feed: 'What do recent departures, escalations, or all-hands questions reveal?',
+      idea: 'Where is the stated culture diverging from what actually gets rewarded?',
     },
     retro: {
-      obs:  'What did the team protect, even under deadline pressure?',
-      feed: 'What did someone say about the team\'s character or identity?',
-      idea: 'Where is the espoused culture diverging from the culture-in-use?',
+      obs:  'What did the team protect under pressure — quality, scope, relationships, pace?',
+      feed: "What did someone say about the team's character or how you show up to each other?",
+      idea: 'Where is the team you want to be diverging from the team you actually were this sprint?',
     },
   },
   Nature: {
-    shearing: { note: 'What structural constraint — in you or in your context — did not move this period and won\'t?' },
-    product:  { note: 'What market, regulatory, or platform constraint is given — not a variable to optimise?' },
-    retro:    { note: 'What organisational or structural reality constrained the team and remained fixed?' },
+    shearing: { note: "What constraint — in you or your context — is structural and won't shift on any useful timescale?" },
+    product:  { note: 'What market structure, regulation, or platform constraint is simply given — not a variable to optimise?' },
+    retro:    { note: 'What organisational constraint — structure, dependencies, or external pressure — was fixed and shaped everything else?' },
   },
 };
 
