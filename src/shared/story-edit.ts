@@ -149,6 +149,66 @@ export function addStoryTask(
 }
 
 /**
+ * Deletes a task from the USM source:
+ * - Removes the `task: <taskName>` declaration line from its activity step block
+ * - Removes the task key from every slice cell reference that contains it
+ */
+export function deleteStoryTask(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  taskName: string,
+): boolean {
+  const resolved = resolveEditor(app, ctx, el, "deleteStoryTask");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const taskKey = taskName.toLowerCase().trim();
+  const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(taskName)}(\\s*(?:\\|.*)?$)`, "i");
+
+  type Edit = { line: number; newText: string | null }; // null = delete line
+  const edits: Edit[] = [];
+
+  // Phase A — find and delete the task declaration line
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    if (taskRe.test(raw)) {
+      edits.push({ line: ln, newText: null });
+      break;
+    }
+  }
+
+  // Phase B — remove the task key from all slice cell references
+  const slices = parseSlices(editor, lineStart, lineEnd);
+  for (const slice of slices) {
+    for (const cell of slice.cells) {
+      if (!cell.taskKeys.includes(taskKey)) continue;
+      const newKeys = cell.taskKeys.filter(k => k !== taskKey);
+      const newLine = newKeys.length > 0
+        ? `${" ".repeat(cell.indent)}step: ${cell.raw.trim().slice("step:".length).split("|")[0].trim()} | ${newKeys.join(", ")}`
+        : `${" ".repeat(cell.indent)}step: ${cell.raw.trim().slice("step:".length).split("|")[0].trim()}`;
+      edits.push({ line: cell.line, newText: newLine });
+    }
+  }
+
+  if (edits.length === 0) {
+    console.warn(`Vizardry: deleteStoryTask — "${taskName}" not found`);
+    return false;
+  }
+
+  edits.sort((a, b) => b.line - a.line);
+  for (const edit of edits) {
+    if (edit.newText === null) {
+      editor.replaceRange("", { line: edit.line, ch: 0 }, { line: edit.line + 1, ch: 0 });
+    } else {
+      const raw = editor.getLine(edit.line);
+      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+    }
+  }
+  return true;
+}
+
+/**
  * Writes or removes a top-level `user:` or `goal:` line.
  * If value is empty the existing line is deleted. If no line exists and value
  * is non-empty, a new line is inserted right after any `title:` line

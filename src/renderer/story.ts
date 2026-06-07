@@ -8,6 +8,7 @@ import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import {
   addStoryTask,
+  deleteStoryTask,
   moveStoryTaskSlice,
   moveStoryTaskCrossColumn,
   reorderStoryTask,
@@ -303,6 +304,18 @@ export function renderStoryMap(
         activateInlineEdit(nameDiv, task.name, (newName) => {
           renameStoryTask(app, ctx, container, task.name, newName);
         });
+      });
+
+      // × delete button
+      const delBtn = card.createEl("button", {
+        cls: "vzd-story-task-delete vzd-btn",
+        attr: { "aria-label": t("story.deleteTask") },
+      });
+      delBtn.textContent = "×";
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        deleteStoryTask(app, ctx, container, task.name);
       });
 
       // Drag to move — only initiate after the pointer moves > 5 px so that

@@ -33,18 +33,18 @@ class LinearService {
     return this.plugin.settings.linearEnabled;
   }
 
-  private getLinearApiKey(): string | null {
+  private getLinearApiKey(): Promise<string | null> {
     return loadSecret(this.plugin.app, this.plugin.settings.linearSecretName);
   }
 
-  private getLlmApiKey(): string | null {
+  private getLlmApiKey(): Promise<string | null> {
     return loadSecret(this.plugin.app, this.plugin.settings.llmSecretName);
   }
 
   async getStatus(issueKey: string): Promise<LinearState | null> {
     if (!this.isEnabled()) return null;
 
-    const linearApiKey = this.getLinearApiKey();
+    const linearApiKey = await this.getLinearApiKey();
     if (!linearApiKey) return null;
 
     const { statusTtlMinutes, linearBaseUrl } = this.plugin.settings;
@@ -73,8 +73,7 @@ class LinearService {
   async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; assignee: string | null; updatedAt: string } | { error: string } | null> {
     if (!this.isEnabled()) return null;
 
-    const linearApiKey = this.getLinearApiKey();
-    const llmApiKey = this.getLlmApiKey();
+    const [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
     if (!linearApiKey) return { error: "No Linear API key configured." };
     if (!llmApiKey) return { error: "No AI API key configured." };
 

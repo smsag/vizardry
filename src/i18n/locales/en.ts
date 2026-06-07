@@ -86,6 +86,7 @@ export const en = {
   "story.backlog":       "Backlog",
   "story.addTask":       "Add task",
   "story.newTask":       "New Task",
+  "story.deleteTask":    "Delete task",
   "story.clickToEdit":   "Click to edit",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────

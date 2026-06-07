@@ -495,6 +495,7 @@
 
 /* Task card — individual story inside a cell */
 .vzd-story-task-card {
+  position: relative;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s, var(--radius-m));
@@ -537,6 +538,34 @@
 }
 
 /* Edit-mode drag states */
+.vzd-story-task-delete {
+  display: none;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: var(--background-modifier-error);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.vzd-story-task-card:hover .vzd-story-task-delete {
+  display: flex;
+}
+
+.vzd-story-task-delete:hover {
+  filter: brightness(1.15);
+}
+
 .vzd-story-task-card--draggable {
   cursor: grab;
 }

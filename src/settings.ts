@@ -149,19 +149,10 @@ function addSecretRow(
 
   const refreshRow = (): void => {
     setting.clear();
-    const value = loadSecret(app, currentName);
-    const hasKey = !!value;
+    setting.setDesc(`Secret name: ${currentName}`);
 
-    setting.setDesc(
-      `Secret name: ${currentName}`,
-    );
-
-    // Status badge
-    const badge = setting.nameEl.createEl("span", {
-      cls: "vzd-secret-status " + (hasKey ? "vzd-secret-found" : "vzd-secret-missing"),
-      text: hasKey ? "Key found ✓" : "Not set",
-    });
-    // Keep badge after the label text
+    // Badge starts neutral; updated async below
+    const badge = setting.nameEl.createEl("span", { cls: "vzd-secret-status vzd-secret-missing", text: "…" });
     setting.nameEl.insertBefore(badge, setting.nameEl.firstChild);
     setting.nameEl.insertBefore(document.createTextNode(label + "  "), setting.nameEl.firstChild);
 
@@ -180,24 +171,37 @@ function addSecretRow(
     setting.addText(text => {
       text.inputEl.setAttribute("type", "password");
       text.setPlaceholder(valuePlaceholder);
-      text.setValue(hasKey ? "••••••••" : "");
+
+      // Async: probe storage, set initial badge + mask
+      void loadSecret(app, currentName).then(existing => {
+        badge.textContent = existing ? "Key found ✓" : "Not set";
+        badge.className = "vzd-secret-status " + (existing ? "vzd-secret-found" : "vzd-secret-missing");
+        text.setValue(existing ? "••••••••" : "");
+      });
 
       text.inputEl.addEventListener("focus", () => {
         if (text.getValue() === "••••••••") {
-          text.setValue(loadSecret(app, currentName) ?? "");
+          void loadSecret(app, currentName).then(v => text.setValue(v ?? ""));
         }
       });
 
       text.inputEl.addEventListener("blur", () => {
         const v = text.getValue().trim();
         if (v && v !== "••••••••") {
-          saveSecret(app, currentName, v);
+          void saveSecret(app, currentName, v).then(() =>
+            loadSecret(app, currentName).then(stored => {
+              text.setValue(stored ? "••••••••" : "");
+              badge.textContent = stored ? "Key found ✓" : "Not set";
+              badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
+            })
+          );
+        } else {
+          void loadSecret(app, currentName).then(stored => {
+            text.setValue(stored ? "••••••••" : "");
+            badge.textContent = stored ? "Key found ✓" : "Not set";
+            badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
+          });
         }
-        const stored = loadSecret(app, currentName);
-        text.setValue(stored ? "••••••••" : "");
-        // refresh badge without full redraw
-        badge.textContent = stored ? "Key found ✓" : "Not set";
-        badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
       });
     });
   };

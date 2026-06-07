@@ -78,6 +78,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "story.backlog":       "Backlog",
   "story.addTask":       "Aufgabe hinzufügen",
   "story.newTask":       "Neue Aufgabe",
+  "story.deleteTask":    "Aufgabe löschen",
   "story.clickToEdit":   "Zum Bearbeiten klicken",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
