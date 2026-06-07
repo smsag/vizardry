@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { ParsedPaceLayers, PaceLayerCell, PaceLayerName } from "../types";
-import { LAYER_CONFIG, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
+import { LAYER_CONFIG, LAYER_LABELS, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
 import { initCanvas, markInteractive } from "./controls";
 import { setupPaceLayerCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -41,7 +41,6 @@ export function renderPaceLayers(
       });
     } else {
       contentEl.setAttribute('data-placeholder', placeholder);
-      contentEl.createSpan({ cls: 'vzd-pl-empty', text: '—' });
     }
     // Cache value so click handler always reads the latest
     contentEl.dataset.plValue = value;
@@ -64,7 +63,7 @@ export function renderPaceLayers(
     contentEl.empty();
     contentEl.removeAttribute('data-placeholder');
 
-    const textarea = contentEl.createEl('textarea', { cls: 'vzd-pl-textarea' });
+    const textarea = contentEl.createEl('textarea', { cls: 'vzd-block-textarea' });
     textarea.value = currentValue.trim();
 
     const resize = (): void => {
@@ -85,9 +84,20 @@ export function renderPaceLayers(
       const newValue = textarea.value;
 
       if (isEditMode) {
+        // CM6's replaceRange dispatches a transaction that scrolls the editor
+        // to keep the changed line in view, causing the viewport to jump.
+        // Capture the CM scroller position before the write and restore it on
+        // the next animation frame, after CM has processed the change.
+        const scroller = container.closest<HTMLElement>('.cm-scroller');
+        const savedScrollTop = scroller?.scrollTop;
+
         const written = writePaceLayerCell(app!, ctx!, container, layerName, cellKey, newValue);
         if (!written) {
           new Notice(t('edit.writeFailed'));
+        }
+
+        if (scroller && savedScrollTop !== undefined) {
+          requestAnimationFrame(() => { scroller.scrollTop = savedScrollTop; });
         }
       }
 
@@ -156,10 +166,9 @@ export function renderPaceLayers(
     const row = stack.createDiv(rowCls);
     row.setAttribute('data-layer', config.name);
 
-    // Label column
+    // Label column — display name is type-specific; YAML key stays canonical
     const labelCol = row.createDiv('vzd-pl-label-col');
-    labelCol.createEl('span', { cls: 'vzd-pl-layer-name', text: config.name });
-    labelCol.createEl('span', { cls: 'vzd-pl-speed-cue', text: config.speedLabel });
+    labelCol.createEl('span', { cls: 'vzd-pl-layer-name', text: LAYER_LABELS[data.type][config.name] });
     labelCol.createEl('span', { cls: 'vzd-pl-type-translation', text: trans });
 
     // Cells column
@@ -173,9 +182,9 @@ export function renderPaceLayers(
       );
     } else {
       const trio = cellsCol.createDiv('vzd-pl-trio');
-      renderSingleCell(trio, 'vzd-pl-cell vzd-pl-cell--obs',  'OBS',  cell.obs  ?? '', prompts?.obs  ?? '', config.name, 'obs');
-      renderSingleCell(trio, 'vzd-pl-cell vzd-pl-cell--feed', 'FEED', cell.feed ?? '', prompts?.feed ?? '', config.name, 'feed');
-      renderSingleCell(trio, 'vzd-pl-cell vzd-pl-cell--idea', 'IDEA', cell.idea ?? '', prompts?.idea ?? '', config.name, 'idea');
+      renderSingleCell(trio, 'vzd-pl-cell vzd-pl-cell--obs',  'Observation', cell.obs  ?? '', prompts?.obs  ?? '', config.name, 'obs');
+      renderSingleCell(trio, 'vzd-pl-cell vzd-pl-cell--feed', 'Feedback',    cell.feed ?? '', prompts?.feed ?? '', config.name, 'feed');
+      renderSingleCell(trio, 'vzd-pl-cell vzd-pl-cell--idea', 'Idea',        cell.idea ?? '', prompts?.idea ?? '', config.name, 'idea');
     }
   }
 

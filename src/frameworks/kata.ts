@@ -11,10 +11,10 @@ export const KATA: FrameworkDefinition = {
   gridColumns: "repeat(2, 1fr)",
   gridRows: "1fr auto 1fr",
   blocks: [
-    { label: "Current Condition", area: "cc" },
-    { label: "Target Condition",  area: "tc" },
-    { label: "Obstacles",         area: "ob" },
-    { label: "Next Experiment",   area: "ne" },
-    { label: "Expected Outcome",  area: "eo" },
+    { label: "Current Condition", area: "cc", placeholder: "What is the measurable reality right now — not the target?" },
+    { label: "Target Condition",  area: "tc", placeholder: "What specific state do you want to reach, and by when?" },
+    { label: "Obstacles",         area: "ob", placeholder: "What is the one thing standing between current and target?" },
+    { label: "Next Experiment",   area: "ne", placeholder: "What is the smallest test you can run to learn something?" },
+    { label: "Expected Outcome",  area: "eo", placeholder: "What do you predict will happen — and how will you measure it?" },
   ],
 };

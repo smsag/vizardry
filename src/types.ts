@@ -10,6 +10,8 @@ export interface FrameworkDefinition {
 export interface BlockDefinition {
   label: string;
   area: string;
+  /** Faint italic prompt shown when the block is empty. */
+  placeholder?: string;
 }
 
 /**

@@ -123,6 +123,9 @@ export function renderCanvas(
 
     const content = data[labelKey] ?? "";
     const body = block.createEl("div", { cls: "vizardry-block-body" });
+    if (blockDef.placeholder) {
+      body.setAttribute("data-placeholder", blockDef.placeholder);
+    }
 
     renderBlockBody(body, content);
 

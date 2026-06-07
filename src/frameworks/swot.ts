@@ -10,9 +10,9 @@ export const SWOT: FrameworkDefinition = {
   gridColumns: "repeat(2, 1fr)",
   gridRows: "repeat(2, 1fr)",
   blocks: [
-    { label: "Strengths",    area: "sw" },
-    { label: "Weaknesses",   area: "wk" },
-    { label: "Opportunities", area: "op" },
-    { label: "Threats",      area: "th" },
+    { label: "Strengths",     area: "sw", placeholder: "What do you do well that others can't easily copy?" },
+    { label: "Weaknesses",    area: "wk", placeholder: "Where are you genuinely behind — honest answer?" },
+    { label: "Opportunities", area: "op", placeholder: "What external shifts could you act on right now?" },
+    { label: "Threats",       area: "th", placeholder: "What would hurt you if you ignored it for six months?" },
   ],
 };
