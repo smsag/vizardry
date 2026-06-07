@@ -7,6 +7,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.bmc.description":        "Das gesamte Geschäftsmodell auf einen Blick.",
   "framework.carousel.description":   "Mehrere Bilder als navigierbares Karussell.",
   "framework.fourls.description":     "Gefiel, Gelernt, Gefehlt, Gewünscht — plus eine gemeinsame Aktionsliste.",
+  "framework.fishbone.description":   "Ursachen bis zur Wirkung zurückverfolgt.",
   "framework.impact.description":     "Alle Features an Zielen ausgerichtet.",
   "framework.jobs.description":       "Kernmotivation der Kunden freigelegt.",
   "framework.kata.description":       "Klarer Weg zum nächsten Experiment.",
@@ -58,6 +59,12 @@ export const de: Partial<Record<TranslationKey, string>> = {
 
   // ── Title editing ────────────────────────────────────────────────────────────
   "title.clickToEdit": "Zum Umbenennen klicken",
+
+  // ── Fishbone Diagram level labels ───────────────────────────────────────────
+  "fishbone.level.effect":   "Wirkung",
+  "fishbone.level.category": "Kategorie",
+  "fishbone.level.cause":    "Ursache",
+  "fishbone.level.subcause": "Teilursache",
 
   // ── Impact Map level labels ─────────────────────────────────────────────────
   "impact.level.goal":        "Ziel",

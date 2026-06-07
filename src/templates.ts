@@ -5,6 +5,25 @@ export function generateCanvasTemplate(framework: FrameworkDefinition): string {
   return `\`\`\`${framework.id}\n${blocks}\n\`\`\`\n`;
 }
 
+export const FISHBONE_TEMPLATE = `\`\`\`fishbone
+effect: Problem statement
+
+category: People
+  cause: Lack of training
+    subcause: No onboarding process
+  cause: High turnover
+
+category: Process
+  cause: Unclear requirements
+  cause: Manual handoffs
+
+category: Technology
+  cause: Legacy system
+    subcause: No API available
+  cause: Missing monitoring
+\`\`\`
+`;
+
 export const IMPACT_MAP_TEMPLATE = `\`\`\`impact
 goal:
 

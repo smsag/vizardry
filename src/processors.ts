@@ -17,6 +17,7 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { extractInlineLinks, buildLinkSupport } from "./shared/links";
+import { parseFishbone } from "./fishbone";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
 import { parseMindMap } from "./mindmap";
@@ -30,14 +31,14 @@ import { parseRACIMatrix } from "./raci";
 import { parseRoadmap } from "./roadmap";
 import { parsePaceLayers } from "./pacelayers";
 import {
-  renderImpactMap, renderStoryMap, renderMindMap, renderOST,
+  renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
 import {
-  IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
+  FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE,
@@ -65,6 +66,18 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [
+  {
+    id: "fishbone",
+    label: "Fishbone Diagram",
+    template: FISHBONE_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseFishbone(strippedSource);
+      if (!result.ok) { renderError(result.error, el); return; }
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderFishbone(result.data, el, resolver, navigateTo, source, app, ctx);
+    },
+  },
   {
     id: "impact",
     label: "Impact Map",

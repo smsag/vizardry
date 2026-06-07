@@ -14,6 +14,7 @@ export const en = {
   "framework.bmc.description":        "Whole business model made visible.",
   "framework.carousel.description":   "Multiple images as a navigable carousel.",
   "framework.fourls.description":     "Liked, Learned, Lacked, Longed for — plus a shared action list.",
+  "framework.fishbone.description":   "Root causes traced back to an effect.",
   "framework.impact.description":     "All features tied to goals.",
   "framework.jobs.description":       "Core customer motivation laid bare.",
   "framework.kata.description":       "Clear path to next experiment.",
@@ -66,6 +67,12 @@ export const en = {
 
   // ── Title editing ────────────────────────────────────────────────────────────
   "title.clickToEdit": "Click to rename",
+
+  // ── Fishbone Diagram level labels ───────────────────────────────────────────
+  "fishbone.level.effect":   "Effect",
+  "fishbone.level.category": "Category",
+  "fishbone.level.cause":    "Cause",
+  "fishbone.level.subcause": "Sub-cause",
 
   // ── Impact Map level labels ─────────────────────────────────────────────────
   "impact.level.goal":        "Goal",

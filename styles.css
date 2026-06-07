@@ -761,7 +761,8 @@
 /* SVG tree renderers — full width in presentation */
 .vzd-presentation-wrap .vizardry-ost-wrapper,
 .vzd-presentation-wrap .vizardry-mindmap-wrapper,
-.vzd-presentation-wrap .vizardry-impact-wrapper {
+.vzd-presentation-wrap .vizardry-impact-wrapper,
+.vzd-presentation-wrap .vizardry-fishbone-wrapper {
   width: 100%;
   max-height: none;
 }
@@ -921,7 +922,8 @@
 
 .vizardry-ost-wrapper,
 .vizardry-mindmap-wrapper,
-.vizardry-impact-wrapper {
+.vizardry-impact-wrapper,
+.vizardry-fishbone-wrapper {
   overflow-x: auto;
   overflow-y: auto;
   max-height: 600px;

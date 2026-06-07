@@ -1,7 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
+import type { FishboneDiagram, ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas } from "./controls";
-import { adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, IMPACT_MAP_OPTS, MINDMAP_OPTS, OST_TREE_OPTIONS, renderTree } from "./tree";
+import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, OST_TREE_OPTIONS, renderTree } from "./tree";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -9,6 +9,7 @@ import { t } from "../i18n";
 import { renameMindMapNode, addMindMapChild, deleteMindMapNode } from "../shared/mindmap-edit";
 import { renameOSTNode, addOSTChild, deleteOSTNode } from "../shared/ost-edit";
 import { renameImpactNode, addImpactChild, deleteImpactNode } from "../shared/impact-edit";
+import { renameFishboneNode, addFishboneChild, deleteFishboneNode } from "../shared/fishbone-edit";
 
 // ── Mind Map ──────────────────────────────────────────────────────────────────
 
@@ -147,6 +148,52 @@ function makeOSTHandlers(
     onDelete(node: TreeNode): void {
       if (!deleteOSTNode(app, ctx, el, node.text)) {
         showWriteFailedNotice(el);
+      }
+    },
+  };
+}
+
+// ── Fishbone ──────────────────────────────────────────────────────────────────
+
+export function renderFishbone(
+  diagram: FishboneDiagram,
+  container: HTMLElement,
+  resolver: LinkResolver = NULL_RESOLVER,
+  navigateTo?: (heading: string) => void,
+  source?: string,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+): void {
+  const defaultTitle = "Fishbone Diagram";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "fishbone", title, undefined, source, onTitleEdit);
+
+  const editHandlers = (app && ctx) ? makeFishboneHandlers(app, ctx, container) : undefined;
+  renderTree(adaptFishboneToTree(diagram), FISHBONE_OPTS, container, resolver, navigateTo, editHandlers);
+}
+
+function makeFishboneHandlers(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  container: HTMLElement,
+): TreeEditHandlers {
+  return {
+    onRename(node: TreeNode, newText: string): void {
+      if (!renameFishboneNode(app, ctx, container, node.level, node.text, newText)) {
+        showWriteFailedNotice(container);
+      }
+    },
+    onAddChild(node: TreeNode): void {
+      if (!addFishboneChild(app, ctx, container, node.level, node.text, t("tree.newNode"))) {
+        showWriteFailedNotice(container);
+      }
+    },
+    onDelete(node: TreeNode): void {
+      if (!deleteFishboneNode(app, ctx, container, node.level, node.text)) {
+        showWriteFailedNotice(container);
       }
     },
   };
