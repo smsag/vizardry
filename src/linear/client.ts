@@ -30,11 +30,10 @@ export async function fetchLinearIssue(
     resp = await requestUrl({
       url: baseUrl,
       method: "POST",
-      headers: {
-        "Authorization": apiKey,
-        "Content-Type": "application/json",
-      },
+      contentType: "application/json",
+      headers: { "Authorization": apiKey },
       body: JSON.stringify({ query: QUERY, variables: { id: issueKey } }),
+      throw: false,
     });
   } catch (err) {
     throw new Error(`Linear: network error — ${(err as Error).message}`);
@@ -44,7 +43,9 @@ export async function fetchLinearIssue(
     throw new Error("Linear: invalid or missing API key");
   }
   if (resp.status !== 200) {
-    throw new Error(`Linear: unexpected response ${resp.status}`);
+    let detail = "";
+    try { detail = ` — ${JSON.stringify(resp.json)}`; } catch { detail = ` — ${resp.text}`; }
+    throw new Error(`Linear: HTTP ${resp.status}${detail}`);
   }
 
   const json = resp.json as { data?: { issue?: Record<string, unknown> }; errors?: { message: string }[] };

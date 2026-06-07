@@ -122,16 +122,19 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
   const svc = getLinearService();
   if (svc) {
     svc.getSummary(key).then(result => {
+      summaryEl.empty();
       if (!result) {
-        summaryEl.empty();
-        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.error") });
+        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: "Linear integration disabled." });
+        return;
+      }
+      if ("error" in result) {
+        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: result.error });
         return;
       }
       titleSpan.textContent = result.title;
       statusPill.textContent = result.state.name;
       statusPill.style.backgroundColor = result.state.color;
 
-      summaryEl.empty();
       if (result.summary) {
         summaryEl.textContent = result.summary;
       } else {
@@ -140,9 +143,9 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
 
       const diffH = Math.round((Date.now() - new Date(result.updatedAt).getTime()) / 3_600_000);
       updatedEl.textContent = diffH < 1 ? "Updated just now" : `Updated ${diffH}h ago`;
-    }).catch(() => {
+    }).catch((err: unknown) => {
       summaryEl.empty();
-      summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.error") });
+      summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: (err as Error).message ?? t("roadmap.linear.error") });
     });
   }
 

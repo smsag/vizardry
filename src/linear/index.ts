@@ -70,12 +70,13 @@ class LinearService {
     }
   }
 
-  async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; updatedAt: string } | null> {
+  async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; updatedAt: string } | { error: string } | null> {
     if (!this.isEnabled()) return null;
 
     const linearApiKey = this.getLinearApiKey();
     const llmApiKey = this.getLlmApiKey();
-    if (!linearApiKey || !llmApiKey) return null;
+    if (!linearApiKey) return { error: "No Linear API key configured." };
+    if (!llmApiKey) return { error: "No AI API key configured." };
 
     const { summaryTtlHours, linearBaseUrl, llmProvider, llmModel } = this.plugin.settings;
 
@@ -98,8 +99,9 @@ class LinearService {
 
       return { title: issue.title, summary, state: issue.state, updatedAt: issue.updatedAt };
     } catch (err) {
+      const msg = (err as Error).message ?? String(err);
       console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);
-      return null;
+      return { error: msg };
     }
   }
 }
