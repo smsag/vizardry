@@ -8,9 +8,10 @@ query Issue($id: String!) {
     title
     description
     updatedAt
-    state { name color }
+    state { name color type }
+    assignee { name }
     comments(last: 5, orderBy: createdAt) {
-      nodes { body author { name } }
+      nodes { body user { name } }
     }
   }
 }
@@ -61,16 +62,17 @@ export async function fetchLinearIssue(
   const issue = json.data?.issue;
   if (!issue) throw new Error(`Linear: issue "${issueKey}" not found`);
 
-  const state = issue.state as { name: string; color: string } | null ?? { name: "Unknown", color: "#888" };
+  const state = issue.state as { name: string; color: string; type: string } | null ?? { name: "Unknown", color: "#888", type: "unstarted" };
   const comments = (
-    (issue.comments as { nodes: { body: string; author: { name: string } }[] })?.nodes ?? []
-  ).map(c => ({ body: c.body ?? "", author: c.author?.name ?? "Unknown" }));
+    (issue.comments as { nodes: { body: string; user: { name: string } }[] })?.nodes ?? []
+  ).map(c => ({ body: c.body ?? "", author: c.user?.name ?? "Unknown" }));
 
   return {
     key: (issue.identifier as string) || issueKey,
     title: (issue.title as string) || "",
     description: (issue.description as string) || "",
     state,
+    assignee: (issue.assignee as { name: string } | null)?.name ?? null,
     comments,
     updatedAt: (issue.updatedAt as string) || "",
   };

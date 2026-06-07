@@ -2,6 +2,8 @@ export interface LinearState {
   name: string;
   /** Hex color string, e.g. "#4ea7fc" */
   color: string;
+  /** Linear state type: "backlog" | "unstarted" | "started" | "completed" | "cancelled" */
+  type: string;
 }
 
 export interface LinearComment {
@@ -14,6 +16,7 @@ export interface LinearIssue {
   title: string;
   description: string;
   state: LinearState;
+  assignee: string | null;
   comments: LinearComment[];
   /** ISO 8601 timestamp of last update on Linear */
   updatedAt: string;

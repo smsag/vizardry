@@ -1,14 +1,25 @@
 import { requestUrl } from "obsidian";
 import type { LinearIssue } from "./types";
 
-const SYSTEM_PROMPT =
-  "You are a product assistant writing BLUF (Bottom Line Up Front) status updates for a roadmap. " +
-  "Given a Linear issue, write a single short paragraph of at most 360 characters that covers: " +
-  "(1) the intent — what problem this issue solves and why it matters, and " +
-  "(2) the current state — progress made, what is blocking it, or what the next step is. " +
-  "Use plain prose. No bullet points. No markdown. Do not exceed 360 characters.";
+function buildSystemPrompt(stateCategory: string): string {
+  const focusMap: Record<string, string> = {
+    completed: "What was the resolution and what changed? Focus on the fix or outcome.",
+    cancelled:  "Why was it cancelled or what made it obsolete?",
+    started:    "What is actively happening right now? What is blocking progress or what is the next concrete step?",
+    unstarted:  "What decision, prerequisite, or open question still needs to be resolved before work can begin?",
+    backlog:    "What decision, prerequisite, or open question still needs to be resolved before work can begin?",
+  };
+  const focus = focusMap[stateCategory] ?? "What is the current state, any blockers, and what is being actively discussed?";
 
-const MAX_CHARS = 360;
+  return (
+    "You are a product assistant writing BLUF status updates for a roadmap. " +
+    "The reader already knows the issue title — do NOT restate or paraphrase it. " +
+    `This issue is in state category "${stateCategory}". ${focus} ` +
+    "Write one sentence of plain prose, no markdown, no bullets. Do not exceed 200 characters."
+  );
+}
+
+const MAX_CHARS = 200;
 
 /** Truncates a summary to MAX_CHARS at the nearest word boundary, appending "…". */
 function enforce(text: string): string {
@@ -27,18 +38,22 @@ export async function summarizeIssue(
   provider: "anthropic" | "openai",
   model: string,
 ): Promise<string> {
+  const stateCategory = issue.state.type ?? issue.state.name.toLowerCase();
+  const systemPrompt = buildSystemPrompt(stateCategory);
+
   const commentSection = issue.comments.length > 0
     ? "\n\nComments:\n" + issue.comments.map(c => `${c.author}: ${c.body}`).join("\n\n")
     : "";
 
   const userMessage =
-    `Title: ${issue.title}\n\n` +
+    `Title: ${issue.title}\n` +
+    `Status: ${issue.state.name}\n\n` +
     `Description: ${issue.description || "(no description)"}` +
     commentSection;
 
   const raw = provider === "anthropic"
-    ? await summarizeAnthropic(userMessage, apiKey, model)
-    : await summarizeOpenAI(userMessage, apiKey, model);
+    ? await summarizeAnthropic(userMessage, apiKey, model, systemPrompt)
+    : await summarizeOpenAI(userMessage, apiKey, model, systemPrompt);
   return enforce(raw);
 }
 
@@ -46,6 +61,7 @@ async function summarizeAnthropic(
   userMessage: string,
   apiKey: string,
   model: string,
+  systemPrompt: string,
 ): Promise<string> {
   let resp;
   try {
@@ -60,7 +76,7 @@ async function summarizeAnthropic(
       body: JSON.stringify({
         model,
         max_tokens: 128,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
       }),
     });
@@ -81,6 +97,7 @@ async function summarizeOpenAI(
   userMessage: string,
   apiKey: string,
   model: string,
+  systemPrompt: string,
 ): Promise<string> {
   let resp;
   try {
@@ -95,7 +112,7 @@ async function summarizeOpenAI(
         model,
         max_tokens: 128,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
       }),

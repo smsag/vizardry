@@ -1998,22 +1998,29 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  flex-wrap: wrap;
 }
 
 .vzd-linear-preview-status {
   font-size: 0.7em;
   border-radius: 3px;
   padding: 1px 5px;
-  color: #fff;
+  color: var(--text-on-accent);
+  background-color: var(--color-accent);
   white-space: nowrap;
-  /* background-color set inline from Linear state color */
+}
+
+.vzd-linear-preview-assignee {
+  font-size: 0.7em;
+  color: var(--color-accent);
+  white-space: nowrap;
 }
 
 .vzd-linear-preview-title {
   font-weight: 600;
+  font-size: var(--font-ui-small);
   color: var(--text-normal);
-  flex: 1;
+  margin: 0.35rem 0 0;
+  line-height: 1.3;
 }
 
 .vzd-linear-preview-body {

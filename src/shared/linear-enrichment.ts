@@ -103,11 +103,14 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
   el.style.left = `${Math.max(8, left)}px`;
   el.style.top  = `${Math.max(8, top)}px`;
 
-  // Header
+  // Header row: key badge + status pill + assignee
   const header = el.createEl("div", { cls: "vzd-linear-preview-header" });
   header.createEl("span", { cls: "vzd-linear-key", text: key });
-  const statusPill  = header.createEl("span", { cls: "vzd-linear-preview-status" });
-  const titleSpan   = header.createEl("span", { cls: "vzd-linear-preview-title" });
+  const statusPill = header.createEl("span", { cls: "vzd-linear-preview-status" });
+  const assigneeEl = header.createEl("span", { cls: "vzd-linear-preview-assignee" });
+
+  // Title on its own line
+  const titleSpan = el.createEl("div", { cls: "vzd-linear-preview-title" });
 
   // Body
   const body = el.createEl("div", { cls: "vzd-linear-preview-body" });
@@ -133,7 +136,7 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
       }
       titleSpan.textContent = result.title;
       statusPill.textContent = result.state.name;
-      statusPill.style.backgroundColor = result.state.color;
+      if (result.assignee) assigneeEl.textContent = result.assignee;
 
       if (result.summary) {
         summaryEl.textContent = result.summary;
