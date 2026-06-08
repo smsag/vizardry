@@ -21,13 +21,24 @@ function luminanceFromRgb(css: string): number | null {
   return 0.2126 * linearise(+m[1]) + 0.7152 * linearise(+m[2]) + 0.0722 * linearise(+m[3]);
 }
 
+/** WCAG contrast ratio between two relative luminance values. */
+function contrast(l1: number, l2: number): number {
+  const lighter = Math.max(l1, l2);
+  const darker  = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 /**
- * Reads the computed background of `el` and returns the text colour that
- * achieves the highest WCAG contrast:
+ * Reads the computed background of `el` and returns the best WCAG-contrast
+ * text colour using a 3-step cascade:
  *
- *   - `"#ffffff"` (white)  when white reaches ≥ 4.5 : 1 against the background
- *   - `"var(--interactive-accent)"` otherwise (accent-coloured text on a
- *     lightly-tinted background — the existing roadmap / canvas convention)
+ *   1. White (#ffffff)             — if contrast ≥ 4.5 : 1  (dark backgrounds)
+ *   2. Accent (--interactive-accent) — if contrast ≥ 3 : 1  (mid-dark, e.g. dark-theme pastels)
+ *   3. Normal text (--text-normal) — fallback for light backgrounds with light accents
+ *
+ * The accent luminance is sampled at runtime by briefly inserting a hidden 1 px
+ * probe element so that `getComputedStyle` can resolve `var(--interactive-accent)`
+ * in the same document context as the calling element.
  *
  * Pass `svgFill = true` for SVG elements whose background colour is expressed
  * via the `fill` CSS property rather than `background-color`.
@@ -41,12 +52,29 @@ function luminanceFromRgb(css: string): number | null {
 export function bestTextColor(el: Element, svgFill = false): string {
   const cs = getComputedStyle(el);
   const raw = svgFill ? cs.fill : cs.backgroundColor;
-  const lum = luminanceFromRgb(raw);
+  const bgLum = luminanceFromRgb(raw);
 
   // Fallback when the environment cannot resolve color-mix (e.g. test VMs).
-  if (lum === null) return "#ffffff";
+  if (bgLum === null) return "#ffffff";
 
-  // WCAG contrast ratio of white (L=1) against this background.
-  const contrastWhite = 1.05 / (lum + 0.05);
-  return contrastWhite >= 4.5 ? "#ffffff" : "var(--interactive-accent)";
+  // Step 1 — white on dark backgrounds.
+  if (contrast(1, bgLum) >= 4.5) return "#ffffff";
+
+  // Step 2 — accent on mid-tone backgrounds, but only if accent itself contrasts.
+  // Sample the actual resolved accent colour via a short-lived probe element.
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" +
+    "background-color:var(--interactive-accent);";
+  (el.ownerDocument ?? document).body.appendChild(probe);
+  const accentRaw = getComputedStyle(probe).backgroundColor;
+  probe.remove();
+
+  const accentLum = luminanceFromRgb(accentRaw);
+  if (accentLum !== null && contrast(accentLum, bgLum) >= 3) {
+    return "var(--interactive-accent)";
+  }
+
+  // Step 3 — fall back to the theme's normal text colour (works on any background).
+  return "var(--text-normal)";
 }

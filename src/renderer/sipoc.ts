@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { insertSIPOCRowAfter, writeSIPOCCell } from "../shared/sipoc-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { bestTextColor } from "../shared/color-utils";
 
 type ColKey = keyof SIPOCRow;
 
@@ -23,6 +24,13 @@ const OPTIONAL_COLS: { key: ColKey; label: () => string }[] = [
 function getCols(rows: SIPOCData["rows"]): { key: ColKey; label: string }[] {
   const optional = OPTIONAL_COLS.filter(col => rows.some(r => r[col.key] !== ""));
   return [...CORE_COLS, ...optional].map(c => ({ key: c.key, label: c.label() }));
+}
+
+/** Maps a column key to its header accent-tier CSS class. */
+function headerTierClass(key: ColKey): string {
+  if (key === "process") return "vzd-sipoc-th--tier-hi";
+  if (key === "input" || key === "output") return "vzd-sipoc-th--tier-mid";
+  return "vzd-sipoc-th--tier-lo";
 }
 
 function activateCellEdit(
@@ -99,16 +107,24 @@ export function renderSIPOC(
   const thead = table.createEl("thead");
   const headerRow = thead.createEl("tr");
 
-  getCols(data.rows).forEach((col, i) => {
+  const allCols = getCols(data.rows);
+  const headerEls: HTMLElement[] = [];
+  allCols.forEach((col, i) => {
     const th = headerRow.createEl("th", {
-      cls: `vzd-sipoc-th${col.key === "process" ? " vzd-sipoc-th--process" : ""}`,
+      cls: `vzd-sipoc-th ${headerTierClass(col.key as ColKey)}`,
       text: col.label,
     });
-    if (i < getCols(data.rows).length - 1) {
+    headerEls.push(th);
+    if (i < allCols.length - 1) {
       const arrow = th.createEl("span", { cls: "vzd-sipoc-arrow", text: "→" });
       arrow.setAttribute("aria-hidden", "true");
     }
   });
+
+  // Action column header — narrow spacer, only rendered in edit mode.
+  if (app && ctx) {
+    headerRow.createEl("th", { cls: "vzd-sipoc-th vzd-sipoc-th--actions" });
+  }
 
   const tbody = table.createEl("tbody");
 
@@ -119,11 +135,10 @@ export function renderSIPOC(
       cls: rowIdx % 2 === 1 ? "vzd-sipoc-row vzd-sipoc-row--alt" : "vzd-sipoc-row",
     });
 
-    cols.forEach((col, colIdx) => {
+    cols.forEach((col) => {
       const value = row[col.key];
-      const isLast = colIdx === cols.length - 1;
       const td = tr.createEl("td", {
-        cls: `vzd-sipoc-td${col.key === "process" ? " vzd-sipoc-td--process" : ""}${isLast && app && ctx ? " vzd-sipoc-td--last" : ""}`,
+        cls: `vzd-sipoc-td${col.key === "process" ? " vzd-sipoc-td--process" : ""}`,
       });
 
       if (value) {
@@ -134,23 +149,29 @@ export function renderSIPOC(
 
       if (app && ctx) {
         td.addClass("vzd-sipoc-td--editable");
-        td.setAttribute("title", t("edit.clickToEdit"));
         td.addEventListener("click", () => {
           activateCellEdit(td, col.key, rowIdx, value ?? "", app, ctx, container);
         });
-
-        if (isLast) {
-          const btn = td.createEl("button", {
-            cls: "vzd-sipoc-add-row vzd-btn",
-            attr: { "aria-label": t("sipoc.addRowBelow"), type: "button" },
-          });
-          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-          btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            insertSIPOCRowAfter(app, ctx, container, rowIdx);
-          });
-        }
       }
     });
+
+    // Dedicated action cell — sits outside the data columns so the button is
+    // never clipped by the table's overflow boundary.
+    if (app && ctx) {
+      const actionTd = tr.createEl("td", { cls: "vzd-sipoc-td vzd-sipoc-td--actions" });
+      const btn = actionTd.createEl("button", {
+        cls: "vzd-sipoc-add-row vzd-btn",
+        attr: { "aria-label": t("sipoc.addRowBelow"), type: "button" },
+      });
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+      btn.addEventListener("click", () => {
+        insertSIPOCRowAfter(app, ctx, container, rowIdx);
+      });
+    }
   });
+
+  // Apply contrast-checked text colours to header cells now that they are live in the DOM.
+  for (const th of headerEls) {
+    th.style.color = bestTextColor(th);
+  }
 }
