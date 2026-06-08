@@ -8,6 +8,7 @@ query Issue($id: String!) {
     title
     description
     updatedAt
+    url
     state { name color type }
     assignee { name }
     comments(last: 5, orderBy: createdAt) {
@@ -75,5 +76,6 @@ export async function fetchLinearIssue(
     assignee: (issue.assignee as { name: string } | null)?.name ?? null,
     comments,
     updatedAt: (issue.updatedAt as string) || "",
+    url: (issue.url as string) || "",
   };
 }

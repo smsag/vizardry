@@ -5,6 +5,7 @@ import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
 import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
+import { bestTextColor } from "../shared/color-utils";
 
 // ── Layout constants ───────────────────────────────────────────────────────
 
@@ -303,6 +304,11 @@ export function renderSIPOCFlow(
   svg.appendChild(defs);
 
   // ── Column bands and headers ───────────────────────────────────────────
+  // Collect rect+text pairs so we can set contrast-checked text colours after
+  // the SVG is attached to the DOM (required for getComputedStyle to resolve
+  // color-mix() values in the header fill).
+  const headerPairs: Array<{ rect: Element; text: HTMLElement }> = [];
+
   COLS.forEach((col, i) => {
     const x = PAD.left + i * COL_W;
 
@@ -335,6 +341,8 @@ export function renderSIPOCFlow(
     });
     headerText.textContent = colLabels()[col];
     svg.appendChild(headerText);
+
+    headerPairs.push({ rect: headerRect, text: headerText as unknown as HTMLElement });
   });
 
   // ── Build position map ─────────────────────────────────────────────────
@@ -388,4 +396,9 @@ export function renderSIPOCFlow(
   }
 
   wrap.appendChild(svg);
+
+  // Apply contrast-checked text colours now that color-mix() has been resolved.
+  for (const { rect, text } of headerPairs) {
+    text.style.fill = bestTextColor(rect, true);
+  }
 }

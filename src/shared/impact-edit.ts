@@ -26,6 +26,7 @@ import {
   detectIndentUnit,
   subtreeEnd,
   deleteLines,
+  editorWrite,
 } from "./tree-editor-access";
 
 export type ImpactLevel = "goal" | "actor" | "impact" | "deliverable";
@@ -77,10 +78,10 @@ export function renameImpactNode(
     if (value !== oldText) continue;
 
     const indentStr = raw.slice(0, raw.search(/\S/));
-    editor.replaceRange(
+    editorWrite(() => editor.replaceRange(
       `${indentStr}${prefix} ${newText}`,
       { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-    );
+    ));
     return true;
   }
 
@@ -161,10 +162,10 @@ export function addImpactChild(
       childText = `${childText} ${idx}`;
     }
 
-    editor.replaceRange(
+    editorWrite(() => editor.replaceRange(
       `${childIndentStr}${childKeyword}: ${childText}\n`,
       { line: subtreeLast + 1, ch: 0 },
-    );
+    ));
     return true;
   }
 

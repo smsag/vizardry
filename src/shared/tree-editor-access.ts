@@ -87,9 +87,32 @@ export function subtreeEnd(
 }
 
 /**
+ * Wraps a synchronous `editor.replaceRange` call so the viewport does not
+ * scroll away from the canvas.
+ *
+ * CodeMirror 6 appends a `scrollIntoView` effect to every transaction that
+ * moves the cursor. In Obsidian's Live Preview the editor and the rendered
+ * view share a single scroll container (`.cm-scroller`), so that effect can
+ * jump the page to show the source-code line that was just edited — which is
+ * hidden behind the rendered canvas. We snapshot the scroll offset before the
+ * write and restore it on the next animation frame, after CM6 has applied its
+ * own scroll effect.
+ */
+export function editorWrite(fn: () => void): void {
+  const scroller = document.querySelector(".cm-scroller") as HTMLElement | null;
+  const saved = scroller?.scrollTop;
+  fn();
+  if (scroller != null && saved != null) {
+    requestAnimationFrame(() => { scroller.scrollTop = saved; });
+  }
+}
+
+/**
  * Deletes lines [fromLine, toLine] inclusive and any immediately following
  * blank lines (so no orphaned blank line remains).
  */
 export function deleteLines(editor: Editor, fromLine: number, toLine: number): void {
-  editor.replaceRange("", { line: fromLine, ch: 0 }, { line: toLine + 1, ch: 0 });
+  editorWrite(() => {
+    editor.replaceRange("", { line: fromLine, ch: 0 }, { line: toLine + 1, ch: 0 });
+  });
 }

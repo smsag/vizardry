@@ -20,6 +20,8 @@ export interface LinearIssue {
   comments: LinearComment[];
   /** ISO 8601 timestamp of last update on Linear */
   updatedAt: string;
+  /** Direct URL to the issue in the Linear web app */
+  url: string;
 }
 
 export interface CacheEntry {

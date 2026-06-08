@@ -20,6 +20,7 @@ import {
   detectIndentUnit,
   subtreeEnd,
   deleteLines,
+  editorWrite,
 } from "./tree-editor-access";
 
 // ── Rename ───────────────────────────────────────────────────────────────────
@@ -50,20 +51,20 @@ export function renameMindMapNode(
     const rootMatch = trimmed.match(/^root:\s*(.+)$/i);
     if (rootMatch && rootMatch[1].trim() === oldText) {
       const indentStr = raw.slice(0, raw.search(/\S/));
-      editor.replaceRange(
+      editorWrite(() => editor.replaceRange(
         `${indentStr}root: ${newText}`,
         { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      );
+      ));
       return true;
     }
 
     // Non-root line: plain indented text
     if (trimmed === oldText && !trimmed.toLowerCase().startsWith("root:")) {
       const indentStr = raw.slice(0, raw.search(/\S/));
-      editor.replaceRange(
+      editorWrite(() => editor.replaceRange(
         `${indentStr}${newText}`,
         { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      );
+      ));
       return true;
     }
   }
@@ -109,10 +110,10 @@ export function addMindMapChild(
     const subtreeLast = subtreeEnd(editor, ln, parentIndent, lineEnd);
     const insertAt = subtreeLast + 1;
 
-    editor.replaceRange(
+    editorWrite(() => editor.replaceRange(
       `${childIndentStr}${newChildText}\n`,
       { line: insertAt, ch: 0 },
-    );
+    ));
     return true;
   }
 

@@ -8,6 +8,7 @@ import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
 import { type LinkResolver, NULL_RESOLVER } from "../shared/links";
+import { bestTextColor } from "../shared/color-utils";
 
 const COL_LABELS: Record<string, string> = {
   now:   "roadmap.col.now",
@@ -244,7 +245,11 @@ export function renderRoadmap(
     colEl.dataset.colId = col.id;
 
     const labelKey = COL_LABELS[col.id];
-    colEl.createEl("div", { cls: "vzd-roadmap-col-header", text: t(labelKey as Parameters<typeof t>[0]) });
+    const header = colEl.createEl("div", { cls: "vzd-roadmap-col-header", text: t(labelKey as Parameters<typeof t>[0]) });
+    // Override the CSS text colour with a contrast-checked value. The background
+    // is color-mix(accent, secondary) so the right choice depends on the user's
+    // accent — we read the computed background after the element is in the DOM.
+    header.style.color = bestTextColor(header);
 
     const list = colEl.createEl("div", { cls: "vzd-roadmap-card-list" });
 
@@ -345,6 +350,10 @@ export function renderRoadmap(
 
       card.addEventListener("touchstart", (e) => {
         if (card.querySelector(".vzd-inline-input")) return;
+        // If the touch originated on an interactive child (link button, delete
+        // button, anchor…) let the tap complete normally — do NOT prevent default
+        // or start a drag from that touch.
+        if ((e.target as HTMLElement).closest("button, a")) return;
         e.preventDefault();
         startDrag(card, e.touches[0]);
         const onTouchMove = (ev: TouchEvent): void => {

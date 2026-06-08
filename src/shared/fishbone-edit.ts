@@ -24,6 +24,7 @@ import {
   detectIndentUnit,
   subtreeEnd,
   deleteLines,
+  editorWrite,
 } from "./tree-editor-access";
 
 export type FishboneLevel = "effect" | "category" | "cause" | "subcause";
@@ -73,10 +74,10 @@ export function renameFishboneNode(
     if (trimmed.slice(prefix.length).trim() !== oldText) continue;
 
     const indentStr = raw.slice(0, raw.search(/\S/));
-    editor.replaceRange(
+    editorWrite(() => editor.replaceRange(
       `${indentStr}${prefix} ${newText}`,
       { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-    );
+    ));
     return true;
   }
 
@@ -154,10 +155,10 @@ export function addFishboneChild(
       childText = `${childText} ${idx}`;
     }
 
-    editor.replaceRange(
+    editorWrite(() => editor.replaceRange(
       `${childIndentStr}${childKeyword}: ${childText}\n`,
       { line: subtreeLast + 1, ch: 0 },
-    );
+    ));
     return true;
   }
 

@@ -1546,16 +1546,19 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   stroke-dasharray: 4 3;
 }
 
-/* Column header bars */
+/* Column header bars — intensity mirrors the roadmap Now/Next/Later tiers,
+   radiating outward from the centre (process = strongest). */
 .vzd-sf-header {
   fill: var(--background-secondary);
 }
-.vzd-sf-header--suppliers { fill: #1e2d4d; }
-.vzd-sf-header--inputs    { fill: #3b2e7a; }
-.vzd-sf-header--process   { fill: #8b2060; }
-.vzd-sf-header--outputs   { fill: #c03040; }
-.vzd-sf-header--customers { fill: #c07820; }
+.vzd-sf-header--process   { fill: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-secondary)); }
+.vzd-sf-header--inputs,
+.vzd-sf-header--outputs   { fill: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-secondary)); }
+.vzd-sf-header--suppliers,
+.vzd-sf-header--customers { fill: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary)); }
 
+/* Text colour is set inline by the renderer via bestTextColor() after
+   color-mix() has been resolved. #ffffff here is a static fallback only. */
 .vzd-sf-header-label {
   fill: #ffffff;
   font-size: 11px;
@@ -1715,25 +1718,25 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-roadmap-add-item {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.4rem;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
-  color: var(--text-muted);
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  margin: 0.3rem auto 0;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
   opacity: 0;
   transition: opacity 0.15s;
-  border-radius: var(--radius-s);
-  margin-top: 0.1rem;
-  pointer-events: none;
 }
 
 .vzd-roadmap-col:hover .vzd-roadmap-add-item {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .vzd-roadmap-add-item:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
+  background: var(--interactive-accent-hover);
+  opacity: 1 !important;
 }
 
 /* ── Mobile carousel ── */
@@ -2026,6 +2029,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 /* ── Linear key badge (global — any canvas or code fence) ───────────────── */
+/* Key badge — inline in text, non-interactive */
 .vzd-linear-key {
   font-family: var(--font-monospace);
   font-size: 0.75em;
@@ -2033,46 +2037,98 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   background: var(--background-secondary);
   border-radius: 3px;
   padding: 1px 4px;
-  cursor: default;
   white-space: nowrap;
 }
 
-/* ── Linear hover popover ────────────────────────────────────────────────── */
+/* Trigger icon button — shown inline after the key badge */
+.vzd-linear-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity 0.1s;
+  cursor: pointer;
+}
+.vzd-linear-trigger svg {
+  width: 11px;
+  height: 11px;
+}
+/* Show trigger when the parent element (card title, etc.) is hovered */
+*:hover > .vzd-linear-trigger,
+.vzd-linear-trigger:focus {
+  opacity: 1;
+}
+.vzd-linear-trigger:hover {
+  color: var(--text-accent);
+  opacity: 1;
+}
+
+/* ── Linear popover ──────────────────────────────────────────────────────── */
 .vzd-linear-preview {
   position: fixed;
   z-index: 1000;
   max-width: 320px;
-  min-width: 220px;
+  min-width: 240px;
   padding: 0.75rem;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   font-size: var(--font-ui-small);
-  pointer-events: none;
+  pointer-events: auto;
   animation: vzd-fade-in 0.12s ease;
 }
 
+/* Close button — absolute top-right */
+.vzd-linear-preview-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--text-faint);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.vzd-linear-preview-close svg { width: 12px; height: 12px; }
+.vzd-linear-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+
+/* Header: status pill + key link */
 .vzd-linear-preview-header {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  padding-right: 1.4rem; /* room for close button */
 }
 
 .vzd-linear-preview-status {
   font-size: 0.7em;
   border-radius: 3px;
   padding: 1px 5px;
-  color: var(--text-on-accent);
-  background-color: var(--color-accent);
+  color: #ffffff;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.vzd-linear-preview-assignee {
-  font-size: 0.7em;
-  color: var(--color-accent);
-  white-space: nowrap;
+/* Key — looks like plain text, acts as a link */
+.vzd-linear-preview-key {
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
 }
+.vzd-linear-preview-key:hover { color: var(--text-accent); text-decoration: underline; }
 
 .vzd-linear-preview-title {
   font-weight: 600;
@@ -2102,13 +2158,16 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-style: italic;
 }
 
+/* Footer: "Jane Doe  |  3d ago" */
 .vzd-linear-preview-footer {
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .vzd-linear-preview-updated {
   color: var(--text-faint);
-  font-size: 0.85em;
+  font-size: 0.82em;
 }
 
 @keyframes vzd-fade-in {

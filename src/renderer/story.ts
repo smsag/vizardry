@@ -349,6 +349,10 @@ export function renderStoryMap(
       });
       card.addEventListener("touchstart", (e) => {
         if (card.querySelector(".vzd-inline-input")) return;
+        // If the touch originated on an interactive child (link button, delete
+        // button, anchor…) let the tap complete normally — do NOT prevent default
+        // or start a drag from that touch.
+        if ((e.target as HTMLElement).closest("button, a")) return;
         e.preventDefault();
         startDrag(card, e.touches[0]);
         const onTouchMove = (ev: TouchEvent): void => {

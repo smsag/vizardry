@@ -1,3 +1,4 @@
+import { setIcon } from "obsidian";
 import { getLinearService } from "../linear";
 import { t } from "../i18n";
 import { onDisconnected } from "./lifecycle";
@@ -5,17 +6,40 @@ import { onDisconnected } from "./lifecycle";
 // Matches LINEAR-style identifiers like CORE-1234, PSINT-42, ENG-9999
 const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 
-// Tags whose content should never be enriched
+// Tags whose content should never be enriched.
 // PRE skips multi-line code blocks (and their CODE children). Inline CODE is
-// intentionally kept so `` `CORE-1234` `` enriches on hover.
+// intentionally kept so `CORE-1234` enriches normally.
 const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
+
+// ── Singleton popover ────────────────────────────────────────────────────────
+
+let activePopover: HTMLElement | null = null;
+let activeKey: string | null = null;
+
+function closeActivePopover(): void {
+  if (activePopover) {
+    activePopover.remove();
+    activePopover = null;
+    activeKey = null;
+  }
+}
+
+// ── Time formatting ──────────────────────────────────────────────────────────
+
+function formatAge(updatedAt: string): string {
+  const diffMs = Date.now() - new Date(updatedAt).getTime();
+  const diffH = Math.floor(diffMs / 3_600_000);
+  if (diffH < 1)  return "Updated just now";
+  if (diffH < 24) return `Updated ${diffH}h ago`;
+  return `Updated ${Math.floor(diffH / 24)}d ago`;
+}
 
 // ── DOM walking ──────────────────────────────────────────────────────────────
 
 /**
- * Scans `container` for Linear issue keys in text nodes and wraps each match
- * in a hoverable `.vzd-linear-key` span. Safe to call multiple times —
- * already-enriched spans are skipped.
+ * Scans `container` for Linear issue keys in text nodes, wraps each match in
+ * a `.vzd-linear-key` span, and appends a trigger icon button after it.
+ * Safe to call multiple times — already-enriched spans are skipped.
  */
 export function enrichLinearKeys(container: HTMLElement): void {
   const nodes: Text[] = [];
@@ -50,11 +74,21 @@ function wrapTextNode(node: Text): void {
     if (match.index > lastIndex) {
       frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
     }
+
+    // Key badge (styled, non-interactive)
     const span = document.createElement("span");
     span.className = "vzd-linear-key";
     span.textContent = match[1];
-    attachHover(span, match[1]);
     frag.appendChild(span);
+
+    // Trigger icon button immediately after the key
+    const btn = document.createElement("button");
+    btn.className = "vzd-linear-trigger vzd-btn";
+    btn.setAttribute("aria-label", `Linear: ${match[1]}`);
+    setIcon(btn, "info");
+    attachTrigger(btn, match[1]);
+    frag.appendChild(btn);
+
     lastIndex = match.index + match[0].length;
   }
 
@@ -65,63 +99,75 @@ function wrapTextNode(node: Text): void {
   parent.replaceChild(frag, node);
 }
 
-// ── Hover popover ────────────────────────────────────────────────────────────
+// ── Click trigger ────────────────────────────────────────────────────────────
 
-function attachHover(span: HTMLElement, key: string): void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let popover: HTMLElement | null = null;
-
-  const clear = (): void => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (popover) { popover.remove(); popover = null; }
-  };
-
-  span.addEventListener("mouseenter", () => {
+function attachTrigger(btn: HTMLElement, key: string): void {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    // Toggle: clicking the same key's button closes the popover
+    if (activeKey === key) { closeActivePopover(); return; }
+    closeActivePopover();
     if (!getLinearService()?.isEnabled()) return;
-    timer = setTimeout(() => {
-      timer = null;
-      popover = buildPopover(key, span);
-      document.body.appendChild(popover);
-    }, 400);
+    const popover = buildPopover(key, btn);
+    document.body.appendChild(popover);
+    activePopover = popover;
+    activeKey = key;
   });
 
-  span.addEventListener("mouseleave", clear);
-  onDisconnected(span, clear);
+  // Clean up if this button leaves the DOM while its popover is open
+  onDisconnected(btn, () => {
+    if (activeKey === key) closeActivePopover();
+  });
 }
+
+// ── Popover ──────────────────────────────────────────────────────────────────
 
 function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
   const el = document.createElement("div");
   el.className = "vzd-linear-preview";
 
-  // Position: right of anchor, flip left if off-screen
+  // Position: below-right of anchor, flip as needed
   const rect = anchor.getBoundingClientRect();
   const width = 320;
   let left = rect.right + 8;
   if (left + width > window.innerWidth - 8) left = rect.left - width - 8;
-  let top = rect.top;
-  if (top + 200 > window.innerHeight - 8) top = window.innerHeight - 208;
+  let top = rect.bottom + 4;
+  if (top + 240 > window.innerHeight - 8) top = rect.top - 244;
   el.style.left = `${Math.max(8, left)}px`;
   el.style.top  = `${Math.max(8, top)}px`;
 
-  // Header row: key badge + status pill + assignee
+  // Close button — top-right corner
+  const closeBtn = el.createEl("button", { cls: "vzd-linear-preview-close vzd-btn" });
+  setIcon(closeBtn, "x");
+  closeBtn.setAttribute("aria-label", "Close");
+  closeBtn.addEventListener("click", (e) => { e.stopPropagation(); closeActivePopover(); });
+
+  // Header: [status pill]  [key — clickable, opens Linear URL]
   const header = el.createEl("div", { cls: "vzd-linear-preview-header" });
-  header.createEl("span", { cls: "vzd-linear-key", text: key });
   const statusPill = header.createEl("span", { cls: "vzd-linear-preview-status" });
-  const assigneeEl = header.createEl("span", { cls: "vzd-linear-preview-assignee" });
+  const keyLink = header.createEl("a", { cls: "vzd-linear-preview-key", text: key });
+  keyLink.setAttribute("href", "#");
+  keyLink.setAttribute("aria-label", `Open ${key} in Linear`);
+  keyLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    const url = keyLink.dataset.url;
+    if (url) window.open(url, "_blank", "noopener");
+  });
 
-  // Title on its own line
-  const titleSpan = el.createEl("div", { cls: "vzd-linear-preview-title" });
+  // Issue title (populated async)
+  const titleEl = el.createEl("div", { cls: "vzd-linear-preview-title" });
 
-  // Body
+  // Summary body
   const body = el.createEl("div", { cls: "vzd-linear-preview-body" });
   const summaryEl = body.createEl("p", { cls: "vzd-linear-preview-summary" });
   summaryEl.createEl("span", { cls: "vzd-linear-preview-loading", text: t("roadmap.linear.loading") });
 
-  // Footer
+  // Footer: "Jane Doe  |  3d ago"
   const footer = el.createEl("div", { cls: "vzd-linear-preview-footer" });
-  const updatedEl = footer.createEl("span", { cls: "vzd-linear-preview-updated" });
+  const footerEl = footer.createEl("span", { cls: "vzd-linear-preview-updated" });
 
-  // Async: fetch status + summary together via getSummary
+  // Async fetch — fires immediately on open
   const svc = getLinearService();
   if (svc) {
     svc.getSummary(key).then(result => {
@@ -134,18 +180,22 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
         summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: result.error });
         return;
       }
-      titleSpan.textContent = result.title;
+
+      // Status pill with Linear's own colour
       statusPill.textContent = result.state.name;
-      if (result.assignee) assigneeEl.textContent = result.assignee;
+      statusPill.style.backgroundColor = result.state.color;
 
-      if (result.summary) {
-        summaryEl.textContent = result.summary;
-      } else {
-        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.noSummary") });
-      }
+      // Key link URL
+      if (result.url) keyLink.dataset.url = result.url;
 
-      const diffH = Math.round((Date.now() - new Date(result.updatedAt).getTime()) / 3_600_000);
-      updatedEl.textContent = diffH < 1 ? "Updated just now" : `Updated ${diffH}h ago`;
+      titleEl.textContent = result.title;
+
+      summaryEl.textContent = result.summary
+        || (summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.noSummary") }), "");
+
+      // Footer: assignee | age  (omit assignee if null)
+      const age = result.updatedAt ? formatAge(result.updatedAt) : "";
+      footerEl.textContent = result.assignee ? `${result.assignee}  |  ${age}` : age;
     }).catch((err: unknown) => {
       summaryEl.empty();
       summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: (err as Error).message ?? t("roadmap.linear.error") });

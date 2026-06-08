@@ -70,7 +70,7 @@ class LinearService {
     }
   }
 
-  async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; assignee: string | null; updatedAt: string } | { error: string } | null> {
+  async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; assignee: string | null; updatedAt: string; url: string } | { error: string } | null> {
     if (!this.isEnabled()) return null;
 
     let linearApiKey: string | null;
@@ -93,7 +93,7 @@ class LinearService {
 
       const cachedSummary = this.cache.getSummary(issueKey, summaryTtlHours, issue.updatedAt);
       if (cachedSummary) {
-        return { title: issue.title, summary: cachedSummary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt };
+        return { title: issue.title, summary: cachedSummary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt, url: issue.url };
       }
 
       const summary = await summarizeIssue(issue, llmApiKey, llmProvider, llmModel);
@@ -104,7 +104,7 @@ class LinearService {
         summarizedAt: Date.now(),
       });
 
-      return { title: issue.title, summary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt };
+      return { title: issue.title, summary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt, url: issue.url };
     } catch (err) {
       const msg = (err as Error).message ?? String(err);
       console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);

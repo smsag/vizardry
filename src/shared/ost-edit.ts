@@ -17,6 +17,7 @@ import {
   detectIndentUnit,
   subtreeEnd,
   deleteLines,
+  editorWrite,
 } from "./tree-editor-access";
 
 // ── Rename ───────────────────────────────────────────────────────────────────
@@ -42,20 +43,20 @@ export function renameOSTNode(
     const rootMatch = trimmed.match(/^outcome:\s*(.+)$/i);
     if (rootMatch && rootMatch[1].trim() === oldText) {
       const indentStr = raw.slice(0, raw.search(/\S/));
-      editor.replaceRange(
+      editorWrite(() => editor.replaceRange(
         `${indentStr}outcome: ${newText}`,
         { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      );
+      ));
       return true;
     }
 
     // Non-root: plain indented text (no keyword prefix)
     if (trimmed === oldText && !trimmed.toLowerCase().startsWith("outcome:")) {
       const indentStr = raw.slice(0, raw.search(/\S/));
-      editor.replaceRange(
+      editorWrite(() => editor.replaceRange(
         `${indentStr}${newText}`,
         { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      );
+      ));
       return true;
     }
   }
@@ -116,10 +117,10 @@ export function addOSTChild(
       childText = `${childText} ${idx}`;
     }
 
-    editor.replaceRange(
+    editorWrite(() => editor.replaceRange(
       `${childIndentStr}${childText}\n`,
       { line: subtreeLast + 1, ch: 0 },
-    );
+    ));
     return true;
   }
 
