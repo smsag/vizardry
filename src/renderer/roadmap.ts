@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { MarkdownRenderChild, MarkdownRenderer, setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas } from "./controls";
@@ -39,31 +39,40 @@ export function renderRoadmap(
   ): void {
     if (el.classList.contains("vzd-editing")) return;
     el.classList.add("vzd-editing");
+    // Preserve rendered HTML (e.g. wiki-links) so we can restore it on cancel.
+    const savedHTML = el.innerHTML;
     el.textContent = "";
     const input = el.createEl("input", { cls: "vzd-inline-input", type: "text" });
     input.value = currentValue;
+    // Guard against CM6/Live-Preview immediately stealing focus back and
+    // triggering an unintended commit. Ignore the first blur that fires
+    // within 150 ms of the focus call.
+    let blurGuarded = true;
+    const blurGuardTimer = setTimeout(() => { blurGuarded = false; }, 150);
     input.focus({ preventScroll: true });
     input.select();
     let committed = false;
     const commit = (): void => {
       if (committed) return;
       committed = true;
+      clearTimeout(blurGuardTimer);
       el.classList.remove("vzd-editing");
       const v = input.value.trim();
       if (v && v !== currentValue) {
         onCommit(v);
-        el.textContent = v;
+        el.textContent = v; // Temporary; canvas re-renders once the source changes.
       } else {
-        el.textContent = currentValue;
+        el.innerHTML = savedHTML; // Restore rendered content (links etc.) on no-change.
       }
     };
     const cancel = (): void => {
       if (committed) return;
       committed = true;
+      clearTimeout(blurGuardTimer);
       el.classList.remove("vzd-editing");
-      el.textContent = currentValue;
+      el.innerHTML = savedHTML; // Restore rendered content on Escape.
     };
-    input.addEventListener("blur", commit);
+    input.addEventListener("blur", () => { if (!blurGuarded) commit(); });
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); commit(); }
       if (e.key === "Escape") { e.preventDefault(); cancel(); }
@@ -141,7 +150,16 @@ export function renderRoadmap(
 
     const target = findDropTarget(clientX, clientY);
     if (!target) {
-      drag.overGrid = false;
+      // Only cancel the drop when the cursor leaves the grid bounds entirely.
+      // Do NOT clear overGrid for cursor positions inside the grid (e.g. the
+      // gap between columns) — that would silently cancel a valid cross-column
+      // move when the user passes through the narrow gap.
+      const gridRect = grid.getBoundingClientRect();
+      const insideGrid = (
+        clientX >= gridRect.left && clientX <= gridRect.right &&
+        clientY >= gridRect.top  && clientY <= gridRect.bottom
+      );
+      if (!insideGrid) drag.overGrid = false;
       return;
     }
 
@@ -249,7 +267,24 @@ export function renderRoadmap(
     ctx: MarkdownPostProcessorContext | undefined,
   ): void {
     const card = list.createEl("div", { cls: "vzd-roadmap-card" });
-    const titleEl = card.createEl("div", { cls: "vzd-roadmap-card-title", text: item.title });
+    const titleEl = card.createEl("div", { cls: "vzd-roadmap-card-title" });
+    // Render the title as markdown so [[wiki-links]] and [text](url) become
+    // clickable. MarkdownRenderer wraps content in a <p>; we unwrap it so the
+    // title stays inline. When app/ctx are unavailable (e.g. tests), fall back
+    // to plain text.
+    if (app && ctx) {
+      const child = new MarkdownRenderChild(titleEl);
+      ctx.addChild(child);
+      void MarkdownRenderer.render(app, item.title, titleEl, ctx.sourcePath, child).then(() => {
+        const p = titleEl.querySelector(":scope > p");
+        if (p) {
+          while (p.firstChild) titleEl.insertBefore(p.firstChild, p);
+          p.remove();
+        }
+      });
+    } else {
+      titleEl.textContent = item.title;
+    }
 
     if (item.subtitle) {
       card.createEl("div", { cls: "vzd-roadmap-card-subtitle", text: item.subtitle });
@@ -271,7 +306,12 @@ export function renderRoadmap(
 
       card.addEventListener("mousedown", (e) => {
         if (card.querySelector(".vzd-inline-input")) return;
-        e.preventDefault();
+        // NOTE: do NOT call e.preventDefault() here. Preventing default on
+        // mousedown can break dblclick detection in CM6 / Obsidian Live Preview
+        // because the browser relies on the default mousedown handling to count
+        // double-click sequences. We stop propagation to keep Obsidian from
+        // acting on the click, but text-selection prevention is handled via
+        // CSS (user-select: none) once a real drag begins.
         e.stopPropagation();
 
         const originX = e.clientX;
@@ -282,6 +322,7 @@ export function renderRoadmap(
           if (started) return;
           if (Math.abs(mv.clientX - originX) > 5 || Math.abs(mv.clientY - originY) > 5) {
             started = true;
+            mv.preventDefault(); // Prevent text selection once drag is confirmed.
             document.removeEventListener("mousemove", onPreMove);
             document.removeEventListener("mouseup", onPreCancel);
             startDrag(card, mv);

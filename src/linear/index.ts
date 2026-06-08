@@ -73,9 +73,17 @@ class LinearService {
   async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; assignee: string | null; updatedAt: string } | { error: string } | null> {
     if (!this.isEnabled()) return null;
 
-    const [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
-    if (!linearApiKey) return { error: "No Linear API key configured." };
-    if (!llmApiKey) return { error: "No AI API key configured." };
+    let linearApiKey: string | null;
+    let llmApiKey: string | null;
+    try {
+      [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
+    } catch (err) {
+      console.warn("Vizardry: getSummary — key loading threw", err);
+      return { error: `Key lookup failed: ${(err as Error).message ?? String(err)}` };
+    }
+
+    if (!linearApiKey) return { error: `No Linear API key — check Settings → Vizardry (secret: "${this.plugin.settings.linearSecretName}")` };
+    if (!llmApiKey) return { error: `No AI API key — check Settings → Vizardry (secret: "${this.plugin.settings.llmSecretName}")` };
 
     const { summaryTtlHours, linearBaseUrl, llmProvider, llmModel } = this.plugin.settings;
 

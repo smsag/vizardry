@@ -185,7 +185,7 @@ function addSecretRow(
         }
       });
 
-      text.inputEl.addEventListener("blur", () => {
+      const persistValue = (): void => {
         const v = text.getValue().trim();
         if (v && v !== "••••••••") {
           void saveSecret(app, currentName, v).then(() =>
@@ -201,6 +201,17 @@ function addSecretRow(
             badge.textContent = stored ? "Key found ✓" : "Not set";
             badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
           });
+        }
+      };
+
+      // blur: works on desktop; Enter key: needed for mobile — the virtual
+      // keyboard's "Done" button fires Enter but may not trigger blur before
+      // the user navigates away from the settings tab.
+      text.inputEl.addEventListener("blur", persistValue);
+      text.inputEl.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          text.inputEl.blur(); // triggers blur → persistValue
         }
       });
     });
