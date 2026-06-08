@@ -1,12 +1,13 @@
-import { MarkdownRenderChild, MarkdownRenderer, setIcon } from "obsidian";
+import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
-import { initCanvas } from "./controls";
+import { initCanvas, markInteractive } from "./controls";
 import { onDisconnected } from "../shared/lifecycle";
 import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
+import { type LinkResolver, NULL_RESOLVER } from "../shared/links";
 
 const COL_LABELS: Record<string, string> = {
   now:   "roadmap.col.now",
@@ -17,6 +18,8 @@ const COL_LABELS: Record<string, string> = {
 export function renderRoadmap(
   data: RoadmapData,
   container: HTMLElement,
+  resolver: LinkResolver = NULL_RESOLVER,
+  navigateTo?: (heading: string) => void,
   source?: string,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
@@ -270,23 +273,23 @@ export function renderRoadmap(
     ctx: MarkdownPostProcessorContext | undefined,
   ): void {
     const card = list.createEl("div", { cls: "vzd-roadmap-card" });
-    const titleEl = card.createEl("div", { cls: "vzd-roadmap-card-title" });
-    // Render the title as markdown so [[wiki-links]] and [text](url) become
-    // clickable. MarkdownRenderer wraps content in a <p>; we unwrap it so the
-    // title stays inline. When app/ctx are unavailable (e.g. tests), fall back
-    // to plain text.
-    if (app && ctx) {
-      const child = new MarkdownRenderChild(titleEl);
-      ctx.addChild(child);
-      void MarkdownRenderer.render(app, item.title, titleEl, ctx.sourcePath, child).then(() => {
-        const p = titleEl.querySelector(":scope > p");
-        if (p) {
-          while (p.firstChild) titleEl.insertBefore(p.firstChild, p);
-          p.remove();
-        }
+
+    // Title row: title text + optional link icon (same pattern as vizardry-block-label-row)
+    const titleRow = card.createEl("div", { cls: "vzd-roadmap-card-title-row" });
+    const titleEl = titleRow.createEl("div", { cls: "vzd-roadmap-card-title", text: item.title });
+
+    // Link affordance — chain-link icon appears when this item's title resolves
+    // to a heading in the current note via [[#Heading]] annotation or auto-match.
+    const heading = resolver.resolve(item.title);
+    if (heading && navigateTo) {
+      const linkBtn = titleRow.createEl("button", { cls: "vzd-roadmap-card-link-btn vzd-btn" });
+      setIcon(linkBtn, "link");
+      linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
+      markInteractive(linkBtn);
+      linkBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navigateTo(heading);
       });
-    } else {
-      titleEl.textContent = item.title;
     }
 
     if (item.subtitle) {

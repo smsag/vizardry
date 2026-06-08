@@ -30,12 +30,26 @@ describe("extractInlineLinks", () => {
     expect(inlineLinks).toEqual({});
   });
 
-  it("does not corrupt block content that contains markdown links", () => {
+  it("does not corrupt block content that contains markdown links without a keyword prefix", () => {
     const source = "block: Next Experiment\n  [a link](#somewhere)";
     const { strippedSource, inlineLinks } = extractInlineLinks(source);
-    // Indented line should not be stripped — regex only matches root-level keyword lines
+    // The indented line has no keyword: prefix, so it is left untouched.
     expect(strippedSource).toBe(source);
     expect(inlineLinks).toEqual({});
+  });
+
+  it("strips [[#Heading]] from indented keyword lines (e.g. roadmap items)", () => {
+    const source = "now:\n  item: Feature A [[#Feature A Section]]\n  item: Feature B";
+    const { strippedSource, inlineLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("now:\n  item: Feature A\n  item: Feature B");
+    expect(inlineLinks).toEqual({ "feature a": "Feature A Section" });
+  });
+
+  it("strips [text](#Anchor) from indented keyword lines", () => {
+    const source = "next:\n  item: Redesign [Redesign](#Redesign%20Spec)";
+    const { strippedSource, inlineLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("next:\n  item: Redesign");
+    expect(inlineLinks).toEqual({ redesign: "Redesign Spec" });
   });
 
   it("handles multiple annotated blocks in one source", () => {

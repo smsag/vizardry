@@ -206,9 +206,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Now/Next/Later Roadmap",
     template: ROADMAP_TEMPLATE,
     createProcessor: (app) => (source, el, ctx) => {
-      const result = parseRoadmap(source);
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseRoadmap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderRoadmap(result.data, el, source, app, ctx);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderRoadmap(result.data, el, resolver, navigateTo, source, app, ctx);
     },
   },
   {

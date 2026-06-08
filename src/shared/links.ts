@@ -43,22 +43,25 @@ export function extractInlineLinks(source: string): {
   const inlineLinks: Record<string, string> = {};
 
   // 1. Wiki-link style: [[#Heading]]
-  // Use [ \t]* (not \s*) before the link so the regex cannot cross line boundaries.
-  const WIKI_RE = /^([a-z_-]+:\s*)(.*?)[ \t]*\[\[#([^\]]+)\]\][ \t]*$/gm;
-  let strippedSource = source.replace(WIKI_RE, (_m, prefix, label, heading) => {
+  // Groups: (indent)(keyword: )(label text) [[#Heading]]
+  // Splitting indent and keyword into separate groups lets us rebuild the full
+  // line correctly while still deriving the map key from the label alone.
+  // [ \t]* (not \s*) before the annotation prevents crossing line boundaries.
+  const WIKI_RE = /^([ \t]*)([a-z_-]+:[ \t]*)(.*?)[ \t]*\[\[#([^\]]+)\]\][ \t]*$/gm;
+  let strippedSource = source.replace(WIKI_RE, (_m, indent, keyword, label, heading) => {
     const key = label.trim().toLowerCase();
     if (key) inlineLinks[key] = heading.trim();
-    return prefix + label.trim();
+    return indent + keyword + label.trim();
   });
 
   // 2. Markdown link style: [text](#Anchor) — anchor is URL-decoded to get heading
-  // Use [ \t]* (not \s*) before the link so the regex cannot cross line boundaries.
-  const MD_RE = /^([a-z_-]+:\s*)(.*?)[ \t]*\[[^\]]*\]\(#([^)]+)\)[ \t]*$/gm;
-  strippedSource = strippedSource.replace(MD_RE, (_m, prefix, label, anchor) => {
+  // Same group structure as WIKI_RE.
+  const MD_RE = /^([ \t]*)([a-z_-]+:[ \t]*)(.*?)[ \t]*\[[^\]]*\]\(#([^)]+)\)[ \t]*$/gm;
+  strippedSource = strippedSource.replace(MD_RE, (_m, indent, keyword, label, anchor) => {
     const key = label.trim().toLowerCase();
     const heading = decodeURIComponent(anchor.trim());
     if (key) inlineLinks[key] = heading;
-    return prefix + label.trim();
+    return indent + keyword + label.trim();
   });
 
   return { strippedSource, inlineLinks };
