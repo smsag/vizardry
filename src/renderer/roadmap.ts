@@ -3,6 +3,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas } from "./controls";
 import { onDisconnected } from "../shared/lifecycle";
+import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
@@ -226,6 +227,8 @@ export function renderRoadmap(
   for (const col of data.columns) {
     renderColumn(grid, col, isEditMode, app, ctx);
   }
+
+  setupRoadmapCarousel(container, data.columns.length);
 
   function renderColumn(
     parent: HTMLElement,
