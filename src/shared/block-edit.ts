@@ -44,15 +44,21 @@ export function writeBlockContent(
 
   const { lineStart, lineEnd } = info;
 
-  // Find the "block: <Label>" line (case-insensitive) inside the code block
+  // Find the "block: <Label>" line (case-insensitive) inside the code block.
+  // The line may carry a display-mode modifier: "block: Label | card"
+  // so we match on prefix + (end-of-line or pipe).
   const targetPrefix = `block: ${blockLabel.toLowerCase()}`;
   let blockHeaderLine = -1;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw: string = editor.getLine(ln);
-    if (raw.trim().toLowerCase() === targetPrefix) {
-      blockHeaderLine = ln;
-      break;
+    const normalised = raw.trim().toLowerCase();
+    if (normalised.startsWith(targetPrefix)) {
+      const after = normalised.slice(targetPrefix.length).trimStart();
+      if (after === "" || after.startsWith("|")) {
+        blockHeaderLine = ln;
+        break;
+      }
     }
   }
 

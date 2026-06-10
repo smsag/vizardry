@@ -258,6 +258,17 @@
   margin-top: 0.22em;
 }
 
+/* ── Card-block layout ── */
+
+.vizardry-block-body.vzd-card-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: default;
+  min-height: 2rem;
+}
+
+
 /* ── Inline block editing ── */
 
 /* Show a subtle pointer + hover ring when the block body is editable */

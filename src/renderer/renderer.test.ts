@@ -97,7 +97,7 @@ describe("renderCanvas", () => {
 
   it("renders header and all blocks", () => {
     const el = container();
-    renderCanvas(swot, { strengths: "Fast team", weaknesses: "" }, el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, { strengths: "Fast team", weaknesses: "" }, {}, el, NULL_RESOLVER, vi.fn());
     expect(el.querySelector(".vizardry-grid")).toBeTruthy();
     const blocks = el.querySelectorAll(".vizardry-block");
     expect(blocks).toHaveLength(4);
@@ -105,7 +105,7 @@ describe("renderCanvas", () => {
 
   it("renders block content as lines", () => {
     const el = container();
-    renderCanvas(swot, { strengths: "Line one\nLine two" }, el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, { strengths: "Line one\nLine two" }, {}, el, NULL_RESOLVER, vi.fn());
     const lines = el.querySelectorAll(".vzd-block-line");
     expect(lines).toHaveLength(2);
     expect(lines[0].textContent).toBe("Line one");
@@ -113,21 +113,21 @@ describe("renderCanvas", () => {
 
   it("marks empty block with empty class", () => {
     const el = container();
-    renderCanvas(swot, {}, el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, {}, {}, el, NULL_RESOLVER, vi.fn());
     const bodies = el.querySelectorAll(".vizardry-block-empty");
     expect(bodies.length).toBeGreaterThan(0);
   });
 
   it("renders link button when _links entry exists", () => {
     const el = container();
-    renderCanvas(swot, {}, el, { resolve: (k: string) => k === "strengths" ? "Strategy Section" : undefined }, vi.fn());
+    renderCanvas(swot, {}, {}, el, { resolve: (k: string) => k === "strengths" ? "Strategy Section" : undefined }, vi.fn());
     expect(el.querySelector(".vizardry-block-link-btn")).toBeTruthy();
   });
 
   it("link button calls navigateTo with the heading", () => {
     const el = container();
     const navigateTo = vi.fn();
-    renderCanvas(swot, {}, el, { resolve: (k: string) => k === "strengths" ? "My Heading" : undefined }, navigateTo);
+    renderCanvas(swot, {}, {}, el, { resolve: (k: string) => k === "strengths" ? "My Heading" : undefined }, navigateTo);
     const btn = el.querySelector<HTMLButtonElement>(".vizardry-block-link-btn");
     btn?.click();
     expect(navigateTo).toHaveBeenCalledWith("My Heading");
