@@ -67,8 +67,6 @@ function _writePaceLayerCell(
   cellKey: string,
   newValue: string,
 ): boolean {
-  console.log(`Vizardry PL write ▶ layer="${layerName}" key="${cellKey}" value=${JSON.stringify(newValue)}`);
-
   // Guard: if the canvas element has been detached (replaced by a re-render),
   // skip the write — the new render has a fresh ctx and will handle future edits.
   if (!el.isConnected) {
@@ -81,8 +79,6 @@ function _writePaceLayerCell(
     console.warn("Vizardry PL write ✗ getSectionInfo returned null");
     return false;
   }
-  console.log(`Vizardry PL write   sectionInfo lineStart=${info.lineStart} lineEnd=${info.lineEnd}`);
-
   const file = app.vault.getFileByPath(ctx.sourcePath);
   if (!file) {
     console.warn(`Vizardry PL write ✗ file not found: ${ctx.sourcePath}`);
@@ -100,7 +96,6 @@ function _writePaceLayerCell(
 
   const { lineStart } = info;
   const totalLines = editor.lineCount();
-  console.log(`Vizardry PL write   totalLines=${totalLines}`);
 
   // ── Locate `layer: <layerName>` ─────────────────────────────────────────────
   // Search past info.lineEnd intentionally: ctx may be stale because Obsidian
@@ -122,8 +117,6 @@ function _writePaceLayerCell(
     console.warn(`Vizardry PL write ✗ layer "${layerName}" not found (searched lines ${lineStart}–${totalLines - 1})`);
     return false;
   }
-  console.log(`Vizardry PL write   layerHeaderLine=${layerHeaderLine}`);
-
   // ── Determine layer body end ─────────────────────────────────────────────────
   // Scan forward from the layer header. Stop only at LEGITIMATE zero-indent
   // boundary lines: layer:/type:/context: headers and closing code fences.
@@ -156,8 +149,6 @@ function _writePaceLayerCell(
     // sub-key search can see past it and the replace range covers it.
     layerBodyEnd = ln;
   }
-  console.log(`Vizardry PL write   layerBodyEnd=${layerBodyEnd}`);
-
   // ── Find the sub-key line ────────────────────────────────────────────────────
   const targetPrefix = `${cellKey.toLowerCase()}:`;
   let cellLine = -1;
@@ -168,8 +159,6 @@ function _writePaceLayerCell(
       break;
     }
   }
-  console.log(`Vizardry PL write   cellLine=${cellLine} (targetPrefix="${targetPrefix}")`);
-
   // ── Build the replacement text with proper indentation ───────────────────────
   // Split the new value on newlines and indent every continuation line so the
   // parser can round-trip it. This also prevents the zero-indent-orphan
@@ -216,7 +205,6 @@ function _writePaceLayerCell(
 
     const lastRaw: string = editor.getLine(lastValueLine);
     const formatted = buildFormatted(indent);
-    console.log(`Vizardry PL write   REPLACE lines ${cellLine}–${lastValueLine} with ${JSON.stringify(formatted)}`);
     editor.replaceRange(
       formatted,
       { line: cellLine,      ch: 0 },
@@ -232,13 +220,11 @@ function _writePaceLayerCell(
     }
     const insertLineText: string = editor.getLine(insertAfter);
     const formatted = "\n" + buildFormatted("  ");
-    console.log(`Vizardry PL write   INSERT after line ${insertAfter}: ${JSON.stringify(formatted)}`);
     editor.replaceRange(
       formatted,
       { line: insertAfter, ch: insertLineText.length },
     );
   }
 
-  console.log("Vizardry PL write ✓ done");
   return true;
 }

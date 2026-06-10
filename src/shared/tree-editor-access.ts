@@ -102,7 +102,7 @@ export function editorWrite(fn: () => void): void {
   const scroller = document.querySelector(".cm-scroller") as HTMLElement | null;
   const saved = scroller?.scrollTop;
   fn();
-  if (scroller != null && saved != null) {
+  if (scroller !== null && saved !== undefined) {
     requestAnimationFrame(() => { scroller.scrollTop = saved; });
   }
 }
