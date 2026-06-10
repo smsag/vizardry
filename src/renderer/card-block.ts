@@ -171,6 +171,10 @@ export function renderCardBlock(
         const onPreCancel = (): void => {
           document.removeEventListener("mousemove", onPreMove);
           document.removeEventListener("mouseup", onPreCancel);
+          // Drag threshold never crossed — treat as a plain click → open editor
+          if (app && ctx && container) {
+            activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container);
+          }
         };
 
         document.addEventListener("mousemove", onPreMove);
