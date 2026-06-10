@@ -4,7 +4,7 @@ import { parseFrameworkSource } from "./parser";
 describe("parseFrameworkSource", () => {
   it("parses a single block", () => {
     const result = parseFrameworkSource("block: Goal\n  Make money");
-    expect(result).toEqual({ ok: true, data: { goal: "Make money" }, links: {} });
+    expect(result).toEqual({ ok: true, data: { goal: "Make money" }, links: {}, cardModes: {} });
   });
 
   it("parses multiple blocks", () => {
@@ -38,7 +38,29 @@ describe("parseFrameworkSource", () => {
 
   it("allows empty block content", () => {
     const result = parseFrameworkSource("block: Goal\n");
-    expect(result).toEqual({ ok: true, data: { goal: "" }, links: {} });
+    expect(result).toEqual({ ok: true, data: { goal: "" }, links: {}, cardModes: {} });
+  });
+
+  it("parses | card modifier and strips it from the key", () => {
+    const result = parseFrameworkSource("block: Next Experiment | card\n  Run A/B test");
+    expect(result.ok && result.data).toMatchObject({ "next experiment": "Run A/B test" });
+    expect(result.ok && result.cardModes).toEqual({ "next experiment": true });
+  });
+
+  it("parses | bullets modifier", () => {
+    const result = parseFrameworkSource("block: Obstacles | bullets\n  Too slow");
+    expect(result.ok && result.cardModes).toEqual({ "obstacles": false });
+  });
+
+  it("ignores unknown modifiers silently", () => {
+    const result = parseFrameworkSource("block: Goal | fancy\n  value");
+    expect(result.ok && result.data).toMatchObject({ goal: "value" });
+    expect(result.ok && result.cardModes).toEqual({});
+  });
+
+  it("| card modifier is case-insensitive", () => {
+    const result = parseFrameworkSource("block: Goal | Card\n  value");
+    expect(result.ok && result.cardModes).toEqual({ goal: true });
   });
 
   it("returns error for unexpected indentation at root", () => {

@@ -12,6 +12,8 @@ export interface BlockDefinition {
   area: string;
   /** Faint italic prompt shown when the block is empty. */
   placeholder?: string;
+  /** Render block content as draggable cards (one card per non-empty line). */
+  cardBlock?: boolean;
 }
 
 /**
@@ -27,7 +29,7 @@ export type Result<T> =
 // variant, which doesn't fit the single-data Result<T> pattern, so it is
 // kept as a standalone definition.
 export type ParseResult =
-  | { ok: true; data: Record<string, string>; links: Record<string, string> }
+  | { ok: true; data: Record<string, string>; links: Record<string, string>; cardModes: Record<string, boolean> }
   | { ok: false; error: string };
 
 // ── Impact Map ──────────────────────────────────────────────────────────────

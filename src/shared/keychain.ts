@@ -19,7 +19,7 @@ export async function loadSecret(app: App, name: string): Promise<string | null>
   try {
     const value = await app.secretStorage.getSecret(name);
     // Guard against empty string — treat same as missing
-    return (value != null && value !== "") ? value : null;
+    return (value !== null && value !== undefined && value !== "") ? value : null;
   } catch (err) {
     console.error("Vizardry: loadSecret failed", { name, err });
     return null;

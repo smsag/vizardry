@@ -3,6 +3,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
+import { renderCardBlock } from "./card-block";
 import { setupMobileCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
@@ -83,6 +84,7 @@ export function renderError(message: string, container: HTMLElement): void {
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
+  cardModes: Record<string, boolean>,
   container: HTMLElement,
   resolver: LinkResolver,
   navigateTo: (heading: string) => void,
@@ -127,15 +129,21 @@ export function renderCanvas(
       body.setAttribute("data-placeholder", blockDef.placeholder);
     }
 
-    renderBlockBody(body, content);
+    const isCardBlock = labelKey in cardModes ? cardModes[labelKey] : (blockDef.cardBlock ?? false);
 
-    if (app && ctx) {
-      body.addClass("vzd-block-editable");
-      body.setAttribute("title", t("edit.clickToEdit"));
-      body.dataset.blockContent = content;
-      body.addEventListener("click", () => {
-        activateBlockEdit(body, blockDef.label, body.dataset.blockContent ?? "", app, ctx, container);
-      });
+    if (isCardBlock) {
+      renderCardBlock(body, blockDef.label, content, app, ctx, container);
+    } else {
+      renderBlockBody(body, content);
+
+      if (app && ctx) {
+        body.addClass("vzd-block-editable");
+        body.setAttribute("title", t("edit.clickToEdit"));
+        body.dataset.blockContent = content;
+        body.addEventListener("click", () => {
+          activateBlockEdit(body, blockDef.label, body.dataset.blockContent ?? "", app, ctx, container);
+        });
+      }
     }
   }
 

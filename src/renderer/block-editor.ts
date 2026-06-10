@@ -1,6 +1,7 @@
 import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { writeBlockContent } from "../shared/block-edit";
+import { renderInline } from "../shared/inline-markdown";
 import { t } from "../i18n";
 
 export function renderBlockBody(body: HTMLElement, content: string): void {
@@ -14,7 +15,7 @@ export function renderBlockBody(body: HTMLElement, content: string): void {
     body.removeClass("vizardry-block-empty");
     body.addClass("vzd-block-body--filled");
     content.split("\n").forEach(line => {
-      body.createEl("div", { cls: "vzd-block-line", text: line });
+      renderInline(body.createEl("div", { cls: "vzd-block-line" }), line);
     });
   }
 }

@@ -85,7 +85,7 @@ export default class VizardryPlugin extends Plugin {
         if (!result.ok) { renderError(result.error, el); return; }
         const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks);
         safeRender(id, el, () => {
-          renderCanvas(definition, result.data, el, resolver, navigateTo, this.app, ctx, source);
+          renderCanvas(definition, result.data, result.cardModes, el, resolver, navigateTo, this.app, ctx, source);
           // Re-evaluate link buttons whenever the note's headings change (e.g.
           // a matching heading is added outside the code block after first render).
           registerCanvasRelink(ctx.sourcePath, () => {
