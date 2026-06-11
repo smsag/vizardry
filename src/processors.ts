@@ -30,10 +30,11 @@ import { parseCarouselBlock } from "./carousel";
 import { parseRACIMatrix } from "./raci";
 import { parseRoadmap } from "./roadmap";
 import { parsePaceLayers } from "./pacelayers";
+import { parseConceptMap } from "./conceptmap";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers,
+  renderRoadmap, renderPaceLayers, renderConceptMap,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -41,7 +42,7 @@ import {
   FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
-  ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE,
+  ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE,
 } from "./templates";
 
 export type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
@@ -221,6 +222,16 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parsePaceLayers(source);
       if (!result.ok) { renderError(result.error, el); return; }
       renderPaceLayers(result.data, el, source, app, ctx);
+    },
+  },
+  {
+    id: "conceptmap",
+    label: "Concept Map",
+    template: CONCEPT_MAP_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const result = parseConceptMap(source);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderConceptMap(result.data, el, app, ctx, source);
     },
   },
 ];

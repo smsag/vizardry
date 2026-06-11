@@ -276,6 +276,19 @@ task: Test & sign off
 \`\`\`
 `;
 
+export const CONCEPT_MAP_TEMPLATE = `\`\`\`conceptmap
+title: Knowledge Domain
+
+Photosynthesis -- requires --> Sunlight
+Photosynthesis -- occurs in --> Plants
+Photosynthesis -- produces --> Oxygen
+Plants -- absorb --> Carbon Dioxide
+Oxygen -- supports --> Life
+Life -- depends on --> Water
+Water -- enables --> Plants
+\`\`\`
+`;
+
 export const PACE_LAYERS_TEMPLATE = `\`\`\`pacelayers
 // type: shearing | product | retro
 type: shearing

@@ -9,3 +9,4 @@ export { renderCarouselBlock } from "./renderer/carousel";
 export { renderRACIMatrix } from "./renderer/raci";
 export { renderRoadmap } from "./renderer/roadmap";
 export { renderPaceLayers } from "./renderer/pacelayers";
+export { renderConceptMap } from "./renderer/conceptmap";
