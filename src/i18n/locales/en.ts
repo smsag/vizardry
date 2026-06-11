@@ -32,6 +32,7 @@ export const en = {
   "framework.vpc.description":        "Features match real customer needs.",
   "framework.wardley.description":    "Value chain plotted against evolution to reveal strategic moves.",
   "framework.pacelayers.description": "Six pace layers — Fashion to Nature — mapped with observations, feedback, and ideas.",
+  "framework.conceptmap.description": "Concepts connected by labeled relationships as a directed graph.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",

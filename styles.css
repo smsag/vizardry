@@ -2270,3 +2270,62 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   box-sizing: border-box;
   line-height: 1.4;
 }
+
+/* ── Concept Map ─────────────────────────────────────────────────────────── */
+
+.vzd-cmap-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.vzd-cmap-svg {
+  width: 100%;
+  min-width: 480px;
+  max-width: 900px;
+  display: block;
+  margin: 0 auto;
+}
+
+.vzd-cmap-node {
+  fill: var(--interactive-accent);
+  fill-opacity: 0.12;
+  stroke: var(--interactive-accent);
+  stroke-width: 1.5;
+}
+
+.vzd-cmap-node-label {
+  fill: var(--text-normal);
+  font-size: 12px;
+  font-family: var(--font-interface);
+}
+
+.vzd-cmap-edge {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.vzd-cmap-arrowhead {
+  fill: var(--text-muted);
+}
+
+.vzd-cmap-edge-label-bg {
+  fill: var(--background-primary);
+  stroke: none;
+}
+
+.vzd-cmap-edge-label {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-interface);
+  font-style: italic;
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-cmap-node-label {
+  font-size: 14px;
+}
+
+.vzd-presentation-wrap .vzd-cmap-edge-label {
+  font-size: 12px;
+}
