@@ -59,7 +59,9 @@ export function extractInlineLinks(source: string): {
   const MD_RE = /^([ \t]*)([a-z_-]+:[ \t]*)(.*?)[ \t]*\[[^\]]*\]\(#([^)]+)\)[ \t]*$/gm;
   strippedSource = strippedSource.replace(MD_RE, (_m, indent, keyword, label, anchor) => {
     const key = label.trim().toLowerCase();
-    const heading = decodeURIComponent(anchor.trim());
+    let heading: string;
+    try { heading = decodeURIComponent(anchor.trim()); }
+    catch { return indent + keyword + label.trim(); }
     if (key) inlineLinks[key] = heading;
     return indent + keyword + label.trim();
   });
