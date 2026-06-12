@@ -44,7 +44,5 @@ export function parseImpactMap(source: string): ImpactMapResult {
     }
   }
 
-  if (!goal) return { ok: false, error: 'Missing required "goal:" field' };
-
   return { ok: true, data: { goal, actors } };
 }

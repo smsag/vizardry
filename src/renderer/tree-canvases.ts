@@ -95,7 +95,7 @@ function makeImpactHandlers(
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addImpactChild(app, ctx, container, node.level, node.text, t("tree.newNode"))) {
+      if (!addImpactChild(app, ctx, container, node.level, node.text, "")) {
         showWriteFailedNotice(container);
       }
     },

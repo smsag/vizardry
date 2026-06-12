@@ -192,14 +192,15 @@ function renderTreeNodes(
   textEl.textContent = label;
   group.appendChild(textEl);
 
-  // Sublabel — bottom-right corner, smaller and faint
+  // Sublabel — bottom-right corner, at 60% opacity of the node's main text colour
   if (node.sublabel) {
     const sublabelEl = createSvgEl("text", {
       x: String(opts.nodeW - 6),
       y: String(opts.nodeH - 4),
       "dominant-baseline": "auto",
       "text-anchor": "end",
-      fill: "var(--text-faint)",
+      fill: style.textVar,
+      opacity: "0.6",
       class: "vzd-tree-text-sub",
     });
     sublabelEl.textContent = node.sublabel;
@@ -240,34 +241,36 @@ function renderTreeNodes(
   if (editHandlers) {
     group.classList.add("vzd-tree-node--editable");
 
-    // "+" button: position depends on layout direction
-    const addBtnTransform = direction === "right"
-      ? `translate(${opts.nodeW + 10}, ${opts.nodeH / 2})`
-      : direction === "left"
-        ? `translate(-10, ${opts.nodeH / 2})`
-        : `translate(${opts.nodeW / 2}, ${opts.nodeH + 10})`;
-    const addBtn = createSvgEl("g", {
-      class: "vzd-tree-edit-add",
-      transform: addBtnTransform,
-      "aria-label": t("tree.addChild"),
-    }) as SVGGElement;
-    addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "16", class: "vzd-tree-edit-add-hit" }));
-    addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "10", class: "vzd-tree-edit-add-circle" }));
-    const plusText = createSvgEl("text", {
-      x: "0", y: "0",
-      "dominant-baseline": "middle",
-      "text-anchor": "middle",
-      class: "vzd-tree-edit-add-plus",
-    });
-    plusText.textContent = "+";
-    addBtn.appendChild(plusText);
-    group.appendChild(addBtn);
+    // "+" button: position depends on layout direction; omitted at/beyond maxAddLevel
+    if (opts.maxAddLevel === undefined || node.level < opts.maxAddLevel) {
+      const addBtnTransform = direction === "right"
+        ? `translate(${opts.nodeW + 10}, ${opts.nodeH / 2})`
+        : direction === "left"
+          ? `translate(-10, ${opts.nodeH / 2})`
+          : `translate(${opts.nodeW / 2}, ${opts.nodeH + 10})`;
+      const addBtn = createSvgEl("g", {
+        class: "vzd-tree-edit-add",
+        transform: addBtnTransform,
+        "aria-label": t("tree.addChild"),
+      }) as SVGGElement;
+      addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "16", class: "vzd-tree-edit-add-hit" }));
+      addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "10", class: "vzd-tree-edit-add-circle" }));
+      const plusText = createSvgEl("text", {
+        x: "0", y: "0",
+        "dominant-baseline": "middle",
+        "text-anchor": "middle",
+        class: "vzd-tree-edit-add-plus",
+      });
+      plusText.textContent = "+";
+      addBtn.appendChild(plusText);
+      group.appendChild(addBtn);
 
-    addBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      closeRename();
-      editHandlers.onAddChild(node);
-    });
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeRename();
+        editHandlers.onAddChild(node);
+      });
+    }
 
     // "×" button: top-right corner, only on leaf nodes — deletes the node
     if (node.children.length === 0) {
@@ -452,6 +455,7 @@ export const IMPACT_MAP_OPTS: TreeRenderOptions = {
   nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
   direction: "left",
+  maxAddLevel: 3,
   canvasClass: "vizardry-impact",
   wrapperClass: "vizardry-impact-wrapper",
   levelStyles: [
@@ -466,6 +470,7 @@ export const FISHBONE_OPTS: TreeRenderOptions = {
   nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
   direction: "left",
+  maxAddLevel: 3,
   canvasClass: "vizardry-fishbone",
   wrapperClass: "vizardry-fishbone-wrapper",
   levelStyles: [
