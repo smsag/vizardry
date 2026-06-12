@@ -45,9 +45,10 @@ actor: Engineering
     expect(result.ok).toBe(true);
   });
 
-  it("returns error when goal is missing", () => {
+  it("succeeds with empty goal when goal field is omitted", () => {
     const result = parseImpactMap("actor: A\n  impact: I\n    deliverable: D");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining('"goal:"') });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.goal).toBe("");
   });
 
   it("returns error when impact has no parent actor", () => {

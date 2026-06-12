@@ -195,6 +195,9 @@ export interface TreeRenderOptions {
   /** Layout direction. "down" (default) = root at top. "right" = root at left.
    *  "left" = root at right (RTL). */
   direction?: "down" | "right" | "left";
+  /** Deepest level that may have children added. Nodes at this level or deeper
+   *  do not render the "+" add-child button. Omit to allow add at all levels. */
+  maxAddLevel?: number;
 }
 
 /** Callbacks supplied by the caller when tree nodes should be editable. */
