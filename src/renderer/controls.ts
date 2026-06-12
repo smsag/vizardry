@@ -282,7 +282,7 @@ function rebindPresentationInteractions(cloneRoot: HTMLElement, sourceContainer:
     const id = cloneEl.dataset.vzdId!;
     cloneEl.addEventListener("click", (e) => {
       e.stopPropagation();
-      sourceContainer.querySelector<HTMLElement>(`[data-vzd-id="${id}"]`)?.click();
+      sourceContainer.querySelector<HTMLElement>(`[data-vzd-id="${CSS.escape(id)}"]`)?.click();
     });
   });
 }
