@@ -427,11 +427,13 @@ export function renderTree(
 export const OST_TREE_OPTIONS: TreeRenderOptions = {
   nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
+  direction: "left",
+  maxAddLevel: 4,
   canvasClass: "vizardry-ost",
   wrapperClass: "vizardry-ost-wrapper",
   levelStyles: [
     { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
-    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 8, dashed: false, accentBar: true },
+    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
     { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 6, dashed: true },
