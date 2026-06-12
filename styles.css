@@ -49,6 +49,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
@@ -144,7 +145,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.5rem;
 }
 
 .vizardry-title--editable {
@@ -1196,47 +1196,36 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   box-sizing: border-box;
 }
 
-/* Action column — narrow, borderless, holds the add-row button */
+/* Action column — zero-width gutter; button floats visually outside the table */
 .vzd-sipoc-th--actions {
-  width: 40px;
-  min-width: 40px;
+  width: 36px;
+  min-width: 36px;
   border: none !important;
   background: transparent !important;
   padding: 0;
 }
 
 .vzd-sipoc-td--actions {
-  width: 40px;
-  min-width: 40px;
+  width: 36px;
+  min-width: 36px;
   border: none;
   background: transparent;
-  padding: 0;
+  padding: 0 0 0 4px;
   vertical-align: middle;
-  text-align: center;
 }
 
+/* Ghost icon style — matches .vzd-btn but triggered by row hover, not canvas hover */
 .vzd-sipoc-add-row {
-  width: 28px;
-  height: 28px;
-  padding: 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
 }
 
 .vzd-sipoc-row:hover .vzd-sipoc-add-row {
-  opacity: 1;
+  opacity: var(--icon-opacity, 0.7);
   pointer-events: auto;
 }
 
 .vzd-sipoc-add-row:hover {
-  background: var(--interactive-accent-hover);
   opacity: 1 !important;
 }
 
@@ -1358,17 +1347,24 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
 }
 
+/* Optional meta columns (owner, metric) — neutral background, accent text.
+   Color is set inline by the renderer; no bestTextColor() call needed. */
+.vzd-sipoc-th--tier-meta {
+  background: var(--background-primary);
+  font-weight: 600;
+}
+
 /* Arrow that sits at the right edge of each non-last header cell */
 .vzd-sipoc-arrow {
   position: absolute;
   right: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted);
   font-size: 1em;
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
+  /* Inherits color from parent <th> so it inverts correctly with bestTextColor() */
 }
 
 .vzd-sipoc-td {

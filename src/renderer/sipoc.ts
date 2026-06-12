@@ -28,6 +28,7 @@ function getCols(rows: SIPOCData["rows"]): { key: ColKey; label: string }[] {
 
 /** Maps a column key to its header accent-tier CSS class. */
 function headerTierClass(key: ColKey): string {
+  if (key === "owner" || key === "metric") return "vzd-sipoc-th--tier-meta";
   if (key === "process") return "vzd-sipoc-th--tier-hi";
   if (key === "input" || key === "output") return "vzd-sipoc-th--tier-mid";
   return "vzd-sipoc-th--tier-lo";
@@ -160,7 +161,7 @@ export function renderSIPOC(
     if (app && ctx) {
       const actionTd = tr.createEl("td", { cls: "vzd-sipoc-td vzd-sipoc-td--actions" });
       const btn = actionTd.createEl("button", {
-        cls: "vzd-sipoc-add-row vzd-btn",
+        cls: "vzd-btn vzd-sipoc-add-row",
         attr: { "aria-label": t("sipoc.addRowBelow"), type: "button" },
       });
       btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
@@ -170,8 +171,13 @@ export function renderSIPOC(
     }
   });
 
-  // Apply contrast-checked text colours to header cells now that they are live in the DOM.
+  // Apply contrast-checked text colours to tinted header cells.
+  // Meta columns (owner, metric) use a fixed accent colour and skip the check.
   for (const th of headerEls) {
-    th.style.color = bestTextColor(th);
+    if (th.hasClass("vzd-sipoc-th--tier-meta")) {
+      th.style.color = "var(--interactive-accent)";
+    } else {
+      th.style.color = bestTextColor(th);
+    }
   }
 }

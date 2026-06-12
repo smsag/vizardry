@@ -57,24 +57,12 @@ export function bestTextColor(el: Element, svgFill = false): string {
   // Fallback when the environment cannot resolve color-mix (e.g. test VMs).
   if (bgLum === null) return "#ffffff";
 
-  // Step 1 — white on dark backgrounds.
+  // White on sufficiently dark backgrounds (WCAG AA large-text threshold).
   if (contrast(1, bgLum) >= 4.5) return "#ffffff";
 
-  // Step 2 — accent on mid-tone backgrounds, but only if accent itself contrasts.
-  // Sample the actual resolved accent colour via a short-lived probe element.
-  const probe = document.createElement("div");
-  probe.style.cssText =
-    "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" +
-    "background-color:var(--interactive-accent);";
-  (el.ownerDocument ?? document).body.appendChild(probe);
-  const accentRaw = getComputedStyle(probe).backgroundColor;
-  probe.remove();
-
-  const accentLum = luminanceFromRgb(accentRaw);
-  if (accentLum !== null && contrast(accentLum, bgLum) >= 3) {
-    return "var(--interactive-accent)";
-  }
-
-  // Step 3 — fall back to the theme's normal text colour (works on any background).
+  // Otherwise use the theme's normal text colour. Using the accent colour here
+  // is tempting but wrong: these headers have an accent-tinted background, so
+  // accent text on an accent background creates same-hue low-distinction text
+  // even when the raw contrast ratio passes the 3:1 threshold.
   return "var(--text-normal)";
 }
