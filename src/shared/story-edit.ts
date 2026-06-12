@@ -1,32 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
-
-function resolveEditor(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  caller: string,
-): { editor: MarkdownView["editor"]; lineStart: number; lineEnd: number } | null {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn(`Vizardry: ${caller} — no section info`);
-    return null;
-  }
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: ${caller} — file not found: ${ctx.sourcePath}`);
-    return null;
-  }
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath,
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn(`Vizardry: ${caller} — no live editor`);
-    return null;
-  }
-  return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
-}
+import { Notice } from "obsidian";
+import { resolveEditor } from "./editor";
 
 /** Escapes a string for safe use inside a RegExp. */
 function escRe(s: string): string {
@@ -112,7 +86,7 @@ export function addStoryTask(
 
   const block = findStepBlock(editor, lineStart, lineEnd, stepName);
   if (!block) {
-    console.warn(`Vizardry: addStoryTask — step "${stepName}" not found`);
+    new Notice(`Vizardry: step "${stepName}" not found in story map.`, 4000);
     return false;
   }
   const { stepLine, stepIndent, lastTaskLine, taskIndentStr } = block;
@@ -192,7 +166,7 @@ export function deleteStoryTask(
   }
 
   if (edits.length === 0) {
-    console.warn(`Vizardry: deleteStoryTask — "${taskName}" not found`);
+    new Notice(`Vizardry: task "${taskName}" not found in story map.`, 4000);
     return false;
   }
 
@@ -290,7 +264,7 @@ export function renameStoryActivity(
     }
   }
 
-  console.warn(`Vizardry: renameStoryActivity — "${oldName}" not found`);
+  new Notice(`Vizardry: activity "${oldName}" not found.`, 4000);
   return false;
 }
 
@@ -327,7 +301,7 @@ export function renameStoryStep(
   }
 
   if (edits.length === 0) {
-    console.warn(`Vizardry: renameStoryStep — "${oldName}" not found`);
+    new Notice(`Vizardry: step "${oldName}" not found.`, 4000);
     return false;
   }
 
@@ -390,7 +364,7 @@ export function renameStoryTask(
   }
 
   if (edits.length === 0) {
-    console.warn(`Vizardry: renameStoryTask — "${oldName}" not found`);
+    new Notice(`Vizardry: task "${oldName}" not found.`, 4000);
     return false;
   }
 
@@ -516,7 +490,7 @@ export function moveStoryTaskSlice(
         });
       }
     } else {
-      console.warn(`Vizardry: moveStoryTaskSlice — target slice "${toSliceName}" not found`);
+      new Notice(`Vizardry: target slice "${toSliceName}" not found.`, 4000);
       return false;
     }
   }
@@ -599,7 +573,7 @@ export function moveStoryTaskCrossColumn(
   // Find the task declaration line in fromStep
   const fromBlock = findStepBlock(editor, lineStart, lineEnd, fromStepName);
   if (!fromBlock) {
-    console.warn(`Vizardry: moveStoryTaskCrossColumn — fromStep "${fromStepName}" not found`);
+    new Notice(`Vizardry: source step "${fromStepName}" not found.`, 4000);
     return false;
   }
 
@@ -619,14 +593,14 @@ export function moveStoryTaskCrossColumn(
   }
 
   if (taskLine === -1) {
-    console.warn(`Vizardry: moveStoryTaskCrossColumn — task "${taskName}" not found in step "${fromStepName}"`);
+    new Notice(`Vizardry: task "${taskName}" not found in step "${fromStepName}".`, 4000);
     return false;
   }
 
   // Find the insertion point in toStep
   const toBlock = findStepBlock(editor, lineStart, lineEnd, toStepName);
   if (!toBlock) {
-    console.warn(`Vizardry: moveStoryTaskCrossColumn — toStep "${toStepName}" not found`);
+    new Notice(`Vizardry: destination step "${toStepName}" not found.`, 4000);
     return false;
   }
   const insertAfterLine = toBlock.lastTaskLine !== -1 ? toBlock.lastTaskLine : toBlock.stepLine;

@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
+import { resolveEditor } from "./editor";
 
 /**
  * Writes an updated cell value back into the source code block for a
@@ -19,28 +19,9 @@ export function writeRACICell(
   cellKey: string,
   newValue: string,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: writeRACICell — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: writeRACICell — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: writeRACICell — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "writeRACICell");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
 
   // Locate the Nth task: block
   let taskCount = -1;

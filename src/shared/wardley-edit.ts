@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
+import { resolveEditor } from "./editor";
 
 function resolveUniqueComponentName(
   editor: { getLine: (line: number) => string },
@@ -44,28 +44,9 @@ export function writeWardleyComponent(
   visibility: number,
   evolution: number,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: writeWardleyComponent — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: writeWardleyComponent — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: writeWardleyComponent — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "writeWardleyComponent");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
   const targetPrefix = `component: ${componentName.toLowerCase()}`;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
@@ -108,28 +89,9 @@ export function addWardleyComponent(
   evolution: number,
   withLink: boolean,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: addWardleyComponent — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: addWardleyComponent — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: addWardleyComponent — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "addWardleyComponent");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
   const sourcePrefix = `component: ${sourceComponentName.toLowerCase()}`;
   const resolvedName = resolveUniqueComponentName(editor, lineStart, lineEnd, newName);
   let sourceCompLine = -1;
@@ -189,28 +151,9 @@ export function renameWardleyComponent(
 ): boolean {
   if (!newName.trim() || newName === oldName) return false;
 
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: renameWardleyComponent — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: renameWardleyComponent — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: renameWardleyComponent — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "renameWardleyComponent");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
   const old = escRe(oldName);
 
   // Patterns (case-insensitive so they work regardless of how the user typed the name)
@@ -254,28 +197,9 @@ export function removeWardleyLink(
   fromName: string,
   toName: string,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: removeWardleyLink — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: removeWardleyLink — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: removeWardleyLink — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "removeWardleyLink");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
   const from = escRe(fromName);
   const to = escRe(toName);
   const reLink = new RegExp(`^\\s*link:\\s*${from}\\s*->\\s*${to}\\s*(?://.*)?$`, "i");
