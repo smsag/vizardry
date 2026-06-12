@@ -427,7 +427,6 @@ export function renderTree(
 export const OST_TREE_OPTIONS: TreeRenderOptions = {
   nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
-  direction: "left",
   maxAddLevel: 4,
   canvasClass: "vizardry-ost",
   wrapperClass: "vizardry-ost-wrapper",
