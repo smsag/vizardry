@@ -36,6 +36,7 @@ import { renderSIPOC } from "./sipoc";
 import { renderSIPOCFlow } from "./sipoc-flow";
 import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
+import { renderConceptMap } from "./conceptmap";
 import { NULL_RESOLVER } from "../shared/links";
 import * as wardleyEdit from "../shared/wardley-edit";
 
@@ -51,6 +52,7 @@ import type {
   SIPOCFlowData,
   VennDiagram,
   CarouselBlock,
+  ConceptMap,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -736,6 +738,72 @@ describe("renderVennDiagram", () => {
       regions: [],
     };
     expect(() => renderVennDiagram(empty, el, vi.fn())).not.toThrow();
+  });
+});
+
+// ── renderConceptMap ──────────────────────────────────────────────────────────
+
+describe("renderConceptMap", () => {
+  const map: ConceptMap = {
+    nodes: ["Photosynthesis", "Sunlight", "Plants", "Oxygen"],
+    edges: [
+      { from: "Photosynthesis", to: "Sunlight", label: "requires" },
+      { from: "Photosynthesis", to: "Plants", label: "occurs in" },
+      { from: "Photosynthesis", to: "Oxygen", label: "produces" },
+      { from: "Plants", to: "Oxygen", label: "" },
+    ],
+  };
+
+  it("renders an SVG without throwing", () => {
+    const el = container();
+    expect(() => renderConceptMap(map, el)).not.toThrow();
+    expect(el.querySelector("svg")).toBeTruthy();
+  });
+
+  it("renders one rect per node", () => {
+    const el = container();
+    renderConceptMap(map, el);
+    const rects = el.querySelectorAll(".vzd-cmap-node");
+    expect(rects).toHaveLength(map.nodes.length);
+  });
+
+  it("renders node labels", () => {
+    const el = container();
+    renderConceptMap(map, el);
+    const labels = Array.from(el.querySelectorAll(".vzd-cmap-node-label")).map(t => t.textContent);
+    expect(labels).toContain("Photosynthesis");
+    expect(labels).toContain("Oxygen");
+  });
+
+  it("renders one edge line per edge", () => {
+    const el = container();
+    renderConceptMap(map, el);
+    const edges = el.querySelectorAll(".vzd-cmap-edge");
+    expect(edges).toHaveLength(map.edges.length);
+  });
+
+  it("renders edge labels for labeled edges only", () => {
+    const el = container();
+    renderConceptMap(map, el);
+    const edgeLabels = el.querySelectorAll(".vzd-cmap-edge-label");
+    const labeledCount = map.edges.filter(e => e.label).length;
+    expect(edgeLabels).toHaveLength(labeledCount);
+  });
+
+  it("renders a minimal two-node graph without throwing", () => {
+    const el = container();
+    const minimal: ConceptMap = {
+      nodes: ["A", "B"],
+      edges: [{ from: "A", to: "B", label: "" }],
+    };
+    expect(() => renderConceptMap(minimal, el)).not.toThrow();
+    expect(el.querySelectorAll(".vzd-cmap-node")).toHaveLength(2);
+  });
+
+  it("renders an arrow marker definition", () => {
+    const el = container();
+    renderConceptMap(map, el);
+    expect(el.querySelector("#vzd-cmap-arrow")).toBeTruthy();
   });
 });
 

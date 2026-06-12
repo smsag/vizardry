@@ -1,5 +1,5 @@
 import type { App } from "obsidian";
-import { Modal, PluginSettingTab, Setting } from "obsidian";
+import { DropdownComponent, Modal, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
 
@@ -26,15 +26,15 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   linearBaseUrl: "https://api.linear.app/graphql",
   linearSecretName: "vzd-linear-key",
   llmProvider: "anthropic",
-  llmModel: "claude-haiku-20240307",
+  llmModel: "claude-haiku-4-5-20251001",
   llmSecretName: "vzd-llm-key",
   summaryTtlHours: 24,
   statusTtlMinutes: 5,
 };
 
 const ANTHROPIC_MODELS = [
-  { value: "claude-haiku-20240307",      label: "Claude Haiku (fast, cheap)" },
-  { value: "claude-3-5-sonnet-20241022", label: "Claude Sonnet (balanced)" },
+  { value: "claude-haiku-4-5-20251001",  label: "Claude Haiku 4.5 (fast, cheap)" },
+  { value: "claude-sonnet-4-5-20251001", label: "Claude Sonnet 4.5 (balanced)" },
 ];
 
 const OPENAI_MODELS = [
@@ -275,7 +275,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     // ── AI Summaries ───────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: "AI summaries" });
 
-    let modelDropdown: any;
+    let modelDropdown: DropdownComponent;
 
     const updateModelOptions = (provider: "anthropic" | "openai"): void => {
       const models = provider === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;

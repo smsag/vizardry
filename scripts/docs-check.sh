@@ -43,10 +43,11 @@ for f in src/frameworks/*.ts; do
   grep -qi "\b${id}\b" README.md || MISSING+=("$id")
 done
 
-# Non-grid (custom renderer) IDs
-for id in impact story mindmap venn sipoc wardley carousel raci; do
+# Non-grid (custom renderer + extra) IDs derived from processors.ts — no manual list to maintain
+while IFS= read -r id; do
+  [ -z "$id" ] && continue
   grep -qi "\b${id}\b" README.md || MISSING+=("$id")
-done
+done < <(grep -E '^\s+id: "[a-z-]+"' src/processors.ts | grep -oE '"[a-z-]+"' | tr -d '"')
 
 if [ ${#MISSING[@]} -eq 0 ]; then
   ok "README.md mentions all framework IDs"

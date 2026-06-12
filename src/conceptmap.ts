@@ -56,5 +56,10 @@ export function parseConceptMap(source: string): ConceptMapResult {
     return { ok: false, error: 'No edges defined — add at least one, e.g. "A -- relates to --> B"' };
   }
 
+  const MAX_NODES = 50;
+  if (nodeSet.size > MAX_NODES) {
+    return { ok: false, error: `Concept map has ${nodeSet.size} nodes — limit is ${MAX_NODES}. Split into smaller maps.` };
+  }
+
   return { ok: true, data: { nodes: [...nodeSet], edges } };
 }

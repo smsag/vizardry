@@ -47,6 +47,7 @@ block: Label
 | ` ```vpc ` | Value Proposition Canvas | Grid |
 | ` ```venn ` | Venn Diagram | SVG overlap |
 | ` ```wardley ` | Wardley Map | SVG canvas |
+| ` ```conceptmap ` | Concept Map | SVG graph |
 
 ---
 
@@ -853,6 +854,42 @@ All changes write back to the source block surgically — only the affected line
 
 ---
 
+### Concept Map
+
+A concept map models knowledge as a **directed graph** — concepts are nodes, and every edge carries a labeled relationship phrase that makes the connection explicit. Unlike a mind map (which radiates from a single root), a concept map is free-form: any concept can link to any other, cycles are valid, and cross-links between branches are the point.
+
+~~~
+```conceptmap
+title: Knowledge Domain
+
+Photosynthesis -- requires --> Sunlight
+Photosynthesis -- occurs in --> Plants
+Photosynthesis -- produces --> Oxygen
+Plants -- absorb --> Carbon Dioxide
+Oxygen -- supports --> Life
+Life -- depends on --> Water
+Water -- enables --> Plants
+```
+~~~
+
+Nodes are inferred automatically from the edges — no separate node declaration is needed. The layout is computed with a force-directed algorithm, so connected concepts cluster together and unconnected ones spread apart. A post-layout pass guarantees all nodes have at least 14 px of clearance regardless of label length.
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `A -- label --> B` | Directed edge from A to B with a relationship label |
+| `A --> B` | Directed edge from A to B with no label |
+| `title: <text>` | Optional canvas title (editable in Live Preview) |
+| `// comment` | Ignored |
+
+**Rules:**
+- Nodes are collected from edge declarations in order of first appearance
+- Self-loops (`A --> A`) are not allowed
+- Multi-edges are allowed — the same pair of concepts can have multiple labeled relationships
+
+---
+
 ## Linking elements to document headings
 
 Any canvas element can navigate to a heading in the same note. A small link icon signals the connection — clicking the block or node jumps to that heading.
@@ -1056,6 +1093,50 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `component: <name> [visibility, evolution]` | Node at normalised 0–1 coordinates |
 | `link: A -> B` | Dependency arrow |
 | `// comment` | Ignored |
+
+### Concept Map (conceptmap)
+
+| Syntax | Meaning |
+|---|---|
+| `A -- label --> B` | Directed edge from A to B with a relationship label |
+| `A --> B` | Directed edge from A to B without a label |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+---
+
+### Fishbone Diagram (fishbone)
+
+| Syntax | Meaning |
+|---|---|
+| `effect: <text>` | The problem at the head of the diagram — required, one only |
+| `category: <name>` | A cause category (e.g. People, Process, Technology) |
+| `cause: <text>` | A contributing cause — indented under `category:` |
+| `subcause: <text>` | A sub-level cause — indented under `cause:` |
+
+---
+
+### Now/Next/Later Roadmap (roadmap)
+
+| Syntax | Meaning |
+|---|---|
+| `now:` / `next:` / `later:` | Column headers — each required once |
+| `item: <name>` | A roadmap item |
+| `item: <name> \| <key>` | Item with an optional ticket key (e.g. Linear/Jira ID) |
+
+---
+
+### Pace Layer Analysis (pacelayers)
+
+| Syntax | Meaning |
+|---|---|
+| `type:` | Layout variant — `shearing` · `product` · `retro` |
+| `context: <text>` | Optional one-line context shown in the header |
+| `layer: <name>` | One pace layer |
+| `note:` | Free text — used for outer layers (Fashion, Nature) |
+| `obs:` | Observation from this layer |
+| `feed:` | Signal or feedback from this layer |
+| `idea:` | Action idea or hypothesis |
 
 ---
 

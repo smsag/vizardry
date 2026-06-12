@@ -99,9 +99,17 @@ export default class VizardryPlugin extends Plugin {
     // ── Heading change listener ────────────────────────────────────────
     // When any file's metadata (headings) changes, refresh link buttons on
     // all currently rendered canvas blocks belonging to that file.
+    // Debounced per file: rapid edits (e.g. typing in a heading) coalesce
+    // into a single relink pass fired 200 ms after the last change.
+    const relinkTimers = new Map<string, ReturnType<typeof setTimeout>>();
     this.registerEvent(
       this.app.metadataCache.on("changed", (file) => {
-        triggerRelink(file.path);
+        const prev = relinkTimers.get(file.path);
+        if (prev !== undefined) clearTimeout(prev);
+        relinkTimers.set(file.path, setTimeout(() => {
+          relinkTimers.delete(file.path);
+          triggerRelink(file.path);
+        }, 200));
       }),
     );
 

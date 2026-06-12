@@ -17,6 +17,7 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { extractInlineLinks, buildLinkSupport } from "./shared/links";
+import { resolveVaultPath } from "./shared/vault";
 import { parseFishbone } from "./fishbone";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
@@ -149,9 +150,9 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseCarouselBlock(carouselSrc);
       if (!result.ok) { renderError(result.error, el); return; }
       renderCarouselBlock(result.data, el, (src) => {
-        const file = app.vault.getFileByPath(
-          ctx.sourcePath.replace(/[^/]+$/, "") + src
-        );
+        const file =
+          app.metadataCache.getFirstLinkpathDest(src, ctx.sourcePath) ??
+          app.vault.getFileByPath(resolveVaultPath(ctx.sourcePath, src));
         if (!file) {
           console.warn(`Vizardry: carousel image not found in vault: ${src}`);
           return "";

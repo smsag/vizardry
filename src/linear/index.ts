@@ -1,4 +1,5 @@
 import type { App, Plugin } from "obsidian";
+import { Notice } from "obsidian";
 import type { PluginSettings } from "../settings";
 import { loadSecret } from "../shared/keychain";
 import { fetchLinearIssue } from "./client";
@@ -10,8 +11,12 @@ import type { LinearState } from "./types";
 
 let _service: LinearService | null = null;
 
+// Fired at most once per plugin session so the user isn't spammed.
+let _authNoticeShown = false;
+
 export function initLinearService(plugin: (Plugin & { app: App; settings: PluginSettings }) | null): void {
   _service = plugin ? new LinearService(plugin) : null;
+  _authNoticeShown = false;
 }
 
 export function getLinearService(): LinearService | null {
@@ -108,6 +113,10 @@ class LinearService {
     } catch (err) {
       const msg = (err as Error).message ?? String(err);
       console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);
+      if (!_authNoticeShown && msg.toLowerCase().includes("invalid or missing api key")) {
+        _authNoticeShown = true;
+        new Notice("Vizardry: Linear API key is invalid or missing — check Settings → Vizardry.", 8000);
+      }
       return { error: msg };
     }
   }
