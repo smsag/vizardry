@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
+import { resolveEditor } from "./editor";
 
 /**
  * Returns true if a zero-indent line is an "orphaned value fragment" —
@@ -74,27 +74,9 @@ function _writePaceLayerCell(
     return false;
   }
 
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry PL write ✗ getSectionInfo returned null");
-    return false;
-  }
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry PL write ✗ file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry PL write ✗ no live editor — open note in editing mode");
-    return false;
-  }
-
-  const { lineStart } = info;
+  const resolved = resolveEditor(app, ctx, el, "_writePaceLayerCell");
+  if (!resolved) return false;
+  const { editor, lineStart } = resolved;
   const totalLines = editor.lineCount();
 
   // ── Locate `layer: <layerName>` ─────────────────────────────────────────────

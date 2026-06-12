@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
+import { resolveEditor } from "./editor";
 
 /**
  * Writes updated block content back into the source code block.
@@ -20,29 +20,9 @@ export function writeBlockContent(
   blockLabel: string,
   newValue: string,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: writeBlockContent — no section info for container");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: writeBlockContent — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  // Find a live editor for this file
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn(`Vizardry: writeBlockContent — no live editor for ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "writeBlockContent");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
 
   // Find the "block: <Label>" line (case-insensitive) inside the code block.
   // The line may carry a display-mode modifier: "block: Label | card"

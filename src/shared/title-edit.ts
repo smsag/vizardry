@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
+import { resolveEditor } from "./editor";
 
 export const TITLE_MAX_LENGTH = 80;
 
@@ -32,28 +32,9 @@ export function writeCanvasTitle(
   newTitle: string,
   defaultTitle: string,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: writeCanvasTitle — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: writeCanvasTitle — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn(`Vizardry: writeCanvasTitle — no live editor for ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "writeCanvasTitle");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
   const isDefault = newTitle.trim() === defaultTitle.trim();
 
   // Find existing title line inside the code block

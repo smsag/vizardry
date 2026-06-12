@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
+import { resolveEditor } from "./editor";
 
 /**
  * Writes an updated cell value back into the source code block for a
@@ -20,28 +20,9 @@ export function writeSIPOCCell(
   cellKey: string,
   newValue: string,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: writeSIPOCCell — no section info");
-    return false;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: writeSIPOCCell — file not found: ${ctx.sourcePath}`);
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: writeSIPOCCell — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "writeSIPOCCell");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
 
   // Locate the Nth `row:` block
   let rowCount = -1;
@@ -116,22 +97,9 @@ export function insertSIPOCRowAfter(
   el: HTMLElement,
   rowIndex: number,
 ): boolean {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn("Vizardry: insertSIPOCRowAfter — no section info");
-    return false;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn("Vizardry: insertSIPOCRowAfter — no live editor");
-    return false;
-  }
-
-  const { lineStart, lineEnd } = info;
+  const resolved = resolveEditor(app, ctx, el, "insertSIPOCRowAfter");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
 
   // Collect start lines of every `row:` block within the code fence
   const rowStarts: number[] = [];

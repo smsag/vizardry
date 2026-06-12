@@ -1,32 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
-
-function resolveEditor(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  caller: string,
-): { editor: MarkdownView["editor"]; lineStart: number; lineEnd: number } | null {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn(`Vizardry: ${caller} — no section info`);
-    return null;
-  }
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: ${caller} — file not found: ${ctx.sourcePath}`);
-    return null;
-  }
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath,
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn(`Vizardry: ${caller} — no live editor`);
-    return null;
-  }
-  return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
-}
+import { resolveEditor } from "./editor";
 
 /** Escapes a string for safe use inside a RegExp. */
 function escRe(s: string): string {
