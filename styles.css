@@ -1347,6 +1347,13 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
 }
 
+/* Optional meta columns (owner, metric) — neutral background, accent text.
+   Color is set inline by the renderer; no bestTextColor() call needed. */
+.vzd-sipoc-th--tier-meta {
+  background: var(--background-primary);
+  font-weight: 600;
+}
+
 /* Arrow that sits at the right edge of each non-last header cell */
 .vzd-sipoc-arrow {
   position: absolute;

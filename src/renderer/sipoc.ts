@@ -28,6 +28,7 @@ function getCols(rows: SIPOCData["rows"]): { key: ColKey; label: string }[] {
 
 /** Maps a column key to its header accent-tier CSS class. */
 function headerTierClass(key: ColKey): string {
+  if (key === "owner" || key === "metric") return "vzd-sipoc-th--tier-meta";
   if (key === "process") return "vzd-sipoc-th--tier-hi";
   if (key === "input" || key === "output") return "vzd-sipoc-th--tier-mid";
   return "vzd-sipoc-th--tier-lo";
@@ -170,8 +171,13 @@ export function renderSIPOC(
     }
   });
 
-  // Apply contrast-checked text colours to header cells now that they are live in the DOM.
+  // Apply contrast-checked text colours to tinted header cells.
+  // Meta columns (owner, metric) use a fixed accent colour and skip the check.
   for (const th of headerEls) {
-    th.style.color = bestTextColor(th);
+    if (th.hasClass("vzd-sipoc-th--tier-meta")) {
+      th.style.color = "var(--interactive-accent)";
+    } else {
+      th.style.color = bestTextColor(th);
+    }
   }
 }
