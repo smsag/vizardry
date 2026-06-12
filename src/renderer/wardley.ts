@@ -22,8 +22,6 @@ const evolutionStages = (): string[] => [t("wardley.stage.genesis"), t("wardley.
 const NODE_R = 8;
 
 function stageEdgesFromPositions(positions: number[]): number[] {
-  // Positions represent interval boundaries for each stage label.
-  // Keep a fixed edge count (stages + 1) so every stage has a left/right edge.
   return [0, ...positions];
 }
 
@@ -95,7 +93,6 @@ function nudgeLabels(slots: LabelSlot[]): void {
     for (let j = i + 1; j < slots.length; j++) {
       const a = slots[i], b = slots[j];
 
-      // Skip if b is already at its maximum allowed displacement
       if (b.textY - b.naturalY >= WARDLEY_LABEL_MAX_NUDGE_PX) continue;
 
       const aW = a.name.length * WARDLEY_CHAR_W_PX;
@@ -110,7 +107,6 @@ function nudgeLabels(slots: LabelSlot[]): void {
       const gap = b.textY - a.textY;
       if (gap < WARDLEY_LABEL_MIN_GAP_PX) {
         const push = WARDLEY_LABEL_MIN_GAP_PX - gap;
-        // Cap so b never moves more than WARDLEY_LABEL_MAX_NUDGE_PX from its natural position
         const remaining = WARDLEY_LABEL_MAX_NUDGE_PX - (b.textY - b.naturalY);
         b.textY += Math.min(push, Math.max(0, remaining));
       }
@@ -118,47 +114,44 @@ function nudgeLabels(slots: LabelSlot[]): void {
   }
 }
 
-export function renderWardleyMap(
-  data: WardleyMap,
-  container: HTMLElement,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  source?: string,
-): void {
-  const defaultTitle = "Wardley Map";
-  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
-    : undefined;
-  initCanvas(container, "wardley", title, undefined, source, onTitleEdit);
+// ── Shared types for interactive behaviors ─────────────────────────────────
 
-  const wrap = container.createEl("div", { cls: "vzd-wardley-wrap" });
+type NodeRef = { circle: SVGCircleElement; textEl: SVGTextElement; comp: WardleyComponent };
+type DragState = { ref: NodeRef };
+type LinkDrawState = {
+  sourceRef: NodeRef;
+  ghostLine: SVGLineElement;
+  ghostDot: SVGCircleElement;
+  hasMoved: boolean;
+};
+type ActiveRename = { foreignObject: SVGForeignObjectElement; input: HTMLInputElement };
 
-  const svg = createSvgEl("svg", {
-    viewBox: `0 0 ${W} ${H}`,
-    class: "vzd-wardley-svg",
-  }) as SVGSVGElement;
+/**
+ * Mutable cross-cutting state shared across the three interaction modes.
+ * All three attach* functions receive this object by reference so they see
+ * each other's state changes (e.g. drag blocks rename; rename hides the
+ * add-handle; link-draw prevents rename activation).
+ */
+type WardleyIxState = {
+  drag: DragState | null;
+  activeRename: ActiveRename | null;
+  linkDraw: LinkDrawState | null;
+  handleTarget: NodeRef | null;
+  hideHandleTimer: ReturnType<typeof setTimeout> | null;
+  addHandleG: SVGGElement;
+};
 
-  // ── Defs (arrow marker) ────────────────────────────────────────────────
-  const defs = createSvgEl("defs");
-  const marker = createSvgEl("marker", {
-    id: "vzd-wardley-arrow", markerWidth: "8", markerHeight: "8",
-    refX: "6", refY: "3", orient: "auto",
-  });
-  const markerPath = createSvgEl("path", { d: "M0,0 L0,6 L8,3 z", class: "vzd-wardley-arrowhead" });
-  marker.appendChild(markerPath);
-  defs.appendChild(marker);
-  svg.appendChild(defs);
+// ── Static rendering helpers ───────────────────────────────────────────────
 
-  // ── Evolution stage bands and labels ──────────────────────────────────
+function renderStageBands(svg: SVGSVGElement, data: WardleyMap): void {
   const stages = data.stages && data.stages.length > 0 ? data.stages : evolutionStages();
   const hasPositionedStages = !!data.stagePositions && data.stagePositions.length === stages.length;
+
   if (hasPositionedStages) {
     const stagePositions = data.stagePositions!;
     const edges = stageEdgesFromPositions(stagePositions);
     for (let i = 0; i < stages.length; i++) {
-      const left = edges[i];
-      const right = edges[i + 1];
+      const left = edges[i], right = edges[i + 1];
       if (!Number.isFinite(left) || !Number.isFinite(right) || right < left) continue;
       if (i % 2 === 1) {
         const leftX = PLOT_X + left * PLOT_W;
@@ -170,13 +163,13 @@ export function renderWardleyMap(
       }
     }
     stagePositions.forEach((pos, i) => {
-      const left = edges[i];
-      const right = edges[i + 1];
+      const left = edges[i], right = edges[i + 1];
       if (!Number.isFinite(left) || !Number.isFinite(right) || right < left) return;
       const x = PLOT_X + ((left + right) / 2) * PLOT_W;
       if (pos > 0 && pos < 1) {
         svg.appendChild(createSvgEl("line", {
-          x1: String(PLOT_X + pos * PLOT_W), y1: String(PLOT_Y), x2: String(PLOT_X + pos * PLOT_W), y2: String(PLOT_Y + PLOT_H),
+          x1: String(PLOT_X + pos * PLOT_W), y1: String(PLOT_Y),
+          x2: String(PLOT_X + pos * PLOT_W), y2: String(PLOT_Y + PLOT_H),
           class: "vzd-wardley-stage-line",
         }));
       }
@@ -211,8 +204,9 @@ export function renderWardleyMap(
       svg.appendChild(label);
     });
   }
+}
 
-  // ── Axis lines and labels ──────────────────────────────────────────────
+function renderAxes(svg: SVGSVGElement): void {
   svg.appendChild(createSvgEl("line", {
     x1: String(PLOT_X), y1: String(PLOT_Y + PLOT_H),
     x2: String(PLOT_X + PLOT_W), y2: String(PLOT_Y + PLOT_H), class: "vzd-wardley-axis",
@@ -234,12 +228,18 @@ export function renderWardleyMap(
   });
   xLabel.textContent = t("wardley.axis.evolution");
   svg.appendChild(xLabel);
+}
 
-  // ── Build component lookup for link drawing ────────────────────────────
+function renderLinks(
+  svg: SVGSVGElement,
+  data: WardleyMap,
+  app: App | undefined,
+  mppCtx: MarkdownPostProcessorContext | undefined,
+  wrap: HTMLElement,
+): void {
   const compMap = new Map<string, WardleyComponent>();
   for (const c of data.components) compMap.set(c.name, c);
 
-  // ── Links ──────────────────────────────────────────────────────────────
   for (const link of data.links) {
     const from = compMap.get(link.from), to = compMap.get(link.to);
     if (!from || !to) continue;
@@ -257,8 +257,7 @@ export function renderWardleyMap(
       class: "vzd-wardley-link", "marker-end": "url(#vzd-wardley-arrow)",
     }));
 
-    if (app && ctx) {
-      // Invisible wider hit area so the hover target is easy to acquire
+    if (app && mppCtx) {
       linkG.appendChild(createSvgEl("line", {
         x1: String(x1 + ex), y1: String(y1 + ey),
         x2: String(x2 - ex), y2: String(y2 - ey),
@@ -267,8 +266,7 @@ export function renderWardleyMap(
 
       const deleteBtn = createSvgEl("g", { class: "vzd-wardley-unlink-btn" });
       deleteBtn.appendChild(createSvgEl("circle", {
-        cx: String(mx), cy: String(my), r: "8",
-        class: "vzd-wardley-unlink-circle",
+        cx: String(mx), cy: String(my), r: "8", class: "vzd-wardley-unlink-circle",
       }));
       const xText = createSvgEl("text", {
         x: String(mx), y: String(my),
@@ -277,19 +275,18 @@ export function renderWardleyMap(
       });
       xText.textContent = "×";
       deleteBtn.appendChild(xText);
-
       deleteBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        removeWardleyLink(app, ctx, wrap, link.from, link.to);
+        removeWardleyLink(app, mppCtx, wrap, link.from, link.to);
       });
-
       linkG.appendChild(deleteBtn);
     }
 
     svg.appendChild(linkG);
   }
+}
 
-  // ── Nodes ──────────────────────────────────────────────────────────────
+function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
   const labelSlots: LabelSlot[] = data.components.map((comp, componentIndex) => {
     const cx = toSvgX(comp.evolution), cy = toSvgY(comp.visibility);
     const { dx, dy, anchor } = labelAnchor(comp.evolution, comp.visibility);
@@ -297,10 +294,9 @@ export function renderWardleyMap(
     return { componentIndex, textX: cx + dx, textY, naturalY: textY, anchor, name: comp.name };
   });
   nudgeLabels(labelSlots);
-  const labelSlotsByComponentIndex = new Map<number, LabelSlot>();
-  for (const slot of labelSlots) labelSlotsByComponentIndex.set(slot.componentIndex, slot);
+  const slotByIndex = new Map<number, LabelSlot>();
+  for (const slot of labelSlots) slotByIndex.set(slot.componentIndex, slot);
 
-  type NodeRef = { circle: SVGCircleElement; textEl: SVGTextElement; comp: WardleyComponent };
   const nodeRefs: NodeRef[] = [];
 
   for (let i = 0; i < data.components.length; i++) {
@@ -314,11 +310,9 @@ export function renderWardleyMap(
     }) as SVGCircleElement;
     svg.appendChild(circle);
 
-    const slot = labelSlotsByComponentIndex.get(i);
+    const slot = slotByIndex.get(i);
     if (!slot) continue;
 
-    // Leader line — drawn when the nudge has moved the label significantly
-    // from its natural position, keeping the visual connection to the node.
     if (slot.textY - slot.naturalY > 6) {
       const leaderX = cx + (slot.anchor === "end" ? -(NODE_R + 2) : NODE_R + 2);
       svg.appendChild(createSvgEl("line", {
@@ -338,354 +332,396 @@ export function renderWardleyMap(
     nodeRefs.push({ circle, textEl, comp });
   }
 
-  wrap.appendChild(svg);
+  return nodeRefs;
+}
 
-  // ── Drag to reposition (Live Preview only) ─────────────────────────────
-  if (app && ctx) {
-    // Tooltip: SVG text element shown near the dragged dot during drag
-    const tooltipG = createSvgEl("g", { class: "vzd-wardley-drag-tooltip" }) as SVGGElement;
+function buildAddHandle(svg: SVGSVGElement): SVGGElement {
+  const addHandleG = createSvgEl("g", { class: "vzd-wardley-add-handle-g" }) as SVGGElement;
+  addHandleG.style.display = "none";
+  addHandleG.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "14", class: "vzd-wardley-add-handle-hit" }));
+  addHandleG.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-wardley-add-handle" }));
+  const plus = createSvgEl("text", {
+    x: "0", y: "0.5", class: "vzd-wardley-add-handle-icon",
+    "text-anchor": "middle", "dominant-baseline": "middle",
+  }) as SVGTextElement;
+  plus.textContent = "+";
+  addHandleG.appendChild(plus);
+  svg.appendChild(addHandleG);
+  return addHandleG;
+}
+
+// ── Interaction: drag to reposition ───────────────────────────────────────
+
+function attachDragBehavior(
+  svg: SVGSVGElement,
+  nodeRefs: NodeRef[],
+  ix: WardleyIxState,
+  data: WardleyMap,
+  app: App,
+  mppCtx: MarkdownPostProcessorContext,
+  wrap: HTMLElement,
+): void {
+  // Tooltip — only used by drag, so owned here rather than in WardleyIxState
+  const tooltipG = createSvgEl("g", { class: "vzd-wardley-drag-tooltip" }) as SVGGElement;
+  tooltipG.style.display = "none";
+  const tooltipBg = createSvgEl("rect", { rx: "4", class: "vzd-wardley-drag-tooltip-bg" }) as SVGRectElement;
+  const tooltipTxt = createSvgEl("text", {
+    class: "vzd-wardley-drag-tooltip-text", "dominant-baseline": "middle",
+  }) as SVGTextElement;
+  tooltipG.appendChild(tooltipBg);
+  tooltipG.appendChild(tooltipTxt);
+  svg.appendChild(tooltipG);
+
+  const updateTooltip = (cx: number, cy: number, vis: number, evo: number): void => {
+    const text = `vis ${vis.toFixed(2)}  evo ${evo.toFixed(2)}`;
+    tooltipTxt.textContent = text;
+    const tipX = cx + PLOT_X * 0.1 < W - 120 ? cx + NODE_R + 6 : cx - NODE_R - 6;
+    const tipAnchor = cx + NODE_R + 6 < W - 120 ? "start" : "end";
+    tooltipTxt.setAttribute("x", String(tipX));
+    tooltipTxt.setAttribute("y", String(cy - NODE_R - 8));
+    tooltipTxt.setAttribute("text-anchor", tipAnchor);
+    const charW = 7, pad = 4;
+    const bw = text.length * charW + pad * 2;
+    const bx = tipAnchor === "start" ? tipX - pad : tipX - bw + pad;
+    tooltipBg.setAttribute("x", String(bx));
+    tooltipBg.setAttribute("y", String(cy - NODE_R - 22));
+    tooltipBg.setAttribute("width", String(bw));
+    tooltipBg.setAttribute("height", "16");
+    tooltipG.style.display = "";
+  };
+
+  const moveDot = (ref: NodeRef, clientX: number, clientY: number): void => {
+    const { x: svgX, y: svgY } = clientToSvg(svg, clientX, clientY);
+    const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, svgX));
+    const cy = Math.max(PLOT_Y, Math.min(PLOT_Y + PLOT_H, svgY));
+    const { visibility, evolution } = svgToData(cx, cy);
+
+    ref.circle.setAttribute("cx", String(cx));
+    ref.circle.setAttribute("cy", String(cy));
+
+    const { dx, dy, anchor } = labelAnchor(evolution, visibility);
+    ref.textEl.setAttribute("x", String(cx + dx));
+    ref.textEl.setAttribute("y", String(cy + dy));
+    ref.textEl.setAttribute("text-anchor", anchor);
+
+    updateTooltip(cx, cy, visibility, evolution);
+  };
+
+  const endDrag = (): void => {
+    if (!ix.drag) return;
+    const { ref } = ix.drag;
+    ix.drag = null;
+
     tooltipG.style.display = "none";
-    const tooltipBg = createSvgEl("rect", {
-      rx: "4", class: "vzd-wardley-drag-tooltip-bg",
-    }) as SVGRectElement;
-    const tooltipTxt = createSvgEl("text", {
-      class: "vzd-wardley-drag-tooltip-text",
-      "dominant-baseline": "middle",
-    }) as SVGTextElement;
-    tooltipG.appendChild(tooltipBg);
-    tooltipG.appendChild(tooltipTxt);
-    svg.appendChild(tooltipG);
+    ref.circle.classList.remove("vzd-wardley-node--dragging");
+    svg.classList.remove("vzd-wardley-svg--dragging");
 
-    type DragState = { ref: NodeRef };
-    let drag: DragState | null = null;
-    let activeRename: { foreignObject: SVGForeignObjectElement; input: HTMLInputElement } | null = null;
+    const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
+    const cy = parseFloat(ref.circle.getAttribute("cy") ?? "0");
+    const { visibility, evolution } = svgToData(cx, cy);
 
-    const updateTooltip = (cx: number, cy: number, vis: number, evo: number): void => {
-      const text = `vis ${vis.toFixed(2)}  evo ${evo.toFixed(2)}`;
-      tooltipTxt.textContent = text;
-      // Position tooltip above-right of the node, flip left when near right edge
-      const tipX = cx + PLOT_X * 0.1 < W - 120 ? cx + NODE_R + 6 : cx - NODE_R - 6;
-      const tipAnchor = cx + NODE_R + 6 < W - 120 ? "start" : "end";
-      tooltipTxt.setAttribute("x", String(tipX));
-      tooltipTxt.setAttribute("y", String(cy - NODE_R - 8));
-      tooltipTxt.setAttribute("text-anchor", tipAnchor);
-      // Sync background rect to text bounds (approximate)
-      const charW = 7, pad = 4;
-      const bw = text.length * charW + pad * 2;
-      const bx = tipAnchor === "start" ? tipX - pad : tipX - bw + pad;
-      tooltipBg.setAttribute("x", String(bx));
-      tooltipBg.setAttribute("y", String(cy - NODE_R - 22));
-      tooltipBg.setAttribute("width", String(bw));
-      tooltipBg.setAttribute("height", "16");
-      tooltipG.style.display = "";
+    writeWardleyComponent(app, mppCtx, wrap, ref.comp.name, visibility, evolution);
+
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  };
+
+  const onMouseMove = (e: MouseEvent): void => { if (ix.drag) moveDot(ix.drag.ref, e.clientX, e.clientY); };
+  const onMouseUp = (): void => endDrag();
+
+  // Touch listeners are registered once on svg (not per-node) to avoid duplicate handlers
+  svg.addEventListener("touchmove", (e) => {
+    if (!ix.drag) return;
+    e.preventDefault();
+    moveDot(ix.drag.ref, e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+  svg.addEventListener("touchend", () => endDrag());
+
+  for (const ref of nodeRefs) {
+    if (!data.explicitComponents.has(ref.comp.name)) continue;
+
+    ref.circle.classList.add("vzd-wardley-node--draggable");
+
+    const startDrag = (clientX: number, clientY: number): void => {
+      if (ix.activeRename) return;
+      ix.drag = { ref };
+      ref.circle.classList.add("vzd-wardley-node--dragging");
+      svg.classList.add("vzd-wardley-svg--dragging");
+      moveDot(ref, clientX, clientY);
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
     };
 
-    const moveDot = (ref: NodeRef, clientX: number, clientY: number): void => {
-      const { x: svgX, y: svgY } = clientToSvg(svg, clientX, clientY);
-      // Clamp to plot area
-      const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, svgX));
-      const cy = Math.max(PLOT_Y, Math.min(PLOT_Y + PLOT_H, svgY));
-      const { visibility, evolution } = svgToData(cx, cy);
-
-      ref.circle.setAttribute("cx", String(cx));
-      ref.circle.setAttribute("cy", String(cy));
-
-      // Update label without nudge (raw position during drag)
-      const { dx, dy, anchor } = labelAnchor(evolution, visibility);
-      ref.textEl.setAttribute("x", String(cx + dx));
-      ref.textEl.setAttribute("y", String(cy + dy));
-      ref.textEl.setAttribute("text-anchor", anchor);
-
-      updateTooltip(cx, cy, visibility, evolution);
-    };
-
-    const endDrag = (): void => {
-      if (!drag) return;
-      const { ref } = drag;
-      drag = null;
-
-      tooltipG.style.display = "none";
-      ref.circle.classList.remove("vzd-wardley-node--dragging");
-      svg.classList.remove("vzd-wardley-svg--dragging");
-
-      const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
-      const cy = parseFloat(ref.circle.getAttribute("cy") ?? "0");
-      const { visibility, evolution } = svgToData(cx, cy);
-
-      writeWardleyComponent(app, ctx, wrap, ref.comp.name, visibility, evolution);
-
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    const onMouseMove = (e: MouseEvent): void => {
-      if (drag) moveDot(drag.ref, e.clientX, e.clientY);
-    };
-    const onMouseUp = (): void => endDrag();
-
-    for (const ref of nodeRefs) {
-      if (!data.explicitComponents.has(ref.comp.name)) continue; // anchor-only: no source line
-
-      ref.circle.classList.add("vzd-wardley-node--draggable");
-
-      const startDrag = (clientX: number, clientY: number): void => {
-        if (activeRename) return;
-        drag = { ref };
-        ref.circle.classList.add("vzd-wardley-node--dragging");
-        svg.classList.add("vzd-wardley-svg--dragging");
-        moveDot(ref, clientX, clientY);
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-      };
-
-      ref.circle.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startDrag(e.clientX, e.clientY);
-      });
-
-      // Touch support
-      ref.circle.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }, { passive: false });
-
-      svg.addEventListener("touchmove", (e) => {
-        if (!drag) return;
-        e.preventDefault();
-        moveDot(drag.ref, e.touches[0].clientX, e.touches[0].clientY);
-      }, { passive: false });
-
-      svg.addEventListener("touchend", () => endDrag());
-    }
-
-    // ── + handle and link-draw gesture ──────────────────────────────────
-    // Hovering a draggable node reveals a small "+" handle at its right edge.
-    // Dragging from the handle creates a new component at release. Hold Shift
-    // while releasing to create a linked component.
-
-    // Shared "+" handle — one element repositioned to whichever node is hovered
-    const addHandleG = createSvgEl("g", { class: "vzd-wardley-add-handle-g" }) as SVGGElement;
-    addHandleG.style.display = "none";
-    const addHandleHit = createSvgEl("circle", {
-      cx: "0", cy: "0", r: "14", class: "vzd-wardley-add-handle-hit",
-    }) as SVGCircleElement;
-    const addHandleCircle = createSvgEl("circle", {
-      cx: "0", cy: "0", r: "7", class: "vzd-wardley-add-handle",
-    }) as SVGCircleElement;
-    const addHandlePlus = createSvgEl("text", {
-      x: "0", y: "0.5", class: "vzd-wardley-add-handle-icon",
-      "text-anchor": "middle", "dominant-baseline": "middle",
-    }) as SVGTextElement;
-    addHandlePlus.textContent = "+";
-    addHandleG.appendChild(addHandleHit);
-    addHandleG.appendChild(addHandleCircle);
-    addHandleG.appendChild(addHandlePlus);
-    svg.appendChild(addHandleG);
-
-    type LinkDrawState = {
-      sourceRef: NodeRef;
-      ghostLine: SVGLineElement;
-      ghostDot: SVGCircleElement;
-      hasMoved: boolean;
-    };
-    let linkDraw: LinkDrawState | null = null;
-    let hideHandleTimer: ReturnType<typeof setTimeout> | null = null;
-    let handleTarget: NodeRef | null = null;
-
-    const isInsideHandle = (next: EventTarget | null): boolean => next instanceof Node && addHandleG.contains(next);
-
-    const positionHandle = (ref: NodeRef): void => {
-      const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
-      const cy = parseFloat(ref.circle.getAttribute("cy") ?? "0");
-      addHandleG.setAttribute("transform", `translate(${cx + NODE_R + 12}, ${cy})`);
-      addHandleG.style.display = "";
-      handleTarget = ref;
-    };
-
-    const scheduleHideHandle = (): void => {
-      if (hideHandleTimer) clearTimeout(hideHandleTimer);
-      hideHandleTimer = setTimeout(() => {
-        if (!linkDraw) { addHandleG.style.display = "none"; handleTarget = null; }
-      }, 280);
-    };
-
-    const cancelHideHandle = (): void => {
-      if (hideHandleTimer) { clearTimeout(hideHandleTimer); hideHandleTimer = null; }
-    };
-
-    for (const ref of nodeRefs) {
-      if (!data.explicitComponents.has(ref.comp.name)) continue;
-      ref.circle.addEventListener("mouseenter", () => {
-        if (drag || activeRename) return;
-        cancelHideHandle();
-        positionHandle(ref);
-      });
-      ref.circle.addEventListener("mouseleave", (e) => {
-        if (isInsideHandle(e.relatedTarget)) return;
-        scheduleHideHandle();
-      });
-    }
-    addHandleG.addEventListener("mouseenter", () => cancelHideHandle());
-    addHandleG.addEventListener("mouseleave", (e) => {
-      if (handleTarget && e.relatedTarget === handleTarget.circle) return;
-      scheduleHideHandle();
-    });
-
-    const onLinkMove = (e: MouseEvent): void => {
-      if (!linkDraw) return;
-      const { x, y } = clientToSvg(svg, e.clientX, e.clientY);
-      const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, x));
-      const cy = Math.max(PLOT_Y, Math.min(PLOT_Y + PLOT_H, y));
-      linkDraw.ghostLine.setAttribute("x2", String(cx));
-      linkDraw.ghostLine.setAttribute("y2", String(cy));
-      linkDraw.ghostDot.setAttribute("cx", String(cx));
-      linkDraw.ghostDot.setAttribute("cy", String(cy));
-      if (!linkDraw.hasMoved) {
-        const srcCx = parseFloat(linkDraw.sourceRef.circle.getAttribute("cx") ?? "0");
-        const srcCy = parseFloat(linkDraw.sourceRef.circle.getAttribute("cy") ?? "0");
-        if (Math.hypot(cx - srcCx, cy - srcCy) > NODE_R * 2) linkDraw.hasMoved = true;
-      }
-    };
-
-    const endLinkDraw = (withLink: boolean): void => {
-      if (!linkDraw) return;
-      const { sourceRef, ghostLine, ghostDot, hasMoved } = linkDraw;
-      linkDraw = null;
-      ghostLine.remove();
-      ghostDot.remove();
-      addHandleG.style.display = "none";
-      svg.classList.remove("vzd-wardley-svg--drawing");
-      document.removeEventListener("mousemove", onLinkMove);
-      document.removeEventListener("mouseup", onLinkUp);
-      document.removeEventListener("keydown", onLinkKey);
-      if (!hasMoved) return; // no meaningful movement — cancel silently
-      const cx = parseFloat(ghostDot.getAttribute("cx") ?? "0");
-      const cy = parseFloat(ghostDot.getAttribute("cy") ?? "0");
-      const { visibility, evolution } = svgToData(cx, cy);
-      addWardleyComponent(app, ctx, wrap, sourceRef.comp.name, "New Component", visibility, evolution, withLink);
-    };
-
-    const onLinkUp = (e: MouseEvent): void => endLinkDraw(!e.shiftKey);
-    const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false); };
-
-    addHandleG.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (activeRename) return;
-      if (!handleTarget) return;
-      const sourceRef = handleTarget;
-      const srcCx = parseFloat(sourceRef.circle.getAttribute("cx") ?? "0");
-      const srcCy = parseFloat(sourceRef.circle.getAttribute("cy") ?? "0");
-
-      const ghostLine = createSvgEl("line", {
-        x1: String(srcCx), y1: String(srcCy), x2: String(srcCx), y2: String(srcCy),
-        class: "vzd-wardley-link-draft",
-      }) as SVGLineElement;
-      svg.insertBefore(ghostLine, addHandleG);
-
-      const ghostDot = createSvgEl("circle", {
-        cx: String(srcCx), cy: String(srcCy), r: String(NODE_R),
-        class: "vzd-wardley-node-draft",
-      }) as SVGCircleElement;
-      svg.insertBefore(ghostDot, addHandleG);
-
-      linkDraw = { sourceRef, ghostLine, ghostDot, hasMoved: false };
-      addHandleG.style.display = "none";
-      svg.classList.add("vzd-wardley-svg--drawing");
-      document.addEventListener("mousemove", onLinkMove);
-      document.addEventListener("mouseup", onLinkUp);
-      document.addEventListener("keydown", onLinkKey);
-    });
-
-    // ── Double-click to rename ─────────────────────────────────────────────
-    // Double-clicking any draggable component's circle or label opens an
-    // inline SVG-anchored editor so rename placement tracks viewBox scaling.
-
-    const closeRename = (): void => {
-      if (!activeRename) return;
-      activeRename.foreignObject.remove();
-      activeRename = null;
-    };
-
-    const activateRename = (ref: NodeRef): void => {
-      if (drag || linkDraw) return;
-      closeRename();
-      addHandleG.style.display = "none";
-      handleTarget = null;
-
-      const textRect = ref.textEl.getBoundingClientRect();
-      const svgRect = svg.getBoundingClientRect();
-
-      const labelX = parseFloat(ref.textEl.getAttribute("x") ?? "0");
-      const labelY = parseFloat(ref.textEl.getAttribute("y") ?? "0");
-      const anchor = ref.textEl.getAttribute("text-anchor") ?? "start";
-
-      const measuredW = svgRect.width > 0 ? textRect.width * (W / svgRect.width) : 0;
-      const fallbackW = Math.max(100, ref.comp.name.length * 7 + 24);
-      const boxW = Math.max(100, Number.isFinite(measuredW) && measuredW > 0 ? measuredW + 24 : fallbackW);
-      const boxH = 24;
-
-      let boxX = anchor === "end" ? labelX - boxW + 6 : labelX - 6;
-      let boxY = labelY - 17;
-      boxX = Math.max(0, Math.min(W - boxW, boxX));
-      boxY = Math.max(0, Math.min(H - boxH, boxY));
-
-      const foreignObject = createSvgEl("foreignObject", {
-        x: String(boxX),
-        y: String(boxY),
-        width: String(boxW),
-        height: String(boxH),
-        class: "vzd-wardley-rename-fo",
-      }) as SVGForeignObjectElement;
-
-      const host = document.createElement("div");
-      host.className = "vzd-wardley-rename-host";
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = ref.comp.name;
-      input.className = "vzd-wardley-rename-input";
-
-      host.appendChild(input);
-      foreignObject.appendChild(host);
-      svg.appendChild(foreignObject);
-      activeRename = { foreignObject, input };
-
-      input.focus();
-      input.select();
-
-      let committed = false;
-
-      const commit = (): void => {
-        if (committed) return;
-        committed = true;
-        closeRename();
-        const newName = input.value.trim();
-        if (newName && newName !== ref.comp.name) {
-          renameWardleyComponent(app, ctx, wrap, ref.comp.name, newName);
-        }
-      };
-
-      const cancel = (): void => {
-        if (committed) return;
-        committed = true;
-        closeRename();
-      };
-
-      input.addEventListener("blur", commit);
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter")  { e.preventDefault(); commit(); }
-        if (e.key === "Escape") { e.preventDefault(); cancel(); }
-        e.stopPropagation(); // don't leak keystrokes to SVG handlers
-      });
-    };
-
-    for (const ref of nodeRefs) {
-      if (!data.explicitComponents.has(ref.comp.name)) continue;
-      ref.textEl.addEventListener("dblclick", (e) => { e.stopPropagation(); activateRename(ref); });
-      ref.circle.addEventListener("dblclick", (e) => { e.stopPropagation(); activateRename(ref); });
-    }
+    ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(e.clientX, e.clientY); });
+    ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
   }
 }
 
+// ── Interaction: + handle and link-draw gesture ────────────────────────────
+
+function attachLinkDrawBehavior(
+  svg: SVGSVGElement,
+  nodeRefs: NodeRef[],
+  ix: WardleyIxState,
+  data: WardleyMap,
+  app: App,
+  mppCtx: MarkdownPostProcessorContext,
+  wrap: HTMLElement,
+): void {
+  const { addHandleG } = ix;
+
+  const isInsideHandle = (next: EventTarget | null): boolean =>
+    next instanceof Node && addHandleG.contains(next);
+
+  const positionHandle = (ref: NodeRef): void => {
+    const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
+    const cy = parseFloat(ref.circle.getAttribute("cy") ?? "0");
+    addHandleG.setAttribute("transform", `translate(${cx + NODE_R + 12}, ${cy})`);
+    addHandleG.style.display = "";
+    ix.handleTarget = ref;
+  };
+
+  const scheduleHideHandle = (): void => {
+    if (ix.hideHandleTimer) clearTimeout(ix.hideHandleTimer);
+    ix.hideHandleTimer = setTimeout(() => {
+      if (!ix.linkDraw) { addHandleG.style.display = "none"; ix.handleTarget = null; }
+    }, 280);
+  };
+
+  const cancelHideHandle = (): void => {
+    if (ix.hideHandleTimer) { clearTimeout(ix.hideHandleTimer); ix.hideHandleTimer = null; }
+  };
+
+  for (const ref of nodeRefs) {
+    if (!data.explicitComponents.has(ref.comp.name)) continue;
+    ref.circle.addEventListener("mouseenter", () => {
+      if (ix.drag || ix.activeRename) return;
+      cancelHideHandle();
+      positionHandle(ref);
+    });
+    ref.circle.addEventListener("mouseleave", (e) => {
+      if (isInsideHandle(e.relatedTarget)) return;
+      scheduleHideHandle();
+    });
+  }
+
+  addHandleG.addEventListener("mouseenter", () => cancelHideHandle());
+  addHandleG.addEventListener("mouseleave", (e) => {
+    if (ix.handleTarget && e.relatedTarget === ix.handleTarget.circle) return;
+    scheduleHideHandle();
+  });
+
+  const onLinkMove = (e: MouseEvent): void => {
+    if (!ix.linkDraw) return;
+    const { x, y } = clientToSvg(svg, e.clientX, e.clientY);
+    const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, x));
+    const cy = Math.max(PLOT_Y, Math.min(PLOT_Y + PLOT_H, y));
+    ix.linkDraw.ghostLine.setAttribute("x2", String(cx));
+    ix.linkDraw.ghostLine.setAttribute("y2", String(cy));
+    ix.linkDraw.ghostDot.setAttribute("cx", String(cx));
+    ix.linkDraw.ghostDot.setAttribute("cy", String(cy));
+    if (!ix.linkDraw.hasMoved) {
+      const srcCx = parseFloat(ix.linkDraw.sourceRef.circle.getAttribute("cx") ?? "0");
+      const srcCy = parseFloat(ix.linkDraw.sourceRef.circle.getAttribute("cy") ?? "0");
+      if (Math.hypot(cx - srcCx, cy - srcCy) > NODE_R * 2) ix.linkDraw.hasMoved = true;
+    }
+  };
+
+  const endLinkDraw = (withLink: boolean): void => {
+    if (!ix.linkDraw) return;
+    const { sourceRef, ghostLine, ghostDot, hasMoved } = ix.linkDraw;
+    ix.linkDraw = null;
+    ghostLine.remove();
+    ghostDot.remove();
+    addHandleG.style.display = "none";
+    svg.classList.remove("vzd-wardley-svg--drawing");
+    document.removeEventListener("mousemove", onLinkMove);
+    document.removeEventListener("mouseup", onLinkUp);
+    document.removeEventListener("keydown", onLinkKey);
+    if (!hasMoved) return;
+    const cx = parseFloat(ghostDot.getAttribute("cx") ?? "0");
+    const cy = parseFloat(ghostDot.getAttribute("cy") ?? "0");
+    const { visibility, evolution } = svgToData(cx, cy);
+    addWardleyComponent(app, mppCtx, wrap, sourceRef.comp.name, "New Component", visibility, evolution, withLink);
+  };
+
+  const onLinkUp = (e: MouseEvent): void => endLinkDraw(!e.shiftKey);
+  const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false); };
+
+  addHandleG.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (ix.activeRename || !ix.handleTarget) return;
+    const sourceRef = ix.handleTarget;
+    const srcCx = parseFloat(sourceRef.circle.getAttribute("cx") ?? "0");
+    const srcCy = parseFloat(sourceRef.circle.getAttribute("cy") ?? "0");
+
+    const ghostLine = createSvgEl("line", {
+      x1: String(srcCx), y1: String(srcCy), x2: String(srcCx), y2: String(srcCy),
+      class: "vzd-wardley-link-draft",
+    }) as SVGLineElement;
+    svg.insertBefore(ghostLine, addHandleG);
+
+    const ghostDot = createSvgEl("circle", {
+      cx: String(srcCx), cy: String(srcCy), r: String(NODE_R),
+      class: "vzd-wardley-node-draft",
+    }) as SVGCircleElement;
+    svg.insertBefore(ghostDot, addHandleG);
+
+    ix.linkDraw = { sourceRef, ghostLine, ghostDot, hasMoved: false };
+    addHandleG.style.display = "none";
+    svg.classList.add("vzd-wardley-svg--drawing");
+    document.addEventListener("mousemove", onLinkMove);
+    document.addEventListener("mouseup", onLinkUp);
+    document.addEventListener("keydown", onLinkKey);
+  });
+}
+
+// ── Interaction: double-click to rename ───────────────────────────────────
+
+function attachRenameBehavior(
+  svg: SVGSVGElement,
+  nodeRefs: NodeRef[],
+  ix: WardleyIxState,
+  data: WardleyMap,
+  app: App,
+  mppCtx: MarkdownPostProcessorContext,
+  wrap: HTMLElement,
+): void {
+  const closeRename = (): void => {
+    if (!ix.activeRename) return;
+    ix.activeRename.foreignObject.remove();
+    ix.activeRename = null;
+  };
+
+  const activateRename = (ref: NodeRef): void => {
+    if (ix.drag || ix.linkDraw) return;
+    closeRename();
+    ix.addHandleG.style.display = "none";
+    ix.handleTarget = null;
+
+    const textRect = ref.textEl.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+
+    const labelX = parseFloat(ref.textEl.getAttribute("x") ?? "0");
+    const labelY = parseFloat(ref.textEl.getAttribute("y") ?? "0");
+    const anchor = ref.textEl.getAttribute("text-anchor") ?? "start";
+
+    const measuredW = svgRect.width > 0 ? textRect.width * (W / svgRect.width) : 0;
+    const fallbackW = Math.max(100, ref.comp.name.length * 7 + 24);
+    const boxW = Math.max(100, Number.isFinite(measuredW) && measuredW > 0 ? measuredW + 24 : fallbackW);
+    const boxH = 24;
+
+    let boxX = anchor === "end" ? labelX - boxW + 6 : labelX - 6;
+    let boxY = labelY - 17;
+    boxX = Math.max(0, Math.min(W - boxW, boxX));
+    boxY = Math.max(0, Math.min(H - boxH, boxY));
+
+    const foreignObject = createSvgEl("foreignObject", {
+      x: String(boxX), y: String(boxY), width: String(boxW), height: String(boxH),
+      class: "vzd-wardley-rename-fo",
+    }) as SVGForeignObjectElement;
+
+    const host = document.createElement("div");
+    host.className = "vzd-wardley-rename-host";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = ref.comp.name;
+    input.className = "vzd-wardley-rename-input";
+
+    host.appendChild(input);
+    foreignObject.appendChild(host);
+    svg.appendChild(foreignObject);
+    ix.activeRename = { foreignObject, input };
+
+    input.focus();
+    input.select();
+
+    let committed = false;
+
+    const commit = (): void => {
+      if (committed) return;
+      committed = true;
+      closeRename();
+      const newName = input.value.trim();
+      if (newName && newName !== ref.comp.name) {
+        renameWardleyComponent(app, mppCtx, wrap, ref.comp.name, newName);
+      }
+    };
+
+    const cancel = (): void => {
+      if (committed) return;
+      committed = true;
+      closeRename();
+    };
+
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter")  { e.preventDefault(); commit(); }
+      if (e.key === "Escape") { e.preventDefault(); cancel(); }
+      e.stopPropagation(); // don't leak keystrokes to SVG handlers
+    });
+  };
+
+  for (const ref of nodeRefs) {
+    if (!data.explicitComponents.has(ref.comp.name)) continue;
+    ref.textEl.addEventListener("dblclick", (e) => { e.stopPropagation(); activateRename(ref); });
+    ref.circle.addEventListener("dblclick", (e) => { e.stopPropagation(); activateRename(ref); });
+  }
+}
+
+// ── Public entry point ─────────────────────────────────────────────────────
+
+export function renderWardleyMap(
+  data: WardleyMap,
+  container: HTMLElement,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+  source?: string,
+): void {
+  const defaultTitle = "Wardley Map";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+    : undefined;
+  initCanvas(container, "wardley", title, undefined, source, onTitleEdit);
+
+  const wrap = container.createEl("div", { cls: "vzd-wardley-wrap" });
+
+  const svg = createSvgEl("svg", {
+    viewBox: `0 0 ${W} ${H}`,
+    class: "vzd-wardley-svg",
+  }) as SVGSVGElement;
+
+  // Arrow marker definition
+  const defs = createSvgEl("defs");
+  const marker = createSvgEl("marker", {
+    id: "vzd-wardley-arrow", markerWidth: "8", markerHeight: "8",
+    refX: "6", refY: "3", orient: "auto",
+  });
+  marker.appendChild(createSvgEl("path", { d: "M0,0 L0,6 L8,3 z", class: "vzd-wardley-arrowhead" }));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  renderStageBands(svg, data);
+  renderAxes(svg);
+  renderLinks(svg, data, app, ctx, wrap);
+  const nodeRefs = renderNodes(svg, data);
+
+  wrap.appendChild(svg);
+
+  if (app && ctx) {
+    const ix: WardleyIxState = {
+      drag: null,
+      activeRename: null,
+      linkDraw: null,
+      handleTarget: null,
+      hideHandleTimer: null,
+      addHandleG: buildAddHandle(svg),
+    };
+    attachDragBehavior(svg, nodeRefs, ix, data, app, ctx, wrap);
+    attachLinkDrawBehavior(svg, nodeRefs, ix, data, app, ctx, wrap);
+    attachRenameBehavior(svg, nodeRefs, ix, data, app, ctx, wrap);
+  }
+}
