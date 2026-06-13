@@ -1061,6 +1061,18 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+/* Presentation overlay: suppress tree inline-edit affordances.
+   The overlay clones the SVG so event listeners are not present —
+   add/delete buttons and the rename cursor would be misleading. */
+.vzd-presentation-overlay .vzd-tree-edit-add,
+.vzd-presentation-overlay .vzd-tree-edit-del {
+  display: none;
+}
+
+.vzd-presentation-overlay g.vzd-tree-node--editable {
+  cursor: default;
+}
+
 /* Write-failed inline notice */
 .vzd-tree-write-notice {
   font-size: var(--font-ui-smaller);
