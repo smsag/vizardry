@@ -30,12 +30,26 @@ describe("extractInlineLinks", () => {
     expect(inlineLinks).toEqual({});
   });
 
-  it("does not corrupt block content that contains markdown links without a keyword prefix", () => {
+  it("does not corrupt a line that is purely a markdown link (no label text before it)", () => {
     const source = "block: Next Experiment\n  [a link](#somewhere)";
     const { strippedSource, inlineLinks } = extractInlineLinks(source);
-    // The indented line has no keyword: prefix, so it is left untouched.
+    // The indented line has no label text before the link annotation, so it is left untouched.
     expect(strippedSource).toBe(source);
     expect(inlineLinks).toEqual({});
+  });
+
+  it("strips [text](#Anchor) from a non-keyword line that has label text before it (e.g. OST child node)", () => {
+    const source = "outcome: Goal\n  Agents as partners [Agents as partners](#Agents%20as%20partners)";
+    const { strippedSource, inlineLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("outcome: Goal\n  Agents as partners");
+    expect(inlineLinks).toEqual({ "agents as partners": "Agents as partners" });
+  });
+
+  it("strips [[#Heading]] from a non-keyword line that has label text before it", () => {
+    const source = "outcome: Goal\n  Some Node [[#Target Heading]]";
+    const { strippedSource, inlineLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("outcome: Goal\n  Some Node");
+    expect(inlineLinks).toEqual({ "some node": "Target Heading" });
   });
 
   it("strips [[#Heading]] from indented keyword lines (e.g. roadmap items)", () => {

@@ -66,6 +66,28 @@ export function extractInlineLinks(source: string): {
     return indent + keyword + label.trim();
   });
 
+  // 3 & 4. Same two styles for lines WITHOUT a keyword prefix (e.g. OST/Mind Map child nodes).
+  // Only processes when there is label text before the annotation — a bare link like
+  // `  [text](#anchor)` with no preceding label is left untouched (key would be empty).
+  const WIKI_RE_NK = /^([ \t]*)(.*?)[ \t]*\[\[#([^\]]+)\]\][ \t]*$/gm;
+  strippedSource = strippedSource.replace(WIKI_RE_NK, (m, indent, label, heading) => {
+    const key = label.trim().toLowerCase();
+    if (!key) return m;
+    inlineLinks[key] = heading.trim();
+    return indent + label.trim();
+  });
+
+  const MD_RE_NK = /^([ \t]*)(.*?)[ \t]*\[[^\]]*\]\(#([^)]+)\)[ \t]*$/gm;
+  strippedSource = strippedSource.replace(MD_RE_NK, (m, indent, label, anchor) => {
+    const key = label.trim().toLowerCase();
+    if (!key) return m;
+    let heading: string;
+    try { heading = decodeURIComponent(anchor.trim()); }
+    catch { return m; }
+    inlineLinks[key] = heading;
+    return indent + label.trim();
+  });
+
   return { strippedSource, inlineLinks };
 }
 
