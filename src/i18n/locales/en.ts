@@ -134,9 +134,10 @@ export const en = {
   "roadmap.newItem":   "New Item",
 
   // ── Roadmap Linear integration ───────────────────────────────────────────────
-  "roadmap.linear.loading":   "Loading summary…",
-  "roadmap.linear.error":     "Could not load summary",
-  "roadmap.linear.noSummary": "No summary available",
+  "roadmap.linear.loading":    "Loading summary…",
+  "roadmap.linear.error":      "Could not load summary",
+  "roadmap.linear.noSummary":  "No summary available",
+  "roadmap.linear.unassigned": "Unassigned",
 
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
