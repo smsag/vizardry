@@ -11,17 +11,45 @@ const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 // intentionally kept so `CORE-1234` enriches normally.
 const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
 
-// ── Singleton popover ────────────────────────────────────────────────────────
+// ── Open popovers ────────────────────────────────────────────────────────────
+// Multiple popovers can be open at once, one per trigger element. Each is only
+// closed by an explicit click on its own close icon (or its trigger leaving
+// the DOM) — never auto-closed by opening another one.
 
-let activePopover: HTMLElement | null = null;
-let activeKey: string | null = null;
+const openPopovers = new Map<HTMLElement, HTMLElement>();
+let topZIndex = 1000;
 
-function closeActivePopover(): void {
-  if (activePopover) {
-    activePopover.remove();
-    activePopover = null;
-    activeKey = null;
+function closePopover(anchor: HTMLElement): void {
+  const popover = openPopovers.get(anchor);
+  if (popover) {
+    popover.remove();
+    openPopovers.delete(anchor);
   }
+}
+
+function bringToFront(popover: HTMLElement): void {
+  topZIndex += 1;
+  popover.style.zIndex = String(topZIndex);
+}
+
+// ── Colour contrast ──────────────────────────────────────────────────────────
+
+/**
+ * Linear issue-state colours span the whole lightness range (pale grey for
+ * Backlog, pale yellow for Todo, saturated greens/reds for done/cancelled).
+ * A fixed white label text is unreadable against the lighter ones, so pick
+ * black or white per-colour using WCAG relative luminance.
+ */
+function readableTextColor(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return "#ffffff";
+  const n = parseInt(m[1], 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
 // ── Time formatting ──────────────────────────────────────────────────────────
@@ -37,9 +65,10 @@ function formatAge(updatedAt: string): string {
 // ── DOM walking ──────────────────────────────────────────────────────────────
 
 /**
- * Scans `container` for Linear issue keys in text nodes, wraps each match in
- * a `.vzd-linear-key` span, and appends a trigger icon button after it.
- * Safe to call multiple times — already-enriched spans are skipped.
+ * Scans `container` for Linear issue keys in text nodes and replaces each
+ * match with a `.vzd-linear-key` button that fetches and previews the issue
+ * when clicked. Safe to call multiple times — already-enriched keys are
+ * skipped.
  */
 export function enrichLinearKeys(container: HTMLElement): void {
   const nodes: Text[] = [];
@@ -75,17 +104,11 @@ function wrapTextNode(node: Text): void {
       frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
     }
 
-    // Key badge (styled, non-interactive)
-    const span = document.createElement("span");
-    span.className = "vzd-linear-key";
-    span.textContent = match[1];
-    frag.appendChild(span);
-
-    // Trigger icon button immediately after the key
+    // Key badge — itself the trigger that requests the Linear data fetch
     const btn = document.createElement("button");
-    btn.className = "vzd-linear-trigger vzd-btn";
+    btn.className = "vzd-linear-key";
+    btn.textContent = match[1];
     btn.setAttribute("aria-label", `Linear: ${match[1]}`);
-    setIcon(btn, "info");
     attachTrigger(btn, match[1]);
     frag.appendChild(btn);
 
@@ -105,27 +128,27 @@ function attachTrigger(btn: HTMLElement, key: string): void {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
-    // Toggle: clicking the same key's button closes the popover
-    if (activeKey === key) { closeActivePopover(); return; }
-    closeActivePopover();
+    // Already open for this exact key instance — bring it to front instead
+    // of opening a duplicate.
+    const existing = openPopovers.get(btn);
+    if (existing) { bringToFront(existing); return; }
     if (!getLinearService()?.isEnabled()) return;
-    const popover = buildPopover(key, btn);
+    const popover = buildPopover(key, btn, () => closePopover(btn));
     document.body.appendChild(popover);
-    activePopover = popover;
-    activeKey = key;
+    bringToFront(popover);
+    openPopovers.set(btn, popover);
   });
 
   // Clean up if this button leaves the DOM while its popover is open
-  onDisconnected(btn, () => {
-    if (activeKey === key) closeActivePopover();
-  });
+  onDisconnected(btn, () => closePopover(btn));
 }
 
 // ── Popover ──────────────────────────────────────────────────────────────────
 
-function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
+function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HTMLElement {
   const el = document.createElement("div");
   el.className = "vzd-linear-preview";
+  el.addEventListener("mousedown", () => bringToFront(el));
 
   // Position: below-right of anchor, flip as needed
   const rect = anchor.getBoundingClientRect();
@@ -137,11 +160,12 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
   el.style.left = `${Math.max(8, left)}px`;
   el.style.top  = `${Math.max(8, top)}px`;
 
-  // Close button — top-right corner
+  // Close button — top-right corner; this is the only way to dismiss the
+  // popover (no auto-close, no click-outside — the user must act on it).
   const closeBtn = el.createEl("button", { cls: "vzd-linear-preview-close vzd-btn" });
   setIcon(closeBtn, "x");
   closeBtn.setAttribute("aria-label", "Close");
-  closeBtn.addEventListener("click", (e) => { e.stopPropagation(); closeActivePopover(); });
+  closeBtn.addEventListener("click", (e) => { e.stopPropagation(); onClose(); });
 
   // Header: [status pill]  [key — clickable, opens Linear URL]
   const header = el.createEl("div", { cls: "vzd-linear-preview-header" });
@@ -181,9 +205,11 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
         return;
       }
 
-      // Status pill with Linear's own colour
+      // Status pill with Linear's own colour — pick readable text per-colour
+      // since Linear states range from pale grey to saturated red/green.
       statusPill.textContent = result.state.name;
       statusPill.style.backgroundColor = result.state.color;
+      statusPill.style.color = readableTextColor(result.state.color);
 
       // Key link URL
       if (result.url) keyLink.dataset.url = result.url;
@@ -193,9 +219,10 @@ function buildPopover(key: string, anchor: HTMLElement): HTMLElement {
       summaryEl.textContent = result.summary
         || (summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.noSummary") }), "");
 
-      // Footer: assignee | age  (omit assignee if null)
+      // Footer: "<assignee | Unassigned>  |  <age>"
+      const assignee = result.assignee ?? t("roadmap.linear.unassigned");
       const age = result.updatedAt ? formatAge(result.updatedAt) : "";
-      footerEl.textContent = result.assignee ? `${result.assignee}  |  ${age}` : age;
+      footerEl.textContent = age ? `${assignee}  |  ${age}` : assignee;
     }).catch((err: unknown) => {
       summaryEl.empty();
       summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: (err as Error).message ?? t("roadmap.linear.error") });

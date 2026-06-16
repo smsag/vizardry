@@ -125,9 +125,10 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "roadmap.newItem":   "Neues Element",
 
   // ── Roadmap Linear integration ───────────────────────────────────────────────
-  "roadmap.linear.loading":   "Zusammenfassung wird geladen…",
-  "roadmap.linear.error":     "Zusammenfassung konnte nicht geladen werden",
-  "roadmap.linear.noSummary": "Keine Zusammenfassung verfügbar",
+  "roadmap.linear.loading":    "Zusammenfassung wird geladen…",
+  "roadmap.linear.error":      "Zusammenfassung konnte nicht geladen werden",
+  "roadmap.linear.noSummary":  "Keine Zusammenfassung verfügbar",
+  "roadmap.linear.unassigned": "Nicht zugewiesen",
 
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Jetzt, Demnächst und Später Prioritäten auf einen Blick.",

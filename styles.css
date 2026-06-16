@@ -2068,8 +2068,12 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 /* ── Linear key badge (global — any canvas or code fence) ───────────────── */
-/* Key badge — inline in text, non-interactive */
+/* Key badge — inline in text, itself the button that requests the fetch */
 .vzd-linear-key {
+  -webkit-appearance: none;
+  appearance: none;
+  all: unset;
+  box-sizing: border-box;
   font-family: var(--font-monospace);
   font-size: 0.75em;
   color: var(--text-muted);
@@ -2077,35 +2081,13 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   border-radius: 3px;
   padding: 1px 4px;
   white-space: nowrap;
-}
-
-/* Trigger icon button — shown inline after the key badge */
-.vzd-linear-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  margin-left: 2px;
-  vertical-align: middle;
-  color: var(--text-faint);
-  opacity: 0;
-  transition: opacity 0.1s;
   cursor: pointer;
+  transition: color 0.1s, background-color 0.1s;
 }
-.vzd-linear-trigger svg {
-  width: 11px;
-  height: 11px;
-}
-/* Show trigger when the parent element (card title, etc.) is hovered */
-*:hover > .vzd-linear-trigger,
-.vzd-linear-trigger:focus {
-  opacity: 1;
-}
-.vzd-linear-trigger:hover {
+.vzd-linear-key:hover,
+.vzd-linear-key:focus-visible {
   color: var(--text-accent);
-  opacity: 1;
+  background: var(--background-modifier-hover);
 }
 
 /* ── Linear popover ──────────────────────────────────────────────────────── */
@@ -2142,27 +2124,36 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-linear-preview-close svg { width: 12px; height: 12px; }
 .vzd-linear-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 
-/* Header: status pill + key link */
+/* Header: status pill (left) + key link (right) */
 .vzd-linear-preview-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.4rem;
   padding-right: 1.4rem; /* room for close button */
 }
 
 .vzd-linear-preview-status {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.7em;
-  border-radius: 3px;
-  padding: 1px 5px;
-  color: #ffffff;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 3px 8px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 /* Key — looks like plain text, acts as a link */
 .vzd-linear-preview-key {
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-monospace);
   font-size: 0.8em;
+  line-height: 1;
   color: var(--text-muted);
   text-decoration: none;
   cursor: pointer;
@@ -2173,7 +2164,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-weight: 600;
   font-size: var(--font-ui-small);
   color: var(--text-normal);
-  margin: 0.35rem 0 0;
+  margin: 0.6rem 0 0;
   line-height: 1.3;
 }
 
