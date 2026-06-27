@@ -76,6 +76,16 @@
   border: none;
   outline: none;
   box-shadow: none;
+}
+
+/* Obsidian's button:not(.clickable-icon) rule has specificity 0-1-1, which
+   beats .vzd-btn (0-1-0) and re-applies --interactive-normal background and
+   --input-shadow to every <button>. button.vzd-btn (0-1-1) matches that
+   specificity and wins by source order since plugin CSS loads after app.css. */
+button.vzd-btn {
+  background: none;
+  box-shadow: none;
+  border: none;
   color: var(--icon-color);
   opacity: 0;
   pointer-events: none;
