@@ -225,14 +225,14 @@
 }
 
 .vizardry-block-empty {
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-style: italic;
 }
 
 /* Provocative placeholder shown in empty block bodies */
 .vizardry-block-body.vizardry-block-empty[data-placeholder]::before {
   content: attr(data-placeholder);
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-style: italic;
   font-size: var(--font-ui-smaller);
   pointer-events: none;
@@ -1408,7 +1408,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 .vzd-sipoc-cell-empty {
   font-size: var(--vzd-base, var(--font-ui-small));
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -1866,7 +1866,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 .vzd-pl-speed-cue {
   font-size: var(--font-ui-smaller);
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -1937,14 +1937,14 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 /* Empty state */
 .vzd-pl-empty {
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-size: var(--vzd-base, var(--font-ui-small));
 }
 
 /* Placeholder (shown when empty + not editing) */
 .vzd-pl-cell-content[data-placeholder]:empty::before {
   content: attr(data-placeholder);
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-style: italic;
   font-size: var(--font-ui-smaller);
   pointer-events: none;
@@ -2200,7 +2200,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 .vzd-linear-preview-updated {
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-size: 0.82em;
 }
 
