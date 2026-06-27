@@ -27,7 +27,7 @@ export function renderMindMap(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "mindmap", title, undefined, source, onTitleEdit);
+  initCanvas(container, "mindmap", title, undefined, source, onTitleEdit, app);
 
   const editHandlers = (app && ctx) ? makeMindMapHandlers(app, ctx, container, map, resolver, navigateTo, source) : undefined;
   renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container, resolver, navigateTo, editHandlers);
@@ -77,7 +77,7 @@ export function renderImpactMap(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "impact", title, undefined, source, onTitleEdit);
+  initCanvas(container, "impact", title, undefined, source, onTitleEdit, app);
 
   const editHandlers = (app && ctx) ? makeImpactHandlers(app, ctx, container) : undefined;
   renderTree(adaptImpactMapToTree(map), IMPACT_MAP_OPTS, container, resolver, navigateTo, editHandlers);
@@ -123,7 +123,7 @@ export function renderOST(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, el, newTitle, defaultTitle)
     : undefined;
-  initCanvas(el, "ost", title, undefined, source, onTitleEdit);
+  initCanvas(el, "ost", title, undefined, source, onTitleEdit, app);
 
   const editHandlers = (app && ctx) ? makeOSTHandlers(app, ctx, el) : undefined;
   renderTree(adaptOSTToTree(tree), OST_TREE_OPTIONS, el, resolver, navigateTo, editHandlers);
@@ -169,7 +169,7 @@ export function renderFishbone(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "fishbone", title, undefined, source, onTitleEdit);
+  initCanvas(container, "fishbone", title, undefined, source, onTitleEdit, app);
 
   const editHandlers = (app && ctx) ? makeFishboneHandlers(app, ctx, container) : undefined;
   renderTree(adaptFishboneToTree(diagram), FISHBONE_OPTS, container, resolver, navigateTo, editHandlers);

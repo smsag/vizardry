@@ -685,7 +685,7 @@ export function renderWardleyMap(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "wardley", title, undefined, source, onTitleEdit);
+  initCanvas(container, "wardley", title, undefined, source, onTitleEdit, app);
 
   const wrap = container.createEl("div", { cls: "vzd-wardley-wrap" });
 

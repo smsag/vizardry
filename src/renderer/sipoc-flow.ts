@@ -275,7 +275,7 @@ export function renderSIPOCFlow(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit);
+  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-flow-wrap" });
 

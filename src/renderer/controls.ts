@@ -1,4 +1,5 @@
-import { setIcon } from "obsidian";
+import { setIcon, MarkdownView } from "obsidian";
+import type { App } from "obsidian";
 import { applyFullWidth } from "./full-width";
 import { onDisconnected } from "../shared/lifecycle";
 import { t } from "../i18n";
@@ -28,6 +29,7 @@ export function initCanvas(
   extraHeaderContent?: (header: HTMLElement) => void,
   source?: string,
   onTitleEdit?: (newTitle: string) => void,
+  app?: App,
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", frameworkId);
@@ -48,7 +50,7 @@ export function initCanvas(
   const copyText = source !== undefined
     ? fence + frameworkId + '\n' + source + '\n' + fence
     : undefined;
-  addHeaderControls(header, container, title, copyText);
+  addHeaderControls(header, container, title, copyText, app);
   extraHeaderContent?.(header);
 }
 
@@ -102,7 +104,7 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
   });
 }
 
-export function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string, copyText?: string): void {
+export function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string, copyText?: string, app?: App): void {
   const actions = header.createEl("div", { cls: "vizardry-header-actions" });
 
   const STEP_PX = 2, MIN_STEP = -3, MAX_STEP = 6;
@@ -135,11 +137,19 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   editSourceBtn.setAttribute("aria-label", t("controls.editSource"));
   editSourceBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    // Delegate to Obsidian's own "Edit block" button that lives inside the
-    // .cm-embed-block wrapper — this avoids re-implementing the CM6 toggle.
+    // In Live Preview the canvas lives inside a .cm-embed-block wrapper that
+    // has a native "Edit block" button — delegate to that to avoid
+    // re-implementing the CM6 toggle.
     const embedBlock = container.closest(".cm-embed-block");
     const nativeBtn = embedBlock?.querySelector<HTMLElement>(".edit-block-button");
-    nativeBtn?.click();
+    if (nativeBtn) {
+      nativeBtn.click();
+    } else if (app) {
+      // In Read mode there is no CM6 embed wrapper. Switch to Live Preview so
+      // the user lands in the editable view with the code block visible.
+      const view = app.workspace.getActiveViewOfType(MarkdownView);
+      if (view) void view.setState({ ...view.getState(), mode: "source" }, { history: false });
+    }
   });
 
   const downloadBtn = actions.createEl("button", { cls: "vizardry-download-btn vzd-btn" }) as HTMLButtonElement;

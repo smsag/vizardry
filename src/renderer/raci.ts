@@ -91,7 +91,7 @@ export function renderRACIMatrix(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "raci", title, undefined, source, onTitleEdit);
+  initCanvas(container, "raci", title, undefined, source, onTitleEdit, app);
 
   const rows = data?.rows ?? [];
 

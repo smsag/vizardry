@@ -100,7 +100,7 @@ export function renderSIPOC(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit);
+  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-sipoc-table" });

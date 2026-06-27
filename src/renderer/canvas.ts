@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { setIcon, MarkdownView } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
@@ -97,7 +97,7 @@ export function renderCanvas(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, framework.id, title, undefined, source, onTitleEdit);
+  initCanvas(container, framework.id, title, undefined, source, onTitleEdit, app);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);
@@ -141,6 +141,7 @@ export function renderCanvas(
         body.setAttribute("title", t("edit.clickToEdit"));
         body.dataset.blockContent = content;
         body.addEventListener("click", () => {
+          if (app.workspace.getActiveViewOfType(MarkdownView)?.getMode() === "preview") return;
           activateBlockEdit(body, blockDef.label, body.dataset.blockContent ?? "", app, ctx, container);
         });
       }

@@ -32,7 +32,7 @@ export function renderRoadmap(
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
 
-  initCanvas(container, "roadmap", title, undefined, source, onTitleEdit);
+  initCanvas(container, "roadmap", title, undefined, source, onTitleEdit, app);
 
   const grid = container.createEl("div", { cls: "vzd-roadmap-grid" });
 
