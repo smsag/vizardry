@@ -33,6 +33,7 @@ export const en = {
   "framework.wardley.description":    "Value chain plotted against evolution to reveal strategic moves.",
   "framework.pacelayers.description": "Six pace layers — Fashion to Nature — mapped with observations, feedback, and ideas.",
   "framework.conceptmap.description": "Concepts connected by labeled relationships as a directed graph.",
+  "framework.ptw.description":        "Strategy defined through Winning Aspiration, Where to Play, and How to Win.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",

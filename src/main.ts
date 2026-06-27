@@ -25,6 +25,7 @@ import { JOBS } from "./frameworks/jobs";
 import { RAC } from "./frameworks/rac";
 import { SWOT } from "./frameworks/swot";
 import { FOURLS } from "./frameworks/fourls";
+import { PTW } from "./frameworks/ptw";
 import type { FrameworkDefinition } from "./types";
 import { insertTemplateAtCursor } from "./shared/editor";
 import { t, tFrameworkDescription } from "./i18n";
@@ -33,7 +34,7 @@ import { t, tFrameworkDescription } from "./i18n";
 // The map is derived from the id field on each definition — no duplicate key.
 
 const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, VPC, KATA, JOBS, RAC, SWOT,
+  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, PTW, VPC, KATA, JOBS, RAC, SWOT,
 ];
 
 const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));

@@ -24,6 +24,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.venn.description":       "Überschneidungen und Lücken klar erkannt.",
   "framework.vpc.description":        "Features treffen echte Kundenbedürfnisse.",
   "framework.wardley.description":    "Wertkette gegen Evolution aufgetragen zur Aufdeckung strategischer Züge.",
+  "framework.ptw.description":        "Strategie durch Gewinnaspiration, Spielfeld und Gewinnlogik definiert.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",

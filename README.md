@@ -47,6 +47,7 @@ block: Label
 | ` ```vpc ` | Value Proposition Canvas | Grid |
 | ` ```venn ` | Venn Diagram | SVG overlap |
 | ` ```wardley ` | Wardley Map | SVG canvas |
+| ` ```ptw ` | Playing to Win | Grid |
 | ` ```conceptmap ` | Concept Map | SVG graph |
 
 ---
@@ -854,6 +855,53 @@ All changes write back to the source block surgically — only the affected line
 
 ---
 
+### Playing to Win
+
+~~~
+```ptw
+block: Winning Aspiration
+  Be the most trusted tool for distributed engineering teams, winning on simplicity and time-to-value — not feature count.
+
+block: Strategic Issue
+  Annual growth has stalled. Competitors are moving down-market into our SMB base.
+
+block: Where To Play
+  B2B SaaS / mid-market engineering teams (20–200 devs) / North America and Northern Europe / product-led growth — not enterprise, not agencies.
+
+block: How To Win
+  Fastest time-to-value in the market: zero-config setup, opinionated defaults, and native integrations with GitHub, Slack, and Linear that take minutes, not days.
+
+block: Capabilities Needed
+  World-class onboarding UX (first value in < 5 min)
+  Real-time collaborative sync engine
+  Deep integration partnership programme
+
+block: Systems Required
+  Continuous discovery cadence (weekly user interviews)
+  Integration marketplace governance board
+  NPS OKR tied to engineering lead compensation
+
+block: Reverse Engineering
+  INDUSTRY
+  The SMB dev-tools market grows >20 % YoY and remains fragmented enough for a focused player to win.
+
+  CUSTOMER VALUE
+  Mid-market teams pay a premium for simplicity over a broader feature set.
+
+  RELATIVE POSITION
+  We build integration depth faster than competitors moving down-market.
+
+  COMPETITIVE
+  Network effects from our integration ecosystem create a moat that is slow to replicate.
+
+block: Strategic Tests
+  'Teams pay a premium for simplicity' — must be true / partially validated / run a pricing experiment with 3 cohorts this quarter.
+  'Integration depth is defensible' — must be true / not yet validated / map competitor roadmaps and measure integration NPS vs. alternatives.
+```
+~~~
+
+---
+
 ### Concept Map
 
 A concept map models knowledge as a **directed graph** — concepts are nodes, and every edge carries a labeled relationship phrase that makes the connection explicit. Unlike a mind map (which radiates from a single root), a concept map is free-form: any concept can link to any other, cycles are valid, and cross-links between branches are the point.
@@ -993,7 +1041,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ## Syntax reference
 
-### Grid canvases (bmc, fourls, jobs, kata, lean, leanux, opportunity, rac, swot, vpc)
+### Grid canvases (adkar, bmc, fourls, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
 
 | Syntax | Meaning |
 |---|---|
