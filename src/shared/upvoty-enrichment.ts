@@ -46,8 +46,17 @@ export function enrichUpvotyKeys(container: HTMLElement): void {
   if (!svc) return;
   const re = buildKeyRegex(svc.getKeyPrefix());
   const nodes: Text[] = [];
-  collectTextNodes(container, nodes, re);
+  collectTextNodes(container, re, nodes);
   for (const node of nodes) wrapTextNode(node, re);
+}
+
+/** Shorten display text: keep prefix + first 8 chars of the ID segment + ellipsis. */
+function shortenKey(key: string): string {
+  const dash = key.indexOf("-");
+  if (dash === -1) return key;
+  const id = key.slice(dash + 1);
+  if (id.length <= 10) return key;
+  return key.slice(0, dash + 1 + 8) + "…";
 }
 
 export function buildKeyRegex(prefix: string): RegExp {
@@ -87,7 +96,7 @@ function wrapTextNode(node: Text, re: RegExp): void {
 
     const btn = document.createElement("button");
     btn.className = "vzd-upvoty-key";
-    btn.textContent = match[1];
+    btn.textContent = shortenKey(match[1]);
     btn.setAttribute("aria-label", `Upvoty: ${match[1]}`);
     attachTrigger(btn, match[1]);
     frag.appendChild(btn);
