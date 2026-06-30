@@ -208,7 +208,7 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
       // Footer: "<assignee | Unassigned>  |  <age>"
       const assignee = result.assignee ?? t("roadmap.linear.unassigned");
       const age = result.updatedAt ? formatAge(result.updatedAt) : "";
-      footerEl.textContent = age ? `${assignee}  |  ${age}` : assignee;
+      footerEl.textContent = age ? `${assignee}  ·  ${age}` : assignee;
     }).catch((err: unknown) => {
       summaryEl.empty();
       summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: (err as Error).message ?? t("roadmap.linear.error") });

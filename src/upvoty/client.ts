@@ -58,7 +58,8 @@ export async function fetchUpvotyPost(
     throw new Error(`Upvoty: HTTP ${resp.status}${detail}`);
   }
 
-  const data = resp.json as Record<string, unknown>;
+  const envelope = resp.json as { data?: Record<string, unknown> } & Record<string, unknown>;
+  const data = (envelope["data"] as Record<string, unknown> | undefined) ?? envelope;
 
   return {
     id: (data["id"] as string) ?? postId,
@@ -67,6 +68,7 @@ export async function fetchUpvotyPost(
     votes_count: (data["votes_count"] as number) ?? 0,
     status: (data["status"] as UpvotyStatus | null) ?? null,
     author: (data["author"] as UpvotyAuthor | null) ?? null,
+    created_at: (data["created_at"] as string) ?? "",
     updated_at: (data["updated_at"] as string) ?? "",
   };
 }

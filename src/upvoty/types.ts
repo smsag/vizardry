@@ -24,6 +24,7 @@ export interface UpvotyPost {
   status: UpvotyStatus | null;
   /** Expanded author object */
   author: UpvotyAuthor | null;
+  created_at: string;
   updated_at: string;
 }
 

@@ -25,12 +25,12 @@ function bringToFront(popover: HTMLElement): void {
 
 // ── Time formatting ──────────────────────────────────────────────────────────
 
-function formatAge(updatedAt: string): string {
-  const diffMs = Date.now() - new Date(updatedAt).getTime();
+function formatAge(dateStr: string, prefix: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
   const diffH = Math.floor(diffMs / 3_600_000);
-  if (diffH < 1)  return "Updated just now";
-  if (diffH < 24) return `Updated ${diffH}h ago`;
-  return `Updated ${Math.floor(diffH / 24)}d ago`;
+  if (diffH < 1)  return `${prefix} just now`;
+  if (diffH < 24) return `${prefix} ${diffH}h ago`;
+  return `${prefix} ${Math.floor(diffH / 24)}d ago`;
 }
 
 
@@ -156,10 +156,9 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
   closeBtn.setAttribute("aria-label", "Close");
   closeBtn.addEventListener("click", (e) => { e.stopPropagation(); onClose(); });
 
-  // Header: [status pill]  [votes]  [key link]
+  // Header: [status pill]  →  [key link]
   const header = el.createEl("div", { cls: "vzd-upvoty-preview-header" });
   const statusPill = header.createEl("span", { cls: "vzd-upvoty-preview-status" });
-  const votesEl = header.createEl("span", { cls: "vzd-upvoty-preview-votes" });
   const keyLink = header.createEl("a", { cls: "vzd-upvoty-preview-key", text: key });
   keyLink.setAttribute("href", "#");
   keyLink.setAttribute("aria-label", `Open ${key} in Upvoty`);
@@ -172,14 +171,15 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
   // Title
   const titleEl = el.createEl("div", { cls: "vzd-upvoty-preview-title" });
 
-  // Summary body
+  // AI Summary body
   const body = el.createEl("div", { cls: "vzd-upvoty-preview-body" });
   const summaryEl = body.createEl("p", { cls: "vzd-upvoty-preview-summary" });
   summaryEl.createEl("span", { cls: "vzd-upvoty-preview-loading", text: t("upvoty.loading") });
 
-  // Footer
+  // Footer: [author · age]  [votes]
   const footer = el.createEl("div", { cls: "vzd-upvoty-preview-footer" });
   const footerEl = footer.createEl("span", { cls: "vzd-upvoty-preview-updated" });
+  const votesEl = footer.createEl("span", { cls: "vzd-upvoty-preview-votes" });
 
   // Async fetch + AI summarize
   const svc = getUpvotyService();
@@ -198,13 +198,11 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
 
       const { post, summary } = result;
 
-      const label = post.status?.label;
-      if (label) statusPill.textContent = label;
-
-      votesEl.textContent = t("upvoty.votes", { n: String(post.votes_count ?? 0) });
+      if (post.status?.label) statusPill.textContent = post.status.label;
 
       titleEl.textContent = post.title;
 
+      summaryEl.empty();
       if (summary) {
         summaryEl.textContent = summary;
       } else {
@@ -213,9 +211,11 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
 
       const parts: string[] = [];
       const aName = post.author?.name;
-      if (aName) parts.push(`by ${aName}`);
-      if (post.updated_at) parts.push(formatAge(post.updated_at));
+      if (aName) parts.push(aName);
+      if (post.created_at) parts.push(formatAge(post.created_at, "Created"));
       footerEl.textContent = parts.join("  ·  ");
+
+      votesEl.textContent = t("upvoty.votes", { n: String(post.votes_count ?? 0) });
     }).catch((err: unknown) => {
       summaryEl.empty();
       summaryEl.createEl("span", { cls: "vzd-upvoty-preview-error", text: (err as Error).message ?? t("upvoty.error.network") });
