@@ -19,6 +19,14 @@ export interface PluginSettings {
   // Cache TTLs
   summaryTtlHours: number;
   statusTtlMinutes: number;
+
+  // Upvoty
+  upvotyEnabled: boolean;
+  upvotyBaseUrl: string;
+  upvotyKeyPrefix: string;
+  /** Logical name under which the Upvoty API key is stored in app.secretStorage. */
+  upvotySecretName: string;
+  upvotyStatusTtlMinutes: number;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -30,6 +38,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   llmSecretName: "vzd-llm-key",
   summaryTtlHours: 24,
   statusTtlMinutes: 5,
+  upvotyEnabled: false,
+  upvotyBaseUrl: "https://api.upvotyfeedback.com/v1",
+  upvotyKeyPrefix: "UPV",
+  upvotySecretName: "vzd-upvoty-key",
+  upvotyStatusTtlMinutes: 5,
 };
 
 const ANTHROPIC_MODELS = [
@@ -351,6 +364,70 @@ export class VizardrySettingTab extends PluginSettingTab {
           .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.statusTtlMinutes = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    // ── Upvoty ─────────────────────────────────────────────────────────────────
+    containerEl.createEl("h2", { text: "Upvoty" });
+
+    new Setting(containerEl)
+      .setName("Enable Upvoty integration")
+      .setDesc("Show feature request details and AI summaries on hover for UPV-1234 keys.")
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.upvotyEnabled)
+          .onChange(async (value) => {
+            this.plugin.settings.upvotyEnabled = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    addSecretRow(
+      containerEl,
+      this.app,
+      "Upvoty API key",
+      "upvoty_sk_…",
+      () => this.plugin.settings.upvotySecretName,
+      (n) => { this.plugin.settings.upvotySecretName = n; void this.plugin.saveSettings(); },
+    );
+
+    new Setting(containerEl)
+      .setName("Key prefix")
+      .setDesc("The prefix used to identify Upvoty posts inline, e.g. UPV matches UPV-1234.")
+      .addText(text =>
+        text
+          .setPlaceholder("UPV")
+          .setValue(this.plugin.settings.upvotyKeyPrefix)
+          .onChange(async (value) => {
+            this.plugin.settings.upvotyKeyPrefix = value.trim() || "UPV";
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Upvoty API base URL")
+      .setDesc("Change only if you are on a self-hosted or white-labelled Upvoty instance.")
+      .addText(text =>
+        text
+          .setPlaceholder("https://api.upvotyfeedback.com/v1")
+          .setValue(this.plugin.settings.upvotyBaseUrl)
+          .onChange(async (value) => {
+            this.plugin.settings.upvotyBaseUrl = value.trim() || DEFAULT_SETTINGS.upvotyBaseUrl;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Post cache (minutes)")
+      .setDesc("How long to cache a fetched Upvoty post before re-fetching.")
+      .addSlider(slider =>
+        slider
+          .setLimits(1, 60, 1)
+          .setValue(this.plugin.settings.upvotyStatusTtlMinutes)
+          .setDynamicTooltip()
+          .onChange(async (value) => {
+            this.plugin.settings.upvotyStatusTtlMinutes = value;
             await this.plugin.saveSettings();
           }),
       );

@@ -174,6 +174,15 @@ export const en = {
   "matrix.legend.medium":   "Medium",
   "matrix.legend.low":      "Low",
 
+  // ── Upvoty enrichment ────────────────────────────────────────────────────────
+  "upvoty.loading":          "Loading…",
+  "upvoty.noSummary":        "No AI summary available.",
+  "upvoty.votes":            "{{n}} votes",
+  "upvoty.error.noKey":      "No Upvoty API key — check Settings → Vizardry",
+  "upvoty.error.notFound":   "Post not found",
+  "upvoty.error.auth":       "Upvoty: invalid or missing API key",
+  "upvoty.error.network":    "Upvoty: network error",
+
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",
 } as const;

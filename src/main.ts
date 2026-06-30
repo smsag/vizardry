@@ -4,6 +4,8 @@ import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
 import type { PluginSettings } from "./settings";
 import { initLinearService, getLinearService } from "./linear";
 import { enrichLinearKeys } from "./shared/linear-enrichment";
+import { initUpvotyService, getUpvotyService, destroyUpvotyService } from "./upvoty";
+import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
 import { parseFrameworkSource } from "./parser";
 import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
 import { renderCanvas, renderError } from "./renderer";
@@ -52,6 +54,7 @@ export default class VizardryPlugin extends Plugin {
     const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     this.settings = { ...DEFAULT_SETTINGS, ...rawData } as PluginSettings;
     initLinearService(this as Parameters<typeof initLinearService>[0]);
+    initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
     this.addSettingTab(new VizardrySettingTab(this.app, this));
     // Expose version on body for bug reports and renderer error attribution.
     document.body.dataset.vizardryVersion = this.manifest.version;
@@ -131,6 +134,11 @@ export default class VizardryPlugin extends Plugin {
       if (getLinearService()?.isEnabled()) enrichLinearKeys(el);
     }, 1000);
 
+    // ── Global Upvoty key enrichment ───────────────────────────────────
+    this.registerMarkdownPostProcessor((el) => {
+      if (getUpvotyService()?.isEnabled()) enrichUpvotyKeys(el);
+    }, 1001);
+
     // ── Framework options (modal + commands) ───────────────────────────
     const frameworkOptions: FrameworkOption[] = [
       ...ALL_FRAMEWORKS.map(def => ({
@@ -194,5 +202,6 @@ export default class VizardryPlugin extends Plugin {
   onunload(): void {
     resetInteractiveIdCounter();
     initLinearService(null);
+    destroyUpvotyService();
   }
 }

@@ -165,6 +165,15 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.legend.medium":   "Mittel",
   "matrix.legend.low":      "Niedrig",
 
+  // ── Upvoty enrichment ────────────────────────────────────────────────────────
+  "upvoty.loading":          "Lädt…",
+  "upvoty.noSummary":        "Keine KI-Zusammenfassung verfügbar.",
+  "upvoty.votes":            "{{n}} Stimmen",
+  "upvoty.error.noKey":      "Kein Upvoty-API-Schlüssel — prüfe Einstellungen → Vizardry",
+  "upvoty.error.notFound":   "Beitrag nicht gefunden",
+  "upvoty.error.auth":       "Upvoty: ungültiger oder fehlender API-Schlüssel",
+  "upvoty.error.network":    "Upvoty: Netzwerkfehler",
+
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
 };
