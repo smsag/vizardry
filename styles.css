@@ -861,6 +861,7 @@ button.vzd-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 3.5rem 4rem 3.5rem;
 }
 
 .vzd-carousel-fs-img {
@@ -2118,8 +2119,13 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 /* Close button — absolute top-right. The popover lives outside
    .vizardry-canvas (appended to document.body), so it must override
-   .vzd-btn's hover-to-reveal default and stay always visible/clickable. */
-.vzd-linear-preview-close {
+   .vzd-btn's hover-to-reveal default and stay always visible/clickable.
+   Specificity 0-2-0 beats button.vzd-btn (0-1-1). */
+.vzd-linear-preview .vzd-linear-preview-close {
+  all: unset;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
   position: absolute;
   top: 0.35rem;
   right: 0.35rem;
@@ -2129,14 +2135,18 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   width: 20px;
   height: 20px;
   padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
   color: var(--text-faint);
   border-radius: var(--radius-s);
   cursor: pointer;
   opacity: 1;
   pointer-events: auto;
 }
-.vzd-linear-preview-close svg { width: 12px; height: 12px; }
-.vzd-linear-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.vzd-linear-preview .vzd-linear-preview-close svg { width: 12px; height: 12px; }
+.vzd-linear-preview .vzd-linear-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 
 /* Header: status pill (left) + key link (right) */
 .vzd-linear-preview-header {
@@ -2156,9 +2166,13 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 2px 8px;
   white-space: nowrap;
   flex-shrink: 0;
+  background: none;
+  border: 1.5px solid var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: none;
 }
 
 /* Key — looks like plain text, acts as a link */
