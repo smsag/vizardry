@@ -2078,6 +2078,16 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   gap: 0.5rem;
 }
 
+/* Neutralize Obsidian's default inline-code background/border when a key
+   badge happens to land inside a `<code>` span (e.g. text typed in backticks)
+   — otherwise the code span's own grey background shows around our pill. */
+code:has(.vzd-linear-key),
+code:has(.vzd-upvoty-key) {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
 /* ── Linear key badge (global — any canvas or code fence) ───────────────── */
 /* Key badge — inline in text, itself the button that requests the fetch */
 .vzd-linear-key {

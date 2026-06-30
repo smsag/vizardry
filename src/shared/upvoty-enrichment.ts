@@ -5,6 +5,10 @@ import { onDisconnected } from "./lifecycle";
 
 const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
 
+// Upvoty's API doesn't return a public post URL, so it's built from the
+// feedback item's UUID using the dashboard's lookup pattern.
+const UPVOTY_POST_URL = "https://app.upvoty.com/feedback";
+
 // ── Open popovers ────────────────────────────────────────────────────────────
 
 const openPopovers = new Map<HTMLElement, HTMLElement>();
@@ -159,7 +163,7 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
   // Header: [status pill]  →  [key link]
   const header = el.createEl("div", { cls: "vzd-upvoty-preview-header" });
   const statusPill = header.createEl("span", { cls: "vzd-upvoty-preview-status" });
-  const keyLink = header.createEl("a", { cls: "vzd-upvoty-preview-key", text: key });
+  const keyLink = header.createEl("a", { cls: "vzd-upvoty-preview-key", text: shortenKey(key) });
   keyLink.setAttribute("href", "#");
   keyLink.setAttribute("aria-label", `Open ${key} in Upvoty`);
   keyLink.addEventListener("click", (e) => {
@@ -197,6 +201,8 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
       }
 
       const { post, summary } = result;
+
+      if (post.id) keyLink.dataset.url = `${UPVOTY_POST_URL}?id=${post.id}`;
 
       if (post.status?.label) statusPill.textContent = post.status.label;
 
