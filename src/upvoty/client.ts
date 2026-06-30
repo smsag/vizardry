@@ -1,6 +1,27 @@
 import { requestUrl } from "obsidian";
 import type { UpvotyPost, UpvotyStatus, UpvotyAuthor } from "./types";
 
+// Base62 alphabet used by Upvoty (standard: digits, uppercase, lowercase)
+const B62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Converts a base62 URL slug (e.g. 5OdEIWLP5WQ1B2z7TnjE1o from post URLs after ~)
+ * to standard UUID format required by the Upvoty REST API.
+ * Passes through if the input is already a UUID or contains unexpected chars.
+ */
+function toUuid(id: string): string {
+  if (UUID_RE.test(id)) return id;
+  let n = BigInt(0);
+  for (const c of id) {
+    const i = B62.indexOf(c);
+    if (i < 0) return id; // unrecognised char — pass through, API will reject
+    n = n * BigInt(62) + BigInt(i);
+  }
+  const hex = n.toString(16).padStart(32, "0");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 /**
  * Fetches an Upvoty feedback item by its ID (base62 from the post URL after ~).
  * Uses ?expand=status,author to get full objects in one request.
@@ -11,7 +32,7 @@ export async function fetchUpvotyPost(
   baseUrl: string,
   apiKey: string,
 ): Promise<UpvotyPost> {
-  const url = `${baseUrl.replace(/\/$/, "")}/feedback-items/${postId}?expand=status,author`;
+  const url = `${baseUrl.replace(/\/$/, "")}/feedback-items/${toUuid(postId)}?expand=status,author`;
 
   let resp;
   try {
@@ -59,7 +80,7 @@ export async function fetchUpvotyComments(
   baseUrl: string,
   apiKey: string,
 ): Promise<string[]> {
-  const url = `${baseUrl.replace(/\/$/, "")}/feedback-items/${postId}/comments?sort=-created_at&limit=5`;
+  const url = `${baseUrl.replace(/\/$/, "")}/feedback-items/${toUuid(postId)}/comments?sort=-created_at&limit=5`;
 
   let resp;
   try {
