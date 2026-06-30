@@ -369,3 +369,15 @@ export interface ConceptMap {
 }
 
 export type ConceptMapResult = Result<ConceptMap>;
+
+// ── Pain / Opportunity Matrix ─────────────────────────────────────────────────
+
+export type MatrixType = "pain" | "opportunity";
+
+export interface MatrixData {
+  type: MatrixType;
+  data: Record<string, string>;
+  cardModes: Record<string, boolean>;
+}
+
+export type MatrixResult = Result<MatrixData>;

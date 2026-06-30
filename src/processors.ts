@@ -32,10 +32,11 @@ import { parseRACIMatrix } from "./raci";
 import { parseRoadmap } from "./roadmap";
 import { parsePaceLayers } from "./pacelayers";
 import { parseConceptMap } from "./conceptmap";
+import { parseMatrix } from "./matrix";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers, renderConceptMap,
+  renderRoadmap, renderPaceLayers, renderConceptMap, renderMatrix,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -44,6 +45,7 @@ import {
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE,
+  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE,
 } from "./templates";
 
 export type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
@@ -64,7 +66,8 @@ export interface ModalOnlyOption {
 }
 
 export const EXTRA_OPTIONS: ModalOnlyOption[] = [
-  { id: "sipoc-flow", label: "SIPOC Flow Diagram", template: SIPOC_FLOW_TEMPLATE },
+  { id: "sipoc-flow",         label: "SIPOC Flow Diagram", template: SIPOC_FLOW_TEMPLATE },
+  { id: "opportunity-matrix", label: "Opportunity Matrix", template: MATRIX_OPP_TEMPLATE },
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [
@@ -233,6 +236,17 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseConceptMap(source);
       if (!result.ok) { renderError(result.error, el); return; }
       renderConceptMap(result.data, el, app, ctx, source);
+    },
+  },
+  {
+    id: "matrix",
+    label: "Pain Point / Opportunity Matrix",
+    template: MATRIX_PAIN_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource } = extractInlineLinks(source);
+      const result = parseMatrix(strippedSource);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderMatrix(result.data, el, source, app, ctx);
     },
   },
 ];

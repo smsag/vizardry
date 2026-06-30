@@ -319,3 +319,27 @@ layer: Nature
   note:
 \`\`\`
 `;
+
+export const MATRIX_PAIN_TEMPLATE = `\`\`\`matrix
+type: pain
+title: Pain Point Matrix
+
+block: very-major-1
+
+
+block: major-2 | card
+
+\`\`\`
+`;
+
+export const MATRIX_OPP_TEMPLATE = `\`\`\`matrix
+type: opportunity
+title: Opportunity Matrix
+
+block: very-major-1
+
+
+block: major-2 | card
+
+\`\`\`
+`;

@@ -134,6 +134,37 @@ export const de: Partial<Record<TranslationKey, string>> = {
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Jetzt, Demnächst und Später Prioritäten auf einen Blick.",
 
+  // ── Pain / Opportunity Matrix ────────────────────────────────────────────────
+  "framework.matrix.description": "Schmerzpunkte oder Chancen auf einem 4×4-Schweregrad-Raster.",
+
+  "matrix.row.pain.1": "Sehr großer Schmerzpunkt",
+  "matrix.row.pain.2": "Großer Schmerzpunkt",
+  "matrix.row.pain.3": "Kleiner Schmerzpunkt",
+  "matrix.row.pain.4": "Sehr kleiner Schmerzpunkt",
+
+  "matrix.row.opportunity.1": "Sehr großer Nutzen",
+  "matrix.row.opportunity.2": "Großer Nutzen",
+  "matrix.row.opportunity.3": "Kleiner Nutzen",
+  "matrix.row.opportunity.4": "Sehr kleiner Nutzen",
+
+  "matrix.col.pain.1": "Von allen genannt",
+  "matrix.col.pain.2": "Von vielen genannt",
+  "matrix.col.pain.3": "Von einigen genannt",
+  "matrix.col.pain.4": "Von wenigen genannt",
+
+  "matrix.col.opportunity.1": "Geringer Aufwand",
+  "matrix.col.opportunity.2": "Mittlerer Aufwand",
+  "matrix.col.opportunity.3": "Hoher Aufwand",
+  "matrix.col.opportunity.4": "Sehr hoher Aufwand",
+
+  "matrix.subtitle.pain":        "(Ist-Zustand)",
+  "matrix.subtitle.opportunity": "(Soll-Zustand)",
+
+  "matrix.legend.veryHigh": "Sehr hoch",
+  "matrix.legend.high":     "Hoch",
+  "matrix.legend.medium":   "Mittel",
+  "matrix.legend.low":      "Niedrig",
+
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
 };

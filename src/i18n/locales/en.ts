@@ -143,6 +143,37 @@ export const en = {
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
 
+  // ── Pain / Opportunity Matrix ────────────────────────────────────────────────
+  "framework.matrix.description": "Map pain points or opportunities on a 4×4 severity grid.",
+
+  "matrix.row.pain.1": "Very Major Pain",
+  "matrix.row.pain.2": "Major Pain",
+  "matrix.row.pain.3": "Minor Pain",
+  "matrix.row.pain.4": "Very Minor Pain",
+
+  "matrix.row.opportunity.1": "Very Major Benefit",
+  "matrix.row.opportunity.2": "Major Benefit",
+  "matrix.row.opportunity.3": "Minor Benefit",
+  "matrix.row.opportunity.4": "Very Minor Benefit",
+
+  "matrix.col.pain.1": "Mentioned by Everyone",
+  "matrix.col.pain.2": "Mentioned by Many",
+  "matrix.col.pain.3": "Mentioned by Some",
+  "matrix.col.pain.4": "Mentioned by Few",
+
+  "matrix.col.opportunity.1": "Low Level of Effort",
+  "matrix.col.opportunity.2": "Medium Level of Effort",
+  "matrix.col.opportunity.3": "High Level of Effort",
+  "matrix.col.opportunity.4": "Very High Level of Effort",
+
+  "matrix.subtitle.pain":        "(Current State)",
+  "matrix.subtitle.opportunity": "(Future State)",
+
+  "matrix.legend.veryHigh": "Very High",
+  "matrix.legend.high":     "High",
+  "matrix.legend.medium":   "Medium",
+  "matrix.legend.low":      "Low",
+
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",
 } as const;

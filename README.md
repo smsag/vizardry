@@ -35,6 +35,8 @@ block: Label
 | ` ```kata ` | Product Kata | Grid |
 | ` ```lean ` | Lean Canvas | Grid |
 | ` ```leanux ` | Lean UX Canvas | Grid |
+| ` ```matrix ` | Pain Point / Opportunity Matrix | Grid |
+| ` ```matrix ` (type: opportunity) | Opportunity Matrix | Grid |
 | ` ```mindmap ` | Mind Map | Tree |
 | ` ```opportunity ` | Opportunity Canvas | Grid |
 | ` ```ost ` | Opportunity Solution Tree | Tree |

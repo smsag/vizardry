@@ -10,3 +10,4 @@ export { renderRACIMatrix } from "./renderer/raci";
 export { renderRoadmap } from "./renderer/roadmap";
 export { renderPaceLayers } from "./renderer/pacelayers";
 export { renderConceptMap } from "./renderer/conceptmap";
+export { renderMatrix } from "./renderer/matrix";

@@ -2356,3 +2356,130 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-presentation-wrap .vzd-cmap-edge-label {
   font-size: 12px;
 }
+
+/* ══ Pain / Opportunity Matrix ══════════════════════════════════════════════ */
+
+.vzd-matrix-wrap {
+  display: grid;
+  grid-template-areas:
+    "yaxis grid"
+    ".     xaxis";
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 0.25rem 0.5rem;
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Type-based base color, also set as inline style on container for legend scope */
+.vzd-matrix-wrap[data-type="pain"]        { --vzd-matrix-base: hsl(0, 70%, 55%); }
+.vzd-matrix-wrap[data-type="opportunity"] { --vzd-matrix-base: hsl(220, 65%, 55%); }
+
+.vzd-matrix-y-axis {
+  grid-area: yaxis;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 0.25rem;
+}
+
+.vzd-matrix-y-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.vzd-matrix-grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(80px, 1fr));
+  grid-template-rows: repeat(4, minmax(72px, auto));
+  gap: 0.25rem;
+  min-width: 380px;
+}
+
+.vzd-matrix-x-axis {
+  grid-area: xaxis;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(80px, 1fr));
+  gap: 0.25rem;
+}
+
+.vzd-matrix-x-label {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  padding-top: 0.15rem;
+}
+
+.vzd-matrix-cell {
+  border-radius: var(--radius-s);
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 72px;
+}
+
+/* Heat levels — color-mix from type base, following story-map pattern */
+.vzd-matrix-cell--very-high {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 55%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 70%, var(--background-secondary));
+}
+.vzd-matrix-cell--high {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 35%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 50%, var(--background-secondary));
+}
+.vzd-matrix-cell--medium {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 20%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 32%, var(--background-secondary));
+}
+.vzd-matrix-cell--low {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 10%, var(--background-secondary));
+  border: 1px dashed color-mix(in srgb, var(--vzd-matrix-base) 22%, var(--background-secondary));
+}
+
+/* Legend pills inside vizardry-header; base var inherited from container */
+.vzd-matrix-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.vzd-matrix-legend-pill {
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  color: var(--text-normal);
+}
+
+.vzd-matrix-legend-pill--very-high {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 55%, var(--background-secondary));
+}
+.vzd-matrix-legend-pill--high {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 35%, var(--background-secondary));
+}
+.vzd-matrix-legend-pill--medium {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 20%, var(--background-secondary));
+}
+.vzd-matrix-legend-pill--low {
+  background: color-mix(in srgb, var(--vzd-matrix-base) 10%, var(--background-secondary));
+  border: 1px dashed color-mix(in srgb, var(--vzd-matrix-base) 22%, var(--background-secondary));
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-matrix-grid {
+  min-width: 520px;
+}
+.vzd-presentation-wrap .vzd-matrix-y-label,
+.vzd-presentation-wrap .vzd-matrix-x-label {
+  font-size: 0.9em;
+}
