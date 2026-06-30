@@ -3,6 +3,7 @@ import { MarkdownView, Notice, Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
 import type { PluginSettings } from "./settings";
 import { initLinearService, getLinearService } from "./linear";
+import type { CacheEntry } from "./linear/types";
 import { enrichLinearKeys } from "./shared/linear-enrichment";
 import { initUpvotyService, getUpvotyService, destroyUpvotyService } from "./upvoty";
 import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
@@ -54,6 +55,8 @@ export default class VizardryPlugin extends Plugin {
     const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     this.settings = { ...DEFAULT_SETTINGS, ...rawData } as PluginSettings;
     initLinearService(this as Parameters<typeof initLinearService>[0]);
+    const linearCache = rawData.linearCache as Record<string, CacheEntry> | undefined;
+    if (linearCache) getLinearService()?.cache.init(linearCache);
     initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
     this.addSettingTab(new VizardrySettingTab(this.app, this));
     // Expose version on body for bug reports and renderer error attribution.
