@@ -40,18 +40,6 @@ function bringToFront(popover: HTMLElement): void {
  * A fixed white label text is unreadable against the lighter ones, so pick
  * black or white per-colour using WCAG relative luminance.
  */
-function readableTextColor(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return "#ffffff";
-  const n = parseInt(m[1], 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.5 ? "#000000" : "#ffffff";
-}
-
 // ── Time formatting ──────────────────────────────────────────────────────────
 
 function formatAge(updatedAt: string): string {
@@ -208,8 +196,6 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
       // Status pill with Linear's own colour — pick readable text per-colour
       // since Linear states range from pale grey to saturated red/green.
       statusPill.textContent = result.state.name;
-      statusPill.style.backgroundColor = result.state.color;
-      statusPill.style.color = readableTextColor(result.state.color);
 
       // Key link URL
       if (result.url) keyLink.dataset.url = result.url;
