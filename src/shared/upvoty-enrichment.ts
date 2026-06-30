@@ -60,10 +60,12 @@ function shortenKey(key: string): string {
 }
 
 export function buildKeyRegex(prefix: string): RegExp {
-  // Escape the prefix in case it contains regex special chars, then match the
-  // base62 post ID (e.g. 5OdEIWLP5WQ1B2z7TnjE1o — alphanumeric, 10-30 chars)
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`\\b(${escaped}-[A-Za-z0-9]{10,30})\\b`, "g");
+  // Accept either a standard UUID (from the Upvoty dashboard URL ?id=…)
+  // or a base62 slug (22 alphanumeric chars from the post URL after ~).
+  const uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+  const base62 = "[A-Za-z0-9]{10,30}";
+  return new RegExp(`\\b(${escaped}-(?:${uuid}|${base62}))\\b`, "g");
 }
 
 function collectTextNodes(node: Node, re: RegExp, out: Text[]): void {
