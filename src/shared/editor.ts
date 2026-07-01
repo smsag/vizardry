@@ -10,6 +10,10 @@ export type ResolvedEditor = {
 /**
  * Resolves the live CodeMirror editor for the note containing `el`.
  * Returns null when the editor is unavailable — most commonly Reading View.
+ *
+ * ctx.getSectionInfo() returns null in Obsidian's Live Preview / source mode,
+ * so we fall back to scanning the editor content for the code fence whose
+ * body matches the source stored on the container's dataset.vzSource.
  */
 export function resolveEditor(
   app: App,
@@ -17,11 +21,6 @@ export function resolveEditor(
   el: HTMLElement,
   caller: string,
 ): ResolvedEditor | null {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn(`Vizardry: ${caller} — no section info`);
-    return null;
-  }
   const file = app.vault.getFileByPath(ctx.sourcePath);
   if (!file) {
     console.warn(`Vizardry: ${caller} — file not found: ${ctx.sourcePath}`);
@@ -35,7 +34,56 @@ export function resolveEditor(
     console.warn(`Vizardry: ${caller} — no live editor`);
     return null;
   }
-  return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
+
+  // Primary path: section info from the post-processor context (works in Read Mode).
+  const info = ctx.getSectionInfo(el);
+  if (info) {
+    return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
+  }
+
+  // Fallback: scan editor lines for the code fence containing this block.
+  // Needed in Live Preview / source mode where getSectionInfo returns null.
+  const source = el.dataset.vzSource;
+  if (source) {
+    const range = findCodeFenceBySource(editor, source);
+    if (range) return { editor, ...range };
+    console.warn(`Vizardry: ${caller} — source scan found no matching code fence`);
+    return null;
+  }
+
+  console.warn(`Vizardry: ${caller} — no section info and no vzSource fallback`);
+  return null;
+}
+
+/**
+ * Scans the editor for a code fence whose trimmed body matches source.
+ * Returns the lineStart (opening ```) and lineEnd (closing ```) line indices.
+ */
+function findCodeFenceBySource(
+  editor: MarkdownView["editor"],
+  source: string,
+): { lineStart: number; lineEnd: number } | null {
+  const lineCount = editor.lineCount();
+  const normalised = source.trim();
+
+  for (let i = 0; i < lineCount; i++) {
+    const line = editor.getLine(i).trim();
+    if (!line.startsWith("```")) continue;
+
+    const fenceStart = i;
+    let body = "";
+    let j = i + 1;
+    for (; j < lineCount; j++) {
+      const inner = editor.getLine(j);
+      if (inner.trim() === "```") break;
+      body += (body ? "\n" : "") + inner;
+    }
+    if (body.trim() === normalised) {
+      return { lineStart: fenceStart, lineEnd: j };
+    }
+    i = j;
+  }
+  return null;
 }
 
 export function insertTemplateAtCursor(editor: Editor, template: string): void {

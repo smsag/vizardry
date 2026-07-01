@@ -15,8 +15,10 @@ export function parseMatrix(source: string): MatrixResult {
         type = "pain";
       } else if (value === "opportunity") {
         type = "opportunity";
+      } else if (value === "impact") {
+        type = "impact";
       } else {
-        return { ok: false, error: `Unknown type "${value}" — expected "pain" or "opportunity"` };
+        return { ok: false, error: `Unknown type "${value}" — expected "pain", "opportunity", or "impact"` };
       }
     } else {
       filtered.push(line);

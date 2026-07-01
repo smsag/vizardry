@@ -134,8 +134,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Jetzt, Demnächst und Später Prioritäten auf einen Blick.",
 
-  // ── Pain / Opportunity Matrix ────────────────────────────────────────────────
-  "framework.matrix.description": "Schmerzpunkte oder Chancen auf einem 4×4-Schweregrad-Raster.",
+  // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
+  "framework.matrix.description": "Schmerzpunkte, Chancen oder Impact vs. Aufwand auf einem 4×4-Raster.",
 
   "matrix.row.pain.1": "Sehr großer Schmerzpunkt",
   "matrix.row.pain.2": "Großer Schmerzpunkt",
@@ -147,6 +147,11 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.row.opportunity.3": "Kleiner Nutzen",
   "matrix.row.opportunity.4": "Sehr kleiner Nutzen",
 
+  "matrix.row.impact.1": "Sehr hoher Impact",
+  "matrix.row.impact.2": "Hoher Impact",
+  "matrix.row.impact.3": "Geringer Impact",
+  "matrix.row.impact.4": "Sehr geringer Impact",
+
   "matrix.col.pain.1": "Von allen genannt",
   "matrix.col.pain.2": "Von vielen genannt",
   "matrix.col.pain.3": "Von einigen genannt",
@@ -157,8 +162,14 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.col.opportunity.3": "Hoher Aufwand",
   "matrix.col.opportunity.4": "Sehr hoher Aufwand",
 
+  "matrix.col.impact.1": "Sehr geringer Aufwand",
+  "matrix.col.impact.2": "Geringer Aufwand",
+  "matrix.col.impact.3": "Hoher Aufwand",
+  "matrix.col.impact.4": "Sehr hoher Aufwand",
+
   "matrix.subtitle.pain":        "(Ist-Zustand)",
   "matrix.subtitle.opportunity": "(Soll-Zustand)",
+  "matrix.subtitle.impact":      "(Priorisierung)",
 
   "matrix.legend.veryHigh": "Sehr hoch",
   "matrix.legend.high":     "Hoch",

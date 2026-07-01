@@ -25,11 +25,24 @@ category: Technology
 `;
 
 export const IMPACT_MAP_TEMPLATE = `\`\`\`impact
-goal:
+goal: Increase the number of activated users in the first 30 days
 
-actor:
-  impact:
-    deliverable:
+actor: New User
+  impact: Reaches first value moment faster
+    deliverable: Interactive onboarding wizard
+    deliverable: Contextual tooltips on first login
+  impact: Understands the product without reading docs
+    deliverable: Sample project pre-loaded on sign-up
+
+actor: Support Team
+  impact: Receives fewer "how do I start?" tickets
+    deliverable: In-app help centre with search
+    deliverable: Onboarding progress visible in admin panel
+
+actor: Growth Team
+  impact: Can identify where users drop off
+    deliverable: Funnel analytics for each onboarding step
+    deliverable: Automated nudge emails at day 1, 3, and 7
 \`\`\`
 `;
 
@@ -292,31 +305,31 @@ Water -- enables --> Plants
 export const PACE_LAYERS_TEMPLATE = `\`\`\`pacelayers
 // type: shearing | product | retro
 type: shearing
-context:
+context: Our SaaS product — B2B team collaboration tool
 
 layer: Fashion
-  note:
+  note: Team sentiment is shifting toward async-first. Standup fatigue is real.
 
 layer: Commerce
-  note:
+  note: Quarterly OKRs are locked. Activation rate is the primary growth lever this quarter.
 
 layer: Infrastructure
-  obs:
-  feed:
-  idea:
+  obs: Auth service is a bottleneck — every new integration depends on it
+  feed: Engineers report deploy confidence is low without better observability
+  idea: Introduce feature flags to decouple deploy from release
 
 layer: Governance
-  obs:
-  feed:
-  idea:
+  obs: SOC 2 audit is scheduled for Q3 — data handling policies need review
+  feed: Legal flagged that session token storage doesn't meet new requirements
+  idea: Rewrite auth middleware; document data retention policy
 
 layer: Culture
-  obs:
-  feed:
-  idea:
+  obs: Team defaults to shipping fast over shipping well — tech debt is accumulating
+  feed: Retrospectives surface the same friction points every sprint
+  idea: Introduce a "quality sprint" once per quarter
 
 layer: Nature
-  note:
+  note: Network effects are structural — the product becomes more valuable as more teammates join. Every feature decision should consider how it affects team-wide adoption.
 \`\`\`
 `;
 
@@ -324,11 +337,55 @@ export const MATRIX_PAIN_TEMPLATE = `\`\`\`matrix
 type: pain
 title: Pain Point Matrix
 
-block: very-major-1
+block: very-major-1 | card
+  Checkout fails on mobile
+  Payment provider rejects wallets
 
+block: very-major-2
+  Onboarding takes > 30 min
 
-block: major-2 | card
+block: very-major-3
+  SSO setup requires IT ticket
 
+block: very-major-4
+  Data export corrupts special characters
+
+block: major-1 | card
+  Search returns stale results
+  Filters reset on page reload
+
+block: major-2
+  Notifications arrive hours late
+
+block: major-3
+  No bulk-edit on list view
+
+block: major-4
+  PDF reports miss last row
+
+block: minor-1
+  Dashboard loads slowly on first visit
+
+block: minor-2
+  Date picker defaults to wrong timezone
+
+block: minor-3
+  Avatar upload crops faces incorrectly
+
+block: minor-4
+  Tooltip overlaps button on small screens
+
+block: very-minor-1
+  Hover state missing on secondary nav
+
+block: very-minor-2
+  Success toast disappears too fast
+
+block: very-minor-3
+  Changelog link 404s in footer
+
+block: very-minor-4
+  Favicon not shown in Safari pinned tabs
 \`\`\`
 `;
 
@@ -336,10 +393,110 @@ export const MATRIX_OPP_TEMPLATE = `\`\`\`matrix
 type: opportunity
 title: Opportunity Matrix
 
-block: very-major-1
+block: very-major-1 | card
+  Self-serve onboarding wizard
+  In-app sample project
 
+block: very-major-2
+  AI-assisted task summarisation
 
-block: major-2 | card
+block: very-major-3
+  Native mobile app
 
+block: very-major-4
+  On-premise deployment option
+
+block: major-1 | card
+  Saved filter presets
+  Keyboard shortcut layer
+
+block: major-2
+  Public API with webhooks
+
+block: major-3
+  Advanced role-based permissions
+
+block: major-4
+  White-label theming per workspace
+
+block: minor-1
+  Quick-add from notification tray
+
+block: minor-2
+  CSV import for bulk data entry
+
+block: minor-3
+  Two-way calendar sync
+
+block: minor-4
+  Custom email notification templates
+
+block: very-minor-1
+  Drag-to-reorder sidebar sections
+
+block: very-minor-2
+  Collapsible panel in list view
+
+block: very-minor-3
+  Dark mode for embedded widgets
+
+block: very-minor-4
+  Branded share links
+\`\`\`
+`;
+
+export const MATRIX_IMPACT_TEMPLATE = `\`\`\`matrix
+type: impact
+title: Impact / Effort Matrix
+
+block: very-major-1 | card
+  Fix mobile checkout flow
+  Add saved filter presets
+
+block: very-major-2
+  Self-serve onboarding wizard
+
+block: very-major-3
+  Public API with webhooks
+
+block: very-major-4
+  On-premise deployment option
+
+block: major-1 | card
+  Keyboard shortcut layer
+  Quick-add from notification tray
+
+block: major-2
+  AI-assisted task summarisation
+
+block: major-3
+  Advanced role-based permissions
+
+block: major-4
+  Native mobile app
+
+block: minor-1
+  CSV import for bulk data entry
+
+block: minor-2
+  Two-way calendar sync
+
+block: minor-3
+  Collapsible panel in list view
+
+block: minor-4
+  Custom email notification templates
+
+block: very-minor-1
+  Drag-to-reorder sidebar sections
+
+block: very-minor-2
+  Dark mode for embedded widgets
+
+block: very-minor-3
+  Branded share links
+
+block: very-minor-4
+  Changelog link fix in footer
 \`\`\`
 `;

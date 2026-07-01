@@ -1,10 +1,11 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type { MatrixData, MatrixType } from "../types";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n/locales/en";
 import { initCanvas } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
-import { renderCardBlock } from "./card-block";
+import { renderCardBlock, type CardDropTarget } from "./card-block";
 
 const ROWS = ["very-major", "major", "minor", "very-minor"] as const;
 const COLS = [1, 2, 3, 4] as const;
@@ -12,6 +13,7 @@ const COLS = [1, 2, 3, 4] as const;
 const BASE_COLORS: Record<MatrixType, string> = {
   pain:        "hsl(0, 70%, 55%)",
   opportunity: "hsl(220, 65%, 55%)",
+  impact:      "hsl(145, 55%, 42%)",
 };
 
 function heatLevel(row: number, col: number): "very-high" | "high" | "medium" | "low" {
@@ -37,10 +39,15 @@ export function renderMatrix(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  const defaultTitle = data.type === "pain" ? "Pain Point Matrix" : "Opportunity Matrix";
+  const defaultTitle = data.type === "pain" ? "Pain Point Matrix"
+    : data.type === "opportunity" ? "Opportunity Matrix"
+    : "Impact / Effort Matrix";
 
   // Set base color on container so legend pills (inside header) inherit it.
   container.style.setProperty("--vzd-matrix-base", BASE_COLORS[data.type]);
+  // Store raw source so resolveEditor can find this block by content scan
+  // when ctx.getSectionInfo() returns null (e.g. in Live Preview mode).
+  if (source) container.dataset.vzSource = source;
 
   initCanvas(
     container,
@@ -77,31 +84,48 @@ export function renderMatrix(
     yAxis.createEl("div", { cls: "vzd-matrix-y-label", text: t(rowKey(data.type, rowIdx)) });
   });
 
-  // 4×4 grid
+  // 4×4 grid — two-pass so card-mode cells can share a sibling registry for
+  // cross-cell drag-and-drop. First pass creates all DOM; second pass renders.
   const grid = wrap.createEl("div", { cls: "vzd-matrix-grid" });
+
+  type CellRecord = {
+    body: HTMLElement;
+    blockKey: string;
+    content: string;
+    isCard: boolean;
+  };
+  const cells: CellRecord[] = [];
+
   ROWS.forEach((rowName, rowIdx) => {
     COLS.forEach((col) => {
       const blockKey = `${rowName}-${col}`;
       const heat = heatLevel(rowIdx + 1, col);
-      const cell = grid.createEl("div", {
-        cls: `vzd-matrix-cell vzd-matrix-cell--${heat}`,
-      });
+      const cell = grid.createEl("div", { cls: `vzd-matrix-cell vzd-matrix-cell--${heat}` });
       const body = cell.createEl("div", { cls: "vizardry-block-body" });
-      const content = data.data[blockKey] ?? "";
-      const isCard = data.cardModes[blockKey] ?? false;
-
-      if (isCard) {
-        renderCardBlock(body, blockKey, content, app, ctx, container);
-      } else {
-        renderBlockBody(body, content);
-        if (app && ctx) {
-          body.addClass("vzd-block-editable");
-          body.addEventListener("click", () =>
-            activateBlockEdit(body, blockKey, content, app, ctx, container)
-          );
-        }
-      }
+      cells.push({ body, blockKey, content: data.data[blockKey] ?? "", isCard: data.cardModes[blockKey] ?? false });
     });
+  });
+
+  // All card-mode bodies available as cross-cell drop targets for every card cell.
+  const cardTargets: CardDropTarget[] = cells
+    .filter(c => c.isCard)
+    .map(c => ({ body: c.body, blockLabel: c.blockKey }));
+
+  cells.forEach(({ body, blockKey, content, isCard }) => {
+    if (isCard) {
+      const siblings = cardTargets.filter(t => t.body !== body);
+      renderCardBlock(body, blockKey, content, app, ctx, container, siblings);
+    } else {
+      renderBlockBody(body, content);
+      if (app && ctx) {
+        body.addClass("vzd-block-editable");
+        body.addEventListener("click", (e) => {
+          if ((e.target as HTMLElement).closest("button, a")) return;
+          if (app.workspace.getActiveViewOfType(MarkdownView)?.getMode() === "preview") return;
+          activateBlockEdit(body, blockKey, body.dataset.blockContent ?? "", app, ctx, container);
+        });
+      }
+    }
   });
 
   // X-axis labels

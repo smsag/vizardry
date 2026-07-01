@@ -372,7 +372,7 @@ export type ConceptMapResult = Result<ConceptMap>;
 
 // ── Pain / Opportunity Matrix ─────────────────────────────────────────────────
 
-export type MatrixType = "pain" | "opportunity";
+export type MatrixType = "pain" | "opportunity" | "impact";
 
 export interface MatrixData {
   type: MatrixType;

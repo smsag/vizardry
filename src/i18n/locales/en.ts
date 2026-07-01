@@ -143,8 +143,8 @@ export const en = {
   // ── Framework description ────────────────────────────────────────────────────
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
 
-  // ── Pain / Opportunity Matrix ────────────────────────────────────────────────
-  "framework.matrix.description": "Map pain points or opportunities on a 4×4 severity grid.",
+  // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
+  "framework.matrix.description": "Map pain points, opportunities, or impact vs. effort on a 4×4 grid.",
 
   "matrix.row.pain.1": "Very Major Pain",
   "matrix.row.pain.2": "Major Pain",
@@ -156,6 +156,11 @@ export const en = {
   "matrix.row.opportunity.3": "Minor Benefit",
   "matrix.row.opportunity.4": "Very Minor Benefit",
 
+  "matrix.row.impact.1": "Very High Impact",
+  "matrix.row.impact.2": "High Impact",
+  "matrix.row.impact.3": "Low Impact",
+  "matrix.row.impact.4": "Very Low Impact",
+
   "matrix.col.pain.1": "Mentioned by Everyone",
   "matrix.col.pain.2": "Mentioned by Many",
   "matrix.col.pain.3": "Mentioned by Some",
@@ -166,8 +171,14 @@ export const en = {
   "matrix.col.opportunity.3": "High Level of Effort",
   "matrix.col.opportunity.4": "Very High Level of Effort",
 
+  "matrix.col.impact.1": "Very Low Effort",
+  "matrix.col.impact.2": "Low Effort",
+  "matrix.col.impact.3": "High Effort",
+  "matrix.col.impact.4": "Very High Effort",
+
   "matrix.subtitle.pain":        "(Current State)",
   "matrix.subtitle.opportunity": "(Future State)",
+  "matrix.subtitle.impact":      "(Prioritisation)",
 
   "matrix.legend.veryHigh": "Very High",
   "matrix.legend.high":     "High",

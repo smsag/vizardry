@@ -1,5 +1,6 @@
 import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type { ParsedPaceLayers, PaceLayerCell, PaceLayerName } from "../types";
 import { LAYER_CONFIG, LAYER_LABELS, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
 import { initCanvas, markInteractive } from "./controls";
@@ -15,7 +16,8 @@ export function renderPaceLayers(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  const isEditMode = !!(app && ctx && source !== undefined);
+  const isEditMode = !!(app && ctx && source !== undefined)
+    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = 'Pace Layer Analysis';
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = isEditMode

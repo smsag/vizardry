@@ -45,7 +45,7 @@ import {
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE,
-  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE,
+  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
 } from "./templates";
 
 export type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
@@ -66,8 +66,9 @@ export interface ModalOnlyOption {
 }
 
 export const EXTRA_OPTIONS: ModalOnlyOption[] = [
-  { id: "sipoc-flow",         label: "SIPOC Flow Diagram", template: SIPOC_FLOW_TEMPLATE },
-  { id: "opportunity-matrix", label: "Opportunity Matrix", template: MATRIX_OPP_TEMPLATE },
+  { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
+  { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
+  { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [

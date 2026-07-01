@@ -1,5 +1,6 @@
 import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { onDisconnected } from "../shared/lifecycle";
@@ -25,7 +26,8 @@ export function renderRoadmap(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  const isEditMode = !!(app && ctx && source !== undefined);
+  const isEditMode = !!(app && ctx && source !== undefined)
+    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = "Now/Next/Later Roadmap";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = (app && ctx && source !== undefined)

@@ -1,5 +1,6 @@
 import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
@@ -27,7 +28,8 @@ export function renderStoryMap(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  const isEditMode = !!(app && ctx && source !== undefined);
+  const isEditMode = !!(app && ctx && source !== undefined)
+    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = "User Story Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = (app && ctx && source !== undefined)
