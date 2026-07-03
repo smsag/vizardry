@@ -116,7 +116,9 @@ export function renderSIPOC(
       text: col.label,
     });
     headerEls.push(th);
-    if (i < allCols.length - 1) {
+    // Arrows only mark the flow between the 5 core SIPOC columns — never
+    // after Customer, and never on the optional owner/metric meta columns.
+    if (i < CORE_COLS.length - 1) {
       const arrow = th.createEl("span", { cls: "vzd-sipoc-arrow", text: "→" });
       arrow.setAttribute("aria-hidden", "true");
     }
@@ -173,10 +175,14 @@ export function renderSIPOC(
 
   // Apply contrast-checked text colours to tinted header cells.
   // Meta columns (owner, metric) use a fixed accent colour and skip the check.
+  // Only the "hi" tier (Process) is dark enough to ever need white text; the
+  // lightly-tinted "mid"/"lo" tiers stay on the base --text-normal colour
+  // rather than risking bestTextColor()'s white fallback on a near-white
+  // background (which made "Eingabe"/"Ausgabe" unreadable).
   for (const th of headerEls) {
     if (th.hasClass("vzd-sipoc-th--tier-meta")) {
       th.style.color = "var(--interactive-accent)";
-    } else {
+    } else if (th.hasClass("vzd-sipoc-th--tier-hi")) {
       th.style.color = bestTextColor(th);
     }
   }

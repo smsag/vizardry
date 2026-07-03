@@ -2,10 +2,12 @@ import type { FrameworkDefinition } from "./types";
 
 export function generateCanvasTemplate(framework: FrameworkDefinition): string {
   const blocks = framework.blocks.map(b => `block: ${b.label}\n  `).join("\n\n");
-  return `\`\`\`${framework.id}\n${blocks}\n\`\`\`\n`;
+  return `\`\`\`${framework.id}\ntitle: ${framework.label}\n\n${blocks}\n\`\`\`\n`;
 }
 
 export const FISHBONE_TEMPLATE = `\`\`\`fishbone
+title: Fishbone Diagram
+
 effect: Problem statement
 
 category: People
@@ -25,6 +27,8 @@ category: Technology
 `;
 
 export const IMPACT_MAP_TEMPLATE = `\`\`\`impact
+title: Impact Map
+
 goal: Increase the number of activated users in the first 30 days
 
 actor: New User
@@ -47,6 +51,8 @@ actor: Growth Team
 `;
 
 export const STORY_MAP_TEMPLATE = `\`\`\`story
+title: User Story Map
+
 user: Team Lead
 goal: Coordinate team and ship features reliably
 
@@ -101,6 +107,8 @@ slice: V1.1
 `;
 
 export const MIND_MAP_TEMPLATE = `\`\`\`mindmap
+title: Mind Map
+
 root: Central Topic
 
   Branch One
@@ -118,6 +126,8 @@ root: Central Topic
 `;
 
 export const VENN_TEMPLATE = `\`\`\`venn
+title: Venn Diagram
+
 circle: Design
   - User research
   - Wireframing
@@ -146,6 +156,8 @@ center:
 `;
 
 export const OST_TEMPLATE = `\`\`\`ost
+title: Opportunity Solution Tree
+
 outcome: Your desired outcome
 
   Opportunity one
@@ -166,6 +178,8 @@ export const CAROUSEL_TEMPLATE = `\`\`\`carousel
 `;
 
 export const SIPOC_TEMPLATE = `\`\`\`sipoc
+title: SIPOC Diagram
+
 row:
   supplier: Dev team
   input: Feature branch
@@ -191,6 +205,7 @@ row:
 
 export const SIPOC_FLOW_TEMPLATE = `\`\`\`sipoc
 type: flow
+title: SIPOC Flow Diagram
 
 suppliers:
   Supplier 1 [ellipse]
@@ -236,6 +251,8 @@ link: Data 5 -> Customer 3
 `;
 
 export const WARDLEY_TEMPLATE = `\`\`\`wardley
+title: Wardley Map
+
 stages: Genesis | Custom | Product | Commodity
 
 anchor: User
@@ -254,6 +271,8 @@ link: Database -> Cloud Host
 `;
 
 export const ROADMAP_TEMPLATE = `\`\`\`roadmap
+title: Now/Next/Later Roadmap
+
 now:
   item: Ship login flow | CORE-1234
   item: Fix checkout bug
@@ -269,6 +288,8 @@ later:
 `;
 
 export const RACI_TEMPLATE = `\`\`\`raci
+title: RACI Matrix
+
 task: Define requirements
   responsible: Developer
   accountable: PM
@@ -305,6 +326,7 @@ Water -- enables --> Plants
 export const PACE_LAYERS_TEMPLATE = `\`\`\`pacelayers
 // type: shearing | product | retro
 type: shearing
+title: Pace Layer Analysis
 context: Our SaaS product — B2B team collaboration tool
 
 layer: Fashion

@@ -169,8 +169,7 @@ button.vzd-btn {
 }
 
 .vizardry-title--editing {
-  outline: 1px solid var(--interactive-accent);
-  background: var(--background-primary);
+  border-bottom: 1px solid var(--interactive-accent);
   cursor: text;
   min-width: 4em;
   white-space: nowrap;
@@ -1237,8 +1236,8 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-sipoc-td--actions {
   width: 36px;
   min-width: 36px;
-  border: none;
-  background: transparent;
+  border: none !important;
+  background: transparent !important;
   padding: 0 0 0 4px;
   vertical-align: middle;
 }
@@ -1365,15 +1364,15 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 /* Three-tier accent gradient — mirrors roadmap column headers.
    Text colour is overridden inline by bestTextColor() in the renderer. */
 .vzd-sipoc-th--tier-hi {
-  background: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-secondary));
+  background: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-primary));
 }
 
 .vzd-sipoc-th--tier-mid {
-  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-secondary));
+  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary));
 }
 
 .vzd-sipoc-th--tier-lo {
-  background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
+  background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
 }
 
 /* Optional meta columns (owner, metric) — neutral background, accent text.
