@@ -30,7 +30,7 @@ function getCols(rows: SIPOCData["rows"]): { key: ColKey; label: string }[] {
 function headerTierClass(key: ColKey): string {
   if (key === "owner" || key === "metric") return "vzd-sipoc-th--tier-meta";
   if (key === "process") return "vzd-sipoc-th--tier-hi";
-  if (key === "input" || key === "output") return "vzd-sipoc-th--tier-mid";
+  if (key === "supplier" || key === "customer") return "vzd-sipoc-th--tier-mid";
   return "vzd-sipoc-th--tier-lo";
 }
 
