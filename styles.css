@@ -552,10 +552,13 @@ button.vzd-btn {
 }
 
 .vzd-inline-input {
-  background: var(--background-primary);
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-s, 3px);
-  color: var(--text-normal);
+  background: transparent;
+  border: none;
+  /* Inherit the host element's own colour (e.g. accent on activity headers,
+     muted on step headers) since the input replaces the label in place and
+     has a transparent background — a fixed colour would look wrong or, on
+     accent-tinted headers, risk poor contrast. */
+  color: inherit;
   font: inherit;
   padding: 0.1em 0.3em;
   width: 100%;
@@ -1068,13 +1071,11 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   color: var(--text-normal);
-  background: var(--background-primary);
-  border: 1.5px solid var(--interactive-accent);
-  border-radius: var(--radius-s);
+  background: transparent;
+  border: none;
   padding: 2px 6px;
   outline: none;
   box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* Presentation overlay: suppress tree inline-edit affordances.
@@ -1176,14 +1177,12 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   color: var(--text-normal);
-  background: var(--background-primary);
-  border: 1.5px solid var(--interactive-accent);
-  border-radius: var(--radius-s);
+  background: transparent;
+  border: none;
   padding: 1px 6px;
   outline: none;
   z-index: 10;
   box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 /* Drag tooltip: coordinate text */
@@ -1213,14 +1212,13 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   width: 100%;
   min-height: 1.4em;
   resize: none;
-  border: 1.5px solid var(--interactive-accent);
-  border-radius: var(--radius-s);
-  background: var(--background-primary);
+  border: none;
+  background: transparent;
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   color: var(--text-normal);
   outline: none;
-  padding: var(--size-4-1) var(--size-4-2);
+  padding: 0.5rem 0.75rem;
   box-sizing: border-box;
 }
 
@@ -1345,7 +1343,12 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 .vzd-sipoc-table {
   width: 100%;
-  margin: 0;
+  /* !important: Obsidian's own base stylesheet targets raw <table> elements
+     (e.g. `.markdown-rendered table`) with a margin, at higher specificity
+     than a single class selector — it was winning over the plain `margin: 0`
+     this rule had before, leaving a visibly larger gap under the title than
+     other canvases (which use a <div> grid, never touched by that rule). */
+  margin: 0 !important;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -2465,12 +2468,11 @@ code:has(.vzd-upvoty-key) {
   width: 100%;
   resize: none;
   overflow: hidden;
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-s);
+  border: none;
   padding: 0.375rem 0.5rem;
   font-size: var(--font-ui-small);
   font-family: inherit;
-  background: var(--background-primary);
+  background: transparent;
   color: var(--text-normal);
   outline: none;
   box-sizing: border-box;

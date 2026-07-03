@@ -317,6 +317,10 @@ function renderTreeNodes(
       input.type = "text";
       input.value = node.text;
       input.className = "vzd-tree-rename-input";
+      // Match the node's own label colour — the input has a transparent
+      // background, so on accent-filled nodes (e.g. root) it must use
+      // text-on-accent rather than the default text colour to stay legible.
+      input.style.color = style.textVar;
       host.appendChild(input);
       fo.appendChild(host);
       svg.appendChild(fo);
