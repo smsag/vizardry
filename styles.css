@@ -1345,6 +1345,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 .vzd-sipoc-table {
   width: 100%;
+  margin: 0;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -1361,18 +1362,10 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   white-space: nowrap;
 }
 
-/* Three-tier accent gradient — mirrors roadmap column headers.
-   Text colour is overridden inline by bestTextColor() in the renderer. */
+/* Only Process is accent-tinted — it's the sole subject the header
+   highlights. Text colour is overridden inline by bestTextColor(). */
 .vzd-sipoc-th--tier-hi {
   background: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-primary));
-}
-
-.vzd-sipoc-th--tier-mid {
-  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary));
-}
-
-.vzd-sipoc-th--tier-lo {
-  background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
 }
 
 /* Optional meta columns (owner, metric) — neutral background, accent text.

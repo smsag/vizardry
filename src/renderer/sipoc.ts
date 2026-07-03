@@ -26,12 +26,13 @@ function getCols(rows: SIPOCData["rows"]): { key: ColKey; label: string }[] {
   return [...CORE_COLS, ...optional].map(c => ({ key: c.key, label: c.label() }));
 }
 
-/** Maps a column key to its header accent-tier CSS class. */
+/** Maps a column key to its header accent-tier CSS class. Only Process is
+ *  accent-tinted; the meta columns (owner, metric) get accent-coloured text
+ *  on a neutral background; every other column stays on the plain default. */
 function headerTierClass(key: ColKey): string {
   if (key === "owner" || key === "metric") return "vzd-sipoc-th--tier-meta";
   if (key === "process") return "vzd-sipoc-th--tier-hi";
-  if (key === "supplier" || key === "customer") return "vzd-sipoc-th--tier-mid";
-  return "vzd-sipoc-th--tier-lo";
+  return "";
 }
 
 function activateCellEdit(
@@ -173,12 +174,9 @@ export function renderSIPOC(
     }
   });
 
-  // Apply contrast-checked text colours to tinted header cells.
-  // Meta columns (owner, metric) use a fixed accent colour and skip the check.
-  // Only the "hi" tier (Process) is dark enough to ever need white text; the
-  // lightly-tinted "mid"/"lo" tiers stay on the base --text-normal colour
-  // rather than risking bestTextColor()'s white fallback on a near-white
-  // background (which made "Eingabe"/"Ausgabe" unreadable).
+  // Apply a contrast-checked text colour only to the accent-tinted Process
+  // header. Meta columns (owner, metric) use a fixed accent colour; every
+  // other column has no tint and keeps the base --text-normal colour.
   for (const th of headerEls) {
     if (th.hasClass("vzd-sipoc-th--tier-meta")) {
       th.style.color = "var(--interactive-accent)";
