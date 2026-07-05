@@ -5,6 +5,7 @@ import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
+import { enableDragGesture } from "../shared/drag-gesture";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import {
@@ -175,9 +176,6 @@ export function renderStoryMap(
     placeholder.remove();
     card.classList.remove("vzd-story-task-card--hidden");
 
-    doc.removeEventListener("mousemove", onDocMouseMove);
-    doc.removeEventListener("mouseup", onDocMouseUp);
-
     if (!app || !ctx || !overGrid) return;
 
     // Preserve scroll position — editor.replaceRange() moves the CM6 cursor
@@ -250,13 +248,8 @@ export function renderStoryMap(
     }
   }
 
-  function onDocMouseMove(e: MouseEvent): void { updateDragPosition(e.clientX, e.clientY); }
-  const onDocMouseUp = (): void => endDrag();
-
-  function startDrag(card: HTMLElement, e: MouseEvent | Touch): void {
+  function startDrag(card: HTMLElement, clientX: number, clientY: number): void {
     if (!isEditMode || !app || !ctx) return;
-    // Don't start drag if an inline-edit input is active inside this card
-    if (card.querySelector(".vzd-inline-input")) return;
 
     const taskName = card.dataset.taskName ?? "";
     const stepName = card.dataset.stepName ?? "";
@@ -267,8 +260,8 @@ export function renderStoryMap(
     const ghost = doc.body.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--ghost" });
     ghost.style.width = `${rect.width}px`;
     ghost.innerHTML = card.innerHTML;
-    ghost.style.left = `${e.clientX + 8}px`;
-    ghost.style.top = `${e.clientY + 8}px`;
+    ghost.style.left = `${clientX + 8}px`;
+    ghost.style.top = `${clientY + 8}px`;
 
     const placeholder = card.parentElement!.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--placeholder" });
     placeholder.style.height = `${rect.height}px`;
@@ -281,9 +274,6 @@ export function renderStoryMap(
       toStepName: stepName, toSlice: fromSlice, toIndex: fromIndex,
       overGrid: false,
     };
-
-    doc.addEventListener("mousemove", onDocMouseMove);
-    doc.addEventListener("mouseup", onDocMouseUp);
   }
 
   // ── Task card rendering ───────────────────────────────────────────────────
@@ -322,56 +312,16 @@ export function renderStoryMap(
         deleteStoryTask(app, ctx, container, task.name);
       });
 
-      // Drag to move — only initiate after the pointer moves > 5 px so that
-      // a plain click or double-click never triggers the drag machinery.
-      card.addEventListener("mousedown", (e) => {
-        if (card.querySelector(".vzd-inline-input")) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        const originX = e.clientX;
-        const originY = e.clientY;
-        const THRESHOLD = 5;
-        let started = false;
-
-        const onPreMove = (mv: MouseEvent): void => {
-          if (started) return;
-          if (Math.abs(mv.clientX - originX) > THRESHOLD || Math.abs(mv.clientY - originY) > THRESHOLD) {
-            started = true;
-            doc.removeEventListener("mousemove", onPreMove);
-            doc.removeEventListener("mouseup", onPreCancel);
-            startDrag(card, mv);
-          }
-        };
-        const onPreCancel = (): void => {
-          doc.removeEventListener("mousemove", onPreMove);
-          doc.removeEventListener("mouseup", onPreCancel);
-        };
-
-        doc.addEventListener("mousemove", onPreMove);
-        doc.addEventListener("mouseup", onPreCancel);
+      // Drag to move — only initiates after deliberate movement, so a plain
+      // click, double-click, or tap never triggers the drag machinery.
+      enableDragGesture(card, {
+        // Skip while an inline-edit input is open, and let interactive children
+        // (link/delete buttons, anchors) handle their own tap.
+        shouldStart: (target) => !card.querySelector(".vzd-inline-input") && !target.closest("button, a"),
+        onStart: (x, y) => startDrag(card, x, y),
+        onMove: (x, y) => updateDragPosition(x, y),
+        onEnd: () => endDrag(),
       });
-      card.addEventListener("touchstart", (e) => {
-        if (card.querySelector(".vzd-inline-input")) return;
-        // If the touch originated on an interactive child (link button, delete
-        // button, anchor…) let the tap complete normally — do NOT prevent default
-        // or start a drag from that touch.
-        if ((e.target as HTMLElement).closest("button, a")) return;
-        e.preventDefault();
-        startDrag(card, e.touches[0]);
-        const onTouchMove = (ev: TouchEvent): void => {
-          if (!drag) return;
-          ev.preventDefault();
-          updateDragPosition(ev.touches[0].clientX, ev.touches[0].clientY);
-        };
-        const onTouchEnd = (): void => {
-          endDrag();
-          doc.removeEventListener("touchmove", onTouchMove);
-          doc.removeEventListener("touchend", onTouchEnd);
-        };
-        doc.addEventListener("touchmove", onTouchMove, { passive: false });
-        doc.addEventListener("touchend", onTouchEnd);
-      }, { passive: false });
     }
   }
 

@@ -4,6 +4,7 @@ import { MarkdownView } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
+import { enableDragGesture } from "../shared/drag-gesture";
 import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -110,9 +111,6 @@ export function renderRoadmap(
     placeholder.remove();
     card.classList.remove("vzd-roadmap-card--hidden");
 
-    doc.removeEventListener("mousemove", onDocMouseMove);
-    doc.removeEventListener("mouseup", onDocMouseUp);
-
     if (!app || !ctx || !overGrid) return;
 
     const savedScrollY = win.scrollY;
@@ -188,12 +186,8 @@ export function renderRoadmap(
     }
   }
 
-  function onDocMouseMove(e: MouseEvent): void { updateDragPosition(e.clientX, e.clientY); }
-  const onDocMouseUp = (): void => endDrag();
-
-  function startDrag(card: HTMLElement, e: MouseEvent | Touch): void {
+  function startDrag(card: HTMLElement, clientX: number, clientY: number): void {
     if (!isEditMode || !app || !ctx) return;
-    if (card.querySelector(".vzd-inline-input")) return;
 
     const fromColId = card.dataset.colId ?? "";
     const fromIndex = parseInt(card.dataset.itemIndex ?? "0", 10);
@@ -202,8 +196,8 @@ export function renderRoadmap(
     const ghost = doc.body.createEl("div", { cls: "vzd-roadmap-card vzd-roadmap-card--ghost" });
     ghost.style.width = `${rect.width}px`;
     ghost.innerHTML = card.innerHTML;
-    ghost.style.left = `${e.clientX + 8}px`;
-    ghost.style.top = `${e.clientY + 8}px`;
+    ghost.style.left = `${clientX + 8}px`;
+    ghost.style.top = `${clientY + 8}px`;
 
     const placeholder = card.parentElement!.createEl("div", {
       cls: "vzd-roadmap-card vzd-roadmap-card--placeholder",
@@ -219,13 +213,9 @@ export function renderRoadmap(
       overGrid: false,
     };
 
-    doc.addEventListener("mousemove", onDocMouseMove);
-    doc.addEventListener("mouseup", onDocMouseUp);
   }
 
   onDisconnected(grid, () => {
-    doc.removeEventListener("mousemove", onDocMouseMove);
-    doc.removeEventListener("mouseup", onDocMouseUp);
     drag?.ghost.remove();
     drag?.placeholder.remove();
     drag = null;
@@ -319,60 +309,17 @@ export function renderRoadmap(
         });
       });
 
-      card.addEventListener("mousedown", (e) => {
-        if (card.querySelector(".vzd-inline-input")) return;
-        // NOTE: do NOT call e.preventDefault() here. Preventing default on
-        // mousedown can break dblclick detection in CM6 / Obsidian Live Preview
-        // because the browser relies on the default mousedown handling to count
-        // double-click sequences. We stop propagation to keep Obsidian from
-        // acting on the click, but text-selection prevention is handled via
-        // CSS (user-select: none) once a real drag begins.
-        e.stopPropagation();
-
-        const originX = e.clientX;
-        const originY = e.clientY;
-        let started = false;
-
-        const onPreMove = (mv: MouseEvent): void => {
-          if (started) return;
-          if (Math.abs(mv.clientX - originX) > 5 || Math.abs(mv.clientY - originY) > 5) {
-            started = true;
-            mv.preventDefault(); // Prevent text selection once drag is confirmed.
-            doc.removeEventListener("mousemove", onPreMove);
-            doc.removeEventListener("mouseup", onPreCancel);
-            startDrag(card, mv);
-          }
-        };
-        const onPreCancel = (): void => {
-          doc.removeEventListener("mousemove", onPreMove);
-          doc.removeEventListener("mouseup", onPreCancel);
-        };
-
-        doc.addEventListener("mousemove", onPreMove);
-        doc.addEventListener("mouseup", onPreCancel);
+      // Drag to move — only after deliberate movement, so a click, double-click,
+      // or tap never triggers it. preventDefaultDown is false so the browser's
+      // native double-click detection (used for rename) keeps working; text
+      // selection is suppressed by the gesture helper once a drag begins.
+      enableDragGesture(card, {
+        preventDefaultDown: false,
+        shouldStart: (target) => !card.querySelector(".vzd-inline-input") && !target.closest("button, a"),
+        onStart: (x, y) => startDrag(card, x, y),
+        onMove: (x, y) => updateDragPosition(x, y),
+        onEnd: () => endDrag(),
       });
-
-      card.addEventListener("touchstart", (e) => {
-        if (card.querySelector(".vzd-inline-input")) return;
-        // If the touch originated on an interactive child (link button, delete
-        // button, anchor…) let the tap complete normally — do NOT prevent default
-        // or start a drag from that touch.
-        if ((e.target as HTMLElement).closest("button, a")) return;
-        e.preventDefault();
-        startDrag(card, e.touches[0]);
-        const onTouchMove = (ev: TouchEvent): void => {
-          if (!drag) return;
-          ev.preventDefault();
-          updateDragPosition(ev.touches[0].clientX, ev.touches[0].clientY);
-        };
-        const onTouchEnd = (): void => {
-          endDrag();
-          doc.removeEventListener("touchmove", onTouchMove);
-          doc.removeEventListener("touchend", onTouchEnd);
-        };
-        doc.addEventListener("touchmove", onTouchMove, { passive: false });
-        doc.addEventListener("touchend", onTouchEnd);
-      }, { passive: false });
     }
   }
 }
