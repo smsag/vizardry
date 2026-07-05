@@ -286,7 +286,7 @@ export function renderStoryMap(
     if (task.subtitle) {
       card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
     }
-    renderHeadingLink(card, task.name, resolver, navigateTo);
+    renderHeadingLink(card, task.name, resolver, navigateTo, app, ctx?.sourcePath);
     if (isEditMode && app && ctx) {
       card.dataset.taskName = task.name;
       card.dataset.stepName = cell.dataset.stepName ?? "";

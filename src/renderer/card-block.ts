@@ -196,7 +196,7 @@ export function renderCardBlock(
     const line = lines[i];
     const card = body.createEl("div", { cls: "vzd-card-block-card vzd-story-task-card" });
     renderInline(card.createEl("div", { cls: "vzd-story-task-name" }), line);
-    renderHeadingLink(card, line, resolver, navigateTo);
+    renderHeadingLink(card, line, resolver, navigateTo, app, ctx?.sourcePath);
 
     if (isEditMode) {
       card.dataset.cardIndex = String(i);

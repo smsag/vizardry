@@ -5,6 +5,7 @@ import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture } from "../shared/drag-gesture";
+import { attachSectionPreview } from "./section-preview";
 import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -289,6 +290,7 @@ export function renderRoadmap(
         e.stopPropagation();
         navigateTo(heading);
       });
+      if (app && ctx) attachSectionPreview(app, card, heading, ctx.sourcePath);
     }
 
     if (item.subtitle) {

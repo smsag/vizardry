@@ -2794,3 +2794,42 @@ code:has(.vzd-upvoty-key) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   max-width: 240px;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Clipped-section hover/long-press preview (linked boxes & cards)
+   Borrows Obsidian's .popover.hover-popover base look; we own sizing,
+   scrolling, and positioning (set inline as position: fixed).
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-section-preview {
+  z-index: 9999;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.6rem 0.85rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+
+.vzd-section-preview-content {
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+.vzd-section-preview-content > :first-child { margin-top: 0; }
+.vzd-section-preview-content > :last-child { margin-bottom: 0; }
+
+.vzd-section-preview-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+}
