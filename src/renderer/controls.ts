@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import { TITLE_MAX_LENGTH } from "../shared/title-edit";
 import { getPluginVersion } from "../shared/version";
 import type { LinkResolver } from "../shared/links";
+import { attachSectionPreview } from "./section-preview";
 
 let nextId = 0;
 
@@ -24,6 +25,8 @@ export function renderHeadingLink(
   label: string,
   resolver: LinkResolver | undefined,
   navigateTo: ((heading: string) => void) | undefined,
+  app?: App,
+  sourcePath?: string,
 ): void {
   const heading = resolver?.resolve(label);
   if (!heading || !navigateTo) return;
@@ -34,6 +37,10 @@ export function renderHeadingLink(
   linkBtn.dataset.heading = heading;
   markInteractive(linkBtn);
   linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+
+  // Cmd/Ctrl-hover (desktop) or long-press (mobile) shows a clipped preview of
+  // the linked section on the whole box/card.
+  if (app && sourcePath) attachSectionPreview(app, parent, heading, sourcePath);
 }
 
 /**

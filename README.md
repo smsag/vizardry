@@ -1041,6 +1041,12 @@ The `Problem` and `Solution` blocks automatically get link icons because matchin
 - Annotations are stripped from display — only the element name is shown
 - Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-card links (card-mode blocks, Matrix, Story, Roadmap, SCQA grid) refresh on the next render
 
+### Section preview
+
+A linked box or card shows a preview of just the linked section — the heading down to the next heading of the same or higher level, not the whole note. Trigger it with **Cmd/Ctrl + hover** on desktop, or a **long-press** on mobile (a drag needs deliberate movement, so holding still opens the preview). Dismiss by moving away, scrolling, pressing Escape, or tapping the close button on mobile.
+
+Currently available on grid boxes, Roadmap cards, and the card canvases (card-mode blocks, Matrix, Story, SCQA grid). Tree-node preview (OST, Mind Map, Impact, Fishbone, SCQA tree) is not wired yet.
+
 ---
 
 ## Wardley Map — visual editing

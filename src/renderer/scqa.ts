@@ -124,7 +124,7 @@ function renderGrid(
 
     const textEl = card.createEl("div", { cls: "vzd-scqa-card-text" });
     renderInline(textEl, node.text);
-    renderHeadingLink(card, node.text, resolver, navigateTo);
+    renderHeadingLink(card, node.text, resolver, navigateTo, app, ctx?.sourcePath);
 
     if (!editable) continue;
     markInteractive(card);

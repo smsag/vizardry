@@ -19,6 +19,9 @@ vi.mock("obsidian", () => ({
   setIcon: vi.fn(),
   MarkdownView: class MarkdownView {},
   moment: { locale: () => "en" },
+  Platform: { isMobile: false, isDesktop: true },
+  Component: class Component { load() {} unload() {} },
+  MarkdownRenderer: { render: vi.fn().mockResolvedValue(undefined) },
 }));
 
 // ── Mock html-to-image (lazy-imported inside controls.ts) ─────────────────────

@@ -4,6 +4,7 @@ import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
 import { renderCardBlock } from "./card-block";
+import { attachSectionPreview } from "./section-preview";
 import { setupMobileCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
@@ -121,6 +122,7 @@ export function renderCanvas(
       linkBtn.dataset.heading = heading;
       markInteractive(linkBtn);
       linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+      if (app && ctx) attachSectionPreview(app, block, heading, ctx.sourcePath);
     }
 
     const content = data[labelKey] ?? "";
