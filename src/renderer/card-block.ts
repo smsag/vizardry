@@ -3,6 +3,7 @@ import { MarkdownView } from "obsidian";
 import { writeBlockContent } from "../shared/block-edit";
 import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
+import { ownerWindow } from "../shared/lifecycle";
 
 /** A sibling drop-zone registered by the parent canvas (e.g. matrix cells). */
 export type CardDropTarget = { body: HTMLElement; blockLabel: string };
@@ -29,6 +30,8 @@ export function renderCardBlock(
 ): void {
   body.empty();
   body.dataset.blockContent = content;
+  const doc = body.ownerDocument;
+  const win = ownerWindow(body);
 
   const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
   const isEditMode = !!(app && ctx && container)
@@ -75,13 +78,13 @@ export function renderCardBlock(
     // Clear drop-active highlight on all siblings
     (siblings ?? []).forEach(s => s.body.classList.remove("vzd-card-block-body--drop-active"));
 
-    document.removeEventListener("mousemove", onDocMouseMove);
-    document.removeEventListener("mouseup", onDocMouseUp);
+    doc.removeEventListener("mousemove", onDocMouseMove);
+    doc.removeEventListener("mouseup", onDocMouseUp);
 
     if (!app || !ctx || !container) return;
 
-    const savedScrollY = window.scrollY;
-    const savedScrollX = window.scrollX;
+    const savedScrollY = win.scrollY;
+    const savedScrollX = win.scrollX;
 
     if (!activeDrop) {
       // Within-block reorder — existing behaviour
@@ -115,7 +118,7 @@ export function renderCardBlock(
       writeBlockContent(app, ctx, container, activeDrop.blockLabel, destLines.join("\n"));
     }
 
-    requestAnimationFrame(() => window.scrollTo(savedScrollX, savedScrollY));
+    win.requestAnimationFrame(() => win.scrollTo(savedScrollX, savedScrollY));
   }
 
   function updateDragPosition(clientX: number, clientY: number): void {
@@ -170,7 +173,7 @@ export function renderCardBlock(
     const fromIndex = parseInt(card.dataset.cardIndex ?? "0", 10);
     const rect = card.getBoundingClientRect();
 
-    const ghost = document.body.createEl("div", {
+    const ghost = doc.body.createEl("div", {
       cls: "vzd-card-block-card vzd-story-task-card vzd-story-task-card--ghost",
     });
     ghost.style.width = `${rect.width}px`;
@@ -187,8 +190,8 @@ export function renderCardBlock(
 
     drag = { card, fromIndex, ghost, placeholder, toIndex: fromIndex, activeDrop: null };
 
-    document.addEventListener("mousemove", onDocMouseMove);
-    document.addEventListener("mouseup", onDocMouseUp);
+    doc.addEventListener("mousemove", onDocMouseMove);
+    doc.addEventListener("mouseup", onDocMouseUp);
   }
 
   // ── Card rendering ────────────────────────────────────────────────────────
@@ -217,21 +220,21 @@ export function renderCardBlock(
           if (started) return;
           if (Math.abs(mv.clientX - originX) > THRESHOLD || Math.abs(mv.clientY - originY) > THRESHOLD) {
             started = true;
-            document.removeEventListener("mousemove", onPreMove);
-            document.removeEventListener("mouseup", onPreCancel);
+            doc.removeEventListener("mousemove", onPreMove);
+            doc.removeEventListener("mouseup", onPreCancel);
             startDrag(card, mv);
           }
         };
         const onPreCancel = (): void => {
-          document.removeEventListener("mousemove", onPreMove);
-          document.removeEventListener("mouseup", onPreCancel);
+          doc.removeEventListener("mousemove", onPreMove);
+          doc.removeEventListener("mouseup", onPreCancel);
           if (app && ctx && container) {
             activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container);
           }
         };
 
-        document.addEventListener("mousemove", onPreMove);
-        document.addEventListener("mouseup", onPreCancel);
+        doc.addEventListener("mousemove", onPreMove);
+        doc.addEventListener("mouseup", onPreCancel);
       });
 
       card.addEventListener("touchstart", (e) => {
@@ -245,11 +248,11 @@ export function renderCardBlock(
         };
         const onTouchEnd = (): void => {
           endDrag();
-          document.removeEventListener("touchmove", onTouchMove);
-          document.removeEventListener("touchend", onTouchEnd);
+          doc.removeEventListener("touchmove", onTouchMove);
+          doc.removeEventListener("touchend", onTouchEnd);
         };
-        document.addEventListener("touchmove", onTouchMove, { passive: false });
-        document.addEventListener("touchend", onTouchEnd);
+        doc.addEventListener("touchmove", onTouchMove, { passive: false });
+        doc.addEventListener("touchend", onTouchEnd);
       }, { passive: false });
     }
   }

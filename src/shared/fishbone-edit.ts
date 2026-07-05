@@ -77,7 +77,7 @@ export function renameFishboneNode(
     editorWrite(() => editor.replaceRange(
       `${indentStr}${prefix} ${newText}`,
       { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-    ));
+    ), el);
     return true;
   }
 
@@ -158,7 +158,7 @@ export function addFishboneChild(
     editorWrite(() => editor.replaceRange(
       `${childIndentStr}${childKeyword}: ${childText}\n`,
       { line: subtreeLast + 1, ch: 0 },
-    ));
+    ), el);
     return true;
   }
 
@@ -200,7 +200,7 @@ export function deleteFishboneNode(
 
     const nodeIndent = raw.search(/\S/);
     const last = subtreeEnd(editor, ln, nodeIndent, lineEnd);
-    deleteLines(editor, ln, last);
+    deleteLines(editor, ln, last, el);
     return true;
   }
 

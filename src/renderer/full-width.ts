@@ -1,5 +1,5 @@
 import { FULL_WIDTH_MARGIN_PX } from "../shared/constants";
-import { onDisconnected } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 
 interface FullWidthState {
   resizeObserver?: ResizeObserver;
@@ -43,12 +43,12 @@ function cleanupFullWidthWatchers(canvasEl: HTMLElement): void {
   state.resizeObserver = undefined;
 
   if (state.windowHandler) {
-    window.removeEventListener("resize", state.windowHandler);
+    ownerWindow(canvasEl).removeEventListener("resize", state.windowHandler);
     state.windowHandler = undefined;
   }
 
   if (state.resizeRafId) {
-    cancelAnimationFrame(state.resizeRafId);
+    ownerWindow(canvasEl).cancelAnimationFrame(state.resizeRafId);
     state.resizeRafId = undefined;
   }
 
@@ -64,24 +64,25 @@ function ensureFullWidthWatchers(canvasEl: HTMLElement, container: HTMLElement |
 
   cleanupFullWidthWatchers(canvasEl);
   state.observedContainer = container;
+  const win = ownerWindow(canvasEl);
 
   if (container) {
     const ro = new ResizeObserver(() => {
       if (!canvasEl.isConnected) { cleanupFullWidthWatchers(canvasEl); return; }
       // Debounce: collapse multiple resize events in the same frame into one
       // applyFullWidth call. Without this, panel drags can fire 30-60 events/s.
-      cancelAnimationFrame(state.resizeRafId ?? 0);
-      state.resizeRafId = requestAnimationFrame(() => applyFullWidth(canvasEl));
+      win.cancelAnimationFrame(state.resizeRafId ?? 0);
+      state.resizeRafId = win.requestAnimationFrame(() => applyFullWidth(canvasEl));
     });
     ro.observe(container);
     state.resizeObserver = ro;
   } else {
     const onResize = (): void => {
       if (!canvasEl.isConnected) { cleanupFullWidthWatchers(canvasEl); return; }
-      cancelAnimationFrame(state.resizeRafId ?? 0);
-      state.resizeRafId = requestAnimationFrame(() => applyFullWidth(canvasEl));
+      win.cancelAnimationFrame(state.resizeRafId ?? 0);
+      state.resizeRafId = win.requestAnimationFrame(() => applyFullWidth(canvasEl));
     };
-    window.addEventListener("resize", onResize);
+    win.addEventListener("resize", onResize);
     state.windowHandler = onResize;
   }
 
@@ -103,7 +104,7 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
     canvasEl.style.marginLeft = "";
     canvasEl.style.marginRight = "";
   } else {
-    const readableLineWidth = document.body.classList.contains("is-readable-line-width");
+    const readableLineWidth = canvasEl.ownerDocument.body.classList.contains("is-readable-line-width");
 
     if (!readableLineWidth) {
       canvasEl.style.position = "";
@@ -115,8 +116,8 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       canvasEl.style.marginRight = "";
     } else {
       const viewContent = canvasEl.closest<HTMLElement>(".view-content");
-      const measureEl = viewContent ?? container ?? document.documentElement;
-      const computed = getComputedStyle(measureEl);
+      const measureEl = viewContent ?? container ?? canvasEl.ownerDocument.documentElement;
+      const computed = ownerWindow(canvasEl).getComputedStyle(measureEl);
       const paddingLeft = parseFloat(computed.paddingLeft) || 0;
       const paddingRight = parseFloat(computed.paddingRight) || 0;
       const availableWidth = measureEl.clientWidth - paddingLeft - paddingRight;

@@ -82,18 +82,19 @@ function wrapTextNode(node: Text): void {
   const parent = node.parentNode;
   if (!parent) return;
 
-  const frag = document.createDocumentFragment();
+  const doc = node.ownerDocument;
+  const frag = doc.createDocumentFragment();
   let lastIndex = 0;
   LINEAR_KEY_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = LINEAR_KEY_RE.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      frag.appendChild(doc.createTextNode(text.slice(lastIndex, match.index)));
     }
 
     // Key badge — itself the trigger that requests the Linear data fetch
-    const btn = document.createElement("button");
+    const btn = doc.createElement("button");
     btn.className = "vzd-linear-key";
     btn.textContent = match[1];
     btn.setAttribute("aria-label", `Linear: ${match[1]}`);
@@ -105,7 +106,7 @@ function wrapTextNode(node: Text): void {
 
   if (lastIndex === 0) return;
   if (lastIndex < text.length) {
-    frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    frag.appendChild(doc.createTextNode(text.slice(lastIndex)));
   }
   parent.replaceChild(frag, node);
 }
@@ -122,7 +123,7 @@ function attachTrigger(btn: HTMLElement, key: string): void {
     if (existing) { bringToFront(existing); return; }
     if (!getLinearService()?.isEnabled()) return;
     const popover = buildPopover(key, btn, () => closePopover(btn));
-    document.body.appendChild(popover);
+    btn.ownerDocument.body.appendChild(popover);
     bringToFront(popover);
     openPopovers.set(btn, popover);
   });
@@ -134,7 +135,8 @@ function attachTrigger(btn: HTMLElement, key: string): void {
 // ── Popover ──────────────────────────────────────────────────────────────────
 
 function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HTMLElement {
-  const el = document.createElement("div");
+  const win = anchor.ownerDocument.defaultView ?? window;
+  const el = anchor.ownerDocument.createElement("div");
   el.className = "vzd-linear-preview";
   el.addEventListener("mousedown", () => bringToFront(el));
 
@@ -142,9 +144,9 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
   const rect = anchor.getBoundingClientRect();
   const width = 320;
   let left = rect.right + 8;
-  if (left + width > window.innerWidth - 8) left = rect.left - width - 8;
+  if (left + width > win.innerWidth - 8) left = rect.left - width - 8;
   let top = rect.bottom + 4;
-  if (top + 240 > window.innerHeight - 8) top = rect.top - 244;
+  if (top + 240 > win.innerHeight - 8) top = rect.top - 244;
   el.style.left = `${Math.max(8, left)}px`;
   el.style.top  = `${Math.max(8, top)}px`;
 
@@ -164,7 +166,7 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
   keyLink.addEventListener("click", (e) => {
     e.preventDefault();
     const url = keyLink.dataset.url;
-    if (url) window.open(url, "_blank", "noopener");
+    if (url) win.open(url, "_blank", "noopener");
   });
 
   // Issue title (populated async)

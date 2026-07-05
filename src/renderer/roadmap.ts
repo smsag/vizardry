@@ -3,7 +3,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
-import { onDisconnected } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -35,6 +35,8 @@ export function renderRoadmap(
     : undefined;
 
   initCanvas(container, "roadmap", title, undefined, source, onTitleEdit, app);
+  const doc = container.ownerDocument;
+  const win = ownerWindow(container);
 
   const grid = container.createEl("div", { cls: "vzd-roadmap-grid" });
 
@@ -108,23 +110,23 @@ export function renderRoadmap(
     placeholder.remove();
     card.classList.remove("vzd-roadmap-card--hidden");
 
-    document.removeEventListener("mousemove", onDocMouseMove);
-    document.removeEventListener("mouseup", onDocMouseUp);
+    doc.removeEventListener("mousemove", onDocMouseMove);
+    doc.removeEventListener("mouseup", onDocMouseUp);
 
     if (!app || !ctx || !overGrid) return;
 
-    const savedScrollY = window.scrollY;
-    const savedScrollX = window.scrollX;
+    const savedScrollY = win.scrollY;
+    const savedScrollX = win.scrollX;
 
     if (fromColId !== toColId || fromIndex !== toIndex) {
       moveRoadmapItem(app, ctx, container, fromColId, fromIndex, toColId, toIndex);
     }
 
-    requestAnimationFrame(() => window.scrollTo(savedScrollX, savedScrollY));
+    win.requestAnimationFrame(() => win.scrollTo(savedScrollX, savedScrollY));
   }
 
   function findDropTarget(clientX: number, clientY: number): { list: HTMLElement; colId: string; index: number } | null {
-    const els = document.elementsFromPoint(clientX, clientY);
+    const els = doc.elementsFromPoint(clientX, clientY);
     let list = els.find(e => e.classList.contains("vzd-roadmap-card-list")) as HTMLElement | undefined;
     if (!list) {
       // Also accept dropping on a column header
@@ -197,7 +199,7 @@ export function renderRoadmap(
     const fromIndex = parseInt(card.dataset.itemIndex ?? "0", 10);
 
     const rect = card.getBoundingClientRect();
-    const ghost = document.body.createEl("div", { cls: "vzd-roadmap-card vzd-roadmap-card--ghost" });
+    const ghost = doc.body.createEl("div", { cls: "vzd-roadmap-card vzd-roadmap-card--ghost" });
     ghost.style.width = `${rect.width}px`;
     ghost.innerHTML = card.innerHTML;
     ghost.style.left = `${e.clientX + 8}px`;
@@ -217,13 +219,13 @@ export function renderRoadmap(
       overGrid: false,
     };
 
-    document.addEventListener("mousemove", onDocMouseMove);
-    document.addEventListener("mouseup", onDocMouseUp);
+    doc.addEventListener("mousemove", onDocMouseMove);
+    doc.addEventListener("mouseup", onDocMouseUp);
   }
 
   onDisconnected(grid, () => {
-    document.removeEventListener("mousemove", onDocMouseMove);
-    document.removeEventListener("mouseup", onDocMouseUp);
+    doc.removeEventListener("mousemove", onDocMouseMove);
+    doc.removeEventListener("mouseup", onDocMouseUp);
     drag?.ghost.remove();
     drag?.placeholder.remove();
     drag = null;
@@ -336,18 +338,18 @@ export function renderRoadmap(
           if (Math.abs(mv.clientX - originX) > 5 || Math.abs(mv.clientY - originY) > 5) {
             started = true;
             mv.preventDefault(); // Prevent text selection once drag is confirmed.
-            document.removeEventListener("mousemove", onPreMove);
-            document.removeEventListener("mouseup", onPreCancel);
+            doc.removeEventListener("mousemove", onPreMove);
+            doc.removeEventListener("mouseup", onPreCancel);
             startDrag(card, mv);
           }
         };
         const onPreCancel = (): void => {
-          document.removeEventListener("mousemove", onPreMove);
-          document.removeEventListener("mouseup", onPreCancel);
+          doc.removeEventListener("mousemove", onPreMove);
+          doc.removeEventListener("mouseup", onPreCancel);
         };
 
-        document.addEventListener("mousemove", onPreMove);
-        document.addEventListener("mouseup", onPreCancel);
+        doc.addEventListener("mousemove", onPreMove);
+        doc.addEventListener("mouseup", onPreCancel);
       });
 
       card.addEventListener("touchstart", (e) => {
@@ -365,11 +367,11 @@ export function renderRoadmap(
         };
         const onTouchEnd = (): void => {
           endDrag();
-          document.removeEventListener("touchmove", onTouchMove);
-          document.removeEventListener("touchend", onTouchEnd);
+          doc.removeEventListener("touchmove", onTouchMove);
+          doc.removeEventListener("touchend", onTouchEnd);
         };
-        document.addEventListener("touchmove", onTouchMove, { passive: false });
-        document.addEventListener("touchend", onTouchEnd);
+        doc.addEventListener("touchmove", onTouchMove, { passive: false });
+        doc.addEventListener("touchend", onTouchEnd);
       }, { passive: false });
     }
   }

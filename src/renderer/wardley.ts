@@ -361,6 +361,7 @@ function attachDragBehavior(
   mppCtx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
 ): void {
+  const doc = svg.ownerDocument;
   // Tooltip — only used by drag, so owned here rather than in WardleyIxState
   const tooltipG = createSvgEl("g", { class: "vzd-wardley-drag-tooltip" }) as SVGGElement;
   tooltipG.style.display = "none";
@@ -422,8 +423,8 @@ function attachDragBehavior(
 
     writeWardleyComponent(app, mppCtx, wrap, ref.comp.name, visibility, evolution);
 
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
+    doc.removeEventListener("mousemove", onMouseMove);
+    doc.removeEventListener("mouseup", onMouseUp);
   };
 
   const onMouseMove = (e: MouseEvent): void => { if (ix.drag) moveDot(ix.drag.ref, e.clientX, e.clientY); };
@@ -448,8 +449,8 @@ function attachDragBehavior(
       ref.circle.classList.add("vzd-wardley-node--dragging");
       svg.classList.add("vzd-wardley-svg--dragging");
       moveDot(ref, clientX, clientY);
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
+      doc.addEventListener("mousemove", onMouseMove);
+      doc.addEventListener("mouseup", onMouseUp);
     };
 
     ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(e.clientX, e.clientY); });
@@ -468,6 +469,7 @@ function attachLinkDrawBehavior(
   mppCtx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
 ): void {
+  const doc = svg.ownerDocument;
   const { addHandleG } = ix;
 
   const isInsideHandle = (next: EventTarget | null): boolean =>
@@ -535,9 +537,9 @@ function attachLinkDrawBehavior(
     ghostDot.remove();
     addHandleG.style.display = "none";
     svg.classList.remove("vzd-wardley-svg--drawing");
-    document.removeEventListener("mousemove", onLinkMove);
-    document.removeEventListener("mouseup", onLinkUp);
-    document.removeEventListener("keydown", onLinkKey);
+    doc.removeEventListener("mousemove", onLinkMove);
+    doc.removeEventListener("mouseup", onLinkUp);
+    doc.removeEventListener("keydown", onLinkKey);
     if (!hasMoved) return;
     const cx = parseFloat(ghostDot.getAttribute("cx") ?? "0");
     const cy = parseFloat(ghostDot.getAttribute("cy") ?? "0");
@@ -571,9 +573,9 @@ function attachLinkDrawBehavior(
     ix.linkDraw = { sourceRef, ghostLine, ghostDot, hasMoved: false };
     addHandleG.style.display = "none";
     svg.classList.add("vzd-wardley-svg--drawing");
-    document.addEventListener("mousemove", onLinkMove);
-    document.addEventListener("mouseup", onLinkUp);
-    document.addEventListener("keydown", onLinkKey);
+    doc.addEventListener("mousemove", onLinkMove);
+    doc.addEventListener("mouseup", onLinkUp);
+    doc.addEventListener("keydown", onLinkKey);
   });
 }
 
@@ -622,10 +624,10 @@ function attachRenameBehavior(
       class: "vzd-wardley-rename-fo",
     }) as SVGForeignObjectElement;
 
-    const host = document.createElement("div");
+    const host = svg.ownerDocument.createElement("div");
     host.className = "vzd-wardley-rename-host";
 
-    const input = document.createElement("input");
+    const input = svg.ownerDocument.createElement("input");
     input.type = "text";
     input.value = ref.comp.name;
     input.className = "vzd-wardley-rename-input";

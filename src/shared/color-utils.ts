@@ -1,3 +1,5 @@
+import { ownerWindow } from "./lifecycle";
+
 /**
  * Colour utility for choosing accessible text colours on tinted backgrounds.
  *
@@ -50,7 +52,7 @@ function contrast(l1: number, l2: number): number {
  * carry any accent pigment.
  */
 export function bestTextColor(el: Element, svgFill = false): string {
-  const cs = getComputedStyle(el);
+  const cs = ownerWindow(el).getComputedStyle(el);
   const raw = svgFill ? cs.fill : cs.backgroundColor;
   const bgLum = luminanceFromRgb(raw);
 

@@ -43,8 +43,10 @@ function hexToHsl(hex: string): [number, number, number] {
  * Read Obsidian's current accent color and return [h, s, l].
  * Priority: vault config hex → --interactive-accent CSS var → fallback blue.
  */
-function getAccentHsl(): [number, number, number] {
-  // 1. Obsidian vault config stores the accent as a hex string
+function getAccentHsl(doc: Document): [number, number, number] {
+  // 1. Obsidian vault config stores the accent as a hex string. `app` is a
+  // vault-wide singleton exposed on the main window regardless of which
+  // window is calling, so this doesn't need to go through `doc`.
   try {
     const hex: string | undefined = (window as ObsidianWindow).app?.vault?.config?.accentColor;
     if (hex && /^#[0-9a-f]{6}$/i.test(hex)) return hexToHsl(hex);
@@ -52,7 +54,7 @@ function getAccentHsl(): [number, number, number] {
 
   // 2. CSS variable --interactive-accent (may be rgb(), hsl(), or hex)
   try {
-    const raw = getComputedStyle(document.body)
+    const raw = (doc.defaultView ?? window).getComputedStyle(doc.body)
       .getPropertyValue("--interactive-accent").trim();
 
     const rgb = raw.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -100,11 +102,11 @@ export function renderVennDiagram(
   // Count Venn diagrams already rendered in the same workspace leaf to derive
   // the palette rotation. Scoped to the leaf so that diagrams in other open
   // panes don't affect the colour assignment in this one.
-  const leaf = container.closest(".workspace-leaf-content") ?? document.body;
+  const leaf = container.closest(".workspace-leaf-content") ?? container.ownerDocument.body;
   const diagramIdx = leaf.querySelectorAll(".vzd-venn-wrap").length;
 
   // ── Accent palette ────────────────────────────────────────────────────
-  const [accentH, accentS, accentL] = getAccentHsl();
+  const [accentH, accentS, accentL] = getAccentHsl(container.ownerDocument);
   const is3 = venn.circles.length === 3;
 
   let hues: number[];

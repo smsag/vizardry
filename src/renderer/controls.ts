@@ -1,9 +1,10 @@
 import { setIcon, MarkdownView } from "obsidian";
 import type { App } from "obsidian";
 import { applyFullWidth } from "./full-width";
-import { onDisconnected } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { TITLE_MAX_LENGTH } from "../shared/title-edit";
+import { getPluginVersion } from "../shared/version";
 
 let nextId = 0;
 
@@ -36,7 +37,7 @@ export function initCanvas(
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
-  requestAnimationFrame(() => applyFullWidth(container));
+  ownerWindow(container).requestAnimationFrame(() => applyFullWidth(container));
 
   const header = container.createEl("div", { cls: "vizardry-header" });
 
@@ -68,10 +69,10 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
     span.focus();
 
     // Place cursor at end
-    const range = document.createRange();
+    const range = span.ownerDocument.createRange();
     range.selectNodeContents(span);
     range.collapse(false);
-    const sel = window.getSelection();
+    const sel = ownerWindow(span).getSelection();
     sel?.removeAllRanges();
     sel?.addRange(range);
 
@@ -163,19 +164,22 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
       // first click rather than paid at plugin startup. esbuild's CJS __commonJS
       // factory means the module code runs on first require(), not at bundle eval.
       const { toPng } = await import("html-to-image");
-      const bg = getComputedStyle(document.body).getPropertyValue("--background-primary").trim() || "#ffffff";
+      // Derive doc/window from the container itself — it may live in a
+      // pop-out Obsidian window, which has its own theme styles and DPI.
+      const doc = container.ownerDocument;
+      const win = doc.defaultView ?? window;
+      const bg = win.getComputedStyle(doc.body).getPropertyValue("--background-primary").trim() || "#ffffff";
       const dataUrl = await toPng(container, {
-        pixelRatio: window.devicePixelRatio * 2,
+        pixelRatio: win.devicePixelRatio * 2,
         backgroundColor: bg,
         filter: (node) => !(node as HTMLElement).classList?.contains("vizardry-header-actions"),
       });
-      const a = document.createElement("a");
+      const a = doc.createElement("a");
       a.href = dataUrl;
       a.download = `${title}.png`;
       a.click();
     } catch (err) {
-      const v = (document.body.dataset.vizardryVersion ?? "?");
-      console.error(`Vizardry v${v}: PNG export failed`, err);
+      console.error(`Vizardry v${getPluginVersion()}: PNG export failed`, err);
     } finally {
       downloadBtn.disabled = false;
     }
@@ -192,8 +196,7 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
         setIcon(copyBtn, "check");
         setTimeout(() => setIcon(copyBtn, "copy"), 1000);
       }).catch(err => {
-        const v = document.body.dataset.vizardryVersion ?? "?";
-        console.error(`Vizardry v${v}: copy failed`, err);
+        console.error(`Vizardry v${getPluginVersion()}: copy failed`, err);
       });
     });
   }
@@ -205,7 +208,10 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
 }
 
 function openPresentation(sourceContainer: HTMLElement, title: string): void {
-  const overlay = document.body.createEl("div", { cls: "vzd-presentation-overlay" });
+  // Use the source container's own document — it may live in a pop-out
+  // Obsidian window, and the overlay must render there, not in the main window.
+  const doc = sourceContainer.ownerDocument;
+  const overlay = doc.body.createEl("div", { cls: "vzd-presentation-overlay" });
 
   const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
   pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
@@ -262,19 +268,19 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
 
   const dismiss = (): void => {
     overlay.remove();
-    document.removeEventListener("keydown", onKeyDown);
+    doc.removeEventListener("keydown", onKeyDown);
   };
 
   closeBtn.addEventListener("click", dismiss);
 
   const onKeyDown = (e: KeyboardEvent): void => { if (e.key === "Escape") dismiss(); };
-  document.addEventListener("keydown", onKeyDown);
+  doc.addEventListener("keydown", onKeyDown);
 
   // Guard: if the overlay is removed from the DOM without dismiss() being
   // called (e.g. a plugin reload), clean up the document-level listener so it
   // doesn't accumulate across reloads.
   onDisconnected(overlay, () => {
-    document.removeEventListener("keydown", onKeyDown);
+    doc.removeEventListener("keydown", onKeyDown);
   });
 
   let touchStartY = 0;

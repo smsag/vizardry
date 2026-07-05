@@ -7,6 +7,7 @@
 
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
+import { ownerWindow } from "./lifecycle";
 
 export interface EditorAccess {
   editor: Editor;
@@ -98,12 +99,12 @@ export function subtreeEnd(
  * write and restore it on the next animation frame, after CM6 has applied its
  * own scroll effect.
  */
-export function editorWrite(fn: () => void): void {
-  const scroller = document.querySelector(".cm-scroller") as HTMLElement | null;
+export function editorWrite(fn: () => void, el: HTMLElement): void {
+  const scroller = el.closest<HTMLElement>(".cm-scroller");
   const saved = scroller?.scrollTop;
   fn();
   if (scroller !== null && saved !== undefined) {
-    requestAnimationFrame(() => { scroller.scrollTop = saved; });
+    ownerWindow(el).requestAnimationFrame(() => { scroller.scrollTop = saved; });
   }
 }
 
@@ -111,8 +112,8 @@ export function editorWrite(fn: () => void): void {
  * Deletes lines [fromLine, toLine] inclusive and any immediately following
  * blank lines (so no orphaned blank line remains).
  */
-export function deleteLines(editor: Editor, fromLine: number, toLine: number): void {
+export function deleteLines(editor: Editor, fromLine: number, toLine: number, el: HTMLElement): void {
   editorWrite(() => {
     editor.replaceRange("", { line: fromLine, ch: 0 }, { line: toLine + 1, ch: 0 });
-  });
+  }, el);
 }

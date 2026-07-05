@@ -21,3 +21,14 @@ export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void
   mo.observe(parent, { childList: true });
   return () => mo.disconnect();
 }
+
+/**
+ * Returns the Window that owns `el`'s document. Obsidian pop-out windows
+ * each have their own document/window pair, but the plugin's JS runs in a
+ * single context whose bare `window`/`document` globals always resolve to
+ * the main window — so any timer, listener, or style query that must affect
+ * the window `el` is actually displayed in needs to go through this instead.
+ */
+export function ownerWindow(el: Node): Window {
+  return el.ownerDocument?.defaultView ?? window;
+}
