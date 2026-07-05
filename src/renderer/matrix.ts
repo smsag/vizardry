@@ -6,6 +6,7 @@ import type { TranslationKey } from "../i18n/locales/en";
 import { initCanvas } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
 import { renderCardBlock, type CardDropTarget } from "./card-block";
+import type { LinkResolver } from "../shared/links";
 
 const ROWS = ["very-major", "major", "minor", "very-minor"] as const;
 const COLS = [1, 2, 3, 4] as const;
@@ -38,6 +39,8 @@ export function renderMatrix(
   source?: string,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   const defaultTitle = data.type === "pain" ? "Pain Point Matrix"
     : data.type === "opportunity" ? "Opportunity Matrix"
@@ -114,7 +117,7 @@ export function renderMatrix(
   cells.forEach(({ body, blockKey, content, isCard }) => {
     if (isCard) {
       const siblings = cardTargets.filter(t => t.body !== body);
-      renderCardBlock(body, blockKey, content, app, ctx, container, siblings);
+      renderCardBlock(body, blockKey, content, app, ctx, container, siblings, resolver, navigateTo);
     } else {
       renderBlockBody(body, content);
       if (app && ctx) {

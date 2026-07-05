@@ -5,11 +5,35 @@ import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { TITLE_MAX_LENGTH } from "../shared/title-edit";
 import { getPluginVersion } from "../shared/version";
+import type { LinkResolver } from "../shared/links";
 
 let nextId = 0;
 
 export function markInteractive(el: HTMLElement): void {
   el.dataset.vzdId = String(nextId++);
+}
+
+/**
+ * If `label` resolves to a heading in the current note, appends a chain-link
+ * button to `parent` that jumps to it. Shared by the card canvases (card
+ * blocks, Story, SCQA grid) so a linked card gets the same affordance the grid
+ * boxes, roadmap cards, and tree nodes already have. No-op when unresolved.
+ */
+export function renderHeadingLink(
+  parent: HTMLElement,
+  label: string,
+  resolver: LinkResolver | undefined,
+  navigateTo: ((heading: string) => void) | undefined,
+): void {
+  const heading = resolver?.resolve(label);
+  if (!heading || !navigateTo) return;
+
+  const linkBtn = parent.createEl("button", { cls: "vzd-card-link-btn vzd-btn" });
+  setIcon(linkBtn, "link");
+  linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
+  linkBtn.dataset.heading = heading;
+  markInteractive(linkBtn);
+  linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
 }
 
 /**

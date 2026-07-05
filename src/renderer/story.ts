@@ -2,7 +2,8 @@ import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
-import { initCanvas } from "./controls";
+import { initCanvas, renderHeadingLink } from "./controls";
+import type { LinkResolver } from "../shared/links";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture } from "../shared/drag-gesture";
@@ -28,6 +29,8 @@ export function renderStoryMap(
   source?: string,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   const isEditMode = !!(app && ctx && source !== undefined)
     && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
@@ -283,6 +286,7 @@ export function renderStoryMap(
     if (task.subtitle) {
       card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
     }
+    renderHeadingLink(card, task.name, resolver, navigateTo);
     if (isEditMode && app && ctx) {
       card.dataset.taskName = task.name;
       card.dataset.stepName = cell.dataset.stepName ?? "";
