@@ -5,6 +5,8 @@ import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
 import { ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture } from "../shared/drag-gesture";
+import { renderHeadingLink } from "./controls";
+import type { LinkResolver } from "../shared/links";
 
 /** A sibling drop-zone registered by the parent canvas (e.g. matrix cells). */
 export type CardDropTarget = { body: HTMLElement; blockLabel: string };
@@ -28,6 +30,8 @@ export function renderCardBlock(
   container?: HTMLElement,
   /** Other card-mode cells that cards can be dragged into (cross-cell moves). */
   siblings?: CardDropTarget[],
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   body.empty();
   body.dataset.blockContent = content;
@@ -192,6 +196,7 @@ export function renderCardBlock(
     const line = lines[i];
     const card = body.createEl("div", { cls: "vzd-card-block-card vzd-story-task-card" });
     renderInline(card.createEl("div", { cls: "vzd-story-task-name" }), line);
+    renderHeadingLink(card, line, resolver, navigateTo);
 
     if (isEditMode) {
       card.dataset.cardIndex = String(i);

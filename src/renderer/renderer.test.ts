@@ -220,6 +220,15 @@ describe("renderSCQA", () => {
     expect(() => renderSCQA({ ...data, view: "tree" }, el)).not.toThrow();
     expect(el.querySelector("svg")).toBeTruthy();
   });
+
+  it("renders a heading-link affordance on a card whose text resolves", () => {
+    const el = container();
+    const resolver = { resolve: (label: string) => (label === "Complication" ? "My Heading" : undefined) };
+    renderSCQA(data, el, resolver, () => {});
+    const links = el.querySelectorAll(".vzd-card-link-btn");
+    expect(links.length).toBe(1);
+    expect((links[0] as HTMLElement).dataset.heading).toBe("My Heading");
+  });
 });
 
 // ── renderMindMap ─────────────────────────────────────────────────────────────

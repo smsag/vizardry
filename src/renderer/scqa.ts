@@ -1,6 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
-import { initCanvas, markInteractive } from "./controls";
+import { initCanvas, markInteractive, renderHeadingLink } from "./controls";
 import {
   renderTree, adaptSCQAToTree, SCQA_TREE_OPTIONS, SCR_TREE_OPTIONS,
 } from "./tree";
@@ -45,7 +45,7 @@ export function renderSCQA(
     return;
   }
 
-  renderGrid(data, el, app, ctx);
+  renderGrid(data, el, app, ctx, resolver, navigateTo);
 }
 
 function makeHandlers(
@@ -104,6 +104,8 @@ function renderGrid(
   el: HTMLElement,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   const editable = !!(app && ctx);
   const placed = placeNodes(data.root);
@@ -122,6 +124,7 @@ function renderGrid(
 
     const textEl = card.createEl("div", { cls: "vzd-scqa-card-text" });
     renderInline(textEl, node.text);
+    renderHeadingLink(card, node.text, resolver, navigateTo);
 
     if (!editable) continue;
     markInteractive(card);

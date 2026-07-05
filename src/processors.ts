@@ -107,7 +107,7 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseStoryMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
-      renderStoryMap(result.data, el, source, app, ctx);
+      renderStoryMap(result.data, el, source, app, ctx, resolver, navigateTo);
     },
   },
   {
@@ -246,10 +246,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Pain Point / Opportunity Matrix",
     template: MATRIX_PAIN_TEMPLATE,
     createProcessor: (app) => (source, el, ctx) => {
-      const { strippedSource } = extractInlineLinks(source);
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
       const result = parseMatrix(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderMatrix(result.data, el, source, app, ctx);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderMatrix(result.data, el, source, app, ctx, resolver, navigateTo);
     },
   },
   {

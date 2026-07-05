@@ -992,7 +992,7 @@ Any canvas element can navigate to a heading in the same note. A small link icon
 
 **Three ways to connect:**
 
-*Inline wiki-link* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, and Mind Map:
+*Inline wiki-link* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, Mind Map, and individual cards on the card canvases (card-mode blocks, Matrix, Story, Roadmap, SCQA grid):
 
 ~~~
 ```lean
@@ -1039,7 +1039,7 @@ The `Problem` and `Solution` blocks automatically get link icons because matchin
 - Inline annotations (`[[#Heading]]` or `[text](#Anchor)`) take priority over auto-detection
 - Heading text is matched case-insensitively
 - Annotations are stripped from display — only the element name is shown
-- Auto-detected links update immediately when headings are added or renamed (no re-render of the code block needed)
+- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-card links (card-mode blocks, Matrix, Story, Roadmap, SCQA grid) refresh on the next render
 
 ---
 

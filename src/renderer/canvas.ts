@@ -132,7 +132,7 @@ export function renderCanvas(
     const isCardBlock = labelKey in cardModes ? cardModes[labelKey] : (blockDef.cardBlock ?? false);
 
     if (isCardBlock) {
-      renderCardBlock(body, blockDef.label, content, app, ctx, container);
+      renderCardBlock(body, blockDef.label, content, app, ctx, container, undefined, resolver, navigateTo);
     } else {
       renderBlockBody(body, content);
 
