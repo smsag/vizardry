@@ -522,3 +522,29 @@ block: very-minor-4
   Changelog link fix in footer
 \`\`\`
 `;
+
+export const SCQA_TEMPLATE = `\`\`\`scqa
+title: SCQA Narrative
+
+situation: Conversion has been flat at 3% for two years
+  Competitor shipped one-click checkout
+    How quickly can we match it?
+      Ship express checkout in Q3
+    Do we build or buy the wallet layer?
+      Pilot a third-party wallet first
+  Cart abandonment is up 8% this quarter
+    Where do users drop off?
+      Instrument the funnel before deciding
+\`\`\`
+`;
+
+export const SCR_TEMPLATE = `\`\`\`scr
+title: SCR Narrative
+
+situation: Checkout ran at 99.9% uptime all year
+  A config push took payments down for 40 minutes
+    Add staged rollout with an automated config canary
+  On-call paging was delayed by 12 minutes
+    Route payment alerts to a dedicated high-priority channel
+\`\`\`
+`;
