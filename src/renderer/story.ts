@@ -4,7 +4,7 @@ import { MarkdownView } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas } from "./controls";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
-import { onDisconnected } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import {
@@ -35,6 +35,8 @@ export function renderStoryMap(
   const onTitleEdit = (app && ctx && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
+  const doc = container.ownerDocument;
+  const win = ownerWindow(container);
 
   // In edit mode always show the meta header so user/goal badges are clickable
   // even when both fields are currently empty.
@@ -173,15 +175,15 @@ export function renderStoryMap(
     placeholder.remove();
     card.classList.remove("vzd-story-task-card--hidden");
 
-    document.removeEventListener("mousemove", onDocMouseMove);
-    document.removeEventListener("mouseup", onDocMouseUp);
+    doc.removeEventListener("mousemove", onDocMouseMove);
+    doc.removeEventListener("mouseup", onDocMouseUp);
 
     if (!app || !ctx || !overGrid) return;
 
     // Preserve scroll position — editor.replaceRange() moves the CM6 cursor
     // to the edited line which causes Obsidian to scroll there.
-    const savedScrollY = window.scrollY;
-    const savedScrollX = window.scrollX;
+    const savedScrollY = win.scrollY;
+    const savedScrollX = win.scrollX;
 
     if (toStepName !== stepName) {
       moveStoryTaskCrossColumn(app, ctx, container, taskName, stepName, toStepName, toSlice);
@@ -191,11 +193,11 @@ export function renderStoryMap(
       reorderStoryTask(app, ctx, container, stepName, fromSlice, fromIndex, toIndex);
     }
 
-    requestAnimationFrame(() => window.scrollTo(savedScrollX, savedScrollY));
+    win.requestAnimationFrame(() => win.scrollTo(savedScrollX, savedScrollY));
   }
 
   function findDropTarget(clientX: number, clientY: number): { cell: HTMLElement; sliceName: string | null; stepName: string; index: number } | null {
-    const els = document.elementsFromPoint(clientX, clientY);
+    const els = doc.elementsFromPoint(clientX, clientY);
     const cell = els.find(e => e.classList.contains("vzd-story-cell")) as HTMLElement | undefined;
     if (!cell) return null;
 
@@ -262,7 +264,7 @@ export function renderStoryMap(
     const fromIndex = parseInt(card.dataset.taskIndex ?? "0", 10);
 
     const rect = card.getBoundingClientRect();
-    const ghost = document.body.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--ghost" });
+    const ghost = doc.body.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--ghost" });
     ghost.style.width = `${rect.width}px`;
     ghost.innerHTML = card.innerHTML;
     ghost.style.left = `${e.clientX + 8}px`;
@@ -280,8 +282,8 @@ export function renderStoryMap(
       overGrid: false,
     };
 
-    document.addEventListener("mousemove", onDocMouseMove);
-    document.addEventListener("mouseup", onDocMouseUp);
+    doc.addEventListener("mousemove", onDocMouseMove);
+    doc.addEventListener("mouseup", onDocMouseUp);
   }
 
   // ── Task card rendering ───────────────────────────────────────────────────
@@ -336,18 +338,18 @@ export function renderStoryMap(
           if (started) return;
           if (Math.abs(mv.clientX - originX) > THRESHOLD || Math.abs(mv.clientY - originY) > THRESHOLD) {
             started = true;
-            document.removeEventListener("mousemove", onPreMove);
-            document.removeEventListener("mouseup", onPreCancel);
+            doc.removeEventListener("mousemove", onPreMove);
+            doc.removeEventListener("mouseup", onPreCancel);
             startDrag(card, mv);
           }
         };
         const onPreCancel = (): void => {
-          document.removeEventListener("mousemove", onPreMove);
-          document.removeEventListener("mouseup", onPreCancel);
+          doc.removeEventListener("mousemove", onPreMove);
+          doc.removeEventListener("mouseup", onPreCancel);
         };
 
-        document.addEventListener("mousemove", onPreMove);
-        document.addEventListener("mouseup", onPreCancel);
+        doc.addEventListener("mousemove", onPreMove);
+        doc.addEventListener("mouseup", onPreCancel);
       });
       card.addEventListener("touchstart", (e) => {
         if (card.querySelector(".vzd-inline-input")) return;
@@ -364,11 +366,11 @@ export function renderStoryMap(
         };
         const onTouchEnd = (): void => {
           endDrag();
-          document.removeEventListener("touchmove", onTouchMove);
-          document.removeEventListener("touchend", onTouchEnd);
+          doc.removeEventListener("touchmove", onTouchMove);
+          doc.removeEventListener("touchend", onTouchEnd);
         };
-        document.addEventListener("touchmove", onTouchMove, { passive: false });
-        document.addEventListener("touchend", onTouchEnd);
+        doc.addEventListener("touchmove", onTouchMove, { passive: false });
+        doc.addEventListener("touchend", onTouchEnd);
       }, { passive: false });
     }
   }
@@ -521,7 +523,7 @@ function setupStoryCarousel(
   if (total <= 1) return;
 
   let current = 0;
-  const mq = window.matchMedia("(max-width: 600px)");
+  const mq = ownerWindow(container).matchMedia("(max-width: 600px)");
 
   const sliceCellsEls = Array.from(
     grid.querySelectorAll(".vzd-story-slice-cells")

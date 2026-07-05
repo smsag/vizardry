@@ -1,11 +1,11 @@
 import { setIcon } from "obsidian";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
-import { onDisconnected } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { t } from "../i18n";
 
 export function setupRoadmapCarousel(container: HTMLElement, colCount: number): void {
   let current = 0;
-  const mq = window.matchMedia("(max-width: 600px)");
+  const mq = ownerWindow(container).matchMedia("(max-width: 600px)");
 
   const nav = container.createEl("div", { cls: "vizardry-nav" });
   const prev = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
@@ -78,7 +78,7 @@ export function setupRoadmapCarousel(container: HTMLElement, colCount: number): 
 
 export function setupPaceLayerCarousel(container: HTMLElement, rowCount: number): void {
   let current = 0;
-  const mq = window.matchMedia("(max-width: 600px)");
+  const mq = ownerWindow(container).matchMedia("(max-width: 600px)");
 
   const nav = container.createEl("div", { cls: "vizardry-nav" });
   const prev = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });
@@ -151,7 +151,7 @@ export function setupPaceLayerCarousel(container: HTMLElement, rowCount: number)
 
 export function setupMobileCarousel(container: HTMLElement, blockCount: number): void {
   let current = 0;
-  const mq = window.matchMedia("(max-width: 600px)");
+  const mq = ownerWindow(container).matchMedia("(max-width: 600px)");
 
   const nav = container.createEl("div", { cls: "vizardry-nav" });
   const prev = nav.createEl("button", { cls: "vizardry-nav-btn vzd-btn" });

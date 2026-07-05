@@ -12,6 +12,7 @@ import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolv
 import { renderCanvas, renderError } from "./renderer";
 import { registerCanvasRelink, relinkCanvas, triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
+import { setPluginVersion } from "./shared/version";
 import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
@@ -59,8 +60,11 @@ export default class VizardryPlugin extends Plugin {
     if (linearCache) getLinearService()?.cache.init(linearCache);
     initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
     this.addSettingTab(new VizardrySettingTab(this.app, this));
-    // Expose version on body for bug reports and renderer error attribution.
+    // Expose version on body for bug reports (manual devtools inspection).
     document.body.dataset.vizardryVersion = this.manifest.version;
+    // Also keep a window-independent copy for renderer error attribution —
+    // the dataset above only lives on the main window's document.
+    setPluginVersion(this.manifest.version);
 
     const tag = `Vizardry v${this.manifest.version}`;
 

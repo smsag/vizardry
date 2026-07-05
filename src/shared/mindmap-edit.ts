@@ -54,7 +54,7 @@ export function renameMindMapNode(
       editorWrite(() => editor.replaceRange(
         `${indentStr}root: ${newText}`,
         { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      ));
+      ), el);
       return true;
     }
 
@@ -64,7 +64,7 @@ export function renameMindMapNode(
       editorWrite(() => editor.replaceRange(
         `${indentStr}${newText}`,
         { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      ));
+      ), el);
       return true;
     }
   }
@@ -113,7 +113,7 @@ export function addMindMapChild(
     editorWrite(() => editor.replaceRange(
       `${childIndentStr}${newChildText}\n`,
       { line: insertAt, ch: 0 },
-    ));
+    ), el);
     return true;
   }
 
@@ -154,7 +154,7 @@ export function deleteMindMapNode(
 
     const nodeIndent = raw.search(/\S/);
     const last = subtreeEnd(editor, ln, nodeIndent, lineEnd);
-    deleteLines(editor, ln, last);
+    deleteLines(editor, ln, last, el);
     return true;
   }
 

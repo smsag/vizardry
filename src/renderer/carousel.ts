@@ -107,7 +107,8 @@ export function renderCarouselBlock(
   function openFullscreen(): void {
     let fsCurrent = current;
 
-    const overlay = document.body.createEl("div", { cls: "vzd-carousel-fs" });
+    const doc = wrapper.ownerDocument;
+    const overlay = doc.body.createEl("div", { cls: "vzd-carousel-fs" });
 
     const fsImg = overlay.createEl("img", { cls: "vzd-carousel-fs-img" });
     fsImg.draggable = false;
@@ -143,7 +144,7 @@ export function renderCarouselBlock(
 
     const dismiss = (): void => {
       overlay.remove();
-      document.removeEventListener("keydown", onFsKey);
+      doc.removeEventListener("keydown", onFsKey);
     };
 
     const onFsKey = (e: KeyboardEvent): void => {
@@ -157,7 +158,7 @@ export function renderCarouselBlock(
     fsNext.addEventListener("click", () => fsGoTo(fsCurrent + 1));
     fsClose.addEventListener("click", dismiss);
     overlay.addEventListener("click", (e) => { if (e.target === overlay) dismiss(); });
-    document.addEventListener("keydown", onFsKey);
+    doc.addEventListener("keydown", onFsKey);
 
     let fsTouchX = 0;
     overlay.addEventListener("touchstart", (e) => { fsTouchX = e.touches[0].clientX; }, { passive: true });
