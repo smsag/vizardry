@@ -4,6 +4,7 @@ import { writeBlockContent } from "../shared/block-edit";
 import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
 import { ownerWindow } from "../shared/lifecycle";
+import { enableDragGesture } from "../shared/drag-gesture";
 
 /** A sibling drop-zone registered by the parent canvas (e.g. matrix cells). */
 export type CardDropTarget = { body: HTMLElement; blockLabel: string };
@@ -77,9 +78,6 @@ export function renderCardBlock(
 
     // Clear drop-active highlight on all siblings
     (siblings ?? []).forEach(s => s.body.classList.remove("vzd-card-block-body--drop-active"));
-
-    doc.removeEventListener("mousemove", onDocMouseMove);
-    doc.removeEventListener("mouseup", onDocMouseUp);
 
     if (!app || !ctx || !container) return;
 
@@ -166,10 +164,7 @@ export function renderCardBlock(
     }
   }
 
-  function onDocMouseMove(e: MouseEvent): void { updateDragPosition(e.clientX, e.clientY); }
-  const onDocMouseUp = (): void => endDrag();
-
-  function startDrag(card: HTMLElement, e: MouseEvent | Touch): void {
+  function startDrag(card: HTMLElement, clientX: number, clientY: number): void {
     const fromIndex = parseInt(card.dataset.cardIndex ?? "0", 10);
     const rect = card.getBoundingClientRect();
 
@@ -177,8 +172,8 @@ export function renderCardBlock(
       cls: "vzd-card-block-card vzd-story-task-card vzd-story-task-card--ghost",
     });
     ghost.style.width = `${rect.width}px`;
-    ghost.style.left = `${e.clientX + 8}px`;
-    ghost.style.top = `${e.clientY + 8}px`;
+    ghost.style.left = `${clientX + 8}px`;
+    ghost.style.top = `${clientY + 8}px`;
     ghost.createEl("div", { cls: "vzd-story-task-name", text: card.dataset.cardText ?? "" });
 
     const placeholder = body.createEl("div", {
@@ -189,9 +184,6 @@ export function renderCardBlock(
     card.classList.add("vzd-story-task-card--hidden");
 
     drag = { card, fromIndex, ghost, placeholder, toIndex: fromIndex, activeDrop: null };
-
-    doc.addEventListener("mousemove", onDocMouseMove);
-    doc.addEventListener("mouseup", onDocMouseUp);
   }
 
   // ── Card rendering ────────────────────────────────────────────────────────
@@ -206,54 +198,18 @@ export function renderCardBlock(
       card.dataset.cardText = line;
       card.classList.add("vzd-story-task-card--draggable");
 
-      const THRESHOLD = 5;
-      card.addEventListener("mousedown", (e) => {
+      enableDragGesture(card, {
         // Let buttons and links handle their own click (e.g. Linear/Upvoty badges).
-        if ((e.target as HTMLElement).closest("button, a")) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const originX = e.clientX;
-        const originY = e.clientY;
-        let started = false;
-
-        const onPreMove = (mv: MouseEvent): void => {
-          if (started) return;
-          if (Math.abs(mv.clientX - originX) > THRESHOLD || Math.abs(mv.clientY - originY) > THRESHOLD) {
-            started = true;
-            doc.removeEventListener("mousemove", onPreMove);
-            doc.removeEventListener("mouseup", onPreCancel);
-            startDrag(card, mv);
-          }
-        };
-        const onPreCancel = (): void => {
-          doc.removeEventListener("mousemove", onPreMove);
-          doc.removeEventListener("mouseup", onPreCancel);
+        shouldStart: (target) => !target.closest("button, a"),
+        onStart: (x, y) => startDrag(card, x, y),
+        onMove: (x, y) => updateDragPosition(x, y),
+        onEnd: () => endDrag(),
+        onClick: () => {
           if (app && ctx && container) {
             activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container);
           }
-        };
-
-        doc.addEventListener("mousemove", onPreMove);
-        doc.addEventListener("mouseup", onPreCancel);
+        },
       });
-
-      card.addEventListener("touchstart", (e) => {
-        if ((e.target as HTMLElement).closest("button, a")) return;
-        e.preventDefault();
-        startDrag(card, e.touches[0]);
-        const onTouchMove = (ev: TouchEvent): void => {
-          if (!drag) return;
-          ev.preventDefault();
-          updateDragPosition(ev.touches[0].clientX, ev.touches[0].clientY);
-        };
-        const onTouchEnd = (): void => {
-          endDrag();
-          doc.removeEventListener("touchmove", onTouchMove);
-          doc.removeEventListener("touchend", onTouchEnd);
-        };
-        doc.addEventListener("touchmove", onTouchMove, { passive: false });
-        doc.addEventListener("touchend", onTouchEnd);
-      }, { passive: false });
     }
   }
 

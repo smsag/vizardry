@@ -12,6 +12,7 @@ import { NULL_RESOLVER } from "../shared/links";
 import {
   renameSCQANode, addSCQAChild, deleteSCQANode, reorderSCQANode,
 } from "../shared/scqa-edit";
+import { enableDragGesture } from "../shared/drag-gesture";
 
 // Default label for a newly-added child, by the parent's level. Role words are
 // part of the DSL (kept English, like block labels), so they are not i18n'd.
@@ -178,57 +179,51 @@ function enableReorderDrag(
   app: App,
   ctx: MarkdownPostProcessorContext,
 ): void {
+  // Only reorderable when the node has a sibling to swap with.
+  const siblings = siblingsOf(root, node);
+  if (siblings.length < 2) return;
   card.classList.add("vzd-scqa-card--draggable");
-  card.addEventListener("mousedown", (e) => {
-    if ((e.target as HTMLElement).closest("button, input")) return;
-    const siblings = siblingsOf(root, node);
-    if (siblings.length < 2) return;
-    e.preventDefault();
 
-    const doc = container.ownerDocument;
-    const originX = e.clientX;
-    let started = false;
-    let ghost: HTMLElement | null = null;
+  const doc = container.ownerDocument;
+  let ghost: HTMLElement | null = null;
+  let siblingCards: HTMLElement[] = [];
+  let lastX = 0;
 
-    // Sibling card centres captured at drag start, in DOM order.
-    const siblingCards = siblings
-      .map(s => container.querySelector<HTMLElement>(`.vzd-scqa-card[data-scqa-text="${CSS.escape(s.text)}"]`))
-      .filter((c): c is HTMLElement => c !== null);
-
-    const onMove = (mv: MouseEvent): void => {
-      if (!started) {
-        if (Math.abs(mv.clientX - originX) < 5) return;
-        started = true;
-        card.classList.add("vzd-scqa-card--dragging");
-        ghost = doc.body.createEl("div", { cls: "vzd-scqa-card vzd-scqa-drag-ghost" });
-        ghost.textContent = node.text;
-      }
+  enableDragGesture(card, {
+    shouldStart: (target) => !target.closest("button, input"),
+    onStart: (x, y) => {
+      lastX = x;
+      card.classList.add("vzd-scqa-card--dragging");
+      // Sibling card centres, captured at drag start in DOM order.
+      siblingCards = siblings
+        .map(s => container.querySelector<HTMLElement>(`.vzd-scqa-card[data-scqa-text="${CSS.escape(s.text)}"]`))
+        .filter((c): c is HTMLElement => c !== null);
+      ghost = doc.body.createEl("div", { cls: "vzd-scqa-card vzd-scqa-drag-ghost" });
+      ghost.textContent = node.text;
+      ghost.style.left = `${x + 8}px`;
+      ghost.style.top = `${y + 8}px`;
+    },
+    onMove: (x, y) => {
+      lastX = x;
       if (ghost) {
-        ghost.style.left = `${mv.clientX + 8}px`;
-        ghost.style.top = `${mv.clientY + 8}px`;
+        ghost.style.left = `${x + 8}px`;
+        ghost.style.top = `${y + 8}px`;
       }
-    };
-
-    const onUp = (up: MouseEvent): void => {
-      doc.removeEventListener("mousemove", onMove);
-      doc.removeEventListener("mouseup", onUp);
+    },
+    onEnd: () => {
       ghost?.remove();
+      ghost = null;
       card.classList.remove("vzd-scqa-card--dragging");
-      if (!started) return;
-
+      // Insert before the first sibling whose centre is right of the drop point.
       let targetIndex = 0;
       for (const sc of siblingCards) {
         const r = sc.getBoundingClientRect();
-        if (up.clientX > r.left + r.width / 2) targetIndex++;
+        if (lastX > r.left + r.width / 2) targetIndex++;
       }
-      if (!reorderSCQANode(app, ctx, container, node.text, targetIndex)) {
-        // No-op reorders return false silently; only warn on genuine failure
-        // (getEditorAccess handles the write-mode notice itself).
-      }
-    };
-
-    doc.addEventListener("mousemove", onMove);
-    doc.addEventListener("mouseup", onUp);
+      // No-op reorders return false silently; getEditorAccess surfaces its own
+      // write-mode notice on genuine failure.
+      reorderSCQANode(app, ctx, container, node.text, targetIndex);
+    },
   });
 }
 
