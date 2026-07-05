@@ -34,6 +34,8 @@ export const en = {
   "framework.pacelayers.description": "Six pace layers — Fashion to Nature — mapped with observations, feedback, and ideas.",
   "framework.conceptmap.description": "Concepts connected by labeled relationships as a directed graph.",
   "framework.ptw.description":        "Strategy defined through Winning Aspiration, Where to Play, and How to Win.",
+  "framework.scqa.description":       "Situation, complication, question, answer as a narrative hierarchy.",
+  "framework.scr.description":        "Situation, complication, resolution — a tighter narrative hierarchy.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
@@ -88,6 +90,13 @@ export const en = {
   "ost.level.solution":    "Solution",
   "ost.level.experiment":  "Experiment",
   "ost.level.assumption":  "Assumption",
+
+  // ── SCQA / SCR level labels ─────────────────────────────────────────────────
+  "scqa.level.situation":    "Situation",
+  "scqa.level.complication": "Complication",
+  "scqa.level.question":     "Question",
+  "scqa.level.answer":       "Answer",
+  "scr.level.resolution":    "Resolution",
 
   // ── Story Map labels ────────────────────────────────────────────────────────
   "story.label.user":    "User",

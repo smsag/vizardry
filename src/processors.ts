@@ -33,10 +33,11 @@ import { parseRoadmap } from "./roadmap";
 import { parsePaceLayers } from "./pacelayers";
 import { parseConceptMap } from "./conceptmap";
 import { parseMatrix } from "./matrix";
+import { parseSCQA } from "./scqa";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers, renderConceptMap, renderMatrix,
+  renderRoadmap, renderPaceLayers, renderConceptMap, renderMatrix, renderSCQA,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -46,6 +47,7 @@ import {
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE,
   MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
+  SCQA_TEMPLATE, SCR_TEMPLATE,
 } from "./templates";
 
 export type ProcessorFn = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void;
@@ -248,6 +250,30 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseMatrix(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
       renderMatrix(result.data, el, source, app, ctx);
+    },
+  },
+  {
+    id: "scqa",
+    label: "SCQA Narrative",
+    template: SCQA_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseSCQA(strippedSource, "scqa");
+      if (!result.ok) { renderError(result.error, el); return; }
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderSCQA(result.data, el, resolver, navigateTo, source, app, ctx);
+    },
+  },
+  {
+    id: "scr",
+    label: "SCR Narrative",
+    template: SCR_TEMPLATE,
+    createProcessor: (app) => (source, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(source);
+      const result = parseSCQA(strippedSource, "scr");
+      if (!result.ok) { renderError(result.error, el); return; }
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderSCQA(result.data, el, resolver, navigateTo, source, app, ctx);
     },
   },
 ];

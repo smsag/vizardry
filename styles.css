@@ -953,7 +953,8 @@ button.vzd-btn {
 .vizardry-ost-wrapper,
 .vizardry-mindmap-wrapper,
 .vizardry-impact-wrapper,
-.vizardry-fishbone-wrapper {
+.vizardry-fishbone-wrapper,
+.vizardry-scqa-wrapper {
   overflow-x: auto;
   overflow-y: auto;
   max-height: 600px;
@@ -2663,4 +2664,110 @@ code:has(.vzd-upvoty-key) {
 .vzd-presentation-wrap .vzd-matrix-y-label,
 .vzd-presentation-wrap .vzd-matrix-x-label {
   font-size: 0.9em;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCQA / SCR narrative — grid (tiered cards) view
+   The tree view reuses the shared .vzd-tree-* styles via renderTree.
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-scqa-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.vzd-scqa-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.vzd-scqa-card {
+  position: relative;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: var(--vzd-base, var(--font-ui-small));
+  line-height: 1.35;
+  min-height: 1.6rem;
+}
+
+/* Level 0 — situation: accent fill, spans the whole top row */
+.vzd-scqa-card--l0 {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  font-weight: var(--font-semibold, 600);
+}
+
+/* Level 1 — complication: hover bg + left accent bar */
+.vzd-scqa-card--l1 {
+  background: var(--background-modifier-hover);
+  border-left: 3px solid var(--interactive-accent);
+}
+
+/* Level 3 — answer: dashed, muted (mirrors the OST leaf style) */
+.vzd-scqa-card--l3 {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.vzd-scqa-card-text {
+  word-break: break-word;
+}
+
+.vzd-scqa-card-add,
+.vzd-scqa-card-del {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.vzd-scqa-card-add {
+  right: 4px;
+  bottom: -8px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.vzd-scqa-card-del {
+  top: -6px;
+  right: -6px;
+  background: var(--background-modifier-error);
+  color: #fff;
+}
+
+.vzd-scqa-card:hover .vzd-scqa-card-add,
+.vzd-scqa-card:hover .vzd-scqa-card-del {
+  display: flex;
+}
+
+.vzd-scqa-card--draggable {
+  cursor: grab;
+}
+
+.vzd-scqa-card--dragging {
+  opacity: 0.4;
+}
+
+.vzd-scqa-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: 240px;
 }

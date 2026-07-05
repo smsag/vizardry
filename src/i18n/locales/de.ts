@@ -80,6 +80,13 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "ost.level.experiment":  "Experiment",
   "ost.level.assumption":  "Annahme",
 
+  // ── SCQA / SCR level labels ─────────────────────────────────────────────────
+  "scqa.level.situation":    "Situation",
+  "scqa.level.complication": "Komplikation",
+  "scqa.level.question":     "Frage",
+  "scqa.level.answer":       "Antwort",
+  "scr.level.resolution":    "Lösung",
+
   // ── Story Map labels ────────────────────────────────────────────────────────
   "story.label.user":    "Nutzer",
   "story.label.goal":    "Ziel",

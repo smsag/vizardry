@@ -37,6 +37,7 @@ import { renderSIPOCFlow } from "./sipoc-flow";
 import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
+import { renderSCQA } from "./scqa";
 import { NULL_RESOLVER } from "../shared/links";
 import * as wardleyEdit from "../shared/wardley-edit";
 
@@ -185,6 +186,38 @@ describe("renderOST", () => {
       },
     };
     expect(() => renderOST(tree, el)).not.toThrow();
+    expect(el.querySelector("svg")).toBeTruthy();
+  });
+});
+
+// ── renderSCQA ────────────────────────────────────────────────────────────────
+
+describe("renderSCQA", () => {
+  const data = {
+    variant: "scqa" as const,
+    view: "grid" as const,
+    root: {
+      text: "Situation", level: 0,
+      children: [
+        { text: "Complication", level: 1, children: [
+          { text: "Question", level: 2, children: [
+            { text: "Answer", level: 3, children: [] },
+          ] },
+        ] },
+      ],
+    },
+  };
+
+  it("renders the grid view without throwing", () => {
+    const el = container();
+    expect(() => renderSCQA(data, el)).not.toThrow();
+    expect(el.querySelector(".vzd-scqa-grid")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(4);
+  });
+
+  it("renders the tree view without throwing", () => {
+    const el = container();
+    expect(() => renderSCQA({ ...data, view: "tree" }, el)).not.toThrow();
     expect(el.querySelector("svg")).toBeTruthy();
   });
 });

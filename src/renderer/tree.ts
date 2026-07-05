@@ -5,6 +5,8 @@ import type {
   MindMapNode,
   OSTNode,
   OSTTree,
+  SCQAData,
+  SCQANode,
   TreeEditHandlers,
   TreeNode,
   TreeNodeStyle,
@@ -548,4 +550,53 @@ export function adaptFishboneToTree(diagram: FishboneDiagram): { root: TreeNode 
       ))
     )),
   };
+}
+
+// -- SCQA / SCR ---------------------------------------------------------------
+// Top-down narrative tree. SCQA has 4 levels (situation → complication →
+// question → answer); SCR collapses to 3 (situation → complication →
+// resolution). Shares the OST/Impact visual language.
+
+export const SCQA_TREE_OPTIONS: TreeRenderOptions = {
+  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
+  hPadding: 24, vPadding: 24, maxLabelChars: 22,
+  maxAddLevel: 3,
+  canvasClass: "vizardry-scqa",
+  wrapperClass: "vizardry-scqa-wrapper",
+  levelStyles: [
+    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
+    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
+  ],
+};
+
+export const SCR_TREE_OPTIONS: TreeRenderOptions = {
+  ...SCQA_TREE_OPTIONS,
+  maxAddLevel: 2,
+};
+
+const SCQA_LEVEL_KEYS: TranslationKey[] = [
+  "scqa.level.situation",
+  "scqa.level.complication",
+  "scqa.level.question",
+  "scqa.level.answer",
+];
+
+const SCR_LEVEL_KEYS: TranslationKey[] = [
+  "scqa.level.situation",
+  "scqa.level.complication",
+  "scr.level.resolution",
+];
+
+export function adaptSCQAToTree(data: SCQAData): { root: TreeNode } {
+  const keys = data.variant === "scqa" ? SCQA_LEVEL_KEYS : SCR_LEVEL_KEYS;
+  const convert = (node: SCQANode): TreeNode => ({
+    text: node.text,
+    level: node.level,
+    sublabel: t(keys[Math.min(node.level, keys.length - 1)]),
+    children: node.children.map(convert),
+    x: 0, y: 0, width: 0, height: 0,
+  });
+  return { root: convert(data.root) };
 }

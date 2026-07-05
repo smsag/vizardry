@@ -42,6 +42,8 @@ block: Label
 | ` ```ost ` | Opportunity Solution Tree | Tree |
 | ` ```rac ` | Riskiest Assumptions Canvas | Grid |
 | ` ```raci ` | RACI Matrix | Table |
+| ` ```scqa ` | SCQA Narrative | Grid / Tree |
+| ` ```scr ` | SCR Narrative | Grid / Tree |
 | ` ```sipoc ` | SIPOC Diagram | Table |
 | ` ```sipoc ` (type: flow) | SIPOC Flow Diagram | SVG flow |
 | ` ```story ` | User Story Map | Grid |
@@ -449,6 +451,50 @@ outcome: Increase weekly active users by 20% in Q3.
 - `outcome:` — root node, no indent, required, one only
 - Indented lines — child nodes; depth = 1 opportunity, 2 solution, 3 experiment, 4 assumption
 - Blank lines and `// comment` lines are ignored
+
+---
+
+### SCQA / SCR Narrative
+
+A narrative hierarchy: one `situation:` branches into complications, each into
+questions, each holding a single answer. It renders as a top-down grid of cards
+by default and can morph into an OST-style branching tree with `view: tree`.
+
+~~~
+```scqa
+title: Why we're repricing
+
+situation: Conversion has been flat at 3% for two years
+  Competitor shipped one-click checkout
+    How quickly can we match it?
+      Ship express checkout in Q3
+    Do we build or buy the wallet layer?
+      Pilot a third-party wallet first
+  Cart abandonment is up 8% this quarter
+    Where do users drop off?
+      Instrument the funnel before deciding
+```
+~~~
+
+The **SCR** variant drops the question level — `situation → complication →
+resolution` — via its own ` ```scr ` fence (or `type: scr` inside a ` ```scqa `
+block):
+
+~~~
+```scr
+situation: Checkout ran at 99.9% uptime all year
+  A config push took payments down for 40 minutes
+    Add staged rollout with an automated config canary
+```
+~~~
+
+**Syntax:**
+- `situation:` — root node, no indent, required, one only
+- Indented lines — child nodes; SCQA depth = 1 complication, 2 question, 3 answer (one answer per question); SCR depth = 1 complication, 2 resolution
+- `view: grid` (default) or `view: tree` — chooses the card grid or the branching tree
+- `type: scqa | scr` — overrides the variant implied by the fence
+- Blank lines and `// comment` lines are ignored
+- In edit mode both views support inline rename, add (`+`), and delete (`×`); the grid also allows drag to reorder siblings
 
 ---
 
@@ -1084,6 +1130,17 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 |---|---|
 | `outcome: <text>` | Root — no indent, required, one only |
 | Indented lines | Depth 1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption |
+| Blank lines / `// comment` | Ignored |
+
+### SCQA / SCR Narrative (scqa, scr)
+
+| Syntax | Meaning |
+|---|---|
+| `situation: <text>` | Root — no indent, required, one only |
+| Indented lines (scqa) | Depth 1 = complication, 2 = question, 3 = answer (one answer per question) |
+| Indented lines (scr) | Depth 1 = complication, 2 = resolution |
+| `view: grid \| tree` | Card grid (default) or branching tree |
+| `type: scqa \| scr` | Overrides the variant implied by the fence |
 | Blank lines / `// comment` | Ignored |
 
 ### SIPOC Diagram (sipoc)
