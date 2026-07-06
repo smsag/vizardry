@@ -14,6 +14,15 @@ export type ResolvedEditor = {
  * ctx.getSectionInfo() returns null in Obsidian's Live Preview / source mode,
  * so we fall back to scanning the editor content for the code fence whose
  * body matches the source stored on the container's dataset.vzSource.
+ *
+ * Obsidian can also return section info that is NON-null but STALE — e.g. the
+ * moment a Live Preview code-block widget first mounts after the cursor
+ * leaves it, the reported line range can point at the wrong location. We
+ * therefore cross-check any non-null info against the stored vzSource before
+ * trusting it, falling back to the full-document scan when it doesn't match.
+ * Without this, a stale-but-non-null result would silently point the write at
+ * the wrong lines and fail — bypassing the vzSource fallback entirely, since
+ * that only ran when info was null.
  */
 export function resolveEditor(
   app: App,
@@ -35,15 +44,20 @@ export function resolveEditor(
     return null;
   }
 
+  const source = el.dataset.vzSource;
+
   // Primary path: section info from the post-processor context (works in Read Mode).
   const info = ctx.getSectionInfo(el);
-  if (info) {
+  if (info && (!source || sectionContainsSource(editor, info.lineStart, info.lineEnd, source))) {
     return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
+  }
+  if (info) {
+    console.warn(`Vizardry: ${caller} — section info looked stale (didn't contain the expected block content); falling back to a full-document scan`);
   }
 
   // Fallback: scan editor lines for the code fence containing this block.
-  // Needed in Live Preview / source mode where getSectionInfo returns null.
-  const source = el.dataset.vzSource;
+  // Needed in Live Preview / source mode where getSectionInfo returns null,
+  // and as a recovery path when it returned stale bounds (above).
   if (source) {
     const range = findCodeFenceBySource(editor, source);
     if (range) return { editor, ...range };
@@ -53,6 +67,24 @@ export function resolveEditor(
 
   console.warn(`Vizardry: ${caller} — no section info and no vzSource fallback`);
   return null;
+}
+
+/** True when the given line range's text contains `source` (trimmed). Used to
+ *  detect stale, non-null section info before trusting it. */
+function sectionContainsSource(
+  editor: MarkdownView["editor"],
+  lineStart: number,
+  lineEnd: number,
+  source: string,
+): boolean {
+  const normalised = source.trim();
+  if (!normalised) return true;
+  const lineCount = editor.lineCount();
+  let text = "";
+  for (let ln = Math.max(0, lineStart); ln <= lineEnd && ln < lineCount; ln++) {
+    text += (text ? "\n" : "") + editor.getLine(ln);
+  }
+  return text.includes(normalised);
 }
 
 /**
