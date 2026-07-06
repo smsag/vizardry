@@ -4,7 +4,7 @@ import { writeBlockContent } from "../shared/block-edit";
 import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
 import { ownerWindow } from "../shared/lifecycle";
-import { enableDragGesture } from "../shared/drag-gesture";
+import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { renderHeadingLink } from "./controls";
 import type { LinkResolver } from "../shared/links";
 
@@ -85,42 +85,39 @@ export function renderCardBlock(
 
     if (!app || !ctx || !container) return;
 
-    const savedScrollY = win.scrollY;
-    const savedScrollX = win.scrollX;
+    preserveScroll(win, () => {
+      if (!activeDrop) {
+        // Within-block reorder — existing behaviour
+        if (toIndex === fromIndex) return;
+        const currentLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
+        const reordered = [...currentLines];
+        const [moved] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, moved);
+        body.dataset.blockContent = reordered.join("\n");
+        writeBlockContent(app, ctx, container, blockLabel, reordered.join("\n"));
+      } else {
+        // Cross-cell move
+        const sourceLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
+        const [movedCard] = sourceLines.splice(fromIndex, 1);
+        const destLines = (activeDrop.body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
+        destLines.splice(toIndex, 0, movedCard);
 
-    if (!activeDrop) {
-      // Within-block reorder — existing behaviour
-      if (toIndex === fromIndex) return;
-      const currentLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
-      const reordered = [...currentLines];
-      const [moved] = reordered.splice(fromIndex, 1);
-      reordered.splice(toIndex, 0, moved);
-      body.dataset.blockContent = reordered.join("\n");
-      writeBlockContent(app, ctx, container, blockLabel, reordered.join("\n"));
-    } else {
-      // Cross-cell move
-      const sourceLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
-      const [movedCard] = sourceLines.splice(fromIndex, 1);
-      const destLines = (activeDrop.body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
-      destLines.splice(toIndex, 0, movedCard);
+        body.dataset.blockContent = sourceLines.join("\n");
+        activeDrop.body.dataset.blockContent = destLines.join("\n");
 
-      body.dataset.blockContent = sourceLines.join("\n");
-      activeDrop.body.dataset.blockContent = destLines.join("\n");
+        // Update empty state immediately so the source cell doesn't look broken
+        if (sourceLines.length === 0) {
+          body.addClass("vizardry-block-empty");
+          body.removeClass("vzd-card-block-body");
+        }
+        activeDrop.body.removeClass("vizardry-block-empty");
+        activeDrop.body.addClass("vzd-card-block-body");
 
-      // Update empty state immediately so the source cell doesn't look broken
-      if (sourceLines.length === 0) {
-        body.addClass("vizardry-block-empty");
-        body.removeClass("vzd-card-block-body");
+        // Write source first if it's lower in the file to keep line numbers stable
+        writeBlockContent(app, ctx, container, blockLabel, sourceLines.join("\n"));
+        writeBlockContent(app, ctx, container, activeDrop.blockLabel, destLines.join("\n"));
       }
-      activeDrop.body.removeClass("vizardry-block-empty");
-      activeDrop.body.addClass("vzd-card-block-body");
-
-      // Write source first if it's lower in the file to keep line numbers stable
-      writeBlockContent(app, ctx, container, blockLabel, sourceLines.join("\n"));
-      writeBlockContent(app, ctx, container, activeDrop.blockLabel, destLines.join("\n"));
-    }
-
-    win.requestAnimationFrame(() => win.scrollTo(savedScrollX, savedScrollY));
+    });
   }
 
   function updateDragPosition(clientX: number, clientY: number): void {

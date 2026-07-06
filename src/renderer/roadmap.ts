@@ -4,7 +4,7 @@ import { MarkdownView } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
-import { enableDragGesture } from "../shared/drag-gesture";
+import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { attachSectionPreview } from "./section-preview";
 import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
@@ -114,14 +114,11 @@ export function renderRoadmap(
 
     if (!app || !ctx || !overGrid) return;
 
-    const savedScrollY = win.scrollY;
-    const savedScrollX = win.scrollX;
-
-    if (fromColId !== toColId || fromIndex !== toIndex) {
-      moveRoadmapItem(app, ctx, container, fromColId, fromIndex, toColId, toIndex);
-    }
-
-    win.requestAnimationFrame(() => win.scrollTo(savedScrollX, savedScrollY));
+    preserveScroll(win, () => {
+      if (fromColId !== toColId || fromIndex !== toIndex) {
+        moveRoadmapItem(app, ctx, container, fromColId, fromIndex, toColId, toIndex);
+      }
+    });
   }
 
   function findDropTarget(clientX: number, clientY: number): { list: HTMLElement; colId: string; index: number } | null {

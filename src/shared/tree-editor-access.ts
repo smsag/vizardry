@@ -6,8 +6,8 @@
  */
 
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import { ownerWindow } from "./lifecycle";
+import { resolveEditor } from "./editor";
 
 export interface EditorAccess {
   editor: Editor;
@@ -18,6 +18,13 @@ export interface EditorAccess {
 /**
  * Resolves the live editor and the code-block line range for the given
  * element. Returns null when the note is not open in editing mode (Read View).
+ *
+ * Delegates to resolveEditor so the tree canvases (OST, Mind Map, Impact,
+ * Fishbone, SCQA tree) share its Live-Preview fallback: ctx.getSectionInfo()
+ * returns null in Live Preview, and resolveEditor then locates the block by
+ * scanning for the code fence matching the container's dataset.vzSource.
+ * Without this, tree-node edits fail to save in Live Edit ("Edit could not be
+ * saved — open the note in editing mode").
  */
 export function getEditorAccess(
   app: App,
@@ -25,28 +32,7 @@ export function getEditorAccess(
   el: HTMLElement,
   callerName: string,
 ): EditorAccess | null {
-  const info = ctx.getSectionInfo(el);
-  if (!info) {
-    console.warn(`Vizardry: ${callerName} — no section info`);
-    return null;
-  }
-
-  const file = app.vault.getFileByPath(ctx.sourcePath);
-  if (!file) {
-    console.warn(`Vizardry: ${callerName} — file not found: ${ctx.sourcePath}`);
-    return null;
-  }
-
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath
-  );
-  const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
-  if (!editor) {
-    console.warn(`Vizardry: ${callerName} — no live editor (open the note in editing mode)`);
-    return null;
-  }
-
-  return { editor, lineStart: info.lineStart, lineEnd: info.lineEnd };
+  return resolveEditor(app, ctx, el, callerName);
 }
 
 /**

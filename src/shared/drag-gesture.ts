@@ -16,6 +16,20 @@
 
 export const DRAG_THRESHOLD_PX = 8;
 
+/**
+ * Runs a source write-back while preserving the note's scroll position.
+ * editor.replaceRange() moves the CM6 cursor to the edited line, which makes
+ * Obsidian scroll there; we snapshot the offset, run the write, and restore it
+ * on the next frame. Window-aware (uses the given window's scroll API) so it
+ * behaves correctly in pop-out windows. Shared by every card drag's endDrag.
+ */
+export function preserveScroll(win: Window, write: () => void): void {
+  const x = win.scrollX;
+  const y = win.scrollY;
+  write();
+  win.requestAnimationFrame(() => win.scrollTo(x, y));
+}
+
 export interface DragGestureHandlers {
   /** Movement (px) required before a drag starts. Defaults to DRAG_THRESHOLD_PX. */
   threshold?: number;
