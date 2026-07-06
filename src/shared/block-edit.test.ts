@@ -22,7 +22,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { writeBlockContent } from "./block-edit";
+import { writeBlockContent, moveCardBetweenBlocks } from "./block-edit";
 import { MarkdownView } from "obsidian";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -229,5 +229,111 @@ describe("writeBlockContent", () => {
 
     const [replacement] = editor.replaceRange.mock.calls[0];
     expect(replacement).toBe("  padded value");
+  });
+});
+
+describe("moveCardBetweenBlocks", () => {
+  it("edits both blocks in one call, lower block first, regardless of source/dest order", () => {
+    // Lines: 0 ``` 1 block: Strengths 2 old S 3 block: Weaknesses 4 old W 5 ```
+    const lines = ["```bmc", "block: Strengths", "  old S", "block: Weaknesses", "  old W", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 5) as any;
+    const el = document.createElement("div");
+
+    const written = moveCardBetweenBlocks(
+      app, ctx, el,
+      { label: "Strengths", newContent: "new S" },
+      { label: "Weaknesses", newContent: "new W" },
+    );
+
+    expect(written).toBe(true);
+    expect(editor.replaceRange).toHaveBeenCalledTimes(2);
+    // Weaknesses is lower in the file (line 3) than Strengths (line 1), so it
+    // must be edited first — editing it doesn't shift Strengths' line numbers.
+    const [firstReplacement, firstFrom] = editor.replaceRange.mock.calls[0];
+    expect(firstFrom).toEqual({ line: 4, ch: 0 });
+    expect(firstReplacement).toBe("  new W");
+    const [secondReplacement, secondFrom] = editor.replaceRange.mock.calls[1];
+    expect(secondFrom).toEqual({ line: 2, ch: 0 });
+    expect(secondReplacement).toBe("  new S");
+  });
+
+  it("still edits lower-first when dest appears above source in the file", () => {
+    // Lines: 0 ``` 1 block: Weaknesses 2 old W 3 block: Strengths 4 old S 5 ```
+    const lines = ["```bmc", "block: Weaknesses", "  old W", "block: Strengths", "  old S", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 5) as any;
+    const el = document.createElement("div");
+
+    moveCardBetweenBlocks(
+      app, ctx, el,
+      { label: "Strengths", newContent: "new S" },
+      { label: "Weaknesses", newContent: "new W" },
+    );
+
+    // Now Strengths (line 3) is lower than Weaknesses (line 1) — edited first.
+    const [firstReplacement, firstFrom] = editor.replaceRange.mock.calls[0];
+    expect(firstFrom).toEqual({ line: 4, ch: 0 });
+    expect(firstReplacement).toBe("  new S");
+    const [secondReplacement, secondFrom] = editor.replaceRange.mock.calls[1];
+    expect(secondFrom).toEqual({ line: 2, ch: 0 });
+    expect(secondReplacement).toBe("  new W");
+  });
+
+  it("inserts into an empty destination body", () => {
+    const lines = ["```bmc", "block: Strengths", "  old S", "block: Weaknesses", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 4) as any;
+    const el = document.createElement("div");
+
+    const written = moveCardBetweenBlocks(
+      app, ctx, el,
+      { label: "Strengths", newContent: "" },
+      { label: "Weaknesses", newContent: "moved card" },
+    );
+
+    expect(written).toBe(true);
+    expect(editor.replaceRange).toHaveBeenCalledTimes(2);
+    // Weaknesses (line 3, empty body) is lower — inserted after its header.
+    const [firstReplacement, firstFrom] = editor.replaceRange.mock.calls[0];
+    expect(firstReplacement).toBe("\n  moved card");
+    expect(firstFrom).toEqual({ line: 3, ch: "block: Weaknesses".length });
+  });
+
+  it("returns false and applies no edits when the source block isn't found", () => {
+    const lines = ["```bmc", "block: Weaknesses", "  old W", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 3) as any;
+    const el = document.createElement("div");
+
+    const written = moveCardBetweenBlocks(
+      app, ctx, el,
+      { label: "Strengths", newContent: "new S" },
+      { label: "Weaknesses", newContent: "new W" },
+    );
+
+    expect(written).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+
+  it("returns false and applies no edits when the destination block isn't found", () => {
+    const lines = ["```bmc", "block: Strengths", "  old S", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 3) as any;
+    const el = document.createElement("div");
+
+    const written = moveCardBetweenBlocks(
+      app, ctx, el,
+      { label: "Strengths", newContent: "new S" },
+      { label: "Weaknesses", newContent: "new W" },
+    );
+
+    expect(written).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
   });
 });

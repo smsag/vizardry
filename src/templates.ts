@@ -2,10 +2,11 @@ import type { FrameworkDefinition } from "./types";
 
 export function generateCanvasTemplate(framework: FrameworkDefinition): string {
   const blocks = framework.blocks.map(b => `block: ${b.label}\n  `).join("\n\n");
-  return `\`\`\`${framework.id}\ntitle: ${framework.label}\n\n${blocks}\n\`\`\`\n`;
+  return `\`\`\`vizardry\ntype: ${framework.id}\ntitle: ${framework.label}\n\n${blocks}\n\`\`\`\n`;
 }
 
-export const FISHBONE_TEMPLATE = `\`\`\`fishbone
+export const FISHBONE_TEMPLATE = `\`\`\`vizardry
+type: fishbone
 title: Fishbone Diagram
 
 effect: Problem statement
@@ -26,7 +27,8 @@ category: Technology
 \`\`\`
 `;
 
-export const IMPACT_MAP_TEMPLATE = `\`\`\`impact
+export const IMPACT_MAP_TEMPLATE = `\`\`\`vizardry
+type: impact
 title: Impact Map
 
 goal: Increase the number of activated users in the first 30 days
@@ -50,7 +52,8 @@ actor: Growth Team
 \`\`\`
 `;
 
-export const STORY_MAP_TEMPLATE = `\`\`\`story
+export const STORY_MAP_TEMPLATE = `\`\`\`vizardry
+type: story
 title: User Story Map
 
 user: Team Lead
@@ -106,7 +109,8 @@ slice: V1.1
 \`\`\`
 `;
 
-export const MIND_MAP_TEMPLATE = `\`\`\`mindmap
+export const MIND_MAP_TEMPLATE = `\`\`\`vizardry
+type: mindmap
 title: Mind Map
 
 root: Central Topic
@@ -125,7 +129,8 @@ root: Central Topic
 \`\`\`
 `;
 
-export const VENN_TEMPLATE = `\`\`\`venn
+export const VENN_TEMPLATE = `\`\`\`vizardry
+type: venn
 title: Venn Diagram
 
 circle: Design
@@ -155,7 +160,8 @@ center:
 \`\`\`
 `;
 
-export const OST_TEMPLATE = `\`\`\`ost
+export const OST_TEMPLATE = `\`\`\`vizardry
+type: ost
 title: Opportunity Solution Tree
 
 outcome: Your desired outcome
@@ -170,14 +176,16 @@ outcome: Your desired outcome
 \`\`\`
 `;
 
-export const CAROUSEL_TEMPLATE = `\`\`\`carousel
+export const CAROUSEL_TEMPLATE = `\`\`\`vizardry
+type: carousel
 ![](image-one.png)
 ![](image-two.png)
 ![](image-three.png)
 \`\`\`
 `;
 
-export const SIPOC_TEMPLATE = `\`\`\`sipoc
+export const SIPOC_TEMPLATE = `\`\`\`vizardry
+type: sipoc
 title: SIPOC Diagram
 
 row:
@@ -203,8 +211,8 @@ row:
 \`\`\`
 `;
 
-export const SIPOC_FLOW_TEMPLATE = `\`\`\`sipoc
-type: flow
+export const SIPOC_FLOW_TEMPLATE = `\`\`\`vizardry
+type: sipoc-flow
 title: SIPOC Flow Diagram
 
 suppliers:
@@ -250,7 +258,8 @@ link: Data 5 -> Customer 3
 \`\`\`
 `;
 
-export const WARDLEY_TEMPLATE = `\`\`\`wardley
+export const WARDLEY_TEMPLATE = `\`\`\`vizardry
+type: wardley
 title: Wardley Map
 
 stages: Genesis | Custom | Product | Commodity
@@ -270,7 +279,8 @@ link: Database -> Cloud Host
 \`\`\`
 `;
 
-export const ROADMAP_TEMPLATE = `\`\`\`roadmap
+export const ROADMAP_TEMPLATE = `\`\`\`vizardry
+type: roadmap
 title: Now/Next/Later Roadmap
 
 now:
@@ -287,7 +297,8 @@ later:
 \`\`\`
 `;
 
-export const RACI_TEMPLATE = `\`\`\`raci
+export const RACI_TEMPLATE = `\`\`\`vizardry
+type: raci
 title: RACI Matrix
 
 task: Define requirements
@@ -310,7 +321,8 @@ task: Test & sign off
 \`\`\`
 `;
 
-export const CONCEPT_MAP_TEMPLATE = `\`\`\`conceptmap
+export const CONCEPT_MAP_TEMPLATE = `\`\`\`vizardry
+type: conceptmap
 title: Knowledge Domain
 
 Photosynthesis -- requires --> Sunlight
@@ -323,9 +335,9 @@ Water -- enables --> Plants
 \`\`\`
 `;
 
-export const PACE_LAYERS_TEMPLATE = `\`\`\`pacelayers
-// type: shearing | product | retro
-type: shearing
+export const PACE_LAYERS_TEMPLATE = `\`\`\`vizardry
+// type: pacelayers, shearing | product | retro
+type: pacelayers, shearing
 title: Pace Layer Analysis
 context: Our SaaS product — B2B team collaboration tool
 
@@ -355,8 +367,8 @@ layer: Nature
 \`\`\`
 `;
 
-export const MATRIX_PAIN_TEMPLATE = `\`\`\`matrix
-type: pain
+export const MATRIX_PAIN_TEMPLATE = `\`\`\`vizardry
+type: matrix, pain
 title: Pain Point Matrix
 
 block: very-major-1 | card
@@ -411,8 +423,8 @@ block: very-minor-4
 \`\`\`
 `;
 
-export const MATRIX_OPP_TEMPLATE = `\`\`\`matrix
-type: opportunity
+export const MATRIX_OPP_TEMPLATE = `\`\`\`vizardry
+type: matrix, opportunity
 title: Opportunity Matrix
 
 block: very-major-1 | card
@@ -467,8 +479,8 @@ block: very-minor-4
 \`\`\`
 `;
 
-export const MATRIX_IMPACT_TEMPLATE = `\`\`\`matrix
-type: impact
+export const MATRIX_IMPACT_TEMPLATE = `\`\`\`vizardry
+type: matrix, impact
 title: Impact / Effort Matrix
 
 block: very-major-1 | card
@@ -523,7 +535,8 @@ block: very-minor-4
 \`\`\`
 `;
 
-export const SCQA_TEMPLATE = `\`\`\`scqa
+export const SCQA_TEMPLATE = `\`\`\`vizardry
+type: scqa
 title: SCQA Narrative
 
 situation: Conversion has been flat at 3% for two years
@@ -538,7 +551,8 @@ situation: Conversion has been flat at 3% for two years
 \`\`\`
 `;
 
-export const SCR_TEMPLATE = `\`\`\`scr
+export const SCR_TEMPLATE = `\`\`\`vizardry
+type: scr
 title: SCR Narrative
 
 situation: Checkout ran at 99.9% uptime all year

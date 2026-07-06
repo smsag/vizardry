@@ -1,4 +1,4 @@
-import type { App, Editor, MarkdownPostProcessorContext} from "obsidian";
+import type { Editor, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView, Notice, Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
 import type { PluginSettings } from "./settings";
@@ -7,41 +7,17 @@ import type { CacheEntry } from "./linear/types";
 import { enrichLinearKeys } from "./shared/linear-enrichment";
 import { initUpvotyService, getUpvotyService, destroyUpvotyService } from "./upvoty";
 import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
-import { parseFrameworkSource } from "./parser";
-import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
-import { renderCanvas, renderError } from "./renderer";
-import { registerCanvasRelink, relinkCanvas, triggerRelink } from "./renderer/canvas";
+import { triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
 import { setPluginVersion } from "./shared/version";
 import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
-import type { ProcessorFn } from "./processors";
-import { ADKAR } from "./frameworks/adkar";
-import { BMC } from "./frameworks/bmc";
-import { LEAN } from "./frameworks/lean";
-import { OPPORTUNITY } from "./frameworks/opportunity";
-import { LEANUX } from "./frameworks/leanux";
-import { VPC } from "./frameworks/vpc";
-import { KATA } from "./frameworks/kata";
-import { JOBS } from "./frameworks/jobs";
-import { RAC } from "./frameworks/rac";
-import { SWOT } from "./frameworks/swot";
-import { FOURLS } from "./frameworks/fourls";
-import { PTW } from "./frameworks/ptw";
-import type { FrameworkDefinition } from "./types";
+import { ALL_FRAMEWORKS } from "./frameworks-registry";
+import { dispatchVizardry } from "./vizardry-dispatch";
 import { insertTemplateAtCursor } from "./shared/editor";
 import { t, tFrameworkDescription } from "./i18n";
-
-// ── Grid-canvas framework registry ────────────────────────────────────────────
-// The map is derived from the id field on each definition — no duplicate key.
-
-const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, PTW, VPC, KATA, JOBS, RAC, SWOT,
-];
-
-const FRAMEWORKS = Object.fromEntries(ALL_FRAMEWORKS.map(f => [f.id, f]));
 
 export default class VizardryPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
@@ -68,43 +44,16 @@ export default class VizardryPlugin extends Plugin {
 
     const tag = `Vizardry v${this.manifest.version}`;
 
-    const registerProcessor = (id: string, handler: ProcessorFn): void => {
-      try {
-        this.registerMarkdownCodeBlockProcessor(id, handler);
-      } catch (err) {
-        console.error(`${tag}: failed to register processor for "${id}"`, err);
-      }
-    };
-
-
-    // Wraps a renderer call so any uncaught exception is surfaced as an
-    // inline error banner rather than silently leaving the code block blank.
-    const safeRender = (id: string, el: HTMLElement, fn: () => void): void => {
-      try {
-        fn();
-      } catch (err) {
-        console.error(`${tag}: renderer "${id}" threw`, err);
-        renderError(`Renderer error — check the console (${tag})`, el);
-      }
-    };
-
-    // ── Grid canvas renderers ──────────────────────────────────────────
-    for (const [id, definition] of Object.entries(FRAMEWORKS)) {
-      registerProcessor(id, (source, el, ctx) => {
-        const { strippedSource, inlineLinks } = extractInlineLinks(source);
-        const result = parseFrameworkSource(strippedSource);
-        if (!result.ok) { renderError(result.error, el); return; }
-        const { resolver, navigateTo } = buildLinkSupport(this.app, ctx, inlineLinks);
-        safeRender(id, el, () => {
-          renderCanvas(definition, result.data, result.cardModes, el, resolver, navigateTo, this.app, ctx, source);
-          // Re-evaluate link buttons whenever the note's headings change (e.g.
-          // a matching heading is added outside the code block after first render).
-          registerCanvasRelink(ctx.sourcePath, () => {
-            const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(this.app, ctx));
-            relinkCanvas(el, definition, freshResolver, navigateTo);
-          }, el);
-        });
+    // ── Single unified code-block language ──────────────────────────────
+    // Every canvas (grid frameworks and bespoke renderers alike) is
+    // dispatched from here based on the block's own `type:` line — see
+    // src/vizardry-dispatch.ts for the "type: <id>[, <variant>]" syntax.
+    try {
+      this.registerMarkdownCodeBlockProcessor("vizardry", (source, el, ctx: MarkdownPostProcessorContext) => {
+        dispatchVizardry(source, el, ctx, this.app);
       });
+    } catch (err) {
+      console.error(`${tag}: failed to register the "vizardry" processor`, err);
     }
 
     // ── Heading change listener ────────────────────────────────────────
@@ -123,14 +72,6 @@ export default class VizardryPlugin extends Plugin {
         }, 200));
       }),
     );
-
-    // ── Custom renderers ───────────────────────────────────────────────
-    for (const renderer of CUSTOM_RENDERERS) {
-      const inner = renderer.createProcessor(this.app);
-      registerProcessor(renderer.id, (source, el, ctx) => {
-        safeRender(renderer.id, el, () => inner(source, el, ctx));
-      });
-    }
 
     // ── Global Linear key enrichment ──────────────────────────────────
     // Runs after all code-block processors so vizardry canvases are already

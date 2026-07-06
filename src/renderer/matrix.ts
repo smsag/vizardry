@@ -103,7 +103,7 @@ export function renderMatrix(
       const heat = heatLevel(rowIdx + 1, col);
       const cell = grid.createEl("div", { cls: `vzd-matrix-cell vzd-matrix-cell--${heat}` });
       const body = cell.createEl("div", { cls: "vizardry-block-body" });
-      cells.push({ body, blockKey, content: data.data[blockKey] ?? "", isCard: data.cardModes[blockKey] ?? false });
+      cells.push({ body, blockKey, content: data.data[blockKey] ?? "", isCard: data.allCards || data.cardBlocks.has(blockKey) });
     });
   });
 

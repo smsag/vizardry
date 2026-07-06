@@ -10,7 +10,12 @@ import type { ParseResult } from "./types";
  *
  * Display-mode modifier (optional, appended after a pipe):
  *   block: Label | card     — render block content as draggable cards
- *   block: Label | bullets  — render as bullet lines (explicit override)
+ *   (any other modifier is silently ignored — plain bullet text is the
+ *   standard rendering and there is no explicit way to force it back on)
+ *
+ * Canvas-wide option:
+ *   cards: all   — render every block in the canvas as cards, overriding
+ *                  any per-block modifier
  *
  * Rules:
  * - `block:` keyword followed by the block label (case-insensitive match at render time)
@@ -22,7 +27,8 @@ import type { ParseResult } from "./types";
  */
 export function parseFrameworkSource(source: string): ParseResult {
   const data: Record<string, string> = {};
-  const cardModes: Record<string, boolean> = {};
+  const cardBlocks = new Set<string>();
+  let allCards = false;
   const lines = source.split("\n");
   let i = 0;
 
@@ -46,19 +52,28 @@ export function parseFrameworkSource(source: string): ParseResult {
       continue;
     }
 
+    if (trimmed.toLowerCase().startsWith("cards:")) {
+      const value = trimmed.slice("cards:".length).trim().toLowerCase();
+      if (value !== "all") {
+        return { ok: false, error: `Line ${i + 1}: Unknown value "${value}" for "cards:" — expected "all"` };
+      }
+      allCards = true;
+      i++;
+      continue;
+    }
+
     if (trimmed.startsWith("block:")) {
       const rawLabel = trimmed.slice("block:".length).trim();
       if (!rawLabel) {
         return { ok: false, error: `Line ${i + 1}: "block:" requires a label` };
       }
 
-      // Strip optional | card / | bullets modifier
+      // Strip optional | card modifier (any other modifier is ignored)
       const pipeIdx = rawLabel.indexOf("|");
       const label = pipeIdx !== -1 ? rawLabel.slice(0, pipeIdx).trim() : rawLabel;
       if (pipeIdx !== -1) {
         const modifier = rawLabel.slice(pipeIdx + 1).trim().toLowerCase();
-        if (modifier === "card") cardModes[label.toLowerCase()] = true;
-        else if (modifier === "bullets") cardModes[label.toLowerCase()] = false;
+        if (modifier === "card") cardBlocks.add(label.toLowerCase());
       }
 
       const key = label.toLowerCase();
@@ -96,5 +111,5 @@ export function parseFrameworkSource(source: string): ParseResult {
     }
   }
 
-  return { ok: true, data, links: {}, cardModes };
+  return { ok: true, data, links: {}, cardBlocks, allCards };
 }

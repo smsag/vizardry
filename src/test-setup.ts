@@ -33,6 +33,13 @@ Object.assign(HTMLElement.prototype, {
     return el as HTMLElementTagNameMap[K];
   },
 
+  createDiv(
+    this: HTMLElement,
+    options?: CreateElOptions | string,
+  ): HTMLDivElement {
+    return this.createEl("div", typeof options === "string" ? { cls: options } : options);
+  },
+
   addClass(this: HTMLElement, ...cls: string[]): HTMLElement {
     this.classList.add(...cls);
     return this;

@@ -103,7 +103,7 @@ describe("renderCanvas", () => {
 
   it("renders header and all blocks", () => {
     const el = container();
-    renderCanvas(swot, { strengths: "Fast team", weaknesses: "" }, {}, el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, { strengths: "Fast team", weaknesses: "" }, new Set(), el, NULL_RESOLVER, vi.fn());
     expect(el.querySelector(".vizardry-grid")).toBeTruthy();
     const blocks = el.querySelectorAll(".vizardry-block");
     expect(blocks).toHaveLength(4);
@@ -111,7 +111,7 @@ describe("renderCanvas", () => {
 
   it("renders block content as lines", () => {
     const el = container();
-    renderCanvas(swot, { strengths: "Line one\nLine two" }, {}, el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, { strengths: "Line one\nLine two" }, new Set(), el, NULL_RESOLVER, vi.fn());
     const lines = el.querySelectorAll(".vzd-block-line");
     expect(lines).toHaveLength(2);
     expect(lines[0].textContent).toBe("Line one");
@@ -119,24 +119,55 @@ describe("renderCanvas", () => {
 
   it("marks empty block with empty class", () => {
     const el = container();
-    renderCanvas(swot, {}, {}, el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, {}, new Set(), el, NULL_RESOLVER, vi.fn());
     const bodies = el.querySelectorAll(".vizardry-block-empty");
     expect(bodies.length).toBeGreaterThan(0);
   });
 
   it("renders link button when _links entry exists", () => {
     const el = container();
-    renderCanvas(swot, {}, {}, el, { resolve: (k: string) => k === "strengths" ? "Strategy Section" : undefined }, vi.fn());
+    renderCanvas(swot, {}, new Set(), el, { resolve: (k: string) => k === "strengths" ? "Strategy Section" : undefined }, vi.fn());
     expect(el.querySelector(".vizardry-block-link-btn")).toBeTruthy();
   });
 
   it("link button calls navigateTo with the heading", () => {
     const el = container();
     const navigateTo = vi.fn();
-    renderCanvas(swot, {}, {}, el, { resolve: (k: string) => k === "strengths" ? "My Heading" : undefined }, navigateTo);
+    renderCanvas(swot, {}, new Set(), el, { resolve: (k: string) => k === "strengths" ? "My Heading" : undefined }, navigateTo);
     const btn = el.querySelector<HTMLButtonElement>(".vizardry-block-link-btn");
     btn?.click();
     expect(navigateTo).toHaveBeenCalledWith("My Heading");
+  });
+
+  it("allCards forces every block to render as a card, ignoring per-block modifiers", () => {
+    const el = container();
+    renderCanvas(swot, { strengths: "Fast team" }, new Set(), el, NULL_RESOLVER, vi.fn(), undefined, undefined, undefined, true);
+    expect(el.querySelectorAll(".vzd-block-line")).toHaveLength(0);
+    expect(el.querySelector(".vzd-card-block-card")).toBeTruthy();
+  });
+
+  it("renders multiple card blocks side by side without cards leaking between them", () => {
+    const el = container();
+    renderCanvas(
+      swot,
+      { strengths: "S1\nS2", weaknesses: "W1" },
+      new Set(["strengths", "weaknesses"]),
+      el, NULL_RESOLVER, vi.fn(),
+    );
+    const bodies = el.querySelectorAll(".vizardry-block-body");
+    expect(bodies[0].querySelectorAll(".vzd-card-block-card")).toHaveLength(2);
+    expect(bodies[0].textContent).toContain("S1");
+    expect(bodies[1].querySelectorAll(".vzd-card-block-card")).toHaveLength(1);
+    expect(bodies[1].textContent).toContain("W1");
+    expect(bodies[1].textContent).not.toContain("S1");
+  });
+
+  it("a single card block renders the same as before this block had no cross-block siblings", () => {
+    const el = container();
+    renderCanvas(swot, { strengths: "Only card here" }, new Set(["strengths"]), el, NULL_RESOLVER, vi.fn());
+    const cards = el.querySelectorAll(".vzd-card-block-card");
+    expect(cards).toHaveLength(1);
+    expect(cards[0].textContent).toContain("Only card here");
   });
 });
 

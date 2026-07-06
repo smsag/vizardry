@@ -49,7 +49,7 @@ function activateCellEdit(
   td.addClass("vzd-sipoc-editing");
   td.empty();
 
-  const textarea = td.createEl("textarea", { cls: "vzd-sipoc-textarea" });
+  const textarea = td.createEl("textarea", { cls: "vzd-plain-textarea vzd-sipoc-textarea" });
   textarea.style.minHeight = `${minH}px`;
   textarea.value = currentValue;
 

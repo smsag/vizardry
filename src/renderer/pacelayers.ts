@@ -65,7 +65,7 @@ export function renderPaceLayers(
     contentEl.empty();
     contentEl.removeAttribute('data-placeholder');
 
-    const textarea = contentEl.createEl('textarea', { cls: 'vzd-block-textarea' });
+    const textarea = contentEl.createEl('textarea', { cls: 'vzd-plain-textarea vzd-block-textarea' });
     textarea.value = currentValue.trim();
 
     const resize = (): void => {
@@ -93,7 +93,7 @@ export function renderPaceLayers(
         const scroller = container.closest<HTMLElement>('.cm-scroller');
         const savedScrollTop = scroller?.scrollTop;
 
-        const written = writePaceLayerCell(app!, ctx!, container, layerName, cellKey, newValue);
+        const written = writePaceLayerCell(app!, ctx!, container, layerName, cellKey, newValue, data.type);
         if (!written) {
           new Notice(t('edit.writeFailed'));
         }

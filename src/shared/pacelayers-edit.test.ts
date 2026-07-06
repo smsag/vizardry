@@ -374,4 +374,39 @@ describe("writePaceLayerCell", () => {
     const [text] = editor.replaceRange.mock.calls[0];
     expect(text).toBe("  note: first\n  second");
   });
+
+  // ── Type-specific alias in the source ───────────────────────────────────
+  // The canvas only ever shows the type's display name, so a canvas authored
+  // by hand may use it (e.g. "layer: Experiments") instead of the canonical
+  // name ("layer: Fashion") that the DOM always passes as `layerName`.
+
+  it("finds an alias-authored layer header when type is passed", () => {
+    const lines = ["```pacelayers", "type: product", "layer: Experiments", "  note:", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 4) as any;
+    const el = makeEl();
+
+    const written = writePaceLayerCell(app, ctx, el, "Fashion", "note", "shipped fast", "product");
+
+    expect(written).toBe(true);
+    expect(editor.replaceRange).toHaveBeenCalledOnce();
+    const [text, from, to] = editor.replaceRange.mock.calls[0];
+    expect(text).toBe("  note: shipped fast");
+    expect(from).toEqual({ line: 3, ch: 0 });
+    expect(to).toEqual({ line: 3, ch: "  note:".length });
+  });
+
+  it("fails to find an alias-authored layer header when type is omitted", () => {
+    const lines = ["```pacelayers", "type: product", "layer: Experiments", "  note:", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 4) as any;
+    const el = makeEl();
+
+    const written = writePaceLayerCell(app, ctx, el, "Fashion", "note", "shipped fast");
+
+    expect(written).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
 });

@@ -4,7 +4,7 @@ import { parseFrameworkSource } from "./parser";
 describe("parseFrameworkSource", () => {
   it("parses a single block", () => {
     const result = parseFrameworkSource("block: Goal\n  Make money");
-    expect(result).toEqual({ ok: true, data: { goal: "Make money" }, links: {}, cardModes: {} });
+    expect(result).toEqual({ ok: true, data: { goal: "Make money" }, links: {}, cardBlocks: new Set(), allCards: false });
   });
 
   it("parses multiple blocks", () => {
@@ -38,29 +38,51 @@ describe("parseFrameworkSource", () => {
 
   it("allows empty block content", () => {
     const result = parseFrameworkSource("block: Goal\n");
-    expect(result).toEqual({ ok: true, data: { goal: "" }, links: {}, cardModes: {} });
+    expect(result).toEqual({ ok: true, data: { goal: "" }, links: {}, cardBlocks: new Set(), allCards: false });
   });
 
   it("parses | card modifier and strips it from the key", () => {
     const result = parseFrameworkSource("block: Next Experiment | card\n  Run A/B test");
     expect(result.ok && result.data).toMatchObject({ "next experiment": "Run A/B test" });
-    expect(result.ok && result.cardModes).toEqual({ "next experiment": true });
+    expect(result.ok && result.cardBlocks).toEqual(new Set(["next experiment"]));
   });
 
-  it("parses | bullets modifier", () => {
+  it("ignores | bullets (and any other unknown modifier) silently", () => {
     const result = parseFrameworkSource("block: Obstacles | bullets\n  Too slow");
-    expect(result.ok && result.cardModes).toEqual({ "obstacles": false });
+    expect(result.ok && result.data).toMatchObject({ obstacles: "Too slow" });
+    expect(result.ok && result.cardBlocks).toEqual(new Set());
   });
 
   it("ignores unknown modifiers silently", () => {
     const result = parseFrameworkSource("block: Goal | fancy\n  value");
     expect(result.ok && result.data).toMatchObject({ goal: "value" });
-    expect(result.ok && result.cardModes).toEqual({});
+    expect(result.ok && result.cardBlocks).toEqual(new Set());
   });
 
   it("| card modifier is case-insensitive", () => {
     const result = parseFrameworkSource("block: Goal | Card\n  value");
-    expect(result.ok && result.cardModes).toEqual({ goal: true });
+    expect(result.ok && result.cardBlocks).toEqual(new Set(["goal"]));
+  });
+
+  it("parses cards: all as a canvas-wide flag", () => {
+    const result = parseFrameworkSource("cards: all\nblock: Goal\n  value");
+    expect(result.ok && result.allCards).toBe(true);
+    expect(result.ok && result.data).toMatchObject({ goal: "value" });
+  });
+
+  it("cards: all is case-insensitive", () => {
+    const result = parseFrameworkSource("Cards: All\nblock: Goal\n  value");
+    expect(result.ok && result.allCards).toBe(true);
+  });
+
+  it("defaults allCards to false when cards: is absent", () => {
+    const result = parseFrameworkSource("block: Goal\n  value");
+    expect(result.ok && result.allCards).toBe(false);
+  });
+
+  it("returns error for an unknown cards: value", () => {
+    const result = parseFrameworkSource("cards: sometimes\nblock: Goal\n  value");
+    expect(result).toEqual({ ok: false, error: expect.stringContaining('Unknown value "sometimes" for "cards:"') });
   });
 
   it("returns error for unexpected indentation at root", () => {

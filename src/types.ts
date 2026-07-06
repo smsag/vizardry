@@ -29,7 +29,7 @@ export type Result<T> =
 // variant, which doesn't fit the single-data Result<T> pattern, so it is
 // kept as a standalone definition.
 export type ParseResult =
-  | { ok: true; data: Record<string, string>; links: Record<string, string>; cardModes: Record<string, boolean> }
+  | { ok: true; data: Record<string, string>; links: Record<string, string>; cardBlocks: Set<string>; allCards: boolean }
   | { ok: false; error: string };
 
 // ── Impact Map ──────────────────────────────────────────────────────────────
@@ -402,7 +402,8 @@ export type MatrixType = "pain" | "opportunity" | "impact";
 export interface MatrixData {
   type: MatrixType;
   data: Record<string, string>;
-  cardModes: Record<string, boolean>;
+  cardBlocks: Set<string>;
+  allCards: boolean;
 }
 
 export type MatrixResult = Result<MatrixData>;
