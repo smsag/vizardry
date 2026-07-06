@@ -48,9 +48,7 @@ export function renderMatrix(
 
   // Set base color on container so legend pills (inside header) inherit it.
   container.style.setProperty("--vzd-matrix-base", BASE_COLORS[data.type]);
-  // Store raw source so resolveEditor can find this block by content scan
-  // when ctx.getSectionInfo() returns null (e.g. in Live Preview mode).
-  if (source) container.dataset.vzSource = source;
+  // vzSource (the resolveEditor Live-Preview fallback) is set by initCanvas.
 
   initCanvas(
     container,

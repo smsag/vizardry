@@ -65,6 +65,11 @@ export function initCanvas(
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", frameworkId);
+  // Store the raw source so resolveEditor can locate this block by content
+  // scan when ctx.getSectionInfo() returns null (e.g. in Live Preview mode).
+  // Without this, inline edits fail to save in Live Edit ("Edit could not be
+  // saved — open the note in editing mode").
+  if (source !== undefined) container.dataset.vzSource = source;
   container.style.width = "100%";
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
