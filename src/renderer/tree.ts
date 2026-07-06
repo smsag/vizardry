@@ -13,6 +13,7 @@ import type {
   TreeRenderOptions,
 } from "../types";
 import { createSvgEl } from "../shared/svg";
+import { wireRenameInputKeys } from "./inline-edit";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import type { TranslationKey } from "../i18n";
@@ -318,7 +319,7 @@ function renderTreeNodes(
       const input = document.createElement("input");
       input.type = "text";
       input.value = node.text;
-      input.className = "vzd-tree-rename-input";
+      input.className = "vzd-rename-input vzd-tree-rename-input";
       // Match the node's own label colour — the input has a transparent
       // background, so on accent-filled nodes (e.g. root) it must use
       // text-on-accent rather than the default text colour to stay legible.
@@ -331,25 +332,11 @@ function renderTreeNodes(
       input.focus();
       input.select();
 
-      let committed = false;
-      const commit = (): void => {
-        if (committed) return;
-        committed = true;
+      wireRenameInputKeys(input, (commit) => {
         closeRename();
         const newText = input.value.trim();
-        if (newText && newText !== node.text) editHandlers.onRename(node, newText);
-      };
-      const cancel = (): void => {
-        if (committed) return;
-        committed = true;
-        closeRename();
-      };
-      input.addEventListener("blur", commit);
-      input.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter")  { ev.preventDefault(); commit(); }
-        if (ev.key === "Escape") { ev.preventDefault(); cancel(); }
-        ev.stopPropagation();
-      });
+        if (commit && newText && newText !== node.text) editHandlers.onRename(node, newText);
+      }, { stopPropagation: true });
     });
   }
 

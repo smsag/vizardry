@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
+import { wireRenameInputKeys } from "./inline-edit";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX, WARDLEY_LABEL_MAX_NUDGE_PX } from "../shared/constants";
 import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, removeWardleyLink } from "../shared/wardley-edit";
 
@@ -630,7 +631,7 @@ function attachRenameBehavior(
     const input = svg.ownerDocument.createElement("input");
     input.type = "text";
     input.value = ref.comp.name;
-    input.className = "vzd-wardley-rename-input";
+    input.className = "vzd-rename-input vzd-wardley-rename-input";
 
     host.appendChild(input);
     foreignObject.appendChild(host);
@@ -640,30 +641,13 @@ function attachRenameBehavior(
     input.focus();
     input.select();
 
-    let committed = false;
-
-    const commit = (): void => {
-      if (committed) return;
-      committed = true;
+    wireRenameInputKeys(input, (commit) => {
       closeRename();
       const newName = input.value.trim();
-      if (newName && newName !== ref.comp.name) {
+      if (commit && newName && newName !== ref.comp.name) {
         renameWardleyComponent(app, mppCtx, wrap, ref.comp.name, newName);
       }
-    };
-
-    const cancel = (): void => {
-      if (committed) return;
-      committed = true;
-      closeRename();
-    };
-
-    input.addEventListener("blur", commit);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter")  { e.preventDefault(); commit(); }
-      if (e.key === "Escape") { e.preventDefault(); cancel(); }
-      e.stopPropagation(); // don't leak keystrokes to SVG handlers
-    });
+    }, { stopPropagation: true });
   };
 
   for (const ref of nodeRefs) {

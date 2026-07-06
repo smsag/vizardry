@@ -551,19 +551,33 @@ button.vzd-btn {
   cursor: text;
 }
 
-.vzd-inline-input {
+/* Shared reset for every inline-rename <input> (HTML-hosted and SVG
+   foreignObject alike): no chrome of its own, sized to fill whatever box its
+   caller placed it in. Each specific class below adds only what genuinely
+   differs between contexts (colour/font source, alignment, sizing). */
+.vzd-rename-input {
   background: transparent;
   border: none;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.vzd-inline-input {
   /* Inherit the host element's own colour (e.g. accent on activity headers,
      muted on step headers) since the input replaces the label in place and
      has a transparent background — a fixed colour would look wrong or, on
      accent-tinted headers, risk poor contrast. */
   color: inherit;
   font: inherit;
-  padding: 0.1em 0.3em;
-  width: 100%;
-  box-sizing: border-box;
-  outline: none;
+  text-align: inherit;
+  /* No padding/margin of its own: the host element (task name, meta item,
+     activity/step header) already carries whatever padding and alignment it
+     needs, and the input replaces the label's text in place. Any padding
+     here would stack on top of the host's, shifting the caret away from
+     where the label text sat and resizing the box when edit mode toggles. */
+  padding: 0;
+  margin: 0;
 }
 
 /* Edit-mode drag states */
@@ -1068,15 +1082,14 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 .vzd-tree-rename-input {
-  width: 100%;
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   color: var(--text-normal);
-  background: transparent;
-  border: none;
+  /* The label it replaces is always centred (text-anchor: middle), but that
+     SVG attribute has no effect inside this foreignObject's HTML content, so
+     it must be restated here or the text jumps left when editing starts. */
+  text-align: center;
   padding: 2px 6px;
-  outline: none;
-  box-sizing: border-box;
 }
 
 /* Presentation overlay: suppress tree inline-edit affordances.
@@ -1173,17 +1186,12 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 .vzd-wardley-rename-input {
-  width: 100%;
   height: 100%;
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   color: var(--text-normal);
-  background: transparent;
-  border: none;
   padding: 1px 6px;
-  outline: none;
   z-index: 10;
-  box-sizing: border-box;
 }
 
 /* Drag tooltip: coordinate text */
