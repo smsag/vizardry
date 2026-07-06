@@ -83,9 +83,12 @@ export function initCanvas(
     header.createEl("span", { text: title, cls: "vizardry-title" });
   }
 
+  // Every canvas is authored under the single ```vizardry fence now (the
+  // `type:` line inside `source` identifies the framework), regardless of
+  // what `frameworkId` is used for elsewhere (data-framework, diagnostics).
   const fence = '```';
   const copyText = source !== undefined
-    ? fence + frameworkId + '\n' + source + '\n' + fence
+    ? fence + 'vizardry' + '\n' + source + '\n' + fence
     : undefined;
   addHeaderControls(header, container, title, copyText, app);
   extraHeaderContent?.(header);

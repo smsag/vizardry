@@ -34,7 +34,7 @@ export function activateBlockEdit(
   body.removeClass("vizardry-block-empty");
   body.empty();
 
-  const textarea = body.createEl("textarea", { cls: "vzd-block-textarea" });
+  const textarea = body.createEl("textarea", { cls: "vzd-plain-textarea vzd-block-textarea" });
   textarea.value = currentContent.trim();
 
   // Auto-size height to content

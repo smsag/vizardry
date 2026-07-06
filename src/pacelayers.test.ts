@@ -125,4 +125,67 @@ describe("parsePaceLayers", () => {
     if (!result.ok) return;
     expect(result.data.layers["Nature"]?.note).toBe("Kept");
   });
+
+  // ── Type-specific display name as a layer: alias ──────────────────────────
+
+  it("accepts the current type's display name as an alias for the canonical layer", () => {
+    const result = parsePaceLayers("type: product\nlayer: Experiments\n  note: Shipping fast");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.layers["Fashion"]?.note).toBe("Shipping fast");
+  });
+
+  it("does not resolve another type's display name as an alias", () => {
+    // "Experiments" is only a valid alias under type: product, not shearing.
+    const result = parsePaceLayers("type: shearing\nlayer: Experiments\n  note: X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(Object.keys(result.data.layers)).toHaveLength(0);
+  });
+
+  it("resolves a layer: alias even when it appears before the type: line", () => {
+    const result = parsePaceLayers("layer: Experiments\n  note: Shipping fast\ntype: product");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.type).toBe("product");
+    expect(result.data.layers["Fashion"]?.note).toBe("Shipping fast");
+  });
+
+  it("alias matching is case-insensitive", () => {
+    const result = parsePaceLayers("type: retro\nlayer: actions\n  note: X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.layers["Fashion"]?.note).toBe("X");
+  });
+
+  // ── Compound "type: pacelayers, <variant>" (canvas now lives under the
+  // generic ```vizardry fence, so the type: line self-identifies) ──────────
+
+  it("accepts the compound 'type: pacelayers, <variant>' form", () => {
+    const result = parsePaceLayers("type: pacelayers, product\nlayer: Fashion\n  note: X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.type).toBe("product");
+  });
+
+  it("still accepts the plain 'type: <variant>' form (no id prefix)", () => {
+    const result = parsePaceLayers("type: product\nlayer: Fashion\n  note: X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.type).toBe("product");
+  });
+
+  it("compound form is case-insensitive on both the id and the variant", () => {
+    const result = parsePaceLayers("type: PaceLayers, Retro\nlayer: Fashion\n  note: X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.type).toBe("retro");
+  });
+
+  it("falls back to shearing when the compound form's variant is unknown", () => {
+    const result = parsePaceLayers("type: pacelayers, nonsense");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.type).toBe("shearing");
+  });
 });

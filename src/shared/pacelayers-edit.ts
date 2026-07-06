@@ -1,5 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { LAYER_LABELS } from "../pacelayers";
+import type { PaceLayerName, PaceLayerType } from "../types";
 
 /**
  * Returns true if a zero-indent line is an "orphaned value fragment" —
@@ -35,9 +37,10 @@ export function writePaceLayerCell(
   layerName: string,
   cellKey: string,
   newValue: string,
+  type?: PaceLayerType,
 ): boolean {
   try {
-    return _writePaceLayerCell(app, ctx, el, layerName, cellKey, newValue);
+    return _writePaceLayerCell(app, ctx, el, layerName, cellKey, newValue, type);
   } catch (err) {
     console.error("Vizardry: writePaceLayerCell — unexpected error", err);
     return false;
@@ -66,6 +69,7 @@ function _writePaceLayerCell(
   layerName: string,
   cellKey: string,
   newValue: string,
+  type?: PaceLayerType,
 ): boolean {
   // Guard: if the canvas element has been detached (replaced by a re-render),
   // skip the write — the new render has a fresh ctx and will handle future edits.
@@ -84,12 +88,21 @@ function _writePaceLayerCell(
   // reuses the same container element across re-renders (el.isConnected stays
   // true) but getSectionInfo() returns the old lineEnd. Earlier writes that
   // insert lines push lower layers — especially Culture — past the stale lineEnd.
-  const targetHeader = `layer: ${layerName.toLowerCase()}`;
+  //
+  // The canvas may have been authored with the canonical name (`layer: Fashion`)
+  // or, since the rendered canvas only ever shows the type-specific display
+  // name, with that alias instead (e.g. `layer: Experiments` under type:
+  // product) — accept either.
+  const acceptedHeaders = new Set([`layer: ${layerName.toLowerCase()}`]);
+  if (type) {
+    const alias = LAYER_LABELS[type][layerName as PaceLayerName];
+    if (alias) acceptedHeaders.add(`layer: ${alias.toLowerCase()}`);
+  }
   let layerHeaderLine = -1;
 
   for (let ln = lineStart; ln < totalLines; ln++) {
     const raw: string = editor.getLine(ln);
-    if (raw.trim().toLowerCase() === targetHeader) {
+    if (acceptedHeaders.has(raw.trim().toLowerCase())) {
       layerHeaderLine = ln;
       break;
     }

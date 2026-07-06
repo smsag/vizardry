@@ -1,9 +1,9 @@
 import { setIcon, MarkdownView } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { FrameworkDefinition } from "../types";
+import type { FrameworkDefinition, BlockDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
-import { renderCardBlock } from "./card-block";
+import { renderCardBlock, type CardDropTarget } from "./card-block";
 import { attachSectionPreview } from "./section-preview";
 import { setupMobileCarousel } from "./grid-carousel";
 import { t } from "../i18n";
@@ -85,13 +85,14 @@ export function renderError(message: string, container: HTMLElement): void {
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
-  cardModes: Record<string, boolean>,
+  cardBlocks: Set<string>,
   container: HTMLElement,
   resolver: LinkResolver,
   navigateTo: (heading: string) => void,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
   source?: string,
+  allCards: boolean = false,
 ): void {
   const defaultTitle = framework.label;
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
@@ -104,6 +105,20 @@ export function renderCanvas(
   grid.style.setProperty("--vzd-template", framework.gridTemplate);
   grid.style.setProperty("--vzd-columns", framework.gridColumns);
   grid.style.setProperty("--vzd-rows", framework.gridRows);
+
+  // Two passes: the first creates every block's DOM (label, link button,
+  // body element) and figures out which ones are card-mode; the second
+  // renders each body. Splitting it this way lets card-mode blocks share a
+  // sibling registry (built between the passes) so a card can be dragged
+  // from one block into another, not just reordered within its own block —
+  // mirroring the cross-cell drag registry in renderMatrix().
+  type BlockRecord = {
+    blockDef: BlockDefinition;
+    body: HTMLElement;
+    content: string;
+    isCard: boolean;
+  };
+  const records: BlockRecord[] = [];
 
   for (const blockDef of framework.blocks) {
     const labelKey = blockDef.label.toLowerCase();
@@ -131,10 +146,19 @@ export function renderCanvas(
       body.setAttribute("data-placeholder", blockDef.placeholder);
     }
 
-    const isCardBlock = labelKey in cardModes ? cardModes[labelKey] : (blockDef.cardBlock ?? false);
+    const isCardBlock = allCards || cardBlocks.has(labelKey) || (blockDef.cardBlock ?? false);
 
-    if (isCardBlock) {
-      renderCardBlock(body, blockDef.label, content, app, ctx, container, undefined, resolver, navigateTo);
+    records.push({ blockDef, body, content, isCard: isCardBlock });
+  }
+
+  const cardTargets: CardDropTarget[] = records
+    .filter(r => r.isCard)
+    .map(r => ({ body: r.body, blockLabel: r.blockDef.label }));
+
+  records.forEach(({ blockDef, body, content, isCard }) => {
+    if (isCard) {
+      const siblings = cardTargets.filter(t => t.body !== body);
+      renderCardBlock(body, blockDef.label, content, app, ctx, container, siblings, resolver, navigateTo);
     } else {
       renderBlockBody(body, content);
 
@@ -148,7 +172,7 @@ export function renderCanvas(
         });
       }
     }
-  }
+  });
 
   setupMobileCarousel(container, framework.blocks.length);
 }

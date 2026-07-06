@@ -39,7 +39,7 @@ function activateItemEdit(
   item.addClass("vzd-raci-editing");
   item.empty();
 
-  const textarea = item.createEl("textarea", { cls: "vzd-raci-textarea" });
+  const textarea = item.createEl("textarea", { cls: "vzd-plain-textarea vzd-raci-textarea" });
   textarea.value = currentValue;
 
   const resize = (): void => {

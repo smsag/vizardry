@@ -1,12 +1,13 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
-import { writeBlockContent } from "../shared/block-edit";
+import { MarkdownView, Notice } from "obsidian";
+import { writeBlockContent, moveCardBetweenBlocks } from "../shared/block-edit";
 import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
 import { ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { renderHeadingLink } from "./controls";
 import type { LinkResolver } from "../shared/links";
+import { t } from "../i18n";
 
 /** A sibling drop-zone registered by the parent canvas (e.g. matrix cells). */
 export type CardDropTarget = { body: HTMLElement; blockLabel: string };
@@ -87,23 +88,42 @@ export function renderCardBlock(
 
     preserveScroll(win, () => {
       if (!activeDrop) {
-        // Within-block reorder — existing behaviour
+        // Within-block reorder
         if (toIndex === fromIndex) return;
         const currentLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
         const reordered = [...currentLines];
         const [moved] = reordered.splice(fromIndex, 1);
         reordered.splice(toIndex, 0, moved);
-        body.dataset.blockContent = reordered.join("\n");
-        writeBlockContent(app, ctx, container, blockLabel, reordered.join("\n"));
+        const newContent = reordered.join("\n");
+
+        if (writeBlockContent(app, ctx, container, blockLabel, newContent)) {
+          body.dataset.blockContent = newContent;
+        } else {
+          new Notice(t("edit.writeFailed"));
+        }
       } else {
-        // Cross-cell move
+        // Cross-block move — located and edited as a single atomic operation
+        // (see moveCardBetweenBlocks' doc comment for why two separate
+        // writeBlockContent calls are unreliable here).
         const sourceLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
         const [movedCard] = sourceLines.splice(fromIndex, 1);
         const destLines = (activeDrop.body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
         destLines.splice(toIndex, 0, movedCard);
+        const newSourceContent = sourceLines.join("\n");
+        const newDestContent = destLines.join("\n");
 
-        body.dataset.blockContent = sourceLines.join("\n");
-        activeDrop.body.dataset.blockContent = destLines.join("\n");
+        const written = moveCardBetweenBlocks(
+          app, ctx, container,
+          { label: blockLabel, newContent: newSourceContent },
+          { label: activeDrop.blockLabel, newContent: newDestContent },
+        );
+        if (!written) {
+          new Notice(t("edit.writeFailed"));
+          return;
+        }
+
+        body.dataset.blockContent = newSourceContent;
+        activeDrop.body.dataset.blockContent = newDestContent;
 
         // Update empty state immediately so the source cell doesn't look broken
         if (sourceLines.length === 0) {
@@ -112,10 +132,6 @@ export function renderCardBlock(
         }
         activeDrop.body.removeClass("vizardry-block-empty");
         activeDrop.body.addClass("vzd-card-block-body");
-
-        // Write source first if it's lower in the file to keep line numbers stable
-        writeBlockContent(app, ctx, container, blockLabel, sourceLines.join("\n"));
-        writeBlockContent(app, ctx, container, activeDrop.blockLabel, destLines.join("\n"));
       }
     });
   }

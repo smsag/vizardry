@@ -8,7 +8,7 @@ Canvases are **editable in Live Preview**: click any grid block to edit its cont
 
 ## How it works
 
-Write a fenced code block with the framework name as the language tag. Switch to **Live Preview** or **Reading View** to see the rendered canvas.
+Write a ` ```vizardry ` fenced code block with a `type:` line naming the framework, e.g. `type: bmc`. Switch to **Live Preview** or **Reading View** to see the rendered canvas.
 
 **Grid canvases** use `block: Label` to define each section, with content indented below:
 
@@ -24,35 +24,41 @@ block: Label
 
 ## Supported frameworks
 
-| Code block | Framework | Type |
+Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside picks the framework. A few frameworks have their own further variant, given as a second, comma-separated value (`type: matrix, pain`).
+
+| `type:` value | Framework | Kind |
 |---|---|---|
-| ` ```adkar ` | ADKAR Model | Grid |
-| ` ```bmc ` | Business Model Canvas | Grid |
-| ` ```fourls ` | 4Ls Retrospective | Grid |
-| ` ```carousel ` | Image Carousel | Gallery |
-| ` ```impact ` | Impact Map | Tree |
-| ` ```jobs ` | Jobs Canvas | Grid |
-| ` ```kata ` | Product Kata | Grid |
-| ` ```lean ` | Lean Canvas | Grid |
-| ` ```leanux ` | Lean UX Canvas | Grid |
-| ` ```matrix ` | Pain Point / Opportunity Matrix | Grid |
-| ` ```matrix ` (type: opportunity) | Opportunity Matrix | Grid |
-| ` ```mindmap ` | Mind Map | Tree |
-| ` ```opportunity ` | Opportunity Canvas | Grid |
-| ` ```ost ` | Opportunity Solution Tree | Tree |
-| ` ```rac ` | Riskiest Assumptions Canvas | Grid |
-| ` ```raci ` | RACI Matrix | Table |
-| ` ```scqa ` | SCQA Narrative | Grid / Tree |
-| ` ```scr ` | SCR Narrative | Grid / Tree |
-| ` ```sipoc ` | SIPOC Diagram | Table |
-| ` ```sipoc ` (type: flow) | SIPOC Flow Diagram | SVG flow |
-| ` ```story ` | User Story Map | Grid |
-| ` ```swot ` | SWOT Analysis | Grid |
-| ` ```vpc ` | Value Proposition Canvas | Grid |
-| ` ```venn ` | Venn Diagram | SVG overlap |
-| ` ```wardley ` | Wardley Map | SVG canvas |
-| ` ```ptw ` | Playing to Win | Grid |
-| ` ```conceptmap ` | Concept Map | SVG graph |
+| `adkar` | ADKAR Model | Grid |
+| `bmc` | Business Model Canvas | Grid |
+| `fourls` | 4Ls Retrospective | Grid |
+| `carousel` | Image Carousel | Gallery |
+| `impact` | Impact Map | Tree |
+| `jobs` | Jobs Canvas | Grid |
+| `kata` | Product Kata | Grid |
+| `lean` | Lean Canvas | Grid |
+| `leanux` | Lean UX Canvas | Grid |
+| `matrix` or `matrix, pain` | Pain Point Matrix | Grid |
+| `matrix, opportunity` | Opportunity Matrix | Grid |
+| `matrix, impact` | Impact / Effort Matrix | Grid |
+| `mindmap` | Mind Map | Tree |
+| `opportunity` | Opportunity Canvas | Grid |
+| `ost` | Opportunity Solution Tree | Tree |
+| `pacelayers` or `pacelayers, shearing` | Pace Layer Analysis | Grid |
+| `pacelayers, product` | Pace Layer Analysis (product variant) | Grid |
+| `pacelayers, retro` | Pace Layer Analysis (retro variant) | Grid |
+| `rac` | Riskiest Assumptions Canvas | Grid |
+| `raci` | RACI Matrix | Table |
+| `scqa` | SCQA Narrative | Grid / Tree |
+| `scr` | SCR Narrative | Grid / Tree |
+| `sipoc` | SIPOC Diagram | Table |
+| `sipoc-flow` | SIPOC Flow Diagram | SVG flow |
+| `story` | User Story Map | Grid |
+| `swot` | SWOT Analysis | Grid |
+| `vpc` | Value Proposition Canvas | Grid |
+| `venn` | Venn Diagram | SVG overlap |
+| `wardley` | Wardley Map | SVG canvas |
+| `ptw` | Playing to Win | Grid |
+| `conceptmap` | Concept Map | SVG graph |
 
 ---
 
@@ -89,7 +95,8 @@ In Reading View the canvas is rendered normally with no edit affordance.
 ### Business Model Canvas
 
 ~~~
-```bmc
+```vizardry
+type: bmc
 block: Key Partners
   Suppliers, Logistics partners
 
@@ -124,7 +131,8 @@ block: Revenue Streams
 ### ADKAR Model
 
 ~~~
-```adkar
+```vizardry
+type: adkar
 block: Awareness
   Teams understand why the reporting workflow must change now
   Leadership aligns on the cost of staying with manual exports
@@ -152,7 +160,8 @@ block: Reinforcement
 ### 4Ls Retrospective
 
 ~~~
-```fourls
+```vizardry
+type: fourls
 block: Liked
   Fast deployment pipeline
   Smooth cross-team collaboration
@@ -185,7 +194,8 @@ block: Actions
 ### Image Carousel
 
 ~~~
-```carousel
+```vizardry
+type: carousel
 ![](image-one.png)
 ![](image-two.png)
 ![](image-three.png)
@@ -204,7 +214,8 @@ block: Actions
 ### Impact Map
 
 ~~~
-```impact
+```vizardry
+type: impact
 goal: Increase 30-day retention by 15%
 
 actor: Product Team
@@ -242,7 +253,8 @@ actor: Customer Success
 ### Jobs Canvas
 
 ~~~
-```jobs
+```vizardry
+type: jobs
 block: Job Performer
   Operations manager at a 50-person B2B SaaS company
 
@@ -284,7 +296,8 @@ block: Obstacles
 ### Lean Canvas
 
 ~~~
-```lean
+```vizardry
+type: lean
 block: Problem
   Too many manual steps in the daily reporting workflow
 
@@ -319,7 +332,8 @@ block: Revenue Streams
 ### Lean UX Canvas
 
 ~~~
-```leanux
+```vizardry
+type: leanux
 block: Business Problem
   Users drop off during onboarding before reaching their first value moment
 
@@ -354,7 +368,8 @@ block: Minimum Experiment
 ### Mind Map
 
 ~~~
-```mindmap
+```vizardry
+type: mindmap
 root: What makes a great PM?
 
   Discovery
@@ -394,7 +409,8 @@ root: What makes a great PM?
 ### Opportunity Canvas
 
 ~~~
-```opportunity
+```vizardry
+type: opportunity
 block: Problem / Opportunity
   Manual reporting consumes 4+ hours per week for ops teams
 
@@ -432,7 +448,8 @@ block: Factors for Success
 ### Opportunity Solution Tree
 
 ~~~
-```ost
+```vizardry
+type: ost
 outcome: Increase weekly active users by 20% in Q3.
 
   New users do not discover the first high-value workflow.
@@ -461,7 +478,8 @@ questions, each holding a single answer. It renders as a top-down grid of cards
 by default and can morph into an OST-style branching tree with `view: tree`.
 
 ~~~
-```scqa
+```vizardry
+type: scqa
 title: Why we're repricing
 
 situation: Conversion has been flat at 3% for two years
@@ -477,11 +495,11 @@ situation: Conversion has been flat at 3% for two years
 ~~~
 
 The **SCR** variant drops the question level — `situation → complication →
-resolution` — via its own ` ```scr ` fence (or `type: scr` inside a ` ```scqa `
-block):
+resolution` — via `type: scr` instead of `type: scqa`:
 
 ~~~
-```scr
+```vizardry
+type: scr
 situation: Checkout ran at 99.9% uptime all year
   A config push took payments down for 40 minutes
     Add staged rollout with an automated config canary
@@ -492,7 +510,6 @@ situation: Checkout ran at 99.9% uptime all year
 - `situation:` — root node, no indent, required, one only
 - Indented lines — child nodes; SCQA depth = 1 complication, 2 question, 3 answer (one answer per question); SCR depth = 1 complication, 2 resolution
 - `view: grid` (default) or `view: tree` — chooses the card grid or the branching tree
-- `type: scqa | scr` — overrides the variant implied by the fence
 - Blank lines and `// comment` lines are ignored
 - In edit mode both views support inline rename, add (`+`), and delete (`×`); the grid also allows drag to reorder siblings
 
@@ -501,7 +518,8 @@ situation: Checkout ran at 99.9% uptime all year
 ### Product Kata
 
 ~~~
-```kata
+```vizardry
+type: kata
 block: Current Condition
   Onboarding takes 3 days on average and requires manual
   handholding from the Customer Success team on every account
@@ -530,7 +548,8 @@ block: Expected Outcome
 ### Riskiest Assumptions Canvas
 
 ~~~
-```rac
+```vizardry
+type: rac
 block: Customers
   Ops managers at 20–200 person SaaS companies — P:4 I:9 Risk:36
   Finance teams needing weekly KPI reports — P:3 I:7 Risk:21
@@ -573,7 +592,8 @@ Each assumption is rated: **P** = probability of being wrong (1–5), **I** = im
 A SIPOC maps the full scope of a process row by row — each row traces one chain from supplier to customer, making attribution immediately readable.
 
 ~~~
-```sipoc
+```vizardry
+type: sipoc
 row:
   supplier: Dev team
   input: Feature branch
@@ -610,11 +630,11 @@ row:
 
 ### SIPOC Flow Diagram
 
-For processes with branching inputs, merging paths, and explicit connections between named nodes, use the flow variant by adding `type: flow` as the first line of a `sipoc` block.
+For processes with branching inputs, merging paths, and explicit connections between named nodes, use the flow variant: `type: sipoc-flow` instead of `type: sipoc`.
 
 ~~~
-```sipoc
-type: flow
+```vizardry
+type: sipoc-flow
 
 suppliers:
   Supplier 1 [ellipse]
@@ -660,7 +680,6 @@ link: Data 5 -> Customer 3
 ~~~
 
 **Syntax:**
-- `type: flow` — first line; switches the block to flow rendering
 - `suppliers:`, `inputs:`, `process:`, `outputs:`, `customers:` — column section headers (plural)
 - Indented `Name [shape]` — declares a node; available shapes: `ellipse`, `parallelogram`, `rect`, `diamond`, `cylinder`, `document`, `trapezoid`, `pentagon`, `circle`, `hexagon`
 - `link: A -> B` — directed arrow from node A to node B; links can go in any direction including backwards
@@ -674,7 +693,8 @@ link: Data 5 -> Customer 3
 ### SWOT Analysis
 
 ~~~
-```swot
+```vizardry
+type: swot
 block: Strengths
   Strong brand recognition
   Experienced engineering team
@@ -702,7 +722,8 @@ block: Threats
 ### User Story Map
 
 ~~~
-```story
+```vizardry
+type: story
 user: Team Lead
 goal: Coordinate team and ship features reliably
 
@@ -783,7 +804,8 @@ slice: V1.1
 ### Value Proposition Canvas
 
 ~~~
-```vpc
+```vizardry
+type: vpc
 block: Products & Services
   Automated reporting suite
   One-click export to PDF and Slides
@@ -816,7 +838,8 @@ block: Gains
 ### Venn Diagram
 
 ~~~
-```venn
+```vizardry
+type: venn
 circle: Design
   - User research
   - Wireframing
@@ -858,7 +881,8 @@ center:
 A Wardley Map plots the components of a value chain on two axes: **visibility** (how visible to the user, top = visible) and **evolution** (how commoditised, right = commodity). It reveals which components to build, buy, or outsource.
 
 ~~~
-```wardley
+```vizardry
+type: wardley
 stages: Driver | Approver | Contributor | Informed
 
 anchor: User
@@ -906,7 +930,8 @@ All changes write back to the source block surgically — only the affected line
 ### Playing to Win
 
 ~~~
-```ptw
+```vizardry
+type: ptw
 block: Winning Aspiration
   Be the most trusted tool for distributed engineering teams, winning on simplicity and time-to-value — not feature count.
 
@@ -955,7 +980,8 @@ block: Strategic Tests
 A concept map models knowledge as a **directed graph** — concepts are nodes, and every edge carries a labeled relationship phrase that makes the connection explicit. Unlike a mind map (which radiates from a single root), a concept map is free-form: any concept can link to any other, cycles are valid, and cross-links between branches are the point.
 
 ~~~
-```conceptmap
+```vizardry
+type: conceptmap
 title: Knowledge Domain
 
 Photosynthesis -- requires --> Sunlight
@@ -995,7 +1021,8 @@ Any canvas element can navigate to a heading in the same note. A small link icon
 *Inline wiki-link* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, Mind Map, and individual cards on the card canvases (card-mode blocks, Matrix, Story, Roadmap, SCQA grid):
 
 ~~~
-```lean
+```vizardry
+type: lean
 block: Problem [[#Problem Discovery]]
   Too many manual steps in the daily workflow
 
@@ -1007,7 +1034,8 @@ block: Solution [[#Our Approach]]
 *Inline Markdown link* — use standard Markdown anchor syntax `[label](#Anchor%20Text)` on the same line. The anchor is URL-decoded to match the heading:
 
 ~~~
-```kata
+```vizardry
+type: kata
 block: Next Experiment [Next Experiment](#Next%20Experiment)
   Ship a 5-step guided wizard
 ```
@@ -1016,7 +1044,8 @@ block: Next Experiment [Next Experiment](#Next%20Experiment)
 *Auto-detection* — write a note heading that matches an element label exactly (case-insensitive) and the link appears with no extra syntax at all. The link icon updates live whenever headings change — no need to edit the code block:
 
 ~~~
-```lean
+```vizardry
+type: lean
 block: Problem
   Too many manual steps
 
@@ -1095,7 +1124,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ## Syntax reference
 
-### Grid canvases (adkar, bmc, fourls, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
+### Grid canvases (type: adkar, bmc, fourls, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
 
 | Syntax | Meaning |
 |---|---|
@@ -1105,7 +1134,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `block: Label [text](#Anchor%20Text)` | Link block to a heading via Markdown anchor (URL-decoded) |
 | `// comment` | Ignored |
 
-### Image Carousel (carousel)
+### Image Carousel (type: carousel)
 
 | Syntax | Meaning |
 |---|---|
@@ -1113,7 +1142,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Blank lines / `//` comments | Ignored |
 | Fewer than 2 images | Error |
 
-### Impact Map (impact)
+### Impact Map (type: impact)
 
 | Syntax | Meaning |
 |---|---|
@@ -1122,7 +1151,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `impact:` | Level 2 — indented under an actor |
 | `deliverable:` | Level 3 — indented under an impact |
 
-### Mind Map (mindmap)
+### Mind Map (type: mindmap)
 
 | Syntax | Meaning |
 |---|---|
@@ -1130,7 +1159,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Indented lines | Child nodes at the indented depth |
 | Blank lines / `// comment` | Ignored |
 
-### Opportunity Solution Tree (ost)
+### Opportunity Solution Tree (type: ost)
 
 | Syntax | Meaning |
 |---|---|
@@ -1138,7 +1167,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Indented lines | Depth 1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption |
 | Blank lines / `// comment` | Ignored |
 
-### SCQA / SCR Narrative (scqa, scr)
+### SCQA / SCR Narrative (type: scqa, scr)
 
 | Syntax | Meaning |
 |---|---|
@@ -1146,10 +1175,9 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Indented lines (scqa) | Depth 1 = complication, 2 = question, 3 = answer (one answer per question) |
 | Indented lines (scr) | Depth 1 = complication, 2 = resolution |
 | `view: grid \| tree` | Card grid (default) or branching tree |
-| `type: scqa \| scr` | Overrides the variant implied by the fence |
 | Blank lines / `// comment` | Ignored |
 
-### SIPOC Diagram (sipoc)
+### SIPOC Diagram (type: sipoc)
 
 | Syntax | Meaning |
 |---|---|
@@ -1164,17 +1192,16 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Missing cell keys | Render as `—` |
 | Blank lines / `// comment` | Ignored |
 
-### SIPOC Flow Diagram (sipoc with type: flow)
+### SIPOC Flow Diagram (type: sipoc-flow)
 
 | Syntax | Meaning |
 |---|---|
-| `type: flow` | First line; enables flow rendering |
 | `suppliers:` / `inputs:` / `process:` / `outputs:` / `customers:` | Column section headers |
 | Indented `Name [shape]` | Node declaration; shape: `ellipse`, `parallelogram`, `rect`, `diamond`, `cylinder`, `document`, `trapezoid`, `pentagon`, `circle`, `hexagon` |
 | `link: A -> B` | Directed arrow; any direction allowed; same-column links route vertically |
 | Blank lines / `// comment` | Ignored |
 
-### User Story Map (story)
+### User Story Map (type: story)
 
 | Syntax | Meaning |
 |---|---|
@@ -1186,7 +1213,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `slice: <name>` | Priority band |
 | Indented `step: <name> \| task A, task B` | Assigns tasks to this slice |
 
-### Venn Diagram (venn)
+### Venn Diagram (type: venn)
 
 | Syntax | Meaning |
 |---|---|
@@ -1196,7 +1223,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `intersection: A+B` | Items in the overlap of named circles |
 | `center:` | 3-circle triple intersection |
 
-### Wardley Map (wardley)
+### Wardley Map (type: wardley)
 
 | Syntax | Meaning |
 |---|---|
@@ -1207,7 +1234,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `link: A -> B` | Dependency arrow |
 | `// comment` | Ignored |
 
-### Concept Map (conceptmap)
+### Concept Map (type: conceptmap)
 
 | Syntax | Meaning |
 |---|---|
@@ -1218,7 +1245,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ---
 
-### Fishbone Diagram (fishbone)
+### Fishbone Diagram (type: fishbone)
 
 | Syntax | Meaning |
 |---|---|
@@ -1229,7 +1256,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ---
 
-### Now/Next/Later Roadmap (roadmap)
+### Now/Next/Later Roadmap (type: roadmap)
 
 | Syntax | Meaning |
 |---|---|
@@ -1239,11 +1266,13 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ---
 
-### Pace Layer Analysis (pacelayers)
+### Pace Layer Analysis (type: pacelayers)
+
+The `type:` line self-identifies as `pacelayers` plus a variant, e.g. `type: pacelayers, product`.
 
 | Syntax | Meaning |
 |---|---|
-| `type:` | Layout variant — `shearing` · `product` · `retro` |
+| `type: pacelayers, <variant>` | Layout variant — `shearing` · `product` · `retro` (plain `type: <variant>` without the `pacelayers,` prefix also still works) |
 | `context: <text>` | Optional one-line context shown in the header |
 | `layer: <name>` | One pace layer |
 | `note:` | Free text — used for outer layers (Fashion, Nature) |
