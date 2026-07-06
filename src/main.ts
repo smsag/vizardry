@@ -14,7 +14,7 @@ import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
-import { ALL_FRAMEWORKS } from "./frameworks/registry";
+import { ALL_FRAMEWORKS } from "./frameworks-registry";
 import { dispatchVizardry } from "./vizardry-dispatch";
 import { insertTemplateAtCursor } from "./shared/editor";
 import { t, tFrameworkDescription } from "./i18n";

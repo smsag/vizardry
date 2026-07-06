@@ -23,7 +23,7 @@ import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolv
 import { parseFrameworkSource } from "./parser";
 import { renderCanvas, renderError } from "./renderer";
 import { registerCanvasRelink, relinkCanvas } from "./renderer/canvas";
-import { FRAMEWORKS } from "./frameworks/registry";
+import { FRAMEWORKS } from "./frameworks-registry";
 import { CUSTOM_RENDERERS } from "./processors";
 import type { CustomRenderer } from "./processors";
 import { getPluginVersion } from "./shared/version";
