@@ -6,7 +6,7 @@ import { initCanvas, renderHeadingLink } from "./controls";
 import type { LinkResolver } from "../shared/links";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
-import { enableDragGesture } from "../shared/drag-gesture";
+import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import {
@@ -181,20 +181,15 @@ export function renderStoryMap(
 
     if (!app || !ctx || !overGrid) return;
 
-    // Preserve scroll position — editor.replaceRange() moves the CM6 cursor
-    // to the edited line which causes Obsidian to scroll there.
-    const savedScrollY = win.scrollY;
-    const savedScrollX = win.scrollX;
-
-    if (toStepName !== stepName) {
-      moveStoryTaskCrossColumn(app, ctx, container, taskName, stepName, toStepName, toSlice);
-    } else if (toSlice !== fromSlice) {
-      moveStoryTaskSlice(app, ctx, container, taskName, stepName, fromSlice, toSlice);
-    } else if (toIndex !== fromIndex) {
-      reorderStoryTask(app, ctx, container, stepName, fromSlice, fromIndex, toIndex);
-    }
-
-    win.requestAnimationFrame(() => win.scrollTo(savedScrollX, savedScrollY));
+    preserveScroll(win, () => {
+      if (toStepName !== stepName) {
+        moveStoryTaskCrossColumn(app, ctx, container, taskName, stepName, toStepName, toSlice);
+      } else if (toSlice !== fromSlice) {
+        moveStoryTaskSlice(app, ctx, container, taskName, stepName, fromSlice, toSlice);
+      } else if (toIndex !== fromIndex) {
+        reorderStoryTask(app, ctx, container, stepName, fromSlice, fromIndex, toIndex);
+      }
+    });
   }
 
   function findDropTarget(clientX: number, clientY: number): { cell: HTMLElement; sliceName: string | null; stepName: string; index: number } | null {

@@ -66,6 +66,7 @@ function findCodeFenceBySource(
   const lineCount = editor.lineCount();
   const normalised = source.trim();
 
+  const matches: { lineStart: number; lineEnd: number }[] = [];
   for (let i = 0; i < lineCount; i++) {
     const line = editor.getLine(i).trim();
     if (!line.startsWith("```")) continue;
@@ -78,12 +79,17 @@ function findCodeFenceBySource(
       if (inner.trim() === "```") break;
       body += (body ? "\n" : "") + inner;
     }
-    if (body.trim() === normalised) {
-      return { lineStart: fenceStart, lineEnd: j };
-    }
+    if (body.trim() === normalised) matches.push({ lineStart: fenceStart, lineEnd: j });
     i = j;
   }
-  return null;
+
+  if (matches.length === 0) return null;
+  if (matches.length > 1) {
+    // Two canvases with byte-identical source can't be told apart by a content
+    // scan — we edit the first, but surface the ambiguity so it's diagnosable.
+    console.warn(`Vizardry: ${matches.length} code fences share identical source; editing the first — give the canvases distinct content to disambiguate`);
+  }
+  return matches[0];
 }
 
 export function insertTemplateAtCursor(editor: Editor, template: string): void {

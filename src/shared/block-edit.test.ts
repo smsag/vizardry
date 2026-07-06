@@ -96,6 +96,27 @@ describe("writeBlockContent", () => {
     expect(editor.replaceRange).toHaveBeenCalled();
   });
 
+  it("warns and edits the first when two canvases share identical source", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    // Two byte-identical fences; the content scan can't disambiguate them.
+    const editor = makeMockEditor([
+      "```swot", "block: Strengths", "  old", "```",
+      "text between",
+      "```swot", "block: Strengths", "  old", "```",
+    ]);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtxNoInfo("note.md") as any;
+    const el = document.createElement("div");
+    el.dataset.vzSource = "block: Strengths\n  old";
+
+    expect(writeBlockContent(app, ctx, el, "Strengths", "new")).toBe(true);
+    // Edits the FIRST fence (line range 0–3), deterministically.
+    const [, from] = editor.replaceRange.mock.calls[0];
+    expect(from.line).toBeLessThan(4);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("share identical source"));
+    warn.mockRestore();
+  });
+
   it("returns false when vault file is not found", () => {
     const editor = makeMockEditor(["```bmc", "block: Strengths", "  old", "```"]);
     const app = makeApp("other.md", editor) as any; // sourcePath mismatch
