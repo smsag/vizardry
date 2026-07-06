@@ -7,6 +7,7 @@ import type { LinkResolver } from "../shared/links";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
+import { activateInlineEdit } from "./inline-edit";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import {
@@ -59,46 +60,6 @@ export function renderStoryMap(
   const grid = container.createEl("div", { cls: "vzd-story-grid" });
   grid.style.setProperty("--vzd-story-cols", String(totalCols));
 
-  // ── Shared inline-edit helper ─────────────────────────────────────────────
-  function activateInlineEdit(
-    el: HTMLElement,
-    currentValue: string,
-    onCommit: (newValue: string) => void,
-  ): void {
-    if (el.classList.contains("vzd-editing")) return;
-    el.classList.add("vzd-editing");
-    el.textContent = "";
-    const input = el.createEl("input", { cls: "vzd-inline-input", type: "text" });
-    input.value = currentValue;
-    input.focus({ preventScroll: true });
-    input.select();
-    let committed = false;
-    const commit = (): void => {
-      if (committed) return;
-      committed = true;
-      el.classList.remove("vzd-editing");
-      const v = input.value.trim();
-      if (v && v !== currentValue) {
-        onCommit(v);
-        // The writeback triggers a re-render; optimistically restore text in
-        // case re-render is slightly delayed.
-        el.textContent = v;
-      } else {
-        el.textContent = currentValue;
-      }
-    };
-    const cancel = (): void => {
-      if (committed) return;
-      committed = true;
-      el.classList.remove("vzd-editing");
-      el.textContent = currentValue;
-    };
-    input.addEventListener("blur", commit);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); commit(); }
-      if (e.key === "Escape") { e.preventDefault(); cancel(); }
-    });
-  }
 
   // ── Activity headers ──────────────────────────────────────────────────────
   type ActivityHeaderRef = { el: HTMLElement; start: number; end: number; origGridCol: string };
@@ -428,32 +389,9 @@ function renderMetaBadge(
 
   span.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (span.classList.contains("vzd-editing")) return;
-    span.classList.add("vzd-editing");
-    span.textContent = "";
-    const input = span.createEl("input", { cls: "vzd-inline-input", type: "text" });
-    input.value = value;
-    input.focus({ preventScroll: true });
-    input.select();
-    let committed = false;
-    const commit = (): void => {
-      if (committed) return;
-      committed = true;
-      span.classList.remove("vzd-editing");
-      const v = input.value.trim();
-      writeStoryMeta(app, ctx, container, key, v);
-      span.textContent = v ? `${label}: ${v}` : `${label}: —`;
-    };
-    const cancel = (): void => {
-      if (committed) return;
-      committed = true;
-      span.classList.remove("vzd-editing");
-      span.textContent = displayText;
-    };
-    input.addEventListener("blur", commit);
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") { ev.preventDefault(); commit(); }
-      if (ev.key === "Escape") { ev.preventDefault(); cancel(); }
+    activateInlineEdit(span, value, (v) => writeStoryMeta(app, ctx, container, key, v), {
+      shouldCommit: () => true, // always write back, even to clear the field
+      renderDisplay: (h, v) => { h.textContent = v ? `${label}: ${v}` : `${label}: —`; },
     });
   });
 }

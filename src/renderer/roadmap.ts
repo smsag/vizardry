@@ -5,6 +5,7 @@ import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive } from "./controls";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
+import { activateInlineEdit } from "./inline-edit";
 import { attachSectionPreview } from "./section-preview";
 import { setupRoadmapCarousel } from "./grid-carousel";
 import { t } from "../i18n";
@@ -41,54 +42,6 @@ export function renderRoadmap(
   const win = ownerWindow(container);
 
   const grid = container.createEl("div", { cls: "vzd-roadmap-grid" });
-
-  // ── Inline-edit helper ────────────────────────────────────────────────────
-  function activateInlineEdit(
-    el: HTMLElement,
-    currentValue: string,
-    onCommit: (newValue: string) => void,
-  ): void {
-    if (el.classList.contains("vzd-editing")) return;
-    el.classList.add("vzd-editing");
-    // Preserve rendered HTML (e.g. wiki-links) so we can restore it on cancel.
-    const savedHTML = el.innerHTML;
-    el.textContent = "";
-    const input = el.createEl("input", { cls: "vzd-inline-input", type: "text" });
-    input.value = currentValue;
-    // Guard against CM6/Live-Preview immediately stealing focus back and
-    // triggering an unintended commit. Ignore the first blur that fires
-    // within 150 ms of the focus call.
-    let blurGuarded = true;
-    const blurGuardTimer = setTimeout(() => { blurGuarded = false; }, 150);
-    input.focus({ preventScroll: true });
-    input.select();
-    let committed = false;
-    const commit = (): void => {
-      if (committed) return;
-      committed = true;
-      clearTimeout(blurGuardTimer);
-      el.classList.remove("vzd-editing");
-      const v = input.value.trim();
-      if (v && v !== currentValue) {
-        onCommit(v);
-        el.textContent = v; // Temporary; canvas re-renders once the source changes.
-      } else {
-        el.innerHTML = savedHTML; // Restore rendered content (links etc.) on no-change.
-      }
-    };
-    const cancel = (): void => {
-      if (committed) return;
-      committed = true;
-      clearTimeout(blurGuardTimer);
-      el.classList.remove("vzd-editing");
-      el.innerHTML = savedHTML; // Restore rendered content on Escape.
-    };
-    input.addEventListener("blur", () => { if (!blurGuarded) commit(); });
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); commit(); }
-      if (e.key === "Escape") { e.preventDefault(); cancel(); }
-    });
-  }
 
   // ── Drag state ────────────────────────────────────────────────────────────
   type DragState = {
@@ -305,7 +258,7 @@ export function renderRoadmap(
         e.preventDefault();
         activateInlineEdit(titleEl, item.title, (newTitle) => {
           renameRoadmapItem(app, ctx, container, colId, item.title, newTitle);
-        });
+        }, { blurGuardMs: 150 }); // CM6/Live Preview can steal focus back right after .focus()
       });
 
       // Drag to move — only after deliberate movement, so a click, double-click,

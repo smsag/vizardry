@@ -5,6 +5,7 @@ import {
   renderTree, adaptSCQAToTree, SCQA_TREE_OPTIONS, SCR_TREE_OPTIONS,
 } from "./tree";
 import { renderInline } from "../shared/inline-markdown";
+import { activateInlineEdit } from "./inline-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
@@ -132,9 +133,9 @@ function renderGrid(
     // Inline rename on click (situation root included).
     textEl.addEventListener("click", (e) => {
       e.stopPropagation();
-      activateInlineRename(textEl, node.text, (next) => {
+      activateInlineEdit(textEl, node.text, (next) => {
         if (!renameSCQANode(app!, ctx!, el, node.text, next)) showWriteFailedNotice(el);
-      });
+      }, { renderDisplay: (host, v) => { host.empty(); renderInline(host, v); } });
     });
 
     // "+" add child, where depth allows.
@@ -227,43 +228,6 @@ function enableReorderDrag(
       // write-mode notice on genuine failure.
       reorderSCQANode(app, ctx, container, node.text, targetIndex);
     },
-  });
-}
-
-// ── Inline rename ────────────────────────────────────────────────────────────
-
-function activateInlineRename(
-  host: HTMLElement,
-  current: string,
-  onCommit: (next: string) => void,
-): void {
-  if (host.classList.contains("vzd-editing")) return;
-  host.classList.add("vzd-editing");
-  host.textContent = "";
-  const input = host.createEl("input", { cls: "vzd-inline-input", type: "text" });
-  input.value = current;
-  input.focus({ preventScroll: true });
-  input.select();
-
-  let committed = false;
-  const finish = (commit: boolean): void => {
-    if (committed) return;
-    committed = true;
-    host.classList.remove("vzd-editing");
-    const next = input.value.trim();
-    host.empty();
-    if (commit && next && next !== current) {
-      renderInline(host, next);
-      onCommit(next);
-    } else {
-      renderInline(host, current);
-    }
-  };
-
-  input.addEventListener("blur", () => finish(true));
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); finish(true); }
-    if (e.key === "Escape") { e.preventDefault(); finish(false); }
   });
 }
 
