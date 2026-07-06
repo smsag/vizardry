@@ -31,6 +31,7 @@ function makeMockEditor(lines: string[]) {
   const replaceRange = vi.fn();
   return {
     getLine: (n: number) => lines[n] ?? "",
+    lineCount: () => lines.length,
     replaceRange,
   };
 }
@@ -74,13 +75,25 @@ function makeCtxNoInfo(sourcePath: string) {
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe("writeBlockContent", () => {
-  it("returns false when getSectionInfo returns null", () => {
+  it("returns false when getSectionInfo returns null and no vzSource is set", () => {
     const editor = makeMockEditor([]);
     const app = makeApp("note.md", editor) as any;
     const ctx = makeCtxNoInfo("note.md") as any;
     const el = document.createElement("div");
     expect(writeBlockContent(app, ctx, el, "Strengths", "new")).toBe(false);
     expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+
+  it("saves via the vzSource fallback when getSectionInfo is null (Live Preview)", () => {
+    // Live Preview: getSectionInfo() returns null, so resolveEditor scans the
+    // editor for the code fence whose body matches the container's vzSource.
+    const editor = makeMockEditor(["```swot", "block: Strengths", "  old", "```"]);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtxNoInfo("note.md") as any;
+    const el = document.createElement("div");
+    el.dataset.vzSource = "block: Strengths\n  old";
+    expect(writeBlockContent(app, ctx, el, "Strengths", "new")).toBe(true);
+    expect(editor.replaceRange).toHaveBeenCalled();
   });
 
   it("returns false when vault file is not found", () => {
