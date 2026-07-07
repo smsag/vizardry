@@ -68,16 +68,19 @@ situation: Status quo
     expect(res.ok).toBe(false);
   });
 
-  it("rejects a question carrying more than one answer", () => {
+  it("allows a question to carry more than one answer", () => {
     const multi = `situation: S
   Complication
     Question
       Answer one
-      Answer two`;
+      Answer two
+      Answer three`;
     const res = parseSCQA(multi, "scqa");
-    expect(res.ok).toBe(false);
-    if (res.ok) return;
-    expect(res.error).toMatch(/single answer/i);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const question = res.data.root.children[0].children[0];
+    expect(question.children.map(a => a.text)).toEqual(["Answer one", "Answer two", "Answer three"]);
+    expect(question.children.every(a => a.level === 3)).toBe(true);
   });
 });
 

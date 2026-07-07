@@ -474,7 +474,7 @@ outcome: Increase weekly active users by 20% in Q3.
 ### SCQA / SCR Narrative
 
 A narrative hierarchy: one `situation:` branches into complications, each into
-questions, each holding a single answer. It renders as a top-down grid of cards
+questions, each holding one or more answers. It renders as a top-down grid of cards
 by default and can morph into an OST-style branching tree with `view: tree`.
 
 ~~~
@@ -508,7 +508,7 @@ situation: Checkout ran at 99.9% uptime all year
 
 **Syntax:**
 - `situation:` — root node, no indent, required, one only
-- Indented lines — child nodes; SCQA depth = 1 complication, 2 question, 3 answer (one answer per question); SCR depth = 1 complication, 2 resolution
+- Indented lines — child nodes; SCQA depth = 1 complication, 2 question, 3 answer (a question may have several answers); SCR depth = 1 complication, 2 resolution
 - `view: grid` (default) or `view: tree` — chooses the card grid or the branching tree
 - Blank lines and `// comment` lines are ignored
 - In edit mode both views support inline rename, add (`+`), and delete (`×`); the grid also allows drag to reorder siblings
@@ -1172,7 +1172,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Syntax | Meaning |
 |---|---|
 | `situation: <text>` | Root — no indent, required, one only |
-| Indented lines (scqa) | Depth 1 = complication, 2 = question, 3 = answer (one answer per question) |
+| Indented lines (scqa) | Depth 1 = complication, 2 = question, 3 = answer (a question may have several answers) |
 | Indented lines (scr) | Depth 1 = complication, 2 = resolution |
 | `view: grid \| tree` | Card grid (default) or branching tree |
 | Blank lines / `// comment` | Ignored |
