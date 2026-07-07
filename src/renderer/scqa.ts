@@ -14,6 +14,7 @@ import {
   renameSCQANode, addSCQAChild, deleteSCQANode, reorderSCQANode,
 } from "../shared/scqa-edit";
 import { enableDragGesture } from "../shared/drag-gesture";
+import { onDisconnected } from "../shared/lifecycle";
 
 // Default label for a newly-added child, by the parent's level. Role words are
 // part of the DSL (kept English, like block labels), so they are not i18n'd.
@@ -192,6 +193,16 @@ function enableReorderDrag(
   let ghost: HTMLElement | null = null;
   let siblingCards: HTMLElement[] = [];
   let lastX = 0;
+
+  // If this card is torn down (e.g. a re-render from an external file
+  // change) while a drag is in flight, drop the stale ghost instead of
+  // leaving it stuck on screen — mirroring the same guard the other
+  // draggable-card canvases have.
+  onDisconnected(card, () => {
+    ghost?.remove();
+    ghost = null;
+    card.classList.remove("vzd-scqa-card--dragging");
+  });
 
   enableDragGesture(card, {
     shouldStart: (target) => !target.closest("button, input"),

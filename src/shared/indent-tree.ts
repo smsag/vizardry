@@ -4,13 +4,19 @@ export interface IndentLine {
   lineNum: number;
 }
 
+/** True for lines every parser skips outright: blank, `//` comments, and the
+ *  canvas-title `title:` line (parsed separately via shared/title-edit). */
+export function isSkippableLine(trimmed: string): boolean {
+  return trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:");
+}
+
 export function extractMeaningfulLines(source: string): IndentLine[] {
   const lines = source.split("\n");
   const result: IndentLine[] = [];
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
     result.push({ indent: raw.search(/\S/), text: trimmed, lineNum: i + 1 });
   }
   return result;

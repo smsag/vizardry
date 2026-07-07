@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RACIData } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
+import { activateTextareaEdit } from "./inline-edit";
 import { writeRACICell } from "../shared/raci-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 
@@ -35,47 +36,20 @@ function activateItemEdit(
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
 ): void {
-  if (item.hasClass("vzd-raci-editing")) return;
-  item.addClass("vzd-raci-editing");
-  item.empty();
-
-  const textarea = item.createEl("textarea", { cls: "vzd-plain-textarea vzd-raci-textarea" });
-  textarea.value = currentValue;
-
-  const resize = (): void => {
-    textarea.style.height = "auto";
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  };
-  resize();
-  textarea.addEventListener("input", resize);
-  textarea.focus();
-  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
-  let committed = false;
-
-  const restoreItem = (value: string): void => {
-    item.removeClass("vzd-raci-editing");
-    item.empty();
-    if (value) {
-      item.removeClass("vzd-raci-item--empty");
-      item.createEl("span", { cls: "vzd-raci-item-value", text: value });
-    } else {
-      item.addClass("vzd-raci-item--empty");
-    }
-  };
-
-  const commit = (): void => {
-    if (committed) return;
-    committed = true;
-    const newValue = textarea.value.trim();
-    writeRACICell(app, ctx, container, rowIndex, cellKey, newValue);
-    restoreItem(newValue);
-  };
-
-  textarea.addEventListener("blur", commit);
-  textarea.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { committed = true; restoreItem(currentValue); }
-    if (e.key === "Tab")    { e.preventDefault(); commit(); }
+  activateTextareaEdit(item, item, currentValue, (value) => {
+    writeRACICell(app, ctx, container, rowIndex, cellKey, value);
+  }, {
+    editingClass: "vzd-raci-editing",
+    textareaClass: "vzd-raci-textarea",
+    renderDisplay: (host, value) => {
+      host.empty();
+      if (value) {
+        host.removeClass("vzd-raci-item--empty");
+        host.createEl("span", { cls: "vzd-raci-item-value", text: value });
+      } else {
+        host.addClass("vzd-raci-item--empty");
+      }
+    },
   });
 }
 

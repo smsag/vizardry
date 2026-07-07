@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { findNthKeyedBlock, writeKeyedSubLine } from "./keyed-block-edit";
 
 /**
  * Writes an updated cell value back into the source code block for a
@@ -23,71 +24,24 @@ export function writeRACICell(
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
 
-  // Locate the Nth task: block
-  let taskCount = -1;
-  let taskLineStart = -1;
-  let taskLineEnd = lineEnd;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const trimmed = editor.getLine(ln).trim().toLowerCase();
-    if (trimmed.startsWith("task:")) {
-      taskCount++;
-      if (taskCount === rowIndex) {
-        taskLineStart = ln;
-      } else if (taskCount > rowIndex) {
-        taskLineEnd = ln - 1;
-        break;
-      }
-    }
-  }
-
-  if (taskLineStart === -1) {
+  const task = findNthKeyedBlock(editor, lineStart, lineEnd, t => t.startsWith("task:"), rowIndex);
+  if (!task) {
     console.warn(`Vizardry: writeRACICell — task ${rowIndex} not found`);
     return false;
   }
 
   // Editing the task name itself
   if (cellKey === "task") {
-    const raw = editor.getLine(taskLineStart);
+    const raw = editor.getLine(task.blockLineStart);
     editor.replaceRange(
       `task: ${newValue}`,
-      { line: taskLineStart, ch: 0 },
-      { line: taskLineStart, ch: raw.length },
+      { line: task.blockLineStart, ch: 0 },
+      { line: task.blockLineStart, ch: raw.length },
     );
     return true;
   }
 
   // Editing a RACI sub-key
-  const targetPrefix = `${cellKey}:`;
-  let cellLine = -1;
-
-  for (let ln = taskLineStart + 1; ln <= taskLineEnd; ln++) {
-    if (editor.getLine(ln).trim().toLowerCase().startsWith(targetPrefix)) {
-      cellLine = ln;
-      break;
-    }
-  }
-
-  if (cellLine !== -1) {
-    const raw = editor.getLine(cellLine);
-    const indent = raw.match(/^(\s*)/)?.[1] ?? "  ";
-    editor.replaceRange(
-      `${indent}${cellKey}: ${newValue}`,
-      { line: cellLine, ch: 0 },
-      { line: cellLine, ch: raw.length },
-    );
-  } else {
-    let insertAfter = taskLineStart;
-    for (let ln = taskLineStart + 1; ln <= taskLineEnd; ln++) {
-      const t = editor.getLine(ln).trim();
-      if (t && !t.startsWith("//")) insertAfter = ln;
-    }
-    const insertLineText = editor.getLine(insertAfter);
-    editor.replaceRange(
-      `\n  ${cellKey}: ${newValue}`,
-      { line: insertAfter, ch: insertLineText.length },
-    );
-  }
-
+  writeKeyedSubLine(editor, task, cellKey, newValue);
   return true;
 }

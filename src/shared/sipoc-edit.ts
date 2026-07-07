@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { findNthKeyedBlock, writeKeyedSubLine } from "./keyed-block-edit";
 
 /**
  * Writes an updated cell value back into the source code block for a
@@ -24,64 +25,13 @@ export function writeSIPOCCell(
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
 
-  // Locate the Nth `row:` block
-  let rowCount = -1;
-  let rowLineStart = -1;
-  let rowLineEnd = lineEnd;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const trimmed = editor.getLine(ln).trim().toLowerCase();
-    if (trimmed === "row:") {
-      rowCount++;
-      if (rowCount === rowIndex) {
-        rowLineStart = ln;
-      } else if (rowCount > rowIndex) {
-        rowLineEnd = ln - 1;
-        break;
-      }
-    }
-  }
-
-  if (rowLineStart === -1) {
+  const row = findNthKeyedBlock(editor, lineStart, lineEnd, t => t === "row:", rowIndex);
+  if (!row) {
     console.warn(`Vizardry: writeSIPOCCell — row ${rowIndex} not found`);
     return false;
   }
 
-  // Find the key: line within the row
-  const targetPrefix = `${cellKey}:`;
-  let cellLine = -1;
-
-  for (let ln = rowLineStart + 1; ln <= rowLineEnd; ln++) {
-    if (editor.getLine(ln).trim().toLowerCase().startsWith(targetPrefix)) {
-      cellLine = ln;
-      break;
-    }
-  }
-
-  if (cellLine !== -1) {
-    // Replace the existing value, preserving indent
-    const raw = editor.getLine(cellLine);
-    const indent = raw.match(/^(\s*)/)?.[1] ?? "  ";
-    editor.replaceRange(
-      `${indent}${cellKey}: ${newValue}`,
-      { line: cellLine, ch: 0 },
-      { line: cellLine, ch: raw.length },
-    );
-  } else {
-    // Key absent — insert after the last non-blank line in the row block
-    // (or directly after `row:` if the block is otherwise empty)
-    let insertAfter = rowLineStart;
-    for (let ln = rowLineStart + 1; ln <= rowLineEnd; ln++) {
-      const t = editor.getLine(ln).trim();
-      if (t && !t.startsWith("//")) insertAfter = ln;
-    }
-    const insertLineText = editor.getLine(insertAfter);
-    editor.replaceRange(
-      `\n  ${cellKey}: ${newValue}`,
-      { line: insertAfter, ch: insertLineText.length },
-    );
-  }
-
+  writeKeyedSubLine(editor, row, cellKey, newValue);
   return true;
 }
 

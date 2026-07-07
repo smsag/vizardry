@@ -1,4 +1,5 @@
 import type { ImpactMapResult, ImpactActor, ImpactItem } from "./types";
+import { isSkippableLine } from "./shared/indent-tree";
 
 export function parseImpactMap(source: string): ImpactMapResult {
   const lines = source.split("\n");
@@ -13,7 +14,7 @@ export function parseImpactMap(source: string): ImpactMapResult {
     const raw = lines[i];
     const trimmed = raw.trim();
 
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
 
     const indent = raw.search(/\S/);
 

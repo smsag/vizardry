@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SIPOCData, SIPOCRow } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
+import { activateTextareaEdit } from "./inline-edit";
 import { insertSIPOCRowAfter, writeSIPOCCell } from "../shared/sipoc-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { bestTextColor } from "../shared/color-utils";
@@ -44,48 +45,21 @@ function activateCellEdit(
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
 ): void {
-  if (td.hasClass("vzd-sipoc-editing")) return;
-  const minH = td.clientHeight;
-  td.addClass("vzd-sipoc-editing");
-  td.empty();
-
-  const textarea = td.createEl("textarea", { cls: "vzd-plain-textarea vzd-sipoc-textarea" });
-  textarea.style.minHeight = `${minH}px`;
-  textarea.value = currentValue;
-
-  const resize = (): void => {
-    textarea.style.height = "auto";
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  };
-  resize();
-  textarea.addEventListener("input", resize);
-  textarea.focus();
-  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
-  let committed = false;
-
-  const restoreCell = (value: string): void => {
-    td.removeClass("vzd-sipoc-editing");
-    td.empty();
-    if (value) {
-      td.createEl("span", { cls: "vzd-sipoc-cell-value", text: value });
-    } else {
-      td.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
-    }
-  };
-
-  const commit = (): void => {
-    if (committed) return;
-    committed = true;
-    const newValue = textarea.value.trim();
-    writeSIPOCCell(app, ctx, container, rowIndex, cellKey, newValue);
-    restoreCell(newValue);
-  };
-
-  textarea.addEventListener("blur", commit);
-  textarea.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { committed = true; restoreCell(currentValue); }
-    if (e.key === "Tab")    { e.preventDefault(); commit(); }
+  const minHeight = td.clientHeight;
+  activateTextareaEdit(td, td, currentValue, (value) => {
+    writeSIPOCCell(app, ctx, container, rowIndex, cellKey, value);
+  }, {
+    editingClass: "vzd-sipoc-editing",
+    textareaClass: "vzd-sipoc-textarea",
+    minHeight,
+    renderDisplay: (host, value) => {
+      host.empty();
+      if (value) {
+        host.createEl("span", { cls: "vzd-sipoc-cell-value", text: value });
+      } else {
+        host.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
+      }
+    },
   });
 }
 

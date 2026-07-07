@@ -1,4 +1,5 @@
 import type { FishboneResult, FishboneCategory, FishboneCause } from "./types";
+import { isSkippableLine } from "./shared/indent-tree";
 
 /**
  * Parses a Fishbone (Ishikawa) diagram source block.
@@ -34,7 +35,7 @@ export function parseFishbone(source: string): FishboneResult {
     const raw = lines[i];
     const trimmed = raw.trim();
 
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
 
     const indent = raw.search(/\S/);
     const lower = trimmed.toLowerCase();

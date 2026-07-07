@@ -4,6 +4,7 @@ import { MarkdownView } from "obsidian";
 import type { ParsedPaceLayers, PaceLayerCell, PaceLayerName } from "../types";
 import { LAYER_CONFIG, LAYER_LABELS, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
 import { initCanvas, markInteractive } from "./controls";
+import { activateTextareaEdit } from "./inline-edit";
 import { setupPaceLayerCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { writePaceLayerCell } from "../shared/pacelayers-edit";
@@ -57,74 +58,29 @@ export function renderPaceLayers(
     cellKey: string,
     placeholder: string,
   ): void {
-    if (cell.hasClass('vzd-pl-editing')) return;
+    const currentValue = (contentEl.dataset.plValue ?? '').trim();
 
-    const currentValue = contentEl.dataset.plValue ?? '';
-
-    cell.addClass('vzd-pl-editing');
-    contentEl.empty();
-    contentEl.removeAttribute('data-placeholder');
-
-    const textarea = contentEl.createEl('textarea', { cls: 'vzd-plain-textarea vzd-block-textarea' });
-    textarea.value = currentValue.trim();
-
-    const resize = (): void => {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    };
-    resize();
-    textarea.addEventListener('input', resize);
-
-    textarea.focus();
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
-    let committed = false;
-
-    const commit = (): void => {
-      if (committed) return;
-      committed = true;
-      const newValue = textarea.value;
-
-      if (isEditMode) {
-        // CM6's replaceRange dispatches a transaction that scrolls the editor
-        // to keep the changed line in view, causing the viewport to jump.
-        // Capture the CM scroller position before the write and restore it on
-        // the next animation frame, after CM has processed the change.
+    activateTextareaEdit(cell, contentEl, currentValue, (newValue) => {
+      const written = writePaceLayerCell(app!, ctx!, container, layerName, cellKey, newValue, data.type);
+      if (!written) new Notice(t('edit.writeFailed'));
+    }, {
+      editingClass: 'vzd-pl-editing',
+      textareaClass: 'vzd-block-textarea',
+      trimValue: false,
+      onTab: 'indent',
+      // CM6's replaceRange dispatches a transaction that scrolls the editor
+      // to keep the changed line in view, causing the viewport to jump.
+      // Capture the CM scroller position before the write and restore it on
+      // the next animation frame, after CM has processed the change.
+      wrapCommit: (write) => {
         const scroller = container.closest<HTMLElement>('.cm-scroller');
         const savedScrollTop = scroller?.scrollTop;
-
-        const written = writePaceLayerCell(app!, ctx!, container, layerName, cellKey, newValue, data.type);
-        if (!written) {
-          new Notice(t('edit.writeFailed'));
-        }
-
+        write();
         if (scroller && savedScrollTop !== undefined) {
           requestAnimationFrame(() => { scroller.scrollTop = savedScrollTop; });
         }
-      }
-
-      cell.removeClass('vzd-pl-editing');
-      renderCellContent(contentEl, newValue.trim(), placeholder);
-    };
-
-    const cancel = (): void => {
-      if (committed) return;
-      committed = true;
-      cell.removeClass('vzd-pl-editing');
-      renderCellContent(contentEl, currentValue, placeholder);
-    };
-
-    textarea.addEventListener('blur', commit);
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); cancel(); }
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        textarea.value = textarea.value.slice(0, start) + '  ' + textarea.value.slice(end);
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-        resize();
-      }
+      },
+      renderDisplay: (host, value) => renderCellContent(host, value.trim(), placeholder),
     });
   }
 

@@ -92,3 +92,93 @@ export function activateInlineEdit(
     }
   }, { ignoreBlur: () => blurGuarded });
 }
+
+export interface TextareaEditOptions {
+  /** Class toggled on `editHost` for the duration of the edit. Default "vzd-editing". */
+  editingClass?: string;
+  /** Extra class(es) added to the textarea alongside "vzd-plain-textarea". */
+  textareaClass?: string;
+  /** Textarea min-height (px), e.g. the cell's pre-edit rendered height. */
+  minHeight?: number;
+  /** Trim the value both when loading it into the textarea and on commit.
+   *  Default true. Pass false for canvases (e.g. Pace Layers) that write the
+   *  raw multi-line value verbatim and only trim for display. */
+  trimValue?: boolean;
+  /** Tab behaviour: "commit" closes the editor (default); "indent" inserts
+   *  two spaces at the cursor instead, for free-text multi-line cells. */
+  onTab?: "commit" | "indent";
+  /** Wraps the actual write callback, e.g. to preserve editor scroll position
+   *  across the DOM mutation a write triggers. */
+  wrapCommit?: (write: () => void) => void;
+  /** Re-render `contentHost`'s non-edit display for a value (commit or revert). */
+  renderDisplay: (contentHost: HTMLElement, value: string) => void;
+}
+
+/**
+ * Replace `contentHost`'s content with an auto-resizing textarea for the
+ * duration of an edit, committing on blur/Tab and reverting on Escape.
+ * `editHost` carries the "currently editing" class — same element as
+ * `contentHost` unless a canvas keeps its editing indicator on a wrapper.
+ * No-ops if `editHost` is already mid-edit.
+ */
+export function activateTextareaEdit(
+  editHost: HTMLElement,
+  contentHost: HTMLElement,
+  currentValue: string,
+  onCommit: (newValue: string) => void,
+  options: TextareaEditOptions,
+): void {
+  const editingClass = options.editingClass ?? "vzd-editing";
+  if (editHost.hasClass(editingClass)) return;
+  const trimValue = options.trimValue ?? true;
+
+  editHost.addClass(editingClass);
+  contentHost.empty();
+  contentHost.removeAttribute("data-placeholder");
+
+  const textarea = contentHost.createEl("textarea", {
+    cls: `vzd-plain-textarea${options.textareaClass ? ` ${options.textareaClass}` : ""}`,
+  });
+  if (options.minHeight !== undefined) textarea.style.minHeight = `${options.minHeight}px`;
+  textarea.value = trimValue ? currentValue.trim() : currentValue;
+
+  const resize = (): void => {
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+  resize();
+  textarea.addEventListener("input", resize);
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  let committed = false;
+  const finish = (commit: boolean): void => {
+    if (committed) return;
+    committed = true;
+    editHost.removeClass(editingClass);
+    const raw = textarea.value;
+    const value = commit ? (trimValue ? raw.trim() : raw) : currentValue;
+    if (commit) {
+      const write = (): void => onCommit(value);
+      if (options.wrapCommit) options.wrapCommit(write); else write();
+    }
+    options.renderDisplay(contentHost, value);
+  };
+
+  textarea.addEventListener("blur", () => finish(true));
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (options.onTab === "indent") {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.slice(0, start) + "  " + textarea.value.slice(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 2;
+        resize();
+      } else {
+        finish(true);
+      }
+    }
+  });
+}

@@ -3,7 +3,7 @@ import { MarkdownView, Notice } from "obsidian";
 import { writeBlockContent, moveCardBetweenBlocks } from "../shared/block-edit";
 import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
-import { ownerWindow } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { renderHeadingLink } from "./controls";
 import type { LinkResolver } from "../shared/links";
@@ -45,6 +45,11 @@ export function renderCardBlock(
 
   if (lines.length === 0) {
     body.addClass("vizardry-block-empty");
+    // Still needs the layout class in edit mode (min-height, flex column) so
+    // an empty card-mode cell has a real drop target instead of collapsing —
+    // the cross-block drop path already has to re-add this class once a card
+    // lands, which was the tell that the initial render was missing it.
+    if (isEditMode) body.addClass("vzd-card-block-body");
     if (!isEditMode) return;
   } else {
     body.removeClass("vizardry-block-empty");
@@ -202,6 +207,16 @@ export function renderCardBlock(
 
     drag = { card, fromIndex, ghost, placeholder, toIndex: fromIndex, activeDrop: null };
   }
+
+  // If this cell's body is torn down (e.g. a re-render from an external file
+  // change) while a drag is in flight, drop the stale ghost/placeholder and
+  // null the drag state so a later endDrag() can't fire against a detached
+  // container — mirroring the same guard roadmap.ts already has.
+  onDisconnected(body, () => {
+    drag?.ghost.remove();
+    drag?.placeholder.remove();
+    drag = null;
+  });
 
   // ── Card rendering ────────────────────────────────────────────────────────
 

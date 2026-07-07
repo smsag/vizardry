@@ -235,6 +235,15 @@ export function renderStoryMap(
     };
   }
 
+  // If the grid is torn down (e.g. a re-render from an external file change)
+  // while a drag is in flight, drop the stale ghost/placeholder and null the
+  // drag state so a later endDrag() can't fire against a detached container.
+  onDisconnected(grid, () => {
+    drag?.ghost.remove();
+    drag?.placeholder.remove();
+    drag = null;
+  });
+
   // ── Task card rendering ───────────────────────────────────────────────────
   function renderTaskCard(cell: HTMLElement, task: StoryTask, sliceName: string | null, index: number): void {
     const card = cell.createEl("div", { cls: "vzd-story-task-card" });
