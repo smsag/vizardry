@@ -1,5 +1,6 @@
 import type { Plugin } from "obsidian";
 import type { UpvotyPost, UpvotyCacheEntry } from "./types";
+import { updatePersistedData } from "../shared/persisted-data";
 
 interface StatusEntry {
   post: UpvotyPost;
@@ -20,6 +21,13 @@ export class UpvotyCache {
 
   constructor(plugin: Plugin) {
     this.plugin = plugin;
+  }
+
+  /** Populate in-memory summary cache from data already loaded by the plugin. */
+  init(persisted: Record<string, UpvotyCacheEntry>): void {
+    for (const [key, entry] of Object.entries(persisted)) {
+      this.summaryCache.set(key, entry);
+    }
   }
 
   // ── Status ───────────────────────────────────────────────────────────────────
@@ -64,8 +72,8 @@ export class UpvotyCache {
   }
 
   private async persist(): Promise<void> {
-    const existing = ((await this.plugin.loadData()) ?? {}) as Record<string, unknown>;
-    existing.upvotyCache = this.toJSON();
-    await this.plugin.saveData(existing);
+    await updatePersistedData(this.plugin, (existing) => {
+      existing.upvotyCache = this.toJSON();
+    });
   }
 }

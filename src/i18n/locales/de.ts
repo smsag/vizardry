@@ -25,6 +25,10 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.vpc.description":        "Features treffen echte Kundenbedürfnisse.",
   "framework.wardley.description":    "Wertkette gegen Evolution aufgetragen zur Aufdeckung strategischer Züge.",
   "framework.ptw.description":        "Strategie durch Gewinnaspiration, Spielfeld und Gewinnlogik definiert.",
+  "framework.pacelayers.description": "Sechs Pace-Layer — von Fashion bis Nature — mit Beobachtungen, Feedback und Ideen kartiert.",
+  "framework.conceptmap.description": "Konzepte durch benannte Beziehungen als gerichteter Graph verbunden.",
+  "framework.scqa.description":       "Situation, Komplikation, Frage, Antwort als narrative Hierarchie.",
+  "framework.scr.description":        "Situation, Komplikation, Lösung — eine kompaktere narrative Hierarchie.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",

@@ -6,6 +6,7 @@ import { initLinearService, getLinearService } from "./linear";
 import type { CacheEntry } from "./linear/types";
 import { enrichLinearKeys } from "./shared/linear-enrichment";
 import { initUpvotyService, getUpvotyService, destroyUpvotyService } from "./upvoty";
+import type { UpvotyCacheEntry } from "./upvoty/types";
 import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
 import { triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
@@ -17,15 +18,17 @@ import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
 import { ALL_FRAMEWORKS } from "./frameworks-registry";
 import { dispatchVizardry } from "./vizardry-dispatch";
 import { insertTemplateAtCursor } from "./shared/editor";
+import { updatePersistedData } from "./shared/persisted-data";
 import { t, tFrameworkDescription } from "./i18n";
 
 export default class VizardryPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
 
   async saveSettings(): Promise<void> {
-    const existing = ((await this.loadData()) ?? {}) as Record<string, unknown>;
-    // Preserve linearCache alongside settings
-    await this.saveData({ ...existing, ...this.settings });
+    // Routed through updatePersistedData so this can't race LinearCache's or
+    // UpvotyCache's own read-modify-write persist() calls and clobber them
+    // (or be clobbered by them) — see shared/persisted-data.ts.
+    await updatePersistedData(this, (existing) => ({ ...existing, ...this.settings }));
   }
 
   async onload(): Promise<void> {
@@ -35,6 +38,8 @@ export default class VizardryPlugin extends Plugin {
     const linearCache = rawData.linearCache as Record<string, CacheEntry> | undefined;
     if (linearCache) getLinearService()?.cache.init(linearCache);
     initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
+    const upvotyCache = rawData.upvotyCache as Record<string, UpvotyCacheEntry> | undefined;
+    if (upvotyCache) getUpvotyService()?.cache.init(upvotyCache);
     this.addSettingTab(new VizardrySettingTab(this.app, this));
     // Expose version on body for bug reports (manual devtools inspection).
     document.body.dataset.vizardryVersion = this.manifest.version;
