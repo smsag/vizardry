@@ -9,7 +9,7 @@ import { buildIndentTree, detectIndentUnit, extractMeaningfulLines } from "./sha
  *   situation: <root>          (level 0, single, required)
  *     Complication one         (level 1)
  *       Question one           (level 2, scqa only)
- *         Answer one           (level 3, scqa only — one answer per question)
+ *         Answer one           (level 3, scqa only — a question may have several)
  *
  * For the SCR variant the third keyword level is dropped:
  *   situation: <root>
@@ -83,23 +83,5 @@ export function parseSCQA(source: string, fenceVariant: SCQAVariant): SCQAResult
   const result = buildIndentTree<SCQANode>(treeLines, indentUnit, makeNode, maxDepth);
   if (!result.ok) return result;
 
-  // In SCQA each question (level 2) carries exactly one answer (level 3).
-  if (variant === "scqa") {
-    const offender = findMultiAnswerQuestion(result.root);
-    if (offender) {
-      return { ok: false, error: `"${offender}" has more than one answer — each question takes a single answer` };
-    }
-  }
-
   return { ok: true, data: { variant, view, root: result.root } };
-}
-
-/** Returns the text of the first level-2 (question) node with >1 child, else null. */
-function findMultiAnswerQuestion(node: SCQANode): string | null {
-  if (node.level === 2 && node.children.length > 1) return node.text;
-  for (const child of node.children) {
-    const found = findMultiAnswerQuestion(child);
-    if (found) return found;
-  }
-  return null;
 }

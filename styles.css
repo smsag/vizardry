@@ -2728,7 +2728,9 @@ code:has(.vzd-upvoty-key) {
   display: grid;
   grid-template-columns: repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
   gap: 0.6rem;
-  align-items: start;
+  /* Stretch (not start) so cards sharing a row — e.g. several answers under
+     different questions — all match the tallest card in that row. */
+  align-items: stretch;
 }
 
 .vzd-scqa-card {
