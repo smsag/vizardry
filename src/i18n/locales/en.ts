@@ -25,7 +25,7 @@ export const en = {
   "framework.ost.description":        "Outcome drives opportunities, solutions, and experiments.",
   "framework.rac.description":        "Biggest risks ranked for testing.",
   "framework.sipoc.description":      "Process scope: suppliers, inputs, steps, outputs, customers.",
-  "framework.sipoc-flow.description": "Process scope with explicit node shapes and flow connections.",
+  "framework.sipoc-flow.description": "Same SIPOC rows as a connected flow diagram.",
   "framework.story.description":      "Release scope and priorities clear.",
   "framework.swot.description":       "Strengths, weaknesses, opportunities, and threats at a glance.",
   "framework.venn.description":       "Overlaps and gaps clearly identified.",

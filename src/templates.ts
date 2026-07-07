@@ -212,49 +212,44 @@ row:
 `;
 
 export const SIPOC_FLOW_TEMPLATE = `\`\`\`vizardry
-type: sipoc-flow
+type: sipoc, flow
 title: SIPOC Flow Diagram
 
-suppliers:
-  Supplier 1 [ellipse]
-  Supplier 2 [ellipse]
+row:
+  supplier: Dev team
+  input: Feature branch
+  process: Build & test artefact
+  output: Running service
+  customer: End users
 
-inputs:
-  Data 1 [parallelogram]
-  Data 2 [parallelogram]
-  Data 3 [parallelogram]
+row:
+  supplier: CI/CD pipeline
+  input: Test suite
+  process: Run test suite
+  output: Deployment report
+  customer: On-call team
 
-process:
-  Step 1 [rect]
-  Step 2 [rect]
-  Step 3 [rect]
-  Step 4 [rect]
-  Step 5 [rect]
+row:
+  supplier: Cloud provider
+  input: Docker image
+  process: Deploy to production
+  output: Alert rules
+  customer: Product owner
 
-outputs:
-  Data 4 [parallelogram]
-  Data 5 [parallelogram]
+link: Dev team -> Feature branch
+link: Feature branch -> Build & test artefact
+link: Build & test artefact -> Running service
+link: Running service -> End users
 
-customers:
-  Customer 1 [ellipse]
-  Customer 2 [ellipse]
-  Customer 3 [ellipse]
+link: CI/CD pipeline -> Test suite
+link: Test suite -> Run test suite
+link: Run test suite -> Deployment report
+link: Deployment report -> On-call team
 
-link: Supplier 1 -> Data 1
-link: Supplier 1 -> Data 2
-link: Supplier 2 -> Data 3
-link: Data 1 -> Step 1
-link: Data 2 -> Step 3
-link: Data 3 -> Step 3
-link: Step 1 -> Step 2
-link: Step 2 -> Step 3
-link: Step 3 -> Step 4
-link: Step 4 -> Step 5
-link: Step 2 -> Data 4
-link: Step 5 -> Data 5
-link: Data 4 -> Customer 1
-link: Data 4 -> Customer 2
-link: Data 5 -> Customer 3
+link: Cloud provider -> Docker image
+link: Docker image -> Deploy to production
+link: Deploy to production -> Alert rules
+link: Alert rules -> Product owner
 \`\`\`
 `;
 

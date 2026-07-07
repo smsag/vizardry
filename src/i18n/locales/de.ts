@@ -18,7 +18,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.ost.description":        "Ergebnis treibt Chancen, Lösungen und Experimente.",
   "framework.rac.description":        "Größte Risiken für Tests priorisiert.",
   "framework.sipoc.description":      "Prozessumfang: Lieferanten, Eingaben, Schritte, Ausgaben, Kunden.",
-  "framework.sipoc-flow.description": "Prozessumfang mit expliziten Knotenformen und Flussverbindungen.",
+  "framework.sipoc-flow.description": "Dieselben SIPOC-Zeilen als verbundenes Flussdiagramm.",
   "framework.story.description":      "Release-Umfang und Prioritäten klar.",
   "framework.swot.description":       "Stärken, Schwächen, Chancen und Risiken auf einen Blick.",
   "framework.venn.description":       "Überschneidungen und Lücken klar erkannt.",

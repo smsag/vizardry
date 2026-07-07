@@ -36,7 +36,6 @@ import { renderMindMap, renderImpactMap, renderOST } from "./tree-canvases";
 import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
-import { renderSIPOCFlow } from "./sipoc-flow";
 import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
@@ -53,7 +52,6 @@ import type {
   StoryMap,
   WardleyMap,
   SIPOCData,
-  SIPOCFlowData,
   VennDiagram,
   CarouselBlock,
   ConceptMap,
@@ -671,14 +669,20 @@ describe("renderWardleyMap", () => {
 
 // ── renderSIPOC ───────────────────────────────────────────────────────────────
 
-describe("renderSIPOC", () => {
+function sipocRow(partial: Partial<SIPOCData["rows"][number]>): SIPOCData["rows"][number] {
+  return { supplier: "", input: "", process: "", output: "", customer: "", owner: "", metric: "", ...partial };
+}
+
+describe("renderSIPOC — table view", () => {
   it("renders SIPOC table with rows", () => {
     const el = container();
     const data: SIPOCData = {
+      variant: "table",
       rows: [
-        { supplier: "Dev team", input: "Requirements", process: "Build", output: "Feature", customer: "User", owner: "", metric: "" },
-        { supplier: "QA", input: "Test cases", process: "Test", output: "Report", customer: "PM", owner: "", metric: "" },
+        sipocRow({ supplier: "Dev team", input: "Requirements", process: "Build", output: "Feature", customer: "User" }),
+        sipocRow({ supplier: "QA", input: "Test cases", process: "Test", output: "Report", customer: "PM" }),
       ],
+      links: [],
     };
     expect(() => renderSIPOC(data, el)).not.toThrow();
     expect(el.querySelector(".vzd-sipoc-wrap")).toBeTruthy();
@@ -688,32 +692,27 @@ describe("renderSIPOC", () => {
 
   it("renders an empty SIPOC without throwing", () => {
     const el = container();
-    expect(() => renderSIPOC({ rows: [] }, el)).not.toThrow();
+    expect(() => renderSIPOC({ variant: "table", rows: [], links: [] }, el)).not.toThrow();
+  });
+
+  it("defaults to table view when variant is omitted", () => {
+    const el = container();
+    renderSIPOC({ rows: [sipocRow({ supplier: "A" })], links: [] } as unknown as SIPOCData, el);
+    expect(el.querySelector(".vzd-sipoc-wrap")).toBeTruthy();
   });
 });
 
-// ── renderSIPOCFlow ───────────────────────────────────────────────────────────
+// ── renderSIPOC — flow view ─────────────────────────────────────────────────
 
-describe("renderSIPOCFlow", () => {
-  const flowData: SIPOCFlowData = {
-    nodes: [
-      { id: "vendor", label: "Vendor", shape: "ellipse", column: "suppliers" },
-      { id: "spec", label: "Spec Doc", shape: "parallelogram", column: "inputs" },
-      { id: "review", label: "Review", shape: "rect", column: "process" },
-      { id: "report", label: "Report", shape: "parallelogram", column: "outputs" },
-      { id: "pm", label: "PM", shape: "ellipse", column: "customers" },
-    ],
-    links: [
-      { from: "vendor", to: "spec" },
-      { from: "spec", to: "review" },
-      { from: "review", to: "report" },
-      { from: "report", to: "pm" },
-    ],
-  };
+describe("renderSIPOC — flow view", () => {
+  const rows: SIPOCData["rows"] = [
+    sipocRow({ supplier: "Vendor", input: "Spec Doc", process: "Review", output: "Report", customer: "PM" }),
+  ];
 
   it("renders SVG with column headers", () => {
     const el = container();
-    expect(() => renderSIPOCFlow(flowData, el)).not.toThrow();
+    const data: SIPOCData = { variant: "flow", rows, links: [] };
+    expect(() => renderSIPOC(data, el)).not.toThrow();
     const svg = el.querySelector("svg");
     expect(svg).toBeTruthy();
     const labels = Array.from(svg!.querySelectorAll(".vzd-sf-header-label")).map(t => t.textContent);
@@ -722,48 +721,74 @@ describe("renderSIPOCFlow", () => {
     expect(labels).toContain("Customer");
   });
 
-  it("renders one shape per node", () => {
+  it("derives one node per distinct non-empty cell across the 5 core columns", () => {
     const el = container();
-    renderSIPOCFlow(flowData, el);
+    const data: SIPOCData = { variant: "flow", rows, links: [] };
+    renderSIPOC(data, el);
     const nodes = el.querySelectorAll(".vzd-sf-node");
-    expect(nodes).toHaveLength(flowData.nodes.length);
+    expect(nodes).toHaveLength(5);
+  });
+
+  it("merges identical cell text within a column into one shared node", () => {
+    const el = container();
+    const data: SIPOCData = {
+      variant: "flow",
+      rows: [
+        sipocRow({ supplier: "Acme", input: "A", process: "P1", output: "O1", customer: "C1" }),
+        sipocRow({ supplier: "Acme", input: "B", process: "P2", output: "O2", customer: "C2" }),
+      ],
+      links: [],
+    };
+    renderSIPOC(data, el);
+    // 1 shared supplier + 2 distinct per other column (input/process/output/customer) = 1 + 4*2
+    expect(el.querySelectorAll(".vzd-sf-node")).toHaveLength(9);
+  });
+
+  it("does not render Owner/Metric in flow view", () => {
+    const el = container();
+    const data: SIPOCData = {
+      variant: "flow",
+      rows: [sipocRow({ supplier: "A", owner: "Alice", metric: "99%" })],
+      links: [],
+    };
+    renderSIPOC(data, el);
+    expect(el.textContent).not.toContain("Alice");
+    expect(el.textContent).not.toContain("99%");
   });
 
   it("renders links as paths", () => {
     const el = container();
-    renderSIPOCFlow(flowData, el);
+    const data: SIPOCData = { variant: "flow", rows, links: [{ from: "Vendor", to: "Spec Doc" }] };
+    renderSIPOC(data, el);
     const links = el.querySelectorAll(".vzd-sf-link");
-    expect(links).toHaveLength(flowData.links.length);
+    expect(links).toHaveLength(1);
   });
 
-  it("ignores links to unknown nodes without throwing", () => {
+  it("shows a flow-view error when a link references unknown text", () => {
     const el = container();
-    const broken: SIPOCFlowData = {
-      nodes: [{ id: "a", label: "A", shape: "rect", column: "process" }],
-      links: [{ from: "a", to: "ghost" }],
-    };
-    expect(() => renderSIPOCFlow(broken, el)).not.toThrow();
+    const data: SIPOCData = { variant: "flow", rows, links: [{ from: "Vendor", to: "Ghost" }] };
+    renderSIPOC(data, el);
+    expect(el.classList.contains("vizardry-error")).toBe(true);
+    expect(el.querySelector(".vzd-sf-node")).toBeFalsy();
   });
 
-  it("renders all new shape types without throwing", () => {
+  it("shows a flow-view error when a link target is ambiguous across columns", () => {
     const el = container();
-    const data: SIPOCFlowData = {
-      nodes: [
-        { id: "d1", label: "Diamond",    shape: "diamond",     column: "suppliers" },
-        { id: "d2", label: "Cylinder",   shape: "cylinder",    column: "inputs" },
-        { id: "d3", label: "Document",   shape: "document",    column: "process" },
-        { id: "d4", label: "Trapezoid",  shape: "trapezoid",   column: "outputs" },
-        { id: "d5", label: "Pentagon",   shape: "pentagon",    column: "customers" },
-        { id: "d6", label: "Circle",     shape: "circle",      column: "suppliers" },
-        { id: "d7", label: "Hexagon",    shape: "hexagon",     column: "inputs" },
-      ],
-      links: [],
+    const data: SIPOCData = {
+      variant: "flow",
+      rows: [sipocRow({ supplier: "Acme", customer: "Acme" })],
+      links: [{ from: "Acme", to: "Acme" }],
     };
-    expect(() => renderSIPOCFlow(data, el)).not.toThrow();
-    const svg = el.querySelector("svg");
-    expect(svg).toBeTruthy();
-    // cylinder emits 3 elements (rect + 2 caps); all others emit 1 each → 6 + 3 = 9
-    expect(svg!.querySelectorAll(".vzd-sf-node").length).toBeGreaterThanOrEqual(7);
+    renderSIPOC(data, el);
+    expect(el.classList.contains("vizardry-error")).toBe(true);
+  });
+
+  it("the exact same data renders as a table when variant is table", () => {
+    const el = container();
+    const data: SIPOCData = { variant: "table", rows, links: [{ from: "Vendor", to: "Spec Doc" }] };
+    renderSIPOC(data, el);
+    expect(el.querySelector(".vzd-sipoc-wrap")).toBeTruthy();
+    expect(el.querySelector("svg")).toBeFalsy();
   });
 });
 

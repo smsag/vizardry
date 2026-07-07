@@ -116,4 +116,83 @@ row:
     expect(result.data.rows[0].owner).toBe("");
     expect(result.data.rows[0].metric).toBe("");
   });
+
+  // ── variant (typeOverride) ──────────────────────────────────────────────
+
+  it("defaults to the table variant when no typeOverride is given", () => {
+    const result = parseSIPOC(MINIMAL);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.variant).toBe("table");
+  });
+
+  it("sets the variant from typeOverride", () => {
+    const result = parseSIPOC(MINIMAL, "flow");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.variant).toBe("flow");
+  });
+
+  it("rejects an unknown typeOverride", () => {
+    const result = parseSIPOC(MINIMAL, "chart");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("chart") });
+  });
+
+  // ── link: parsing ────────────────────────────────────────────────────────
+  //
+  // Only syntax is checked here (well-formed "A -> B") — whether from/to
+  // actually match a row's cell text is a flow-view rendering concern (see
+  // renderer/sipoc.test.ts), never a parse error. This is what lets a stale
+  // link sit inert through table view instead of breaking it.
+
+  it("parses link: lines regardless of variant", () => {
+    const src = `${MINIMAL}\n\nlink: Vendor A -> Raw material`;
+    const result = parseSIPOC(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toEqual([{ from: "Vendor A", to: "Raw material" }]);
+  });
+
+  it("parses multiple link: lines", () => {
+    const src = `${MINIMAL}\n\nlink: A -> B\nlink: B -> C`;
+    const result = parseSIPOC(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toHaveLength(2);
+  });
+
+  it("does not validate link targets against row cells at parse time", () => {
+    // "Ghost" matches no cell anywhere — parsing still succeeds because
+    // target resolution only happens when flow view actually renders.
+    const src = `${MINIMAL}\n\nlink: Ghost -> AlsoGhost`;
+    const result = parseSIPOC(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toEqual([{ from: "Ghost", to: "AlsoGhost" }]);
+  });
+
+  it("a row edit that orphans a link still parses fine", () => {
+    // Simulates renaming "Vendor A" to something else while a link: line
+    // still says "Vendor A" — table-level parsing must not care.
+    const src = `row:\n  supplier: Renamed Vendor\n\nlink: Vendor A -> Raw material`;
+    const result = parseSIPOC(src);
+    expect(result.ok).toBe(true);
+  });
+
+  it("returns error for link missing the -> separator", () => {
+    const result = parseSIPOC(`${MINIMAL}\n\nlink: A to B`);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("->") });
+  });
+
+  it("returns error for link missing a node name", () => {
+    const result = parseSIPOC(`${MINIMAL}\n\nlink: A ->`);
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("two node names") });
+  });
+
+  it("accepts link: case-insensitively", () => {
+    const result = parseSIPOC(`${MINIMAL}\n\nLINK: A -> B`);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toEqual([{ from: "A", to: "B" }]);
+  });
 });

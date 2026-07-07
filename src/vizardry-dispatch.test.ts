@@ -158,19 +158,28 @@ describe("dispatchVizardry", () => {
     expect(elScr.getAttribute("data-framework")).toBe("scr");
   });
 
-  it("dispatches the flat sipoc/sipoc-flow ids to their own parser+renderer", () => {
-    const elSipoc = container();
+  it("dispatches sipoc's table/flow compound variant to its shared parser+renderer", () => {
+    const elTable = container();
     dispatchVizardry(
       "type: sipoc\nrow:\n  supplier: A\n  customer: B",
-      elSipoc, fakeCtx(), fakeApp(),
+      elTable, fakeCtx(), fakeApp(),
     );
-    expect(elSipoc.classList.contains("vizardry-error")).toBe(false);
+    expect(elTable.classList.contains("vizardry-error")).toBe(false);
 
     const elFlow = container();
     dispatchVizardry(
-      "type: sipoc-flow\nsuppliers:\n  A [ellipse]\ncustomers:\n  B [ellipse]\nlink: A -> B",
+      "type: sipoc, flow\nrow:\n  supplier: A\n  customer: B\nlink: A -> B",
       elFlow, fakeCtx(), fakeApp(),
     );
     expect(elFlow.classList.contains("vizardry-error")).toBe(false);
+  });
+
+  it("rejects the old flat sipoc-flow id (dropped in favour of type: sipoc, flow)", () => {
+    const el = container();
+    dispatchVizardry(
+      "type: sipoc-flow\nrow:\n  supplier: A\n  customer: B",
+      el, fakeCtx(), fakeApp(),
+    );
+    expect(el.classList.contains("vizardry-error")).toBe(true);
   });
 });
