@@ -1,4 +1,5 @@
 import type { VennItem, VennResult } from "./types";
+import { isSkippableLine } from "./shared/indent-tree";
 
 /**
  * Parses the Venn diagram syntax:
@@ -30,7 +31,7 @@ export function parseVennDiagram(source: string): VennResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
 
     const indent = raw.search(/\S/);
 

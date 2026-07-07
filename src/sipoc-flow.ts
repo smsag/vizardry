@@ -1,4 +1,5 @@
 import type { SIPOCColumn, SIPOCFlowData, SIPOCFlowLink, SIPOCFlowNode, SIPOCFlowResult, SIPOCNodeShape } from "./types";
+import { isSkippableLine } from "./shared/indent-tree";
 
 const COLUMNS: SIPOCColumn[] = ["suppliers", "inputs", "process", "outputs", "customers"];
 const SHAPES: SIPOCNodeShape[] = [
@@ -38,7 +39,7 @@ export function parseSIPOCFlow(source: string): SIPOCFlowResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
 
     const indent = raw.search(/\S/);
 

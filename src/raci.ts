@@ -1,4 +1,5 @@
 import type { RACIData, RACIResult, RACIRow } from "./types";
+import { isSkippableLine } from "./shared/indent-tree";
 
 const CELL_KEYS = ["responsible", "accountable", "consulted", "informed"] as const;
 type CellKey = typeof CELL_KEYS[number];
@@ -28,7 +29,7 @@ export function parseRACIMatrix(source: string): RACIResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
 
     const indent = raw.search(/\S/);
 

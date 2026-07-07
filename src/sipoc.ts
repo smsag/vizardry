@@ -1,4 +1,5 @@
 import type { SIPOCData, SIPOCResult, SIPOCRow } from "./types";
+import { isSkippableLine } from "./shared/indent-tree";
 
 const CELL_KEYS = ["supplier", "input", "process", "output", "customer", "owner", "metric"] as const;
 type CellKey = typeof CELL_KEYS[number];
@@ -27,7 +28,7 @@ export function parseSIPOC(source: string): SIPOCResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    if (isSkippableLine(trimmed)) continue;
 
     const indent = raw.search(/\S/);
 

@@ -169,6 +169,15 @@ describe("renderCanvas", () => {
     expect(cards).toHaveLength(1);
     expect(cards[0].textContent).toContain("Only card here");
   });
+
+  it("an empty card-mode block still gets the card-body layout class in edit mode", () => {
+    const el = container();
+    const app = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderCanvas(swot, { strengths: "" }, new Set(["strengths"]), el, NULL_RESOLVER, vi.fn(), app, ctx);
+    const body = el.querySelector(".vizardry-block-empty");
+    expect(body?.classList.contains("vzd-card-block-body")).toBe(true);
+  });
 });
 
 // ── renderTree (shared SVG tree renderer) ─────────────────────────────────────
