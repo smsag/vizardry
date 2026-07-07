@@ -272,6 +272,29 @@ describe("renderSCQA", () => {
     expect(links.length).toBe(1);
     expect((links[0] as HTMLElement).dataset.heading).toBe("My Heading");
   });
+
+  it("renders the SCR variant through the same grid/card classes as SCQA", () => {
+    // SCR has no variant-specific grid CSS, so this is what makes the row
+    // height-equalization (.vzd-scqa-grid's align-items: stretch) apply to
+    // SCR too — if SCR ever grew its own grid container class, it would
+    // silently stop inheriting that rule.
+    const scrData = {
+      variant: "scr" as const,
+      view: "grid" as const,
+      root: {
+        text: "Situation", level: 0,
+        children: [
+          { text: "Complication", level: 1, children: [
+            { text: "Resolution", level: 2, children: [] },
+          ] },
+        ],
+      },
+    };
+    const el = container();
+    renderSCQA(scrData, el);
+    expect(el.querySelector(".vzd-scqa-grid")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(3);
+  });
 });
 
 // ── renderMindMap ─────────────────────────────────────────────────────────────
