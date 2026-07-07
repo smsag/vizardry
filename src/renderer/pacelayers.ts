@@ -5,7 +5,7 @@ import type { ParsedPaceLayers, PaceLayerCell, PaceLayerName } from "../types";
 import { LAYER_CONFIG, LAYER_LABELS, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
 import { initCanvas, markInteractive } from "./controls";
 import { activateTextareaEdit } from "./inline-edit";
-import { setupPaceLayerCarousel } from "./grid-carousel";
+import { setupSlideCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { writePaceLayerCell } from "../shared/pacelayers-edit";
 import { t } from "../i18n";
@@ -146,5 +146,5 @@ export function renderPaceLayers(
     }
   }
 
-  setupPaceLayerCarousel(container, LAYER_CONFIG.length);
+  setupSlideCarousel(container, ".vzd-pl-row", "vzd-pl-row--active", LAYER_CONFIG.length);
 }

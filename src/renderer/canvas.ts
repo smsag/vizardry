@@ -5,7 +5,7 @@ import { initCanvas, markInteractive } from "./controls";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
 import { renderCardBlock, type CardDropTarget } from "./card-block";
 import { attachSectionPreview } from "./section-preview";
-import { setupMobileCarousel } from "./grid-carousel";
+import { setupSlideCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -174,5 +174,5 @@ export function renderCanvas(
     }
   });
 
-  setupMobileCarousel(container, framework.blocks.length);
+  setupSlideCarousel(container, ".vizardry-block", "vizardry-block-active", framework.blocks.length);
 }
