@@ -7,7 +7,7 @@ import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { activateInlineEdit } from "./inline-edit";
 import { attachSectionPreview } from "./section-preview";
-import { setupRoadmapCarousel } from "./grid-carousel";
+import { setupSlideCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
@@ -177,7 +177,7 @@ export function renderRoadmap(
     renderColumn(grid, col, isEditMode, app, ctx);
   }
 
-  setupRoadmapCarousel(container, data.columns.length);
+  setupSlideCarousel(container, ".vzd-roadmap-col", "vzd-roadmap-col--active", data.columns.length);
 
   function renderColumn(
     parent: HTMLElement,
