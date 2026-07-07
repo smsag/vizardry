@@ -1,5 +1,6 @@
 import type { Plugin } from "obsidian";
 import type { CacheEntry, LinearState } from "./types";
+import { updatePersistedData } from "../shared/persisted-data";
 
 interface StatusEntry {
   state: LinearState;
@@ -72,8 +73,8 @@ export class LinearCache {
   }
 
   private async persist(): Promise<void> {
-    const existing = ((await this.plugin.loadData()) ?? {}) as Record<string, unknown>;
-    existing.linearCache = this.toJSON();
-    await this.plugin.saveData(existing);
+    await updatePersistedData(this.plugin, (existing) => {
+      existing.linearCache = this.toJSON();
+    });
   }
 }
