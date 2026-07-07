@@ -1,4 +1,4 @@
-import type { SIPOCData, SIPOCResult, SIPOCRow } from "./types";
+import type { SIPOCData, SIPOCFlowLink, SIPOCResult, SIPOCRow, SIPOCVariant } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
 
 const CELL_KEYS = ["supplier", "input", "process", "output", "customer", "owner", "metric"] as const;
@@ -8,8 +8,15 @@ function emptyRow(): SIPOCRow {
   return { supplier: "", input: "", process: "", output: "", customer: "", owner: "", metric: "" };
 }
 
+function resolveSIPOCVariant(value: string): SIPOCVariant | null {
+  const v = value.trim().toLowerCase();
+  if (v === "table" || v === "flow") return v;
+  return null;
+}
+
 /**
- * Parses row-wise SIPOC syntax:
+ * Parses SIPOC source — one shared syntax feeding two views (see the doc
+ * comment on `SIPOCData` in types.ts):
  *
  *   row:
  *     supplier: Dev team
@@ -17,12 +24,34 @@ function emptyRow(): SIPOCRow {
  *     process: Build artefact
  *     output: Running service
  *     customer: End users
+ *     owner: Jane
+ *     metric: Cycle time
  *
- * All five cell keys are optional per row — missing ones render as empty.
+ *   link: Dev team -> Feature branch
+ *
+ * All seven cell keys are optional per row. `link:` lines are parsed
+ * unconditionally (regardless of `typeOverride`) but only *syntax*-checked
+ * here — whether a link's endpoints actually resolve to a cell is a flow-view
+ * concern, validated at render time (see renderer/sipoc.ts), so a stale link
+ * left over from editing a row never breaks table view.
+ *
+ * `typeOverride`, when provided by the vizardry dispatcher (e.g. "flow" from
+ * "type: sipoc, flow"), selects the view; otherwise defaults to "table" —
+ * so a plain "type: sipoc" behaves exactly as it always has.
  */
-export function parseSIPOC(source: string): SIPOCResult {
+export function parseSIPOC(source: string, typeOverride?: string): SIPOCResult {
+  let variant: SIPOCVariant = "table";
+  if (typeOverride !== undefined) {
+    const resolved = resolveSIPOCVariant(typeOverride);
+    if (!resolved) {
+      return { ok: false, error: `Unknown type "${typeOverride.trim().toLowerCase()}" — expected "table" or "flow"` };
+    }
+    variant = resolved;
+  }
+
   const lines = source.split("\n");
   const rows: SIPOCRow[] = [];
+  const links: SIPOCFlowLink[] = [];
   let current: SIPOCRow | null = null;
 
   for (let i = 0; i < lines.length; i++) {
@@ -33,9 +62,25 @@ export function parseSIPOC(source: string): SIPOCResult {
     const indent = raw.search(/\S/);
 
     if (indent === 0) {
+      if (trimmed.toLowerCase().startsWith("link:")) {
+        current = null;
+        const rest = trimmed.slice(trimmed.indexOf(":") + 1).trim();
+        const arrowIdx = rest.indexOf("->");
+        if (arrowIdx === -1) {
+          return { ok: false, error: `Line ${i + 1}: link requires "->" separator, e.g. link: A -> B` };
+        }
+        const from = rest.slice(0, arrowIdx).trim();
+        const to = rest.slice(arrowIdx + 2).trim();
+        if (!from || !to) {
+          return { ok: false, error: `Line ${i + 1}: link requires two node names` };
+        }
+        links.push({ from, to });
+        continue;
+      }
+
       const keyword = trimmed.toLowerCase().replace(/:$/, "");
       if (keyword !== "row") {
-        return { ok: false, error: `Line ${i + 1}: expected "row:" but got "${trimmed}"` };
+        return { ok: false, error: `Line ${i + 1}: expected "row:" or "link:" but got "${trimmed}"` };
       }
       current = emptyRow();
       rows.push(current);
@@ -70,5 +115,5 @@ export function parseSIPOC(source: string): SIPOCResult {
     return { ok: false, error: `No rows defined — start each row with "row:"` };
   }
 
-  return { ok: true, data: { rows } };
+  return { ok: true, data: { variant, rows, links } };
 }

@@ -3,7 +3,6 @@ export { renderFishbone, renderImpactMap, renderMindMap, renderOST } from "./ren
 export { renderStoryMap } from "./renderer/story";
 export { renderVennDiagram } from "./renderer/venn";
 export { renderSIPOC } from "./renderer/sipoc";
-export { renderSIPOCFlow } from "./renderer/sipoc-flow";
 export { renderWardleyMap } from "./renderer/wardley";
 export { renderCarouselBlock } from "./renderer/carousel";
 export { renderRACIMatrix } from "./renderer/raci";

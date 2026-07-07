@@ -27,7 +27,6 @@ import { parseMindMap } from "./mindmap";
 import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
 import { parseWardleyMap } from "./wardley";
-import { parseSIPOCFlow } from "./sipoc-flow";
 import { parseSIPOC } from "./sipoc";
 import { parseCarouselBlock } from "./carousel";
 import { parseRACIMatrix } from "./raci";
@@ -38,7 +37,7 @@ import { parseMatrix } from "./matrix";
 import { parseSCQA } from "./scqa";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
-  renderVennDiagram, renderSIPOC, renderSIPOCFlow, renderWardleyMap, renderRACIMatrix,
+  renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderMatrix, renderSCQA,
   renderError,
 } from "./renderer";
@@ -88,6 +87,7 @@ export interface ModalOnlyOption {
 export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
+  { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [
@@ -188,22 +188,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     id: "sipoc",
     label: "SIPOC Diagram",
     template: SIPOC_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
+    createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
       const { strippedSource: src } = extractInlineLinks(parseSource);
-      const result = parseSIPOC(src);
+      const result = parseSIPOC(src, variant);
       if (!result.ok) { renderError(result.error, el); return; }
       renderSIPOC(result.data, el, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "sipoc-flow",
-    label: "SIPOC Flow Diagram",
-    template: SIPOC_FLOW_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource: src } = extractInlineLinks(parseSource);
-      const result = parseSIPOCFlow(src);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderSIPOCFlow(result.data, el, fullSource, app, ctx);
     },
   },
   {

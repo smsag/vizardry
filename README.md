@@ -50,8 +50,8 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `raci` | RACI Matrix | Table |
 | `scqa` | SCQA Narrative | Grid / Tree |
 | `scr` | SCR Narrative | Grid / Tree |
-| `sipoc` | SIPOC Diagram | Table |
-| `sipoc-flow` | SIPOC Flow Diagram | SVG flow |
+| `sipoc` or `sipoc, table` | SIPOC Diagram | Table |
+| `sipoc, flow` | SIPOC Diagram (flow view) | SVG flow |
 | `story` | User Story Map | Grid |
 | `swot` | SWOT Analysis | Grid |
 | `vpc` | Value Proposition Canvas | Grid |
@@ -589,7 +589,7 @@ Each assumption is rated: **P** = probability of being wrong (1–5), **I** = im
 
 ### SIPOC Diagram
 
-A SIPOC maps the full scope of a process row by row — each row traces one chain from supplier to customer, making attribution immediately readable.
+A SIPOC maps the full scope of a process row by row — each row traces one chain from supplier to customer, making attribution immediately readable. It's one canvas with two views over the same rows: a **table** (default) and a **flow** diagram — switch between them just by changing the `type:` line, and nothing you've entered is ever lost in either direction.
 
 ~~~
 ```vizardry
@@ -600,6 +600,8 @@ row:
   process: Build & test artefact
   output: Running service
   customer: End users
+  owner: Jane
+  metric: Cycle time
 
 row:
   supplier: CI/CD pipeline
@@ -620,73 +622,36 @@ row:
 **Syntax:**
 - `row:` — starts a new row at zero indent, repeatable
 - Indented `supplier:`, `input:`, `process:`, `output:`, `customer:` — the five core cell keys; all are optional per row
-- Indented `owner:`, `metric:` — two optional extended columns; both columns are hidden when no row in the diagram uses them
+- Indented `owner:`, `metric:` — two optional extended columns; both columns are hidden in table view when no row uses them, and are never shown in flow view (see below) — they're preserved either way
 - Missing cells render as `—`
 - Blank lines and `// comment` lines are ignored
 
 **Live Edit:** click any cell to edit it inline. The Process column is visually accented with your theme's accent colour. Hover any row to reveal a **+** button at the right edge — click it to insert a new empty row below.
 
----
-
-### SIPOC Flow Diagram
-
-For processes with branching inputs, merging paths, and explicit connections between named nodes, use the flow variant: `type: sipoc-flow` instead of `type: sipoc`.
+**Flow view:** switch `type: sipoc` to `type: sipoc, flow` to see the same rows as a connected diagram instead of a table. Each of the 5 core columns turns into one node per **distinct** cell value (two rows with the same Supplier text share one node); nothing is connected automatically — add `link: A -> B` lines yourself for the connections you want to show. Owner/Metric never appear in flow view, but stay in the source and reappear the moment you switch back to `type: sipoc`. Flow view is read-only in this pass — edit rows and links as text, then switch views to see the result.
 
 ~~~
 ```vizardry
-type: sipoc-flow
+type: sipoc, flow
+row:
+  supplier: Dev team
+  input: Feature branch
+  process: Build & test artefact
+  output: Running service
+  customer: End users
 
-suppliers:
-  Supplier 1 [ellipse]
-  Supplier 2 [ellipse]
-
-inputs:
-  Data 1 [parallelogram]
-  Data 2 [parallelogram]
-  Data 3 [parallelogram]
-
-process:
-  Step 1 [rect]
-  Step 2 [rect]
-  Step 3 [rect]
-  Step 4 [rect]
-  Step 5 [rect]
-
-outputs:
-  Data 4 [parallelogram]
-  Data 5 [parallelogram]
-
-customers:
-  Customer 1 [ellipse]
-  Customer 2 [ellipse]
-  Customer 3 [ellipse]
-
-link: Supplier 1 -> Data 1
-link: Supplier 1 -> Data 2
-link: Supplier 2 -> Data 3
-link: Data 1 -> Step 1
-link: Data 2 -> Step 3
-link: Data 3 -> Step 3
-link: Step 1 -> Step 2
-link: Step 2 -> Step 3
-link: Step 3 -> Step 4
-link: Step 4 -> Step 5
-link: Step 2 -> Data 4
-link: Step 5 -> Data 5
-link: Data 4 -> Customer 1
-link: Data 4 -> Customer 2
-link: Data 5 -> Customer 3
+link: Dev team -> Feature branch
+link: Feature branch -> Build & test artefact
+link: Build & test artefact -> Running service
+link: Running service -> End users
 ```
 ~~~
 
-**Syntax:**
-- `suppliers:`, `inputs:`, `process:`, `outputs:`, `customers:` — column section headers (plural)
-- Indented `Name [shape]` — declares a node; available shapes: `ellipse`, `parallelogram`, `rect`, `diamond`, `cylinder`, `document`, `trapezoid`, `pentagon`, `circle`, `hexagon`
-- `link: A -> B` — directed arrow from node A to node B; links can go in any direction including backwards
-- Same-column links (e.g. process step → process step) route vertically within the column band
-- Nodes with no links render as isolated nodes — not an error
+- `link: A -> B` — directed arrow between two cell values; links can go in any direction including backwards, and same-column links route vertically
+- A `link:` naming text that doesn't match any cell (or matches the same text in more than one column) shows a clear error, but **only in flow view** — table view is unaffected by a stale or ambiguous link
 - Node names are case-insensitive in link declarations
-- Blank lines and `// comment` lines are ignored
+
+**Migrating from the old `type: sipoc-flow`:** that flat fence id (freeform node declarations with `[shape]`, unrelated to rows) has been replaced by the `type: sipoc, flow` view above. There's no automatic migration — rewrite the diagram as `row:` blocks plus `link:` lines; a leftover `type: sipoc-flow` block will show an "unknown type" error.
 
 ---
 
@@ -1177,7 +1142,9 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | `view: grid \| tree` | Card grid (default) or branching tree |
 | Blank lines / `// comment` | Ignored |
 
-### SIPOC Diagram (type: sipoc)
+### SIPOC Diagram (type: sipoc, table | flow)
+
+One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders the table; `type: sipoc, flow` renders the same rows as a connected diagram. Switching back and forth never drops data: Owner/Metric are just not drawn in flow view, and `link:` lines are just not drawn (or validated) in table view.
 
 | Syntax | Meaning |
 |---|---|
@@ -1187,18 +1154,10 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 | Indented `process:` | Process cell value (column accented with theme colour) |
 | Indented `output:` | Output cell value |
 | Indented `customer:` | Customer cell value |
-| Indented `owner:` | Owner cell — column hidden when unused by all rows |
-| Indented `metric:` | Metric cell — column hidden when unused by all rows |
-| Missing cell keys | Render as `—` |
-| Blank lines / `// comment` | Ignored |
-
-### SIPOC Flow Diagram (type: sipoc-flow)
-
-| Syntax | Meaning |
-|---|---|
-| `suppliers:` / `inputs:` / `process:` / `outputs:` / `customers:` | Column section headers |
-| Indented `Name [shape]` | Node declaration; shape: `ellipse`, `parallelogram`, `rect`, `diamond`, `cylinder`, `document`, `trapezoid`, `pentagon`, `circle`, `hexagon` |
-| `link: A -> B` | Directed arrow; any direction allowed; same-column links route vertically |
+| Indented `owner:` | Owner cell — table-only; column hidden when unused by all rows |
+| Indented `metric:` | Metric cell — table-only; column hidden when unused by all rows |
+| `link: A -> B` | Flow-only; directed arrow between two cell values (deduped by text within their column) — any direction allowed, same-column links route vertically |
+| Missing cell keys | Render as `—` (table view) |
 | Blank lines / `// comment` | Ignored |
 
 ### User Story Map (type: story)
