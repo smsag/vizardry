@@ -7,157 +7,37 @@
  *       Leaf A
  *     Branch Two
  *
- * All functions follow the wardley-edit.ts pattern:
- *   - Resolve the live editor via getEditorAccess()
- *   - Locate target line(s) by text matching within the block bounds
- *   - Write back with editor.replaceRange()
- *   - Return true on success, false on failure
+ * Structurally identical to ost-edit.ts / scqa-edit.ts's rename/add/delete
+ * (and driven by the same shared engine) — only the root keyword (and, for
+ * OST, a max depth) differs.
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import {
-  getEditorAccess,
-  detectIndentUnit,
-  subtreeEnd,
-  deleteLines,
-  editorWrite,
-} from "./tree-editor-access";
+import { renameRootKwTreeNode, addRootKwTreeChild, deleteRootKwTreeNode } from "./rootkw-tree-edit";
+import type { RootKwTreeConfig } from "./rootkw-tree-edit";
 
-// ── Rename ───────────────────────────────────────────────────────────────────
+const CONFIG: RootKwTreeConfig = { rootKeyword: "root" };
 
-/**
- * Renames a Mind Map node in-place.
- * For the root node the line starts with "root: "; all other nodes are
- * plain indented text with no keyword prefix.
- */
+/** Renames a Mind Map node in-place. */
 export function renameMindMapNode(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  oldText: string,
-  newText: string,
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  oldText: string, newText: string,
 ): boolean {
-  if (!newText.trim() || newText === oldText) return false;
-
-  const access = getEditorAccess(app, ctx, el, "renameMindMapNode");
-  if (!access) return false;
-  const { editor, lineStart, lineEnd } = access;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-
-    // Root line: "root: <text>"
-    const rootMatch = trimmed.match(/^root:\s*(.+)$/i);
-    if (rootMatch && rootMatch[1].trim() === oldText) {
-      const indentStr = raw.slice(0, raw.search(/\S/));
-      editorWrite(() => editor.replaceRange(
-        `${indentStr}root: ${newText}`,
-        { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      ), el);
-      return true;
-    }
-
-    // Non-root line: plain indented text
-    if (trimmed === oldText && !trimmed.toLowerCase().startsWith("root:")) {
-      const indentStr = raw.slice(0, raw.search(/\S/));
-      editorWrite(() => editor.replaceRange(
-        `${indentStr}${newText}`,
-        { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      ), el);
-      return true;
-    }
-  }
-
-  console.warn(`Vizardry: renameMindMapNode — "${oldText}" not found in source`);
-  return false;
+  return renameRootKwTreeNode(app, ctx, el, CONFIG, oldText, newText);
 }
 
-// ── Add child ────────────────────────────────────────────────────────────────
-
-/**
- * Appends a new child node under the node whose text matches `parentText`.
- * The new line is inserted after the parent's entire subtree, indented by
- * one extra level relative to the parent.
- */
+/** Appends a new child node under the node whose text matches `parentText`. */
 export function addMindMapChild(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  parentText: string,
-  newChildText: string,
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  parentText: string, newChildText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "addMindMapChild");
-  if (!access) return false;
-  const { editor, lineStart, lineEnd } = access;
-
-  const indentUnit = detectIndentUnit(editor, lineStart, lineEnd);
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-
-    // Match root or plain node
-    const isRoot = /^root:\s*/i.test(trimmed) && trimmed.replace(/^root:\s*/i, "").trim() === parentText;
-    const isPlain = trimmed === parentText && !trimmed.toLowerCase().startsWith("root:");
-
-    if (!isRoot && !isPlain) continue;
-
-    const parentIndent = raw.search(/\S/);
-    const childIndent = parentIndent + indentUnit;
-    const childIndentStr = " ".repeat(childIndent);
-
-    const subtreeLast = subtreeEnd(editor, ln, parentIndent, lineEnd);
-    const insertAt = subtreeLast + 1;
-
-    editorWrite(() => editor.replaceRange(
-      `${childIndentStr}${newChildText}\n`,
-      { line: insertAt, ch: 0 },
-    ), el);
-    return true;
-  }
-
-  console.warn(`Vizardry: addMindMapChild — parent "${parentText}" not found in source`);
-  return false;
+  return addRootKwTreeChild(app, ctx, el, CONFIG, parentText, newChildText);
 }
 
-// ── Delete ───────────────────────────────────────────────────────────────────
-
-/**
- * Deletes a Mind Map node and its entire subtree.
- * Only leaf nodes (no children in the rendered tree) are exposed via the
- * UI, but the write function handles subtrees safely regardless.
- */
+/** Deletes a Mind Map node and its entire subtree. Refuses to delete the root. */
 export function deleteMindMapNode(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
   nodeText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "deleteMindMapNode");
-  if (!access) return false;
-  const { editor, lineStart, lineEnd } = access;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-
-    const isRoot = /^root:\s*/i.test(trimmed) && trimmed.replace(/^root:\s*/i, "").trim() === nodeText;
-    const isPlain = trimmed === nodeText && !trimmed.toLowerCase().startsWith("root:");
-
-    if (!isRoot && !isPlain) continue;
-    if (isRoot) {
-      // Refuse to delete the root — would break the canvas
-      console.warn("Vizardry: deleteMindMapNode — cannot delete the root node");
-      return false;
-    }
-
-    const nodeIndent = raw.search(/\S/);
-    const last = subtreeEnd(editor, ln, nodeIndent, lineEnd);
-    deleteLines(editor, ln, last, el);
-    return true;
-  }
-
-  console.warn(`Vizardry: deleteMindMapNode — "${nodeText}" not found in source`);
-  return false;
+  return deleteRootKwTreeNode(app, ctx, el, CONFIG, nodeText);
 }
