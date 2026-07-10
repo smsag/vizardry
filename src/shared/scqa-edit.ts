@@ -1,24 +1,20 @@
 /**
  * In-place source edits for the SCQA / SCR narrative canvas.
  *
- * Rename / add / delete mirror the OST edit module (shared indent-tree family),
- * with `situation:` as the root keyword. Reorder — used only by the grid view's
- * drag — is implemented as a pure line-array transform (`reorderSCQAInterior`)
- * so it is unit-testable without an editor, then applied by `reorderSCQANode`.
- *
- * All functions follow the wardley-edit.ts pattern: resolve the live editor,
- * locate target line(s) by text within the block bounds, write back, and
- * return true on success / false on failure.
+ * Rename / add / delete are structurally identical to mindmap-edit.ts /
+ * ost-edit.ts (shared root-keyword-only tree family, `situation:` as the
+ * root keyword) and driven by the same shared engine. Reorder — used only
+ * by the grid view's drag — is SCQA-specific and stays here, implemented as
+ * a pure line-array transform (`reorderSCQAInterior`) so it is unit-testable
+ * without an editor, then applied by `reorderSCQANode`.
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import {
-  getEditorAccess,
-  detectIndentUnit,
-  subtreeEnd,
-  deleteLines,
-  editorWrite,
-} from "./tree-editor-access";
+import { getEditorAccess, editorWrite } from "./tree-editor-access";
+import { renameRootKwTreeNode, addRootKwTreeChild, deleteRootKwTreeNode } from "./rootkw-tree-edit";
+import type { RootKwTreeConfig } from "./rootkw-tree-edit";
+
+const CONFIG: RootKwTreeConfig = { rootKeyword: "situation" };
 
 // ── Rename ───────────────────────────────────────────────────────────────────
 
@@ -29,38 +25,7 @@ export function renameSCQANode(
   oldText: string,
   newText: string,
 ): boolean {
-  if (!newText.trim() || newText === oldText) return false;
-
-  const access = getEditorAccess(app, ctx, el, "renameSCQANode");
-  if (!access) return false;
-  const { editor, lineStart, lineEnd } = access;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-
-    const rootMatch = trimmed.match(/^situation:\s*(.+)$/i);
-    if (rootMatch && rootMatch[1].trim() === oldText) {
-      const indentStr = raw.slice(0, raw.search(/\S/));
-      editorWrite(() => editor.replaceRange(
-        `${indentStr}situation: ${newText}`,
-        { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      ), el);
-      return true;
-    }
-
-    if (trimmed === oldText && !trimmed.toLowerCase().startsWith("situation:")) {
-      const indentStr = raw.slice(0, raw.search(/\S/));
-      editorWrite(() => editor.replaceRange(
-        `${indentStr}${newText}`,
-        { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      ), el);
-      return true;
-    }
-  }
-
-  console.warn(`Vizardry: renameSCQANode — "${oldText}" not found in source`);
-  return false;
+  return renameRootKwTreeNode(app, ctx, el, CONFIG, oldText, newText);
 }
 
 // ── Add child ────────────────────────────────────────────────────────────────
@@ -72,48 +37,7 @@ export function addSCQAChild(
   parentText: string,
   newChildText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "addSCQAChild");
-  if (!access) return false;
-  const { editor, lineStart, lineEnd } = access;
-
-  const indentUnit = detectIndentUnit(editor, lineStart, lineEnd);
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-
-    const isRoot = /^situation:\s*/i.test(trimmed) && trimmed.replace(/^situation:\s*/i, "").trim() === parentText;
-    const isPlain = trimmed === parentText && !trimmed.toLowerCase().startsWith("situation:");
-    if (!isRoot && !isPlain) continue;
-
-    const parentIndent = raw.search(/\S/);
-    const childIndentStr = " ".repeat(parentIndent + indentUnit);
-    const subtreeLast = subtreeEnd(editor, ln, parentIndent, lineEnd);
-
-    // Ensure the new child's text is unique so later rename/delete can match it.
-    const existing = new Set<string>();
-    for (let i = lineStart + 1; i < lineEnd; i++) {
-      const t = editor.getLine(i).trim();
-      if (t && !t.startsWith("//") && !t.startsWith("```") && !/^situation:/i.test(t)) {
-        existing.add(t.toLowerCase());
-      }
-    }
-    let childText = newChildText;
-    if (existing.has(childText.toLowerCase())) {
-      let idx = 2;
-      while (existing.has(`${childText} ${idx}`.toLowerCase())) idx++;
-      childText = `${childText} ${idx}`;
-    }
-
-    editorWrite(() => editor.replaceRange(
-      `${childIndentStr}${childText}\n`,
-      { line: subtreeLast + 1, ch: 0 },
-    ), el);
-    return true;
-  }
-
-  console.warn(`Vizardry: addSCQAChild — parent "${parentText}" not found in source`);
-  return false;
+  return addRootKwTreeChild(app, ctx, el, CONFIG, parentText, newChildText);
 }
 
 // ── Delete ───────────────────────────────────────────────────────────────────
@@ -124,31 +48,7 @@ export function deleteSCQANode(
   el: HTMLElement,
   nodeText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "deleteSCQANode");
-  if (!access) return false;
-  const { editor, lineStart, lineEnd } = access;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    const trimmed = raw.trim();
-
-    const isRoot = /^situation:\s*/i.test(trimmed) && trimmed.replace(/^situation:\s*/i, "").trim() === nodeText;
-    const isPlain = trimmed === nodeText && !trimmed.toLowerCase().startsWith("situation:");
-    if (!isRoot && !isPlain) continue;
-
-    if (isRoot) {
-      console.warn("Vizardry: deleteSCQANode — cannot delete the situation root");
-      return false;
-    }
-
-    const nodeIndent = raw.search(/\S/);
-    const last = subtreeEnd(editor, ln, nodeIndent, lineEnd);
-    deleteLines(editor, ln, last, el);
-    return true;
-  }
-
-  console.warn(`Vizardry: deleteSCQANode — "${nodeText}" not found in source`);
-  return false;
+  return deleteRootKwTreeNode(app, ctx, el, CONFIG, nodeText);
 }
 
 // ── Reorder (grid drag) ──────────────────────────────────────────────────────

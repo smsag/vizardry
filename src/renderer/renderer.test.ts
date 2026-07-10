@@ -31,6 +31,7 @@ vi.mock("html-to-image", () => ({
 
 // ── Renderer imports (after mocks are declared) ───────────────────────────────
 import { renderError, renderCanvas } from "./canvas";
+import { renderMatrix } from "./matrix";
 import { renderTree, OST_TREE_OPTIONS, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
 import { renderMindMap, renderImpactMap, renderOST } from "./tree-canvases";
 import { renderStoryMap } from "./story";
@@ -45,6 +46,7 @@ import * as wardleyEdit from "../shared/wardley-edit";
 
 import type {
   FrameworkDefinition,
+  MatrixData,
   TreeNode,
   OSTTree,
   MindMap,
@@ -175,6 +177,45 @@ describe("renderCanvas", () => {
     renderCanvas(swot, { strengths: "" }, new Set(["strengths"]), el, NULL_RESOLVER, vi.fn(), app, ctx);
     const body = el.querySelector(".vizardry-block-empty");
     expect(body?.classList.contains("vzd-card-block-body")).toBe(true);
+  });
+});
+
+// ── renderMatrix (2×2/4×4 matrices — shares two-pass-cells.ts with renderCanvas) ──
+
+describe("renderMatrix", () => {
+  const matrixData: MatrixData = {
+    type: "opportunity",
+    data: { "very-major-1": "First idea", "major-2": "Second idea" },
+    cardBlocks: new Set(),
+    allCards: false,
+  };
+
+  it("renders 16 cells (4x4 grid)", () => {
+    const el = container();
+    renderMatrix(matrixData, el);
+    expect(el.querySelectorAll(".vzd-matrix-cell")).toHaveLength(16);
+  });
+
+  it("renders plain-text cell content and wires click-to-edit with the correct current content", () => {
+    const el = container();
+    const app = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMatrix(matrixData, el, undefined, app, ctx);
+
+    const bodies = Array.from(el.querySelectorAll<HTMLElement>(".vizardry-block-body"));
+    const filled = bodies.find(b => b.textContent?.includes("First idea"));
+    expect(filled).toBeTruthy();
+    expect(filled?.classList.contains("vzd-block-editable")).toBe(true);
+    // renderBlockBody() populates dataset.blockContent — the click handler
+    // must see the cell's actual text, not an empty string.
+    expect(filled?.dataset.blockContent).toBe("First idea");
+  });
+
+  it("renders card-mode cells as draggable cards, with cross-cell drop targets", () => {
+    const el = container();
+    const cardData: MatrixData = { ...matrixData, allCards: true };
+    renderMatrix(cardData, el);
+    expect(el.querySelectorAll(".vzd-card-block-card").length).toBeGreaterThan(0);
   });
 });
 

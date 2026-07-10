@@ -1,9 +1,8 @@
-import { setIcon, MarkdownView } from "obsidian";
+import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { FrameworkDefinition, BlockDefinition } from "../types";
+import type { FrameworkDefinition } from "../types";
 import { initCanvas, markInteractive } from "./controls";
-import { renderBlockBody, activateBlockEdit } from "./block-editor";
-import { renderCardBlock, type CardDropTarget } from "./card-block";
+import { renderTwoPassCells, buildCardDropTargets, type TwoPassCell } from "./two-pass-cells";
 import { attachSectionPreview } from "./section-preview";
 import { setupSlideCarousel } from "./grid-carousel";
 import { t } from "../i18n";
@@ -108,17 +107,12 @@ export function renderCanvas(
 
   // Two passes: the first creates every block's DOM (label, link button,
   // body element) and figures out which ones are card-mode; the second
-  // renders each body. Splitting it this way lets card-mode blocks share a
-  // sibling registry (built between the passes) so a card can be dragged
-  // from one block into another, not just reordered within its own block —
-  // mirroring the cross-cell drag registry in renderMatrix().
-  type BlockRecord = {
-    blockDef: BlockDefinition;
-    body: HTMLElement;
-    content: string;
-    isCard: boolean;
-  };
-  const records: BlockRecord[] = [];
+  // (renderTwoPassCells) renders each body. Splitting it this way lets
+  // card-mode blocks share a sibling registry (built between the passes) so
+  // a card can be dragged from one block into another, not just reordered
+  // within its own block — mirroring the cross-cell drag registry in
+  // renderMatrix().
+  const cells: TwoPassCell[] = [];
 
   for (const blockDef of framework.blocks) {
     const labelKey = blockDef.label.toLowerCase();
@@ -146,33 +140,12 @@ export function renderCanvas(
       body.setAttribute("data-placeholder", blockDef.placeholder);
     }
 
-    const isCardBlock = allCards || cardBlocks.has(labelKey) || (blockDef.cardBlock ?? false);
-
-    records.push({ blockDef, body, content, isCard: isCardBlock });
+    const isCard = allCards || cardBlocks.has(labelKey) || (blockDef.cardBlock ?? false);
+    cells.push({ body, label: blockDef.label, content, isCard });
   }
 
-  const cardTargets: CardDropTarget[] = records
-    .filter(r => r.isCard)
-    .map(r => ({ body: r.body, blockLabel: r.blockDef.label }));
-
-  records.forEach(({ blockDef, body, content, isCard }) => {
-    if (isCard) {
-      const siblings = cardTargets.filter(t => t.body !== body);
-      renderCardBlock(body, blockDef.label, content, app, ctx, container, siblings, resolver, navigateTo);
-    } else {
-      renderBlockBody(body, content);
-
-      if (app && ctx) {
-        body.addClass("vzd-block-editable");
-        body.setAttribute("title", t("edit.clickToEdit"));
-        body.dataset.blockContent = content;
-        body.addEventListener("click", () => {
-          if (app.workspace.getActiveViewOfType(MarkdownView)?.getMode() === "preview") return;
-          activateBlockEdit(body, blockDef.label, body.dataset.blockContent ?? "", app, ctx, container);
-        });
-      }
-    }
-  });
+  const cardTargets = buildCardDropTargets(cells);
+  renderTwoPassCells(cells, cardTargets, container, app, ctx, resolver, navigateTo, t("edit.clickToEdit"));
 
   setupSlideCarousel(container, ".vizardry-block", "vizardry-block-active", framework.blocks.length);
 }
