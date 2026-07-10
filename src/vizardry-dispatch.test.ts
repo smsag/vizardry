@@ -119,6 +119,16 @@ describe("dispatchVizardry", () => {
     expect(el.querySelector(".vizardry-error-message")?.textContent).toContain('Unknown type "nonsense"');
   });
 
+  it("ignores a duplicate top-level type: line instead of surfacing a confusing parse error", () => {
+    const el = container();
+    dispatchVizardry("type: swot\ntype: bmc\nblock: Strengths\n  Fast team", el, fakeCtx(), fakeApp());
+    // Renders using the first type: line ("swot"), not a "unexpected
+    // syntax" error from the swot parser choking on the leftover
+    // "type: bmc" line.
+    expect(el.classList.contains("vizardry-error")).toBe(false);
+    expect(el.querySelector(".vizardry-grid")).toBeTruthy();
+  });
+
   it("dispatches a flat grid id to renderCanvas", () => {
     const el = container();
     dispatchVizardry("type: swot\nblock: Strengths\n  Fast team", el, fakeCtx(), fakeApp());

@@ -1,6 +1,7 @@
 import { requestUrl } from "obsidian";
 import type { UpvotyPost, UpvotyStatus, UpvotyAuthor } from "./types";
 import { withTimeout } from "../shared/request-timeout";
+import { withRetry429 } from "../shared/request-retry";
 import { INTEGRATION_REQUEST_TIMEOUT_MS } from "../shared/constants";
 
 // Base62 alphabet used by Upvoty (standard: digits, uppercase, lowercase)
@@ -44,12 +45,12 @@ export async function fetchUpvotyPost(
 
   let resp;
   try {
-    resp = await withTimeout(requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url,
       method: "GET",
       headers: { "X-Upvoty-Key": apiKey },
       throw: false,
-    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty");
+    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty"));
   } catch (err) {
     throw new Error(`Upvoty: network error — ${(err as Error).message}`);
   }
@@ -94,12 +95,12 @@ export async function fetchUpvotyComments(
 
   let resp;
   try {
-    resp = await withTimeout(requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url,
       method: "GET",
       headers: { "X-Upvoty-Key": apiKey },
       throw: false,
-    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty");
+    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty"));
   } catch {
     return []; // comments are best-effort; don't fail the whole summary
   }

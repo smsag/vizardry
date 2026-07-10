@@ -36,6 +36,17 @@ describe("parseFrameworkSource", () => {
     expect(result.ok && result.data["goal"]).toBe("Value");
   });
 
+  it("rejects a block label declared twice instead of silently discarding the first one's content", () => {
+    const result = parseFrameworkSource("block: Goal\n  First\n\nblock: Goal\n  Second");
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toMatch(/duplicate.*block: Goal/i);
+  });
+
+  it("treats duplicate block labels as case-insensitive", () => {
+    const result = parseFrameworkSource("block: Goal\n  First\n\nblock: GOAL\n  Second");
+    expect(result.ok).toBe(false);
+  });
+
   it("allows empty block content", () => {
     const result = parseFrameworkSource("block: Goal\n");
     expect(result).toEqual({ ok: true, data: { goal: "" }, links: {}, cardBlocks: new Set(), allCards: false });

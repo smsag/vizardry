@@ -60,12 +60,17 @@ class LinearService {
       const issue = await fetchLinearIssue(issueKey, linearApiKey, linearBaseUrl);
       this.cache.setStatus(issueKey, issue.state);
       const existing = this.cache.getEntry(issueKey);
+      // The issue changed on Linear (or we've never cached it) — reset the
+      // summary so a stale one isn't shown until the next getSummary() call
+      // regenerates it. (existing.issueUpdatedAt === issue.updatedAt is
+      // never true here — that case is excluded by the guard above — so
+      // there's no "keep the existing summary" branch to preserve.)
       if (!existing || existing.issueUpdatedAt !== issue.updatedAt) {
         await this.cache.setSummary(issueKey, {
           state: issue.state,
-          summary: existing?.issueUpdatedAt === issue.updatedAt ? (existing?.summary ?? "") : "",
+          summary: "",
           issueUpdatedAt: issue.updatedAt,
-          summarizedAt: existing?.issueUpdatedAt === issue.updatedAt ? (existing?.summarizedAt ?? 0) : 0,
+          summarizedAt: 0,
         });
       }
       return issue.state;

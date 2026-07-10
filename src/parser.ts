@@ -22,6 +22,8 @@ import type { ParseResult } from "./types";
  * - Content is indented below the block line — no `|` scalar needed
  * - Lines starting with `//` are comments (ignored)
  * - Unknown block labels are stored but silently ignored at render time
+ * - A block label declared twice is a parse error (would otherwise silently
+ *   discard the first occurrence's content)
  * - Blank lines between blocks are ignored
  * - Heading links use inline [[#Heading]] annotations on block lines (see shared/links.ts)
  */
@@ -77,6 +79,9 @@ export function parseFrameworkSource(source: string): ParseResult {
       }
 
       const key = label.toLowerCase();
+      if (key in data) {
+        return { ok: false, error: `Line ${i + 1}: duplicate "block: ${label}" — a block with this label was already declared` };
+      }
       const contentLines: string[] = [];
       i++;
       let blockIndent = -1;

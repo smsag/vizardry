@@ -41,11 +41,18 @@ type ExtractedType = {
 /**
  * Finds the first top-level `type:` line (mirroring the indent guard used
  * elsewhere for config lines), splits its value on the first comma into an
- * id and an optional variant, and returns a copy of `source` with that one
- * line blanked out. Returns null if no top-level `type:` line exists.
+ * id and an optional variant, and returns a copy of `source` with that line
+ * blanked out. Returns null if no top-level `type:` line exists.
+ *
+ * A duplicate top-level `type:` line is not an error — the first one wins —
+ * but it's also blanked out here so it never reaches a framework's own
+ * parser, which doesn't recognise "type:" syntax and would otherwise reject
+ * it with a confusing "unexpected syntax" error that doesn't explain the
+ * real cause (a duplicate type: declaration).
  */
 export function extractType(source: string): ExtractedType | null {
   const lines = source.split("\n");
+  let result: ExtractedType | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -53,17 +60,18 @@ export function extractType(source: string): ExtractedType | null {
     const trimmed = raw.trim();
     if (!trimmed.toLowerCase().startsWith("type:")) continue;
 
-    const value = trimmed.slice("type:".length).trim();
-    const commaIdx = value.indexOf(",");
-    const id = (commaIdx !== -1 ? value.slice(0, commaIdx) : value).trim().toLowerCase();
-    const variant = commaIdx !== -1 ? value.slice(commaIdx + 1).trim().toLowerCase() : undefined;
-
-    const blanked = [...lines];
-    blanked[i] = "";
-    return { id, variant, parseSource: blanked.join("\n") };
+    if (!result) {
+      const value = trimmed.slice("type:".length).trim();
+      const commaIdx = value.indexOf(",");
+      const id = (commaIdx !== -1 ? value.slice(0, commaIdx) : value).trim().toLowerCase();
+      const variant = commaIdx !== -1 ? value.slice(commaIdx + 1).trim().toLowerCase() : undefined;
+      result = { id, variant, parseSource: "" }; // parseSource filled in below
+    }
+    lines[i] = "";
   }
 
-  return null;
+  if (!result) return null;
+  return { ...result, parseSource: lines.join("\n") };
 }
 
 export function dispatchVizardry(

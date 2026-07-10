@@ -59,7 +59,8 @@ export function writeKeyedSubLine(
 
   if (cellLine !== -1) {
     const raw = editor.getLine(cellLine);
-    const indent = raw.match(/^(\s*)/)?.[1] ?? "  ";
+    // /^(\s*)/ always matches (possibly zero characters), so this is never null.
+    const indent = raw.match(/^(\s*)/)![1];
     editor.replaceRange(
       `${indent}${key}: ${newValue}`,
       { line: cellLine, ch: 0 },

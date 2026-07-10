@@ -35,9 +35,15 @@ export function resolveEditor(
     console.warn(`Vizardry: ${caller} — file not found: ${ctx.sourcePath}`);
     return null;
   }
-  const leaf = app.workspace.getLeavesOfType("markdown").find(
-    l => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath,
+  // When the same file is open in multiple panes, each has its own
+  // independent (and possibly not-yet-synced) CM6 editor state. Prefer the
+  // pane whose DOM actually contains `el` — the canvas the user is looking
+  // at and clicked to edit — over an arbitrary one, so the write lands where
+  // the user expects it instead of in a different, unfocused split.
+  const candidates = app.workspace.getLeavesOfType("markdown").filter(
+    (l): l is typeof l & { view: MarkdownView } => l.view instanceof MarkdownView && l.view.file?.path === ctx.sourcePath,
   );
+  const leaf = candidates.find(l => l.view.containerEl?.contains(el)) ?? candidates[0];
   const editor = leaf?.view instanceof MarkdownView ? leaf.view.editor : undefined;
   if (!editor) {
     console.warn(`Vizardry: ${caller} — no live editor`);
@@ -90,6 +96,13 @@ function sectionContainsSource(
 /**
  * Scans the editor for a code fence whose trimmed body matches source.
  * Returns the lineStart (opening ```) and lineEnd (closing ```) line indices.
+ *
+ * Respects CommonMark fence-length matching: a closing fence must have at
+ * least as many backticks as the opening one. Without this, a canvas body
+ * that legitimately contains a nested example fenced with fewer backticks
+ * (only possible when the outer ```vizardry block itself opens with 4+
+ * backticks) would have its scan stop at that inner fence line, truncating
+ * the captured body and causing a false "no matching fence" result.
  */
 function findCodeFenceBySource(
   editor: MarkdownView["editor"],
@@ -101,14 +114,16 @@ function findCodeFenceBySource(
   const matches: { lineStart: number; lineEnd: number }[] = [];
   for (let i = 0; i < lineCount; i++) {
     const line = editor.getLine(i).trim();
-    if (!line.startsWith("```")) continue;
+    const openMatch = line.match(/^(`{3,})/);
+    if (!openMatch) continue;
+    const closeRe = new RegExp(`^\`{${openMatch[1].length},}\\s*$`);
 
     const fenceStart = i;
     let body = "";
     let j = i + 1;
     for (; j < lineCount; j++) {
       const inner = editor.getLine(j);
-      if (inner.trim() === "```") break;
+      if (closeRe.test(inner.trim())) break;
       body += (body ? "\n" : "") + inner;
     }
     if (body.trim() === normalised) matches.push({ lineStart: fenceStart, lineEnd: j });

@@ -5,7 +5,7 @@ import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
-import { wireRenameInputKeys } from "./inline-edit";
+import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX, WARDLEY_LABEL_MAX_NUDGE_PX } from "../shared/constants";
 import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, removeWardleyLink } from "../shared/wardley-edit";
 
@@ -673,13 +673,18 @@ function attachRenameBehavior(
     input.focus();
     input.select();
 
+    // Same CM6/Live Preview focus-steal guard as activateInlineEdit — this
+    // input is mounted the same way (SVG foreignObject overlay, .focus()
+    // called right after insertion).
+    const blurGuard = createBlurGuard();
     wireRenameInputKeys(input, (commit) => {
+      blurGuard.dispose();
       closeRename();
       const newName = input.value.trim();
       if (commit && newName && newName !== ref.comp.name) {
         renameWardleyComponent(app, mppCtx, wrap, ref.comp.name, newName);
       }
-    }, { stopPropagation: true });
+    }, { stopPropagation: true, ignoreBlur: blurGuard.ignoreBlur });
   };
 
   for (const ref of nodeRefs) {

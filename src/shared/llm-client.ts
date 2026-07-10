@@ -1,5 +1,6 @@
 import { requestUrl } from "obsidian";
 import { withTimeout } from "./request-timeout";
+import { withRetry429 } from "./request-retry";
 import { LLM_REQUEST_TIMEOUT_MS } from "./constants";
 
 export type LlmProvider = "anthropic" | "openai";
@@ -29,7 +30,7 @@ async function callAnthropic(
 ): Promise<string> {
   let resp;
   try {
-    resp = await withTimeout(requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url: "https://api.anthropic.com/v1/messages",
       method: "POST",
       headers: {
@@ -44,7 +45,7 @@ async function callAnthropic(
         messages: [{ role: "user", content: userMessage }],
       }),
       throw: false,
-    }), LLM_REQUEST_TIMEOUT_MS, "Anthropic");
+    }), LLM_REQUEST_TIMEOUT_MS, "Anthropic"));
   } catch (err) {
     throw new Error(`Anthropic: network error — ${(err as Error).message}`);
   }
@@ -66,7 +67,7 @@ async function callOpenAI(
 ): Promise<string> {
   let resp;
   try {
-    resp = await withTimeout(requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url: "https://api.openai.com/v1/chat/completions",
       method: "POST",
       headers: {
@@ -82,7 +83,7 @@ async function callOpenAI(
         ],
       }),
       throw: false,
-    }), LLM_REQUEST_TIMEOUT_MS, "OpenAI");
+    }), LLM_REQUEST_TIMEOUT_MS, "OpenAI"));
   } catch (err) {
     throw new Error(`OpenAI: network error — ${(err as Error).message}`);
   }

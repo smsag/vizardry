@@ -38,6 +38,7 @@ function makeApp(sourcePath: string, editor: ReturnType<typeof makeMockEditor> |
   const view = Object.create((MarkdownView as any).prototype) as any;
   view.file = { path: sourcePath };
   view.editor = editor;
+  view.containerEl = document.createElement("div"); // single-pane case: content of `el` is irrelevant, just must exist
   return {
     vault: { getFileByPath: (p: string) => (p === sourcePath ? { path: p } : null) },
     workspace: { getLeavesOfType: () => (editor ? [{ view }] : []) },
@@ -105,6 +106,62 @@ describe("resolveEditor", () => {
     // No vzSource to validate against, so the (stale) info is used as-is —
     // matches prior behaviour when nothing better is available.
     expect(res).toEqual({ editor, lineStart: 0, lineEnd: 0 });
+  });
+
+  it("picks the pane whose DOM contains the clicked canvas when the same file is open in multiple panes", () => {
+    // Two leaves show the same file (a split pane), each with its own editor
+    // instance and DOM subtree. The element the user actually clicked lives
+    // in the second pane's DOM — resolveEditor must return THAT editor, not
+    // just the first leaf found.
+    const editorA = makeMockEditor(["```swot", "block: Strengths", "  A's version", "```"]);
+    const editorB = makeMockEditor(["```swot", "block: Strengths", "  B's version", "```"]);
+
+    const viewA = Object.create((MarkdownView as any).prototype) as any;
+    viewA.file = { path: "note.md" };
+    viewA.editor = editorA;
+    viewA.containerEl = document.createElement("div");
+
+    const viewB = Object.create((MarkdownView as any).prototype) as any;
+    viewB.file = { path: "note.md" };
+    viewB.editor = editorB;
+    viewB.containerEl = document.createElement("div");
+
+    const el = document.createElement("div");
+    viewB.containerEl.appendChild(el); // el lives inside pane B's DOM
+
+    const app = {
+      vault: { getFileByPath: (p: string) => (p === "note.md" ? { path: p } : null) },
+      workspace: { getLeavesOfType: () => [{ view: viewA }, { view: viewB }] },
+    } as any;
+    const ctx = { sourcePath: "note.md", getSectionInfo: () => ({ lineStart: 0, lineEnd: 3, text: "" }) } as any;
+
+    const res = resolveEditor(app, ctx, el, "test");
+    expect(res?.editor).toBe(editorB);
+  });
+
+  it("scans past a nested example fence with fewer backticks than the opening fence", () => {
+    // A canvas whose body legitimately contains a fenced example (e.g. a
+    // SIPOC/Fishbone note cell) is only valid Markdown if the outer fence
+    // uses MORE backticks than the inner one (```` vs ```). The scan must
+    // require a closing fence with at least as many backticks as the
+    // opening one, not just any bare "```" line — otherwise it would stop
+    // at the inner fence and never find the real closing line.
+    const editor = makeMockEditor([
+      "````vizardry",
+      "block: Notes",
+      "  Example:",
+      "  ```",
+      "  some code",
+      "  ```",
+      "````",
+    ]);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = { sourcePath: "note.md", getSectionInfo: () => null } as any;
+    const el = document.createElement("div");
+    el.dataset.vzSource = "block: Notes\n  Example:\n  ```\n  some code\n  ```";
+
+    const res = resolveEditor(app, ctx, el, "test");
+    expect(res).toEqual({ editor, lineStart: 0, lineEnd: 6 });
   });
 
   it("returns null when neither section info nor vzSource resolve a fence", () => {
