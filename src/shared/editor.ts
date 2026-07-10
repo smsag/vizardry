@@ -8,6 +8,16 @@ export type ResolvedEditor = {
 };
 
 /**
+ * True unless the note is open in Obsidian's read-only Reading View.
+ * A canvas is only ever editable in Live Preview or raw Source Mode —
+ * Obsidian's plugin API reports both of those as "source" and only
+ * Reading View as "preview".
+ */
+export function isEditModeActive(app: App): boolean {
+  return app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+}
+
+/**
  * Resolves the live CodeMirror editor for the note containing `el`.
  * Returns null when the editor is unavailable — most commonly Reading View.
  *

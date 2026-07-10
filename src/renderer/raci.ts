@@ -5,6 +5,7 @@ import { initCanvas } from "./controls";
 import { activateTextareaEdit } from "./inline-edit";
 import { writeRACICell } from "../shared/raci-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
 
@@ -60,10 +61,11 @@ export function renderRACIMatrix(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "RACI Matrix";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "raci", title, undefined, source, onTitleEdit, app);
 
@@ -108,10 +110,10 @@ export function renderRACIMatrix(
         item.createEl("span", { cls: "vzd-raci-item-value", text: value });
       }
 
-      if (app && ctx) {
+      if (isEditMode) {
         item.addClass("vzd-raci-item--editable");
         item.addEventListener("click", () => {
-          activateItemEdit(item, col.key, rowIdx, value, app, ctx, container);
+          activateItemEdit(item, col.key, rowIdx, value, app!, ctx!, container);
         });
       }
     });

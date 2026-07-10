@@ -41,6 +41,7 @@ import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
 import { renderSCQA } from "./scqa";
+import { renderRACIMatrix } from "./raci";
 import { NULL_RESOLVER } from "../shared/links";
 import * as wardleyEdit from "../shared/wardley-edit";
 
@@ -53,6 +54,7 @@ import type {
   ImpactMap,
   StoryMap,
   WardleyMap,
+  RACIData,
   SIPOCData,
   VennDiagram,
   CarouselBlock,
@@ -334,6 +336,26 @@ describe("renderSCQA", () => {
     expect(el.querySelector(".vzd-scqa-grid")).toBeTruthy();
     expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(3);
   });
+
+  it("does not wire rename/add/delete affordances or title editing in the grid view when the note is in Reading View", () => {
+    const el = container();
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderSCQA(data, el, NULL_RESOLVER, undefined, "situation: Situation\n  complication: Complication", previewApp, ctx);
+    expect(el.querySelector(".vzd-scqa-card-add")).toBeNull();
+    expect(el.querySelector(".vzd-scqa-card-del")).toBeNull();
+    expect(el.querySelector(".vizardry-title--editable")).toBeNull();
+  });
+
+  it("wires rename/add/delete affordances and title editing in the grid view in Live Preview/Source mode", () => {
+    const el = container();
+    const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderSCQA(data, el, NULL_RESOLVER, undefined, "situation: Situation\n  complication: Complication", editModeApp, ctx);
+    expect(el.querySelector(".vzd-scqa-card-add")).toBeTruthy();
+    expect(el.querySelector(".vzd-scqa-card-del")).toBeTruthy();
+    expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
+  });
 });
 
 // ── renderMindMap ─────────────────────────────────────────────────────────────
@@ -352,6 +374,26 @@ describe("renderMindMap", () => {
     };
     expect(() => renderMindMap(map, el)).not.toThrow();
     expect(el.querySelector("svg")).toBeTruthy();
+  });
+
+  it("does not wire rename/add/delete or title editing when the note is in Reading View", () => {
+    const el = container();
+    const map: MindMap = { root: { text: "Central Idea", children: [{ text: "Branch A", children: [] }] } };
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMindMap(map, el, NULL_RESOLVER, undefined, "root: Central Idea\n  Branch A", previewApp, ctx);
+    expect(el.querySelector("svg")?.classList.contains("vzd-tree--editable")).toBe(false);
+    expect(el.querySelector(".vizardry-title--editable")).toBeNull();
+  });
+
+  it("wires rename/add/delete and title editing when the note is in Live Preview/Source mode", () => {
+    const el = container();
+    const map: MindMap = { root: { text: "Central Idea", children: [{ text: "Branch A", children: [] }] } };
+    const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMindMap(map, el, NULL_RESOLVER, undefined, "root: Central Idea\n  Branch A", editModeApp, ctx);
+    expect(el.querySelector("svg")?.classList.contains("vzd-tree--editable")).toBe(true);
+    expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 });
 
@@ -447,6 +489,22 @@ describe("renderWardleyMap", () => {
       { from: "Auth", to: "Database" },
     ],
   };
+  const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+  const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+
+  it("does not wire dragging, rename, link-drawing, the add handle, or title editing when the note is in Reading View", () => {
+    const el = container();
+    renderWardleyMap(map, el, previewApp, {} as any, "type: wardley");
+    expect(el.querySelector(".vzd-wardley-node--draggable")).toBeNull();
+    expect(el.querySelector(".vzd-wardley-add-handle-g")).toBeNull();
+    expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
+    expect(el.querySelector(".vizardry-title--editable")).toBeNull();
+
+    const authLabel = Array.from(el.querySelectorAll(".vzd-wardley-label"))
+      .find((label) => label.textContent === "Auth") as SVGTextElement | undefined;
+    authLabel?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    expect(el.querySelector(".vzd-wardley-rename-input")).toBeNull();
+  });
 
   it("renders SVG with evolution stage labels", () => {
     const el = container();
@@ -622,7 +680,7 @@ describe("renderWardleyMap", () => {
 
   it("opens inline rename editor anchored in SVG and cancels with Escape", () => {
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const labels = Array.from(el.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
     const authLabel = labels.find((label) => label.textContent === "Auth");
@@ -643,7 +701,7 @@ describe("renderWardleyMap", () => {
 
   it("does not start dragging while label rename editor is active", () => {
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const labels = Array.from(el.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
     const authLabel = labels.find((label) => label.textContent === "Auth");
@@ -659,7 +717,7 @@ describe("renderWardleyMap", () => {
 
   it("keeps add handle visible when moving mouse from node to handle", () => {
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -680,7 +738,7 @@ describe("renderWardleyMap", () => {
   it("adds new component with link by default on mouse release", () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -699,7 +757,7 @@ describe("renderWardleyMap", () => {
   it("adds component without link when Shift is held on mouse release", () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -718,7 +776,7 @@ describe("renderWardleyMap", () => {
   it("stops writing and removes its document listeners when the canvas is disconnected mid-drag", async () => {
     const writeSpy = vi.spyOn(wardleyEdit, "writeWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     expect(draggable).toBeTruthy();
@@ -742,7 +800,7 @@ describe("renderWardleyMap", () => {
   it("stops adding a component and removes its document listeners when the canvas is disconnected mid-link-draw", async () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -766,7 +824,7 @@ describe("renderWardleyMap", () => {
   it("renders an unlink button on links when app/ctx provided and calls removeWardleyLink on click", () => {
     const removeSpy = vi.spyOn(wardleyEdit, "removeWardleyLink").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const btn = el.querySelector(".vzd-wardley-unlink-btn") as SVGGElement | null;
     expect(btn).toBeTruthy();
@@ -782,6 +840,40 @@ describe("renderWardleyMap", () => {
     renderWardleyMap(map, el);
 
     expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
+  });
+});
+
+// ── renderRACIMatrix ──────────────────────────────────────────────────────────
+
+describe("renderRACIMatrix", () => {
+  const data: RACIData = {
+    rows: [
+      { task: "Write code", responsible: "Dev", accountable: "PM", consulted: "QA", informed: "Stakeholder" },
+    ],
+  };
+
+  it("renders the RACI grid without throwing", () => {
+    const el = container();
+    expect(() => renderRACIMatrix(data, el)).not.toThrow();
+    expect(el.querySelectorAll(".vzd-raci-item").length).toBeGreaterThan(0);
+  });
+
+  it("does not wire cell editing or title editing when the note is in Reading View", () => {
+    const el = container();
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderRACIMatrix(data, el, "type: raci", previewApp, ctx);
+    expect(el.querySelector(".vzd-raci-item--editable")).toBeNull();
+    expect(el.querySelector(".vizardry-title--editable")).toBeNull();
+  });
+
+  it("wires cell editing and title editing in Live Preview/Source mode", () => {
+    const el = container();
+    const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderRACIMatrix(data, el, "type: raci", editModeApp, ctx);
+    expect(el.querySelector(".vzd-raci-item--editable")).toBeTruthy();
+    expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 });
 
@@ -817,6 +909,28 @@ describe("renderSIPOC — table view", () => {
     const el = container();
     renderSIPOC({ rows: [sipocRow({ supplier: "A" })], links: [] } as unknown as SIPOCData, el);
     expect(el.querySelector(".vzd-sipoc-wrap")).toBeTruthy();
+  });
+
+  it("does not wire cell editing, the add-row button, or title editing when the note is in Reading View", () => {
+    const el = container();
+    const data: SIPOCData = { variant: "table", rows: [sipocRow({ supplier: "Dev team" })], links: [] };
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderSIPOC(data, el, "type: sipoc", previewApp, ctx);
+    expect(el.querySelector(".vzd-sipoc-td--editable")).toBeNull();
+    expect(el.querySelector(".vzd-sipoc-add-row")).toBeNull();
+    expect(el.querySelector(".vizardry-title--editable")).toBeNull();
+  });
+
+  it("wires cell editing, the add-row button, and title editing in Live Preview/Source mode", () => {
+    const el = container();
+    const data: SIPOCData = { variant: "table", rows: [sipocRow({ supplier: "Dev team" })], links: [] };
+    const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderSIPOC(data, el, "type: sipoc", editModeApp, ctx);
+    expect(el.querySelector(".vzd-sipoc-td--editable")).toBeTruthy();
+    expect(el.querySelector(".vzd-sipoc-add-row")).toBeTruthy();
+    expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 });
 

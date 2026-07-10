@@ -8,6 +8,7 @@ import { renderError } from "./canvas";
 import { activateTextareaEdit } from "./inline-edit";
 import { insertSIPOCRowAfter, writeSIPOCCell } from "../shared/sipoc-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
 import { bestTextColor } from "../shared/color-utils";
@@ -91,10 +92,11 @@ function renderSIPOCTable(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "SIPOC Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
 
@@ -121,7 +123,7 @@ function renderSIPOCTable(
   });
 
   // Action column header — narrow spacer, only rendered in edit mode.
-  if (app && ctx) {
+  if (isEditMode) {
     headerRow.createEl("th", { cls: "vzd-sipoc-th vzd-sipoc-th--actions" });
   }
 
@@ -146,17 +148,17 @@ function renderSIPOCTable(
         td.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
       }
 
-      if (app && ctx) {
+      if (isEditMode) {
         td.addClass("vzd-sipoc-td--editable");
         td.addEventListener("click", () => {
-          activateCellEdit(td, col.key, rowIdx, value ?? "", app, ctx, container);
+          activateCellEdit(td, col.key, rowIdx, value ?? "", app!, ctx!, container);
         });
       }
     });
 
     // Dedicated action cell — sits outside the data columns so the button is
     // never clipped by the table's overflow boundary.
-    if (app && ctx) {
+    if (isEditMode) {
       const actionTd = tr.createEl("td", { cls: "vzd-sipoc-td vzd-sipoc-td--actions" });
       const btn = actionTd.createEl("button", {
         cls: "vzd-btn vzd-sipoc-add-row",
@@ -164,7 +166,7 @@ function renderSIPOCTable(
       });
       btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
       btn.addEventListener("click", () => {
-        insertSIPOCRowAfter(app, ctx, container, rowIdx);
+        insertSIPOCRowAfter(app!, ctx!, container, rowIdx);
       });
     }
   });
@@ -398,7 +400,7 @@ function renderSIPOCFlowView(
 ): void {
   const defaultTitle = "SIPOC Flow Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
+  const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
