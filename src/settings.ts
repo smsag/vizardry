@@ -162,6 +162,7 @@ function addSecretRow(
 
   const refreshRow = (): void => {
     setting.clear();
+    setting.nameEl.empty();
     setting.setDesc(`Secret name: ${currentName}`);
 
     // Badge starts neutral; updated async below

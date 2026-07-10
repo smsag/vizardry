@@ -172,8 +172,10 @@ export function moveRoadmapItem(
     ? fromBlock.items.filter((_, i) => i !== fromIndex)
     : toBlock.items;
 
-  let actualToIndex = toIndex;
-  if (fromColId === toColId && fromIndex < toIndex) actualToIndex = toIndex;
+  // toIndex is already relative to the post-removal list: the dragged card is
+  // hidden while dragging, so the UI computes drop-target indices against the
+  // same (fromIndex-excluded) list as `targetItems` above — no adjustment needed.
+  const actualToIndex = toIndex;
 
   let insertAfterLine: number;
   if (actualToIndex <= 0 || targetItems.length === 0) {

@@ -452,6 +452,35 @@ describe("renderWardleyMap", () => {
     expect(new Set([d1, d2, d3]).size).toBeGreaterThan(1);
   });
 
+  it("extends the last positioned stage band all the way to the plot's right edge", () => {
+    const el = container();
+    const positionedStagesMap: WardleyMap = {
+      ...map,
+      stages: ["Driver", "Approver", "Contributor", "Informed"],
+      stagePositions: [0.05, 0.28, 0.62, 0.95],
+    };
+    renderWardleyMap(positionedStagesMap, el);
+    const svg = el.querySelector("svg")!;
+
+    // Canvas geometry mirrors the private constants in wardley.ts
+    // (W=800, PAD.left=60, PAD.right=30): plot right edge = 60 + 710 = 770.
+    const expectedPlotRight = 770;
+    const bandRights = Array.from(svg.querySelectorAll(".vzd-wardley-band")).map((rect) => {
+      const x = parseFloat(rect.getAttribute("x") ?? "0");
+      const width = parseFloat(rect.getAttribute("width") ?? "0");
+      return x + width;
+    });
+    // The last (shaded) band's right edge must reach evolution = 1 (the
+    // plot's true right edge) — not stop short at the last user-supplied
+    // position (0.95).
+    expect(Math.max(...bandRights)).toBeCloseTo(expectedPlotRight, 5);
+
+    // Only 3 internal dividers for 4 stages — no stray line at the old,
+    // now-superseded right edge of the last stage.
+    const lines = svg.querySelectorAll(".vzd-wardley-stage-line");
+    expect(lines).toHaveLength(3);
+  });
+
   it("keeps positioned stage label coordinates finite for boundary-like inputs", () => {
     const el = container();
     const boundaryStagesMap: WardleyMap = {
@@ -643,6 +672,54 @@ describe("renderWardleyMap", () => {
 
     expect(addSpy).toHaveBeenCalledTimes(1);
     expect(addSpy.mock.calls[0][7]).toBe(false);
+  });
+
+  it("stops writing and removes its document listeners when the canvas is disconnected mid-drag", async () => {
+    const writeSpy = vi.spyOn(wardleyEdit, "writeWardleyComponent").mockReturnValue(true);
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
+    expect(draggable).toBeTruthy();
+    draggable!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 100, clientY: 100 }));
+    expect(draggable!.classList.contains("vzd-wardley-node--dragging")).toBe(true);
+
+    // Simulate the canvas being torn down mid-drag (e.g. a re-render
+    // triggered by an external edit) before the user releases the mouse.
+    el.querySelector(".vzd-wardley-wrap")!.remove();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // A stray mouseup afterwards must not write a position computed against
+    // the now-detached canvas, and must not throw.
+    expect(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 300, clientY: 300 }));
+      document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 300, clientY: 300 }));
+    }).not.toThrow();
+    expect(writeSpy).not.toHaveBeenCalled();
+  });
+
+  it("stops adding a component and removes its document listeners when the canvas is disconnected mid-link-draw", async () => {
+    const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
+    const el = container();
+    renderWardleyMap(map, el, {} as any, {} as any);
+
+    const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
+    const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
+    expect(draggable).toBeTruthy();
+    expect(handle).toBeTruthy();
+
+    draggable!.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    handle!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 120, clientY: 120 }));
+    document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 200, clientY: 200 }));
+
+    el.querySelector(".vzd-wardley-wrap")!.remove();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 260, clientY: 260 }));
+      document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 260, clientY: 260 }));
+    }).not.toThrow();
+    expect(addSpy).not.toHaveBeenCalled();
   });
 
   it("renders an unlink button on links when app/ctx provided and calls removeWardleyLink on click", () => {
