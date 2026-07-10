@@ -2,6 +2,7 @@ import type { VennDiagram, VennItem } from "../types";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { initCanvas, markInteractive } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 
 // Obsidian exposes its App instance on window.app, but there is no official
@@ -94,7 +95,7 @@ export function renderVennDiagram(
 ): void {
   const defaultTitle = "Venn Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
+  const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "venn", title, undefined, source, onTitleEdit, app);

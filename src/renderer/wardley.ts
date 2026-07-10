@@ -3,6 +3,7 @@ import type { WardleyMap, WardleyComponent } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
@@ -268,7 +269,7 @@ function renderLinks(
       class: "vzd-wardley-link", "marker-end": "url(#vzd-wardley-arrow)",
     }));
 
-    if (app && mppCtx) {
+    if (app && mppCtx && isEditModeActive(app)) {
       linkG.appendChild(createSvgEl("line", {
         x1: String(x1 + ex), y1: String(y1 + ey),
         x2: String(x2 - ex), y2: String(y2 - ey),
@@ -703,10 +704,11 @@ export function renderWardleyMap(
   ctx?: MarkdownPostProcessorContext,
   source?: string,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Wardley Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "wardley", title, undefined, source, onTitleEdit, app);
 
@@ -734,7 +736,7 @@ export function renderWardleyMap(
 
   wrap.appendChild(svg);
 
-  if (app && ctx) {
+  if (isEditMode) {
     const ix: WardleyIxState = {
       drag: null,
       activeRename: null,
@@ -743,8 +745,8 @@ export function renderWardleyMap(
       hideHandleTimer: null,
       addHandleG: buildAddHandle(svg),
     };
-    attachDragBehavior(svg, nodeRefs, ix, data, app, ctx, wrap);
-    attachLinkDrawBehavior(svg, nodeRefs, ix, data, app, ctx, wrap);
-    attachRenameBehavior(svg, nodeRefs, ix, data, app, ctx, wrap);
+    attachDragBehavior(svg, nodeRefs, ix, data, app!, ctx!, wrap);
+    attachLinkDrawBehavior(svg, nodeRefs, ix, data, app!, ctx!, wrap);
+    attachRenameBehavior(svg, nodeRefs, ix, data, app!, ctx!, wrap);
   }
 }

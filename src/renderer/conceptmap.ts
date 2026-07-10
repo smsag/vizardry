@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { ConceptMap } from "../types";
 import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 
 const W = 900;
@@ -168,7 +169,7 @@ export function renderConceptMap(
 ): void {
   const defaultTitle = "Concept Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
+  const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "conceptmap", title, undefined, source, onTitleEdit, app);

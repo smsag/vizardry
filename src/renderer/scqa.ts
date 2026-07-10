@@ -7,6 +7,7 @@ import {
 import { renderInline } from "../shared/inline-markdown";
 import { activateInlineEdit } from "./inline-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
@@ -33,16 +34,17 @@ export function renderSCQA(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = data.variant === "scqa" ? "SCQA Narrative" : "SCR Narrative";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, el, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, el, newTitle, defaultTitle)
     : undefined;
   initCanvas(el, data.variant, title, undefined, source, onTitleEdit, app);
 
   if (data.view === "tree") {
     const opts = data.variant === "scqa" ? SCQA_TREE_OPTIONS : SCR_TREE_OPTIONS;
-    const editHandlers = (app && ctx) ? makeHandlers(app, ctx, el) : undefined;
+    const editHandlers = isEditMode ? makeHandlers(app!, ctx!, el) : undefined;
     renderTree(adaptSCQAToTree(data), opts, el, resolver, navigateTo, editHandlers);
     return;
   }
@@ -109,7 +111,7 @@ function renderGrid(
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
 ): void {
-  const editable = !!(app && ctx);
+  const editable = !!(app && ctx && isEditModeActive(app));
   const placed = placeNodes(data.root);
   const totalCols = Math.max(1, leafSpan(data.root));
 

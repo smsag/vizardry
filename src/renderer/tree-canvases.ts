@@ -5,6 +5,7 @@ import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOST
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
 import { renameMindMapNode, addMindMapChild, deleteMindMapNode } from "../shared/mindmap-edit";
 import { renameOSTNode, addOSTChild, deleteOSTNode } from "../shared/ost-edit";
@@ -22,14 +23,15 @@ export function renderMindMap(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Mind Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "mindmap", title, undefined, source, onTitleEdit, app);
 
-  const editHandlers = (app && ctx) ? makeMindMapHandlers(app, ctx, container, map, resolver, navigateTo, source) : undefined;
+  const editHandlers = isEditMode ? makeMindMapHandlers(app!, ctx!, container, map, resolver, navigateTo, source) : undefined;
   renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container, resolver, navigateTo, editHandlers);
 }
 
@@ -72,14 +74,15 @@ export function renderImpactMap(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Impact Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "impact", title, undefined, source, onTitleEdit, app);
 
-  const editHandlers = (app && ctx) ? makeImpactHandlers(app, ctx, container) : undefined;
+  const editHandlers = isEditMode ? makeImpactHandlers(app!, ctx!, container) : undefined;
   renderTree(adaptImpactMapToTree(map), IMPACT_MAP_OPTS, container, resolver, navigateTo, editHandlers);
 }
 
@@ -118,14 +121,15 @@ export function renderOST(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Opportunity Solution Tree";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, el, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, el, newTitle, defaultTitle)
     : undefined;
   initCanvas(el, "ost", title, undefined, source, onTitleEdit, app);
 
-  const editHandlers = (app && ctx) ? makeOSTHandlers(app, ctx, el) : undefined;
+  const editHandlers = isEditMode ? makeOSTHandlers(app!, ctx!, el) : undefined;
   renderTree(adaptOSTToTree(tree), OST_TREE_OPTIONS, el, resolver, navigateTo, editHandlers);
 }
 
@@ -164,14 +168,15 @@ export function renderFishbone(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Fishbone Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = (isEditMode && source !== undefined)
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "fishbone", title, undefined, source, onTitleEdit, app);
 
-  const editHandlers = (app && ctx) ? makeFishboneHandlers(app, ctx, container) : undefined;
+  const editHandlers = isEditMode ? makeFishboneHandlers(app!, ctx!, container) : undefined;
   renderTree(adaptFishboneToTree(diagram), FISHBONE_OPTS, container, resolver, navigateTo, editHandlers);
 }
 

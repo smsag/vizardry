@@ -1,7 +1,5 @@
 import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { FrameworkDefinition } from "../types";
-import { initCanvas, markInteractive } from "./controls";
 import { renderTwoPassCells, buildCardDropTargets, type TwoPassCell } from "./two-pass-cells";
 import { attachSectionPreview } from "./section-preview";
 import { setupSlideCarousel } from "./grid-carousel";
@@ -9,6 +7,9 @@ import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { onDisconnected } from "../shared/lifecycle";
+import { isEditModeActive } from "../shared/editor";
+import { initCanvas, markInteractive } from "./controls";
+import type { FrameworkDefinition } from "../types";
 
 // ── Relink registry ───────────────────────────────────────────────────────────
 // Keeps track of rendered canvas blocks that need their link buttons refreshed
@@ -95,7 +96,7 @@ export function renderCanvas(
 ): void {
   const defaultTitle = framework.label;
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
+  const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, framework.id, title, undefined, source, onTitleEdit, app);
