@@ -17,6 +17,27 @@ interface WireKeysOptions {
   ignoreBlur?: () => boolean;
 }
 
+/** Default grace window (ms) for ignoring a blur right after an input is
+ *  focused — see WireKeysOptions.ignoreBlur. Obsidian's CM6 Live Preview can
+ *  steal focus back immediately after `.focus()` (e.g. right after a widget
+ *  remounts), which would otherwise fire a spurious blur and close the
+ *  editor before the user has typed anything. */
+export const DEFAULT_BLUR_GUARD_MS = 150;
+
+/**
+ * Returns an `ignoreBlur` callback usable with wireRenameInputKeys, active
+ * for `ms` from creation. Call `dispose()` once the input's own finish
+ * handler has run, to clear the timer early.
+ */
+export function createBlurGuard(ms: number = DEFAULT_BLUR_GUARD_MS): { ignoreBlur: () => boolean; dispose: () => void } {
+  let guarded = ms > 0;
+  const timer = guarded ? setTimeout(() => { guarded = false; }, ms) : undefined;
+  return {
+    ignoreBlur: () => guarded,
+    dispose: () => { if (timer !== undefined) clearTimeout(timer); },
+  };
+}
+
 /**
  * Wires Enter (commit), Escape (revert) and blur (commit) on `input`,
  * calling `onFinish` exactly once with whichever happened first.
@@ -49,7 +70,8 @@ export interface InlineEditOptions {
   /** Whether a submitted value should be committed vs. reverted to currentValue.
    *  Defaults to: non-empty and different from currentValue. */
   shouldCommit?: (value: string, currentValue: string) => boolean;
-  /** Grace window (ms) during which a blur is ignored — see wireRenameInputKeys's ignoreBlur. */
+  /** Grace window (ms) during which a blur is ignored — see wireRenameInputKeys's
+   *  ignoreBlur. Defaults to DEFAULT_BLUR_GUARD_MS; pass 0 to disable. */
   blurGuardMs?: number;
 }
 
@@ -73,9 +95,10 @@ export function activateInlineEdit(
   const input = host.createEl("input", { cls: "vzd-rename-input vzd-inline-input", type: "text" });
   input.value = currentValue;
 
-  let blurGuarded = (options.blurGuardMs ?? 0) > 0;
+  const blurGuardMs = options.blurGuardMs ?? DEFAULT_BLUR_GUARD_MS;
+  let blurGuarded = blurGuardMs > 0;
   const blurGuardTimer = blurGuarded
-    ? setTimeout(() => { blurGuarded = false; }, options.blurGuardMs)
+    ? setTimeout(() => { blurGuarded = false; }, blurGuardMs)
     : undefined;
   input.focus({ preventScroll: true });
   input.select();

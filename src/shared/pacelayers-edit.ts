@@ -169,7 +169,8 @@ function _writePaceLayerCell(
   if (cellLine !== -1) {
     // ── Replace path ────────────────────────────────────────────────────────────
     const raw: string = editor.getLine(cellLine);
-    const indent = raw.match(/^(\s*)/)?.[1] ?? "  ";
+    // /^(\s*)/ always matches (possibly zero characters), so this is never null.
+    const indent = raw.match(/^(\s*)/)![1];
 
     // Find the last line that belongs to this value: indented continuations and
     // orphaned zero-indent fragments that were left by a previous bad write.

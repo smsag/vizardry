@@ -45,6 +45,10 @@ class UpvotyService {
     return this.plugin.settings.upvotyKeyPrefix || "UPV";
   }
 
+  getAppUrl(): string {
+    return this.plugin.settings.upvotyAppUrl || "https://app.upvoty.com/feedback";
+  }
+
   private getUpvotyApiKey(): Promise<string | null> {
     return loadSecret(this.plugin.app, this.plugin.settings.upvotySecretName);
   }

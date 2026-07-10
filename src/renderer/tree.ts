@@ -13,7 +13,7 @@ import type {
   TreeRenderOptions,
 } from "../types";
 import { createSvgEl } from "../shared/svg";
-import { wireRenameInputKeys } from "./inline-edit";
+import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import type { TranslationKey } from "../i18n";
@@ -332,11 +332,16 @@ function renderTreeNodes(
       input.focus();
       input.select();
 
+      // Same CM6/Live Preview focus-steal guard as activateInlineEdit —
+      // this input is mounted the same way (SVG foreignObject overlay,
+      // .focus() called right after insertion).
+      const blurGuard = createBlurGuard();
       wireRenameInputKeys(input, (commit) => {
+        blurGuard.dispose();
         closeRename();
         const newText = input.value.trim();
         if (commit && newText && newText !== node.text) editHandlers.onRename(node, newText);
-      }, { stopPropagation: true });
+      }, { stopPropagation: true, ignoreBlur: blurGuard.ignoreBlur });
     });
   }
 

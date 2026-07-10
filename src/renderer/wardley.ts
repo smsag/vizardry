@@ -4,7 +4,8 @@ import { t } from "../i18n";
 import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { createSvgEl } from "../shared/svg";
-import { wireRenameInputKeys } from "./inline-edit";
+import { onDisconnected } from "../shared/lifecycle";
+import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX, WARDLEY_LABEL_MAX_NUDGE_PX } from "../shared/constants";
 import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, removeWardleyLink } from "../shared/wardley-edit";
 
@@ -22,8 +23,15 @@ const PLOT_H = H - PAD.top - PAD.bottom;
 const evolutionStages = (): string[] => [t("wardley.stage.genesis"), t("wardley.stage.custom"), t("wardley.stage.product"), t("wardley.stage.commodity")];
 const NODE_R = 8;
 
+/**
+ * Positions are per-label right edges (`parseWardleyMap` requires each value
+ * strictly < 1), so used verbatim the last stage would stop short of
+ * evolution = 1, leaving a permanently unstyled sliver past it. The last
+ * edge is therefore always the canvas boundary (1), not the user's value.
+ */
 function stageEdgesFromPositions(positions: number[]): number[] {
-  return [0, ...positions];
+  if (positions.length === 0) return [0, 1];
+  return [0, ...positions.slice(0, -1), 1];
 }
 
 function toSvgX(evolution: number): number {
@@ -167,7 +175,9 @@ function renderStageBands(svg: SVGSVGElement, data: WardleyMap): void {
       const left = edges[i], right = edges[i + 1];
       if (!Number.isFinite(left) || !Number.isFinite(right) || right < left) return;
       const x = PLOT_X + ((left + right) / 2) * PLOT_W;
-      if (pos > 0 && pos < 1) {
+      // The last position no longer marks a real edge (the last stage's
+      // right edge is always the canvas boundary) — skip its divider line.
+      if (pos > 0 && pos < 1 && i < stagePositions.length - 1) {
         svg.appendChild(createSvgEl("line", {
           x1: String(PLOT_X + pos * PLOT_W), y1: String(PLOT_Y),
           x2: String(PLOT_X + pos * PLOT_W), y2: String(PLOT_Y + PLOT_H),
@@ -431,6 +441,17 @@ function attachDragBehavior(
   const onMouseMove = (e: MouseEvent): void => { if (ix.drag) moveDot(ix.drag.ref, e.clientX, e.clientY); };
   const onMouseUp = (): void => endDrag();
 
+  // If the canvas is torn down mid-drag (e.g. the note is edited elsewhere,
+  // triggering a re-render), endDrag()'s own `!ix.drag` guard would otherwise
+  // never run — leaving these document-level listeners attached forever and
+  // letting a later mouseup write a stale/detached position. Remove them and
+  // drop the drag state directly instead of routing through endDrag().
+  onDisconnected(wrap, () => {
+    doc.removeEventListener("mousemove", onMouseMove);
+    doc.removeEventListener("mouseup", onMouseUp);
+    ix.drag = null;
+  });
+
   // Touch listeners are registered once on svg (not per-node) to avoid duplicate handlers
   svg.addEventListener("touchmove", (e) => {
     if (!ix.drag) return;
@@ -551,6 +572,17 @@ function attachLinkDrawBehavior(
   const onLinkUp = (e: MouseEvent): void => endLinkDraw(!e.shiftKey);
   const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false); };
 
+  // Same rationale as attachDragBehavior: don't rely on endLinkDraw's own
+  // `!ix.linkDraw` guard to clean up, since nulling the state first would
+  // make it skip removeEventListener and leak these document listeners.
+  onDisconnected(wrap, () => {
+    doc.removeEventListener("mousemove", onLinkMove);
+    doc.removeEventListener("mouseup", onLinkUp);
+    doc.removeEventListener("keydown", onLinkKey);
+    ix.linkDraw = null;
+    if (ix.hideHandleTimer) { clearTimeout(ix.hideHandleTimer); ix.hideHandleTimer = null; }
+  });
+
   addHandleG.addEventListener("mousedown", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -641,13 +673,18 @@ function attachRenameBehavior(
     input.focus();
     input.select();
 
+    // Same CM6/Live Preview focus-steal guard as activateInlineEdit — this
+    // input is mounted the same way (SVG foreignObject overlay, .focus()
+    // called right after insertion).
+    const blurGuard = createBlurGuard();
     wireRenameInputKeys(input, (commit) => {
+      blurGuard.dispose();
       closeRename();
       const newName = input.value.trim();
       if (commit && newName && newName !== ref.comp.name) {
         renameWardleyComponent(app, mppCtx, wrap, ref.comp.name, newName);
       }
-    }, { stopPropagation: true });
+    }, { stopPropagation: true, ignoreBlur: blurGuard.ignoreBlur });
   };
 
   for (const ref of nodeRefs) {

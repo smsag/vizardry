@@ -8,8 +8,10 @@ const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 
 // Tags whose content should never be enriched.
 // PRE skips multi-line code blocks (and their CODE children). Inline CODE is
-// intentionally kept so `CORE-1234` enriches normally.
-const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
+// intentionally kept so `CORE-1234` enriches normally. A is skipped because
+// wrapping a match in a <button> would nest interactive content inside a
+// link — invalid HTML that produces inconsistent click/focus behaviour.
+const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE", "A"]);
 
 // ── Open popovers ────────────────────────────────────────────────────────────
 // Multiple popovers can be open at once, one per trigger element. Each is only

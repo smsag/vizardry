@@ -23,6 +23,12 @@ import { t, tFrameworkDescription } from "./i18n";
 
 export default class VizardryPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
+  // Per-file debounce timers for the heading-change relink pass. An instance
+  // field (not a local in onload()) so onunload() can cancel any still
+  // pending when the plugin is disabled/reloaded — otherwise a timer
+  // scheduled just before unload would still fire afterwards and touch
+  // module-level relink state from a torn-down plugin instance.
+  private relinkTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   async saveSettings(): Promise<void> {
     // Routed through updatePersistedData so this can't race LinearCache's or
@@ -66,13 +72,12 @@ export default class VizardryPlugin extends Plugin {
     // all currently rendered canvas blocks belonging to that file.
     // Debounced per file: rapid edits (e.g. typing in a heading) coalesce
     // into a single relink pass fired 200 ms after the last change.
-    const relinkTimers = new Map<string, ReturnType<typeof setTimeout>>();
     this.registerEvent(
       this.app.metadataCache.on("changed", (file) => {
-        const prev = relinkTimers.get(file.path);
+        const prev = this.relinkTimers.get(file.path);
         if (prev !== undefined) clearTimeout(prev);
-        relinkTimers.set(file.path, setTimeout(() => {
-          relinkTimers.delete(file.path);
+        this.relinkTimers.set(file.path, setTimeout(() => {
+          this.relinkTimers.delete(file.path);
           triggerRelink(file.path);
         }, 200));
       }),
@@ -153,6 +158,8 @@ export default class VizardryPlugin extends Plugin {
   }
 
   onunload(): void {
+    for (const timer of this.relinkTimers.values()) clearTimeout(timer);
+    this.relinkTimers.clear();
     resetInteractiveIdCounter();
     initLinearService(null);
     destroyUpvotyService();

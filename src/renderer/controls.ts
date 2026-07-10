@@ -120,6 +120,7 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
       span.classList.remove("vizardry-title--editing");
       span.removeAttribute("contenteditable");
       span.removeAttribute("spellcheck");
+      span.removeEventListener("keydown", onKeyDown);
 
       const newTitle = (span.textContent ?? "").trim().slice(0, TITLE_MAX_LENGTH) || title;
       span.textContent = newTitle;
@@ -131,6 +132,7 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
       span.classList.remove("vizardry-title--editing");
       span.removeAttribute("contenteditable");
       span.removeAttribute("spellcheck");
+      span.removeEventListener("keydown", onKeyDown);
       span.textContent = title;
     };
 

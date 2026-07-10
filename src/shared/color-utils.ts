@@ -10,11 +10,19 @@ import { ownerWindow } from "./lifecycle";
  */
 
 /**
- * Returns the relative luminance of a CSS `rgb(r, g, b)` string using the
+ * Returns the relative luminance of a computed CSS colour string using the
  * WCAG 2.1 formula, or `null` if the string cannot be parsed.
+ *
+ * getComputedStyle() always resolves color-mix()/CSS variables down to a
+ * concrete rgb color, but the serialisation format varies: legacy comma
+ * syntax `rgb(r, g, b)` / `rgba(r, g, b, a)`, or the newer CSS Color 4
+ * space syntax `rgb(r g b)` / `rgb(r g b / a)` that recent Chromium
+ * versions use for color-mix() results. The alpha component (if present)
+ * is intentionally ignored — these are opaque theme header backgrounds,
+ * not overlays composited against an unknown color underneath.
  */
 function luminanceFromRgb(css: string): number | null {
-  const m = css.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+  const m = css.match(/rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:\s*[,/]\s*[\d.%]+)?\s*\)/);
   if (!m) return null;
   const linearise = (n: number): number => {
     const s = n / 255;

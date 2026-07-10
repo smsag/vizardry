@@ -3,11 +3,10 @@ import { getUpvotyService } from "../upvoty";
 import { t } from "../i18n";
 import { onDisconnected } from "./lifecycle";
 
-const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
-
-// Upvoty's API doesn't return a public post URL, so it's built from the
-// feedback item's UUID using the dashboard's lookup pattern.
-const UPVOTY_POST_URL = "https://app.upvoty.com/feedback";
+// A is skipped because wrapping a match in a <button> would nest interactive
+// content inside a link — invalid HTML that produces inconsistent
+// click/focus behaviour.
+const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE", "A"]);
 
 // ── Open popovers ────────────────────────────────────────────────────────────
 
@@ -204,7 +203,9 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
 
       const { post, summary } = result;
 
-      if (post.id) keyLink.dataset.url = `${UPVOTY_POST_URL}?id=${post.id}`;
+      // Upvoty's API doesn't return a public post URL, so it's built from the
+      // feedback item's UUID using the dashboard's lookup pattern.
+      if (post.id) keyLink.dataset.url = `${svc.getAppUrl()}?id=${post.id}`;
 
       if (post.status?.label) statusPill.textContent = post.status.label;
 

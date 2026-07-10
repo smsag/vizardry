@@ -1,7 +1,9 @@
-import type { App } from "obsidian";
-import { DropdownComponent, Modal, PluginSettingTab, Setting } from "obsidian";
+import type { App , DropdownComponent} from "obsidian";
+import { Modal, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
+import { getLinearService } from "./linear";
+import { getUpvotyService } from "./upvoty";
 
 export interface PluginSettings {
   // Linear
@@ -23,6 +25,10 @@ export interface PluginSettings {
   // Upvoty
   upvotyEnabled: boolean;
   upvotyBaseUrl: string;
+  /** Public dashboard URL used to build "Open in Upvoty" links — distinct from
+   *  upvotyBaseUrl (the REST API endpoint), since self-hosted/white-labelled
+   *  instances can have the two on entirely different domains. */
+  upvotyAppUrl: string;
   upvotyKeyPrefix: string;
   /** Logical name under which the Upvoty API key is stored in app.secretStorage. */
   upvotySecretName: string;
@@ -40,6 +46,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   statusTtlMinutes: 5,
   upvotyEnabled: false,
   upvotyBaseUrl: "https://api.upvotyfeedback.com/v1",
+  upvotyAppUrl: "https://app.upvoty.com/feedback",
   upvotyKeyPrefix: "UPV",
   upvotySecretName: "vzd-upvoty-key",
   upvotyStatusTtlMinutes: 5,
@@ -162,6 +169,7 @@ function addSecretRow(
 
   const refreshRow = (): void => {
     setting.clear();
+    setting.nameEl.empty();
     setting.setDesc(`Secret name: ${currentName}`);
 
     // Badge starts neutral; updated async below
@@ -269,7 +277,13 @@ export class VizardrySettingTab extends PluginSettingTab {
       "Linear API key",
       "lin_api_…",
       () => this.plugin.settings.linearSecretName,
-      (n) => { this.plugin.settings.linearSecretName = n; void this.plugin.saveSettings(); },
+      (n) => {
+        this.plugin.settings.linearSecretName = n;
+        void this.plugin.saveSettings();
+        // Different credentials can point at a different Linear workspace —
+        // stale cached titles/summaries from the old one must not linger.
+        void getLinearService()?.cache.clearAndPersist();
+      },
     );
 
     new Setting(containerEl)
@@ -282,6 +296,7 @@ export class VizardrySettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.linearBaseUrl = value.trim() || DEFAULT_SETTINGS.linearBaseUrl;
             await this.plugin.saveSettings();
+            void getLinearService()?.cache.clearAndPersist();
           }),
       );
 
@@ -389,7 +404,13 @@ export class VizardrySettingTab extends PluginSettingTab {
       "Upvoty API key",
       "upvoty_sk_…",
       () => this.plugin.settings.upvotySecretName,
-      (n) => { this.plugin.settings.upvotySecretName = n; void this.plugin.saveSettings(); },
+      (n) => {
+        this.plugin.settings.upvotySecretName = n;
+        void this.plugin.saveSettings();
+        // Different credentials can point at a different Upvoty board —
+        // stale cached titles/summaries from the old one must not linger.
+        void getUpvotyService()?.cache.clearAndPersist();
+      },
     );
 
     new Setting(containerEl)
@@ -414,6 +435,20 @@ export class VizardrySettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.upvotyBaseUrl)
           .onChange(async (value) => {
             this.plugin.settings.upvotyBaseUrl = value.trim() || DEFAULT_SETTINGS.upvotyBaseUrl;
+            await this.plugin.saveSettings();
+            void getUpvotyService()?.cache.clearAndPersist();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Upvoty dashboard URL")
+      .setDesc("Used to build \"Open in Upvoty\" links. Change only if you are on a self-hosted or white-labelled Upvoty instance — this is usually a different domain than the API base URL above.")
+      .addText(text =>
+        text
+          .setPlaceholder("https://app.upvoty.com/feedback")
+          .setValue(this.plugin.settings.upvotyAppUrl)
+          .onChange(async (value) => {
+            this.plugin.settings.upvotyAppUrl = value.trim() || DEFAULT_SETTINGS.upvotyAppUrl;
             await this.plugin.saveSettings();
           }),
       );

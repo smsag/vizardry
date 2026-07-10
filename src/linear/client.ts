@@ -1,5 +1,8 @@
 import { requestUrl } from "obsidian";
 import type { LinearIssue } from "./types";
+import { withTimeout } from "../shared/request-timeout";
+import { withRetry429 } from "../shared/request-retry";
+import { INTEGRATION_REQUEST_TIMEOUT_MS } from "../shared/constants";
 
 const QUERY = `
 query Issue($id: String!) {
@@ -29,14 +32,14 @@ export async function fetchLinearIssue(
 ): Promise<LinearIssue> {
   let resp;
   try {
-    resp = await requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url: baseUrl,
       method: "POST",
       contentType: "application/json",
       headers: { "Authorization": apiKey },
       body: JSON.stringify({ query: QUERY, variables: { id: issueKey } }),
       throw: false,
-    });
+    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Linear"));
   } catch (err) {
     throw new Error(`Linear: network error — ${(err as Error).message}`);
   }
@@ -63,7 +66,11 @@ export async function fetchLinearIssue(
   const issue = json.data?.issue;
   if (!issue) throw new Error(`Linear: issue "${issueKey}" not found`);
 
-  const state = issue.state as { name: string; color: string; type: string } | null ?? { name: "Unknown", color: "#888", type: "unstarted" };
+  // type "unknown" (not a real Linear state type) deliberately doesn't match
+  // any summarizer focusMap key, so a genuinely null/missing state falls
+  // through to the summarizer's generic fallback instead of being
+  // miscategorized as "unstarted" (which skews the LLM prompt's focus).
+  const state = issue.state as { name: string; color: string; type: string } | null ?? { name: "Unknown", color: "#888", type: "unknown" };
   const comments = (
     (issue.comments as { nodes: { body: string; user: { name: string } }[] })?.nodes ?? []
   ).map(c => ({ body: c.body ?? "", author: c.user?.name ?? "Unknown" }));

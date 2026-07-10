@@ -1,5 +1,8 @@
 import { requestUrl } from "obsidian";
 import type { UpvotyPost, UpvotyStatus, UpvotyAuthor } from "./types";
+import { withTimeout } from "../shared/request-timeout";
+import { withRetry429 } from "../shared/request-retry";
+import { INTEGRATION_REQUEST_TIMEOUT_MS } from "../shared/constants";
 
 // Base62 alphabet used by Upvoty (standard: digits, uppercase, lowercase)
 const B62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -9,8 +12,14 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * Converts a base62 URL slug (e.g. 5OdEIWLP5WQ1B2z7TnjE1o from post URLs after ~)
  * to standard UUID format required by the Upvoty REST API.
  * Passes through if the input is already a UUID or contains unexpected chars.
+ *
+ * Leading zero-value characters (e.g. "0ABC..." vs "ABC...") decode to the
+ * same numeric value — that's correct positional-notation behaviour, not
+ * data loss: a UUID with leading zero bytes is exactly what makes its
+ * base62 encoding shorter (or zero-padded) in the first place, and
+ * `padStart(32, "0")` below restores those bytes on the way back out.
  */
-function toUuid(id: string): string {
+export function toUuid(id: string): string {
   if (UUID_RE.test(id)) return id;
   let n = BigInt(0);
   for (const c of id) {
@@ -36,12 +45,12 @@ export async function fetchUpvotyPost(
 
   let resp;
   try {
-    resp = await requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url,
       method: "GET",
       headers: { "X-Upvoty-Key": apiKey },
       throw: false,
-    });
+    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty"));
   } catch (err) {
     throw new Error(`Upvoty: network error — ${(err as Error).message}`);
   }
@@ -86,12 +95,12 @@ export async function fetchUpvotyComments(
 
   let resp;
   try {
-    resp = await requestUrl({
+    resp = await withRetry429(() => withTimeout(requestUrl({
       url,
       method: "GET",
       headers: { "X-Upvoty-Key": apiKey },
       throw: false,
-    });
+    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty"));
   } catch {
     return []; // comments are best-effort; don't fail the whole summary
   }
