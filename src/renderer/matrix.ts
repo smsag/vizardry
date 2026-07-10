@@ -1,11 +1,9 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import type { MatrixData, MatrixType } from "../types";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n/locales/en";
 import { initCanvas } from "./controls";
-import { renderBlockBody, activateBlockEdit } from "./block-editor";
-import { renderCardBlock, type CardDropTarget } from "./card-block";
+import { renderTwoPassCells, buildCardDropTargets, type TwoPassCell } from "./two-pass-cells";
 import type { LinkResolver } from "../shared/links";
 
 const ROWS = ["very-major", "major", "minor", "very-minor"] as const;
@@ -89,13 +87,7 @@ export function renderMatrix(
   // cross-cell drag-and-drop. First pass creates all DOM; second pass renders.
   const grid = wrap.createEl("div", { cls: "vzd-matrix-grid" });
 
-  type CellRecord = {
-    body: HTMLElement;
-    blockKey: string;
-    content: string;
-    isCard: boolean;
-  };
-  const cells: CellRecord[] = [];
+  const cells: TwoPassCell[] = [];
 
   ROWS.forEach((rowName, rowIdx) => {
     COLS.forEach((col) => {
@@ -103,31 +95,13 @@ export function renderMatrix(
       const heat = heatLevel(rowIdx + 1, col);
       const cell = grid.createEl("div", { cls: `vzd-matrix-cell vzd-matrix-cell--${heat}` });
       const body = cell.createEl("div", { cls: "vizardry-block-body" });
-      cells.push({ body, blockKey, content: data.data[blockKey] ?? "", isCard: data.allCards || data.cardBlocks.has(blockKey) });
+      cells.push({ body, label: blockKey, content: data.data[blockKey] ?? "", isCard: data.allCards || data.cardBlocks.has(blockKey) });
     });
   });
 
   // All card-mode bodies available as cross-cell drop targets for every card cell.
-  const cardTargets: CardDropTarget[] = cells
-    .filter(c => c.isCard)
-    .map(c => ({ body: c.body, blockLabel: c.blockKey }));
-
-  cells.forEach(({ body, blockKey, content, isCard }) => {
-    if (isCard) {
-      const siblings = cardTargets.filter(t => t.body !== body);
-      renderCardBlock(body, blockKey, content, app, ctx, container, siblings, resolver, navigateTo);
-    } else {
-      renderBlockBody(body, content);
-      if (app && ctx) {
-        body.addClass("vzd-block-editable");
-        body.addEventListener("click", (e) => {
-          if ((e.target as HTMLElement).closest("button, a")) return;
-          if (app.workspace.getActiveViewOfType(MarkdownView)?.getMode() === "preview") return;
-          activateBlockEdit(body, blockKey, body.dataset.blockContent ?? "", app, ctx, container);
-        });
-      }
-    }
-  });
+  const cardTargets = buildCardDropTargets(cells);
+  renderTwoPassCells(cells, cardTargets, container, app, ctx, resolver, navigateTo);
 
   // X-axis labels
   const xAxis = wrap.createEl("div", { cls: "vzd-matrix-x-axis" });
