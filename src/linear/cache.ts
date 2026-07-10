@@ -72,6 +72,25 @@ export class LinearCache {
     return Object.fromEntries(this.summaryCache.entries());
   }
 
+  clear(): void {
+    this.statusCache.clear();
+    this.summaryCache.clear();
+  }
+
+  /**
+   * Clears the cache and persists the (now empty) summary cache to
+   * data.json. Use this — not plain clear() — when the user repoints the
+   * integration at different credentials/workspace, so stale entries don't
+   * reappear on the next plugin load via init(). Plain clear() alone is for
+   * in-memory-only cleanup (e.g. service teardown on unload), where wiping
+   * the persisted cache would force every summary to be re-fetched next
+   * session for no reason.
+   */
+  async clearAndPersist(): Promise<void> {
+    this.clear();
+    await this.persist();
+  }
+
   private async persist(): Promise<void> {
     await updatePersistedData(this.plugin, (existing) => {
       existing.linearCache = this.toJSON();

@@ -1,5 +1,7 @@
 import { requestUrl } from "obsidian";
 import type { LinearIssue } from "./types";
+import { withTimeout } from "../shared/request-timeout";
+import { INTEGRATION_REQUEST_TIMEOUT_MS } from "../shared/constants";
 
 const QUERY = `
 query Issue($id: String!) {
@@ -29,14 +31,14 @@ export async function fetchLinearIssue(
 ): Promise<LinearIssue> {
   let resp;
   try {
-    resp = await requestUrl({
+    resp = await withTimeout(requestUrl({
       url: baseUrl,
       method: "POST",
       contentType: "application/json",
       headers: { "Authorization": apiKey },
       body: JSON.stringify({ query: QUERY, variables: { id: issueKey } }),
       throw: false,
-    });
+    }), INTEGRATION_REQUEST_TIMEOUT_MS, "Linear");
   } catch (err) {
     throw new Error(`Linear: network error — ${(err as Error).message}`);
   }

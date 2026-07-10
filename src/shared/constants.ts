@@ -19,3 +19,8 @@ export const WARDLEY_LABEL_MIN_GAP_PX = 14;
 export const WARDLEY_LABEL_OVERLAP_X_PX = 80;
 /** Maximum pixels a label may be nudged from its natural position before a leader line is drawn. */
 export const WARDLEY_LABEL_MAX_NUDGE_PX = 30;
+
+/** Timeout (ms) for Linear/Upvoty REST calls before giving up and surfacing an error. */
+export const INTEGRATION_REQUEST_TIMEOUT_MS = 10_000;
+/** Timeout (ms) for LLM summarisation calls — longer, since generation itself takes time. */
+export const LLM_REQUEST_TIMEOUT_MS = 20_000;

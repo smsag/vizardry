@@ -2,6 +2,8 @@ import type { App } from "obsidian";
 import { DropdownComponent, Modal, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
+import { getLinearService } from "./linear";
+import { getUpvotyService } from "./upvoty";
 
 export interface PluginSettings {
   // Linear
@@ -270,7 +272,13 @@ export class VizardrySettingTab extends PluginSettingTab {
       "Linear API key",
       "lin_api_…",
       () => this.plugin.settings.linearSecretName,
-      (n) => { this.plugin.settings.linearSecretName = n; void this.plugin.saveSettings(); },
+      (n) => {
+        this.plugin.settings.linearSecretName = n;
+        void this.plugin.saveSettings();
+        // Different credentials can point at a different Linear workspace —
+        // stale cached titles/summaries from the old one must not linger.
+        void getLinearService()?.cache.clearAndPersist();
+      },
     );
 
     new Setting(containerEl)
@@ -283,6 +291,7 @@ export class VizardrySettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.linearBaseUrl = value.trim() || DEFAULT_SETTINGS.linearBaseUrl;
             await this.plugin.saveSettings();
+            void getLinearService()?.cache.clearAndPersist();
           }),
       );
 
@@ -390,7 +399,13 @@ export class VizardrySettingTab extends PluginSettingTab {
       "Upvoty API key",
       "upvoty_sk_…",
       () => this.plugin.settings.upvotySecretName,
-      (n) => { this.plugin.settings.upvotySecretName = n; void this.plugin.saveSettings(); },
+      (n) => {
+        this.plugin.settings.upvotySecretName = n;
+        void this.plugin.saveSettings();
+        // Different credentials can point at a different Upvoty board —
+        // stale cached titles/summaries from the old one must not linger.
+        void getUpvotyService()?.cache.clearAndPersist();
+      },
     );
 
     new Setting(containerEl)
@@ -416,6 +431,7 @@ export class VizardrySettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.upvotyBaseUrl = value.trim() || DEFAULT_SETTINGS.upvotyBaseUrl;
             await this.plugin.saveSettings();
+            void getUpvotyService()?.cache.clearAndPersist();
           }),
       );
 
