@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.35.0). Creates the tag if it doesn't exist yet."
+        required: true
 
 jobs:
   release:
@@ -27,7 +32,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          tag="${{ github.event.inputs.version }}"
+          if [ -z "$tag" ]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
           notes_file="RELEASE_NOTES.md"
           if [ ! -f "$notes_file" ]; then
             notes_file=$(mktemp)
