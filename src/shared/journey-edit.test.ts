@@ -2,7 +2,9 @@
 /**
  * Tests for journey-edit.ts — the surgical source mutations driving the
  * Customer Journey Map / Service Blueprint canvas (add/delete/rename cards,
- * rename phases, reorder/move cards, expand/collapse variant).
+ * rename phases, reorder/move cards). Switching between the journey and
+ * blueprint variants is a manual `type:` line edit (same as SIPOC's table/
+ * flow switch) — there is no write-back mutator for it.
  *
  * Mock editor/app pattern copied from story-edit.test.ts.
  */
@@ -27,8 +29,6 @@ import {
   reorderJourneyCard,
   moveJourneyCardCrossPhase,
   writeJourneyMeta,
-  expandToBlueprint,
-  collapseToJourney,
 } from "./journey-edit";
 import { MarkdownView } from "obsidian";
 
@@ -263,62 +263,5 @@ describe("writeJourneyMeta", () => {
     writeJourneyMeta(app, ctx, el, "scenario", "Renewal recovery");
     const [text] = editor.replaceRange.mock.calls[0];
     expect(text).toContain("scenario: Renewal recovery");
-  });
-});
-
-// ── expandToBlueprint / collapseToJourney ─────────────────────────────────────
-
-describe("expandToBlueprint", () => {
-  it("rewrites a bare type: journey line", () => {
-    const editor = makeMockEditor(makeSource());
-    const app = makeApp(PATH, editor) as any;
-    const ctx = makeCtx(PATH, 0, 10) as any;
-
-    const ok = expandToBlueprint(app, ctx, el);
-    expect(ok).toBe(true);
-    expect(editor._state[1]).toBe("type: journey, blueprint");
-  });
-
-  it("no-ops when already blueprint", () => {
-    const lines = makeSource();
-    lines[1] = "type: journey, blueprint";
-    const editor = makeMockEditor(lines);
-    const app = makeApp(PATH, editor) as any;
-    const ctx = makeCtx(PATH, 0, 10) as any;
-
-    const ok = expandToBlueprint(app, ctx, el);
-    expect(ok).toBe(false);
-    expect(editor._state[1]).toBe("type: journey, blueprint");
-  });
-});
-
-describe("collapseToJourney", () => {
-  it("rewrites a type: journey, blueprint line back to journey", () => {
-    const lines = makeSource();
-    lines[1] = "type: journey, blueprint";
-    const editor = makeMockEditor(lines);
-    const app = makeApp(PATH, editor) as any;
-    const ctx = makeCtx(PATH, 0, 10) as any;
-
-    const ok = collapseToJourney(app, ctx, el);
-    expect(ok).toBe(true);
-    expect(editor._state[1]).toBe("type: journey");
-  });
-
-  it("does not touch frontstage/backstage/support lines — they round-trip", () => {
-    const lines = [
-      "```vizardry",
-      "type: journey, blueprint",
-      "phase: A",
-      "  action: Do thing",
-      "  frontstage: Greet",
-      "```",
-    ];
-    const editor = makeMockEditor(lines);
-    const app = makeApp(PATH, editor) as any;
-    const ctx = makeCtx(PATH, 0, 5) as any;
-
-    collapseToJourney(app, ctx, el);
-    expect(editor._state.some(l => l.includes("frontstage: Greet"))).toBe(true);
   });
 });

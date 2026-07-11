@@ -13,9 +13,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { JOURNEY_DIVIDERS, lanesForVariant } from "../journey";
 import {
   addJourneyCard,
-  collapseToJourney,
   deleteJourneyCard,
-  expandToBlueprint,
   moveJourneyCardCrossPhase,
   renameJourneyCard,
   renamePhase,
@@ -49,27 +47,6 @@ export function renderJourneyMap(
       const meta = header.createEl("div", { cls: "vzd-journey-meta" });
       renderMetaBadge(meta, "persona", t("journey.label.persona"), data.persona, isEditMode, app, ctx, container);
       renderMetaBadge(meta, "scenario", t("journey.label.scenario"), data.scenario, isEditMode, app, ctx, container);
-    }
-
-    if (isEditMode && app && ctx) {
-      const btn = header.createEl("button", { cls: "vzd-btn vzd-journey-variant-btn" });
-      if (data.variant === "journey") {
-        setIcon(btn, "chevrons-down");
-        btn.setAttribute("aria-label", t("journey.expandToBlueprint"));
-        btn.createSpan({ text: t("journey.expandToBlueprint"), cls: "vzd-journey-variant-btn-label" });
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          expandToBlueprint(app, ctx, container);
-        });
-      } else {
-        setIcon(btn, "chevrons-up");
-        btn.setAttribute("aria-label", t("journey.collapseToJourney"));
-        btn.createSpan({ text: t("journey.collapseToJourney"), cls: "vzd-journey-variant-btn-label" });
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          collapseToJourney(app, ctx, container);
-        });
-      }
     }
   }, source, onTitleEdit, app);
 

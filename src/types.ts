@@ -287,10 +287,11 @@ export interface SIPOCFlowNode {
 // One canvas, two variants over the same phase/lane data (see the doc comment
 // on SIPOCData above for the precedent this follows). frontstage:/backstage:/
 // support: lines are parsed unconditionally regardless of variant — they sit
-// inert in journey view and resurface the moment the canvas is expanded to
-// blueprint view via the header's "Expand to Service Blueprint" button (see
-// shared/journey-edit.ts's expandToBlueprint), exactly as SIPOC's owner/metric
-// sit inert in table view and resurface in flow view.
+// inert in journey view and resurface the moment the block's `type:` line is
+// hand-edited from "journey" to "journey, blueprint" (there is no in-canvas
+// button for this — switching variant is a source edit only, exactly like
+// SIPOC's `type: sipoc` / `type: sipoc, flow`), and owner/metric sit inert in
+// table view and resurface in flow view.
 
 export type JourneyVariant = "journey" | "blueprint";
 

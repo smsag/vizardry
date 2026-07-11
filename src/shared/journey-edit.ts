@@ -1,6 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { Notice } from "obsidian";
-import type { Editor } from "obsidian";
 import type { JourneyLaneKey } from "../types";
 import { JOURNEY_LANE_CONFIG } from "../journey";
 import { resolveEditor } from "./editor";
@@ -369,51 +368,4 @@ export function moveJourneyCardCrossPhase(
   }
 
   return true;
-}
-
-/** Finds the block's top-level `type: journey` line and switches it to
- *  `type: journey, blueprint`. No other line changes — frontstage:/backstage:/
- *  support: lines are already parsed unconditionally (see src/journey.ts), so
- *  this alone is enough to make them render. */
-export function expandToBlueprint(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-): boolean {
-  return rewriteTypeLine(app, ctx, el, "expandToBlueprint", /^type:\s*journey\s*$/i, "type: journey, blueprint");
-}
-
-/** Symmetric reverse of expandToBlueprint. Non-destructive: blueprint-lane
- *  content stays in the source untouched and resurfaces if expanded again. */
-export function collapseToJourney(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-): boolean {
-  return rewriteTypeLine(app, ctx, el, "collapseToJourney", /^type:\s*journey\s*,\s*blueprint\s*$/i, "type: journey");
-}
-
-function rewriteTypeLine(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  caller: string,
-  match: RegExp,
-  replacement: string,
-): boolean {
-  const resolved = resolveEditor(app, ctx, el, caller);
-  if (!resolved) return false;
-  const { editor, lineStart, lineEnd }: { editor: Editor; lineStart: number; lineEnd: number } = resolved;
-
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    if (raw.search(/\S/) !== 0) continue; // only top-level lines
-    if (match.test(raw.trim())) {
-      editor.replaceRange(replacement, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
-      return true;
-    }
-  }
-
-  console.warn(`Vizardry: ${caller} — type: line not found or already in the target variant`);
-  return false;
 }

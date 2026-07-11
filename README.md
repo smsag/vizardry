@@ -791,7 +791,7 @@ phase: Consideration
 ```
 ~~~
 
-One canvas that starts as a Customer Journey Map and can be expanded in place into a full Service Blueprint — no data is lost switching either direction.
+One canvas, two views over the same phase/lane data — a **journey map** (default) and a **service blueprint**. Switch between them just by changing the `type:` line (`type: journey` ↔ `type: journey, blueprint`), the same way SIPOC's table and flow views switch; nothing you've entered is ever lost in either direction, since `frontstage:`/`backstage:`/`support:` lines are always parsed, just not rendered under `type: journey`.
 
 **Syntax:**
 - `persona:` / `scenario:` — optional header metadata
@@ -800,7 +800,7 @@ One canvas that starts as a Customer Journey Map and can be expanded in place in
 - `frontstage:`, `backstage:`, `support:` — Service Blueprint-only lanes (Frontstage Actions, Backstage Actions, Support Processes), separated by "Line of Interaction" / "Line of Visibility" / "Line of Internal Interaction" dividers
 - Any lane keyword supports `<keyword>: <name> | <subtitle>` for an optional subtitle
 - Multiple lines with the same keyword under one phase stack as multiple cards, in source order
-- Blueprint-only lane lines are always parsed even under `type: journey` — they simply aren't rendered until expanded, so nothing is lost switching views
+- Blueprint-only lane lines are always parsed even under `type: journey` — they simply aren't rendered until you switch the `type:` line to `journey, blueprint`, so nothing is lost switching views by hand
 
 **Visual editing in Live Preview:**
 
@@ -812,8 +812,6 @@ One canvas that starts as a Customer Journey Map and can be expanded in place in
 | **Rename persona / scenario** | Click the badge in the canvas header |
 | **Rename phase** | Double-click a phase header |
 | **Rename card** | Double-click a card's name |
-| **Expand to Service Blueprint** | Click **Expand to Service Blueprint** in the canvas header — adds Frontstage/Backstage/Support Process lanes |
-| **Collapse to Journey Map** | Click **Collapse to Journey Map** in the canvas header — blueprint-lane content stays in the source and reappears if expanded again |
 | **Cancel a drag** | Release outside the grid — card snaps back, no change |
 
 ---

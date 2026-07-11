@@ -752,23 +752,6 @@ button.vzd-btn {
   cursor: text;
 }
 
-/* Expand/collapse variant button — sits in the header actions row */
-.vzd-journey-variant-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  width: auto;
-  padding: 0 0.5rem;
-  flex-basis: 100%;
-  justify-content: center;
-  margin-top: 0.3rem;
-}
-
-.vzd-journey-variant-btn-label {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.82);
-  font-weight: 600;
-}
-
 /* Phase headers — one column each */
 .vzd-journey-phase-header {
   background: var(--background-secondary);

@@ -106,8 +106,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "journey.addCard":           "Karte hinzufügen",
   "journey.newCard":           "Neue Karte",
   "journey.deleteCard":        "Karte löschen",
-  "journey.expandToBlueprint": "Zum Service Blueprint erweitern",
-  "journey.collapseToJourney": "Zur Journey Map einklappen",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
   "sipoc.col.suppliers": "Lieferant",

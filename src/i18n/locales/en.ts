@@ -124,8 +124,6 @@ export const en = {
   "journey.addCard":           "Add card",
   "journey.newCard":           "New Card",
   "journey.deleteCard":        "Delete card",
-  "journey.expandToBlueprint": "Expand to Service Blueprint",
-  "journey.collapseToJourney": "Collapse to Journey Map",
 
   // ── Wardley Map labels ──────────────────────────────────────────────────────
   "wardley.stage.genesis":   "Genesis",
