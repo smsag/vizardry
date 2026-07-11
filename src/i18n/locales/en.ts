@@ -15,6 +15,7 @@ export const en = {
   "framework.carousel.description":   "Multiple images as a navigable carousel.",
   "framework.fourls.description":     "Liked, Learned, Lacked, Longed for — plus a shared action list.",
   "framework.fishbone.description":   "Root causes traced back to an effect.",
+  "framework.experiment.description": "Hypothesis tested, observed, and turned into a decision.",
   "framework.impact.description":     "All features tied to goals.",
   "framework.jobs.description":       "Core customer motivation laid bare.",
   "framework.kata.description":       "Clear path to next experiment.",

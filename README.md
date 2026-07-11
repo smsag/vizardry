@@ -32,6 +32,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `bmc` | Business Model Canvas | Grid |
 | `fourls` | 4Ls Retrospective | Grid |
 | `carousel` | Image Carousel | Gallery |
+| `experiment` | Experiment Canvas | Grid |
 | `impact` | Impact Map | Tree |
 | `journey` | Customer Journey Map | Grid |
 | `journey, blueprint` (or insert as `service-blueprint`) | Service Blueprint | Grid |
@@ -589,6 +590,38 @@ Each assumption is rated: **P** = probability of being wrong (1–5), **I** = im
 
 ---
 
+### Experiment Canvas
+
+~~~
+```vizardry
+type: experiment
+block: Hypothesis
+  Ops managers will pay for one-click weekly report automation.
+
+block: Test
+  Run a landing page with a "Notify me" signup form, driven by 200 cold outreach emails to ops managers at SaaS companies.
+
+block: Metric
+  Signup conversion rate from outreach email to landing page form submission.
+
+block: Success Criteria
+  We are right if at least 8% of contacted ops managers sign up within two weeks.
+
+block: Observation
+  14 of 200 contacted ops managers signed up (7%) within two weeks.
+
+block: Learning
+  Interest is close to the threshold but concentrated among larger teams (50+ people) — smaller teams didn't respond.
+
+block: Decision
+  Persevere, but narrow the test to ops managers at 50–200 person companies and re-run with a sharper pitch.
+```
+~~~
+
+A test card (Hypothesis, Test, Metric, Success Criteria) paired with a learning card (Observation, Learning, Decision) — Strategyzer's approach to running one experiment at a time and turning it into a documented decision.
+
+---
+
 ### SIPOC Diagram
 
 A SIPOC maps the full scope of a process row by row — each row traces one chain from supplier to customer, making attribution immediately readable. It's one canvas with two views over the same rows: a **table** (default) and a **flow** diagram — switch between them just by changing the `type:` line, and nothing you've entered is ever lost in either direction.
@@ -1139,7 +1172,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ## Syntax reference
 
-### Grid canvases (type: adkar, bmc, fourls, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
+### Grid canvases (type: adkar, bmc, experiment, fourls, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
 
 | Syntax | Meaning |
 |---|---|

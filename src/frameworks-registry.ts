@@ -4,6 +4,7 @@ import { BMC } from "./frameworks/bmc";
 import { LEAN } from "./frameworks/lean";
 import { OPPORTUNITY } from "./frameworks/opportunity";
 import { LEANUX } from "./frameworks/leanux";
+import { EXPERIMENT } from "./frameworks/experiment";
 import { VPC } from "./frameworks/vpc";
 import { KATA } from "./frameworks/kata";
 import { JOBS } from "./frameworks/jobs";
@@ -19,7 +20,7 @@ import { PTW } from "./frameworks/ptw";
 // mentioned in README.md, which doesn't apply to this shared registry.
 
 export const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, PTW, VPC, KATA, JOBS, RAC, SWOT,
+  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, PTW, VPC, KATA, JOBS, RAC, SWOT, EXPERIMENT,
 ];
 
 export const FRAMEWORKS: Record<string, FrameworkDefinition> = Object.fromEntries(
