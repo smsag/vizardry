@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type { RACIData } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
@@ -67,6 +68,11 @@ export function renderRACIMatrix(
     : undefined;
   initCanvas(container, "raci", title, undefined, source, onTitleEdit, app);
 
+  // Read Mode still provides app/ctx (the post-processor runs there too), so
+  // gate the edit affordance on the actual view mode — otherwise the hover
+  // border/cursor shows in Read Mode even though clicking there is a no-op.
+  const isEditMode = !!(app && ctx) && app!.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+
   const rows = data?.rows ?? [];
 
   // Use the same grid structure as all other canvases
@@ -108,7 +114,7 @@ export function renderRACIMatrix(
         item.createEl("span", { cls: "vzd-raci-item-value", text: value });
       }
 
-      if (app && ctx) {
+      if (isEditMode && app && ctx) {
         item.addClass("vzd-raci-item--editable");
         item.addEventListener("click", () => {
           activateItemEdit(item, col.key, rowIdx, value, app, ctx, container);

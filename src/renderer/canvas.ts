@@ -101,6 +101,12 @@ export function renderCanvas(
     : undefined;
   initCanvas(container, framework.id, title, undefined, source, onTitleEdit, app);
 
+  // Read Mode still provides app/ctx (the post-processor runs there too), so
+  // gate the edit affordance on the actual view mode — otherwise the hover
+  // border/cursor from .vzd-block-editable shows in Read Mode even though
+  // clicking there is a no-op.
+  const isEditMode = !!(app && ctx) && app!.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);
   grid.style.setProperty("--vzd-columns", framework.gridColumns);
@@ -162,7 +168,7 @@ export function renderCanvas(
     } else {
       renderBlockBody(body, content);
 
-      if (app && ctx) {
+      if (isEditMode && app && ctx) {
         body.addClass("vzd-block-editable");
         body.setAttribute("title", t("edit.clickToEdit"));
         body.dataset.blockContent = content;

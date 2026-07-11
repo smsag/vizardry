@@ -50,6 +50,11 @@ export function renderMatrix(
   container.style.setProperty("--vzd-matrix-base", BASE_COLORS[data.type]);
   // vzSource (the resolveEditor Live-Preview fallback) is set by initCanvas.
 
+  // Read Mode still provides app/ctx (the post-processor runs there too), so
+  // gate the edit affordance on the actual view mode — otherwise the hover
+  // border/cursor shows in Read Mode even though clicking there is a no-op.
+  const isEditMode = !!(app && ctx) && app!.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+
   initCanvas(
     container,
     "matrix",
@@ -118,7 +123,7 @@ export function renderMatrix(
       renderCardBlock(body, blockKey, content, app, ctx, container, siblings, resolver, navigateTo);
     } else {
       renderBlockBody(body, content);
-      if (app && ctx) {
+      if (isEditMode && app && ctx) {
         body.addClass("vzd-block-editable");
         body.addEventListener("click", (e) => {
           if ((e.target as HTMLElement).closest("button, a")) return;

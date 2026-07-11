@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type { WardleyMap, WardleyComponent } from "../types";
 import { t } from "../i18n";
 import { initCanvas } from "./controls";
@@ -710,6 +711,12 @@ export function renderWardleyMap(
     : undefined;
   initCanvas(container, "wardley", title, undefined, source, onTitleEdit, app);
 
+  // Read Mode still provides app/ctx (the post-processor runs there too), so
+  // gate every edit affordance (drag cursor, add-handle, rename, unlink
+  // button) on the actual view mode — otherwise they show in Read Mode even
+  // though they're a no-op there.
+  const isEditMode = !!(app && ctx) && app!.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+
   const wrap = container.createEl("div", { cls: "vzd-wardley-wrap" });
 
   const svg = createSvgEl("svg", {
@@ -729,12 +736,12 @@ export function renderWardleyMap(
 
   renderStageBands(svg, data);
   renderAxes(svg);
-  renderLinks(svg, data, app, ctx, wrap);
+  renderLinks(svg, data, isEditMode ? app : undefined, isEditMode ? ctx : undefined, wrap);
   const nodeRefs = renderNodes(svg, data);
 
   wrap.appendChild(svg);
 
-  if (app && ctx) {
+  if (isEditMode && app && ctx) {
     const ix: WardleyIxState = {
       drag: null,
       activeRename: null,

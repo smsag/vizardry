@@ -36,6 +36,8 @@ import { renderMindMap, renderImpactMap, renderOST } from "./tree-canvases";
 import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
+import { renderRACIMatrix } from "./raci";
+import { renderMatrix } from "./matrix";
 import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
@@ -55,6 +57,8 @@ import type {
   VennDiagram,
   CarouselBlock,
   ConceptMap,
+  RACIData,
+  MatrixData,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -175,6 +179,88 @@ describe("renderCanvas", () => {
     renderCanvas(swot, { strengths: "" }, new Set(["strengths"]), el, NULL_RESOLVER, vi.fn(), app, ctx);
     const body = el.querySelector(".vizardry-block-empty");
     expect(body?.classList.contains("vzd-card-block-body")).toBe(true);
+  });
+
+  it("does not apply the editable hover affordance to a block body in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present — otherwise a grey hover border shows on a box
+    // that isn't actually editable.
+    const el = container();
+    const readModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderCanvas(swot, { strengths: "Fast team" }, new Set(), el, NULL_RESOLVER, vi.fn(), readModeApp, ctx);
+    expect(el.querySelector(".vzd-block-editable")).toBeNull();
+  });
+});
+
+// ── renderRACIMatrix ─────────────────────────────────────────────────────────
+
+describe("renderRACIMatrix", () => {
+  const data: RACIData = {
+    rows: [{ task: "Ship feature", responsible: "Alex", accountable: "Sam", consulted: "Legal", informed: "Team" }],
+  };
+
+  it("renders the RACI grid without throwing", () => {
+    const el = container();
+    expect(() => renderRACIMatrix(data, el)).not.toThrow();
+    expect(el.querySelectorAll(".vizardry-block")).toHaveLength(5);
+  });
+
+  it("applies the editable-item affordance in edit mode", () => {
+    const el = container();
+    const app = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderRACIMatrix(data, el, undefined, app, ctx);
+    expect(el.querySelector(".vzd-raci-item--editable")).toBeTruthy();
+  });
+
+  it("does not apply the editable-item affordance in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present.
+    const el = container();
+    const readModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderRACIMatrix(data, el, undefined, readModeApp, ctx);
+    expect(el.querySelector(".vzd-raci-item--editable")).toBeNull();
+  });
+});
+
+// ── renderMatrix ─────────────────────────────────────────────────────────────
+
+describe("renderMatrix", () => {
+  const data: MatrixData = {
+    type: "pain",
+    data: { "very-major-1": "Checkout fails on mobile" },
+    cardBlocks: new Set(),
+    allCards: false,
+  };
+
+  it("renders the matrix grid without throwing", () => {
+    const el = container();
+    expect(() => renderMatrix(data, el)).not.toThrow();
+    expect(el.querySelector(".vzd-matrix-grid")).toBeTruthy();
+  });
+
+  it("applies the editable hover affordance to a block body in edit mode", () => {
+    const el = container();
+    const app = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMatrix(data, el, undefined, app, ctx);
+    expect(el.querySelector(".vzd-block-editable")).toBeTruthy();
+  });
+
+  it("does not apply the editable hover affordance to a block body in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present — otherwise a grey hover border shows on a cell
+    // that isn't actually editable.
+    const el = container();
+    const readModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMatrix(data, el, undefined, readModeApp, ctx);
+    expect(el.querySelector(".vzd-block-editable")).toBeNull();
   });
 });
 
@@ -393,6 +479,11 @@ describe("renderStoryMap", () => {
 
 // ── renderWardleyMap ──────────────────────────────────────────────────────────
 
+// Minimal app stub for edit-mode tests: renderWardleyMap now checks the active
+// view's mode to gate edit affordances in Read Mode, so a bare `{}` (with no
+// `workspace`) throws. This reports "source" (i.e. not Read Mode).
+const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+
 describe("renderWardleyMap", () => {
   const map: WardleyMap = {
     anchor: "User", explicitComponents: new Set(["Auth", "Database"]),
@@ -581,7 +672,7 @@ describe("renderWardleyMap", () => {
 
   it("opens inline rename editor anchored in SVG and cancels with Escape", () => {
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const labels = Array.from(el.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
     const authLabel = labels.find((label) => label.textContent === "Auth");
@@ -602,7 +693,7 @@ describe("renderWardleyMap", () => {
 
   it("does not start dragging while label rename editor is active", () => {
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const labels = Array.from(el.querySelectorAll(".vzd-wardley-label")) as SVGTextElement[];
     const authLabel = labels.find((label) => label.textContent === "Auth");
@@ -618,7 +709,7 @@ describe("renderWardleyMap", () => {
 
   it("keeps add handle visible when moving mouse from node to handle", () => {
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -639,7 +730,7 @@ describe("renderWardleyMap", () => {
   it("adds new component with link by default on mouse release", () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -658,7 +749,7 @@ describe("renderWardleyMap", () => {
   it("adds component without link when Shift is held on mouse release", () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -677,7 +768,7 @@ describe("renderWardleyMap", () => {
   it("stops writing and removes its document listeners when the canvas is disconnected mid-drag", async () => {
     const writeSpy = vi.spyOn(wardleyEdit, "writeWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     expect(draggable).toBeTruthy();
@@ -701,7 +792,7 @@ describe("renderWardleyMap", () => {
   it("stops adding a component and removes its document listeners when the canvas is disconnected mid-link-draw", async () => {
     const addSpy = vi.spyOn(wardleyEdit, "addWardleyComponent").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const draggable = el.querySelector(".vzd-wardley-node--draggable") as SVGCircleElement | null;
     const handle = el.querySelector(".vzd-wardley-add-handle-g") as SVGGElement | null;
@@ -725,7 +816,7 @@ describe("renderWardleyMap", () => {
   it("renders an unlink button on links when app/ctx provided and calls removeWardleyLink on click", () => {
     const removeSpy = vi.spyOn(wardleyEdit, "removeWardleyLink").mockReturnValue(true);
     const el = container();
-    renderWardleyMap(map, el, {} as any, {} as any);
+    renderWardleyMap(map, el, editModeApp, {} as any);
 
     const btn = el.querySelector(".vzd-wardley-unlink-btn") as SVGGElement | null;
     expect(btn).toBeTruthy();
@@ -740,6 +831,18 @@ describe("renderWardleyMap", () => {
     const el = container();
     renderWardleyMap(map, el);
 
+    expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
+  });
+
+  it("does not render edit affordances (draggable nodes, unlink buttons) in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present — otherwise nodes look draggable when they aren't.
+    const el = container();
+    const readModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    renderWardleyMap(map, el, readModeApp, {} as any);
+
+    expect(el.querySelector(".vzd-wardley-node--draggable")).toBeNull();
     expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
   });
 });
@@ -776,6 +879,20 @@ describe("renderSIPOC — table view", () => {
     const el = container();
     renderSIPOC({ rows: [sipocRow({ supplier: "A" })], links: [] } as unknown as SIPOCData, el);
     expect(el.querySelector(".vzd-sipoc-wrap")).toBeTruthy();
+  });
+
+  it("does not render the editable-cell affordance in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present — otherwise cells look editable when they aren't.
+    const el = container();
+    const readModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    const data: SIPOCData = { variant: "table", rows: [sipocRow({ supplier: "A" })], links: [] };
+    renderSIPOC(data, el, undefined, readModeApp, ctx);
+    expect(el.querySelector(".vzd-sipoc-td--editable")).toBeNull();
+    expect(el.querySelector(".vzd-sipoc-th--actions")).toBeNull();
+    expect(el.querySelector(".vzd-sipoc-add-row")).toBeNull();
   });
 });
 

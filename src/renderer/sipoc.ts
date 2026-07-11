@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownView } from "obsidian";
 import type {
   SIPOCColumn, SIPOCData, SIPOCFlowLink, SIPOCFlowNode, SIPOCRow,
 } from "../types";
@@ -98,6 +99,12 @@ function renderSIPOCTable(
     : undefined;
   initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
 
+  // Read Mode still provides app/ctx (the post-processor runs there too), so
+  // gate the edit affordance on the actual view mode — otherwise the hover
+  // border/cursor and add-row button show in Read Mode even though clicking
+  // there is a no-op.
+  const isEditMode = !!(app && ctx) && app!.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+
   const wrap = container.createEl("div", { cls: "vzd-sipoc-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-sipoc-table" });
 
@@ -121,7 +128,7 @@ function renderSIPOCTable(
   });
 
   // Action column header — narrow spacer, only rendered in edit mode.
-  if (app && ctx) {
+  if (isEditMode) {
     headerRow.createEl("th", { cls: "vzd-sipoc-th vzd-sipoc-th--actions" });
   }
 
@@ -146,7 +153,7 @@ function renderSIPOCTable(
         td.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
       }
 
-      if (app && ctx) {
+      if (isEditMode && app && ctx) {
         td.addClass("vzd-sipoc-td--editable");
         td.addEventListener("click", () => {
           activateCellEdit(td, col.key, rowIdx, value ?? "", app, ctx, container);
@@ -156,7 +163,7 @@ function renderSIPOCTable(
 
     // Dedicated action cell — sits outside the data columns so the button is
     // never clipped by the table's overflow boundary.
-    if (app && ctx) {
+    if (isEditMode && app && ctx) {
       const actionTd = tr.createEl("td", { cls: "vzd-sipoc-td vzd-sipoc-td--actions" });
       const btn = actionTd.createEl("button", {
         cls: "vzd-btn vzd-sipoc-add-row",
