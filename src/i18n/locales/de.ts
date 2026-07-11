@@ -100,6 +100,13 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "story.deleteTask":    "Aufgabe löschen",
   "story.clickToEdit":   "Zum Bearbeiten klicken",
 
+  // ── Customer Journey Map / Service Blueprint labels ─────────────────────────
+  "journey.label.persona":     "Persona",
+  "journey.label.scenario":    "Szenario",
+  "journey.addCard":           "Karte hinzufügen",
+  "journey.newCard":           "Neue Karte",
+  "journey.deleteCard":        "Karte löschen",
+
   // ── SIPOC column headers ────────────────────────────────────────────────────
   "sipoc.col.suppliers": "Lieferant",
   "sipoc.col.inputs":    "Eingabe",

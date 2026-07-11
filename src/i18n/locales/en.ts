@@ -36,6 +36,8 @@ export const en = {
   "framework.ptw.description":        "Strategy defined through Winning Aspiration, Where to Play, and How to Win.",
   "framework.scqa.description":       "Situation, complication, question, answer as a narrative hierarchy.",
   "framework.scr.description":        "Situation, complication, resolution — a tighter narrative hierarchy.",
+  "framework.journey.description":    "Phases mapped against actions, feelings, and pain points — expandable into a full service blueprint.",
+  "framework.service-blueprint.description": "Customer journey plus frontstage, backstage, and support-process lanes.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
@@ -115,6 +117,13 @@ export const en = {
   "sipoc.col.customers": "Customer",
   "sipoc.col.owner":     "Owner",
   "sipoc.col.metric":    "Metric",
+
+  // ── Customer Journey Map / Service Blueprint labels ─────────────────────────
+  "journey.label.persona":     "Persona",
+  "journey.label.scenario":    "Scenario",
+  "journey.addCard":           "Add card",
+  "journey.newCard":           "New Card",
+  "journey.deleteCard":        "Delete card",
 
   // ── Wardley Map labels ──────────────────────────────────────────────────────
   "wardley.stage.genesis":   "Genesis",
