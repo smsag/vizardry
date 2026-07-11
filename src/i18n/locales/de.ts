@@ -8,6 +8,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.carousel.description":   "Mehrere Bilder als navigierbares Karussell.",
   "framework.fourls.description":     "Gefiel, Gelernt, Gefehlt, Gewünscht — plus eine gemeinsame Aktionsliste.",
   "framework.fishbone.description":   "Ursachen bis zur Wirkung zurückverfolgt.",
+  "framework.experiment.description": "Hypothese getestet, beobachtet und in eine Entscheidung überführt.",
   "framework.impact.description":     "Alle Features an Zielen ausgerichtet.",
   "framework.jobs.description":       "Kernmotivation der Kunden freigelegt.",
   "framework.kata.description":       "Klarer Weg zum nächsten Experiment.",
