@@ -1,2 +1,2 @@
-## Features
-- New **Experiment Canvas** (`type: experiment`): Strategyzer's test card and learning card paired in one canvas — Hypothesis up top, then Test / Metric / Success Criteria, then Observation / Learning / Decision, for running and documenting one experiment at a time.
+## Fixes
+- **Grid boxes and matrix cells no longer show a hover border in Read Mode.** Hovering a SWOT (or any grid framework) box, or a Pain/Opportunity/Impact matrix cell, incorrectly showed the editable-hover border even in read-only Read Mode. The edit affordance is now correctly gated on the note actually being in Live Preview or Source Mode.
