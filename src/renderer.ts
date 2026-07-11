@@ -11,3 +11,4 @@ export { renderPaceLayers } from "./renderer/pacelayers";
 export { renderConceptMap } from "./renderer/conceptmap";
 export { renderMatrix } from "./renderer/matrix";
 export { renderSCQA } from "./renderer/scqa";
+export { renderJourneyMap } from "./renderer/journey";

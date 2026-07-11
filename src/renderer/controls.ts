@@ -272,7 +272,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, venn, ost, mindmap, impact
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vizardry-fishbone-wrapper, .vzd-sipoc-wrap, .vzd-sipoc-flow-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-matrix-wrap, .vzd-scqa-scroll, .vizardry-scqa-wrapper"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vizardry-fishbone-wrapper, .vzd-sipoc-wrap, .vzd-sipoc-flow-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-matrix-wrap, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid"
     );
     if (!contentEl) return;
 
@@ -290,6 +290,18 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
         el.style.gridColumn = el.dataset.origGridCol ?? "";
       });
       clone.querySelectorAll<HTMLElement>(".vzd-story-step-header, .vzd-story-cell").forEach(el => {
+        el.style.display = "";
+        el.style.gridColumn = "";
+      });
+    }
+
+    // Restore journey phase carousel state — show full grid
+    if (clone.classList.contains("vzd-journey-grid")) {
+      clone.style.gridTemplateColumns = "";
+      clone.querySelectorAll<HTMLElement>(".vzd-journey-lane-cells").forEach(el => {
+        el.style.gridTemplateColumns = "";
+      });
+      clone.querySelectorAll<HTMLElement>(".vzd-journey-phase-header, .vzd-journey-cell").forEach(el => {
         el.style.display = "";
         el.style.gridColumn = "";
       });

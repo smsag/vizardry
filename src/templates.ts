@@ -557,3 +557,71 @@ situation: Checkout ran at 99.9% uptime all year
     Route payment alerts to a dedicated high-priority channel
 \`\`\`
 `;
+
+export const JOURNEY_TEMPLATE = `\`\`\`vizardry
+type: journey
+title: Customer Journey Map
+
+persona: Returning online shopper
+scenario: Reordering a subscription item after a failed auto-renewal
+
+phase: Awareness
+  action: Receives renewal-failed email
+  action: Opens app to check order status
+  touchpoint: Email notification
+  touchpoint: Mobile app
+  feeling: Confused | Didn't expect the renewal to fail
+  painpoint: Unclear why the renewal failed
+  opportunity: Add a one-tap "retry payment" link in the email
+
+phase: Consideration
+  action: Opens order history
+  action: Compares subscription plans
+  touchpoint: Order history screen
+  feeling: Mildly annoyed | Extra steps to fix something automatic
+  painpoint: No clear CTA to fix the payment method
+  opportunity: Surface "Update payment method" inline on order history
+
+phase: Resolution
+  action: Updates card details
+  action: Confirms reorder
+  touchpoint: Payment settings screen
+  feeling: Relieved | Glad it was quick once found
+  opportunity: Auto-suggest reorder after a successful update
+\`\`\`
+`;
+
+export const SERVICE_BLUEPRINT_TEMPLATE = `\`\`\`vizardry
+type: journey, blueprint
+title: Customer Journey Map — Subscription Recovery
+
+persona: Returning online shopper
+scenario: Reordering a subscription item after a failed auto-renewal
+
+phase: Awareness
+  action: Receives renewal-failed email
+  touchpoint: Email notification
+  feeling: Confused | Didn't expect the renewal to fail
+  painpoint: Unclear why the renewal failed
+  opportunity: Add a one-tap "retry payment" link in the email
+  frontstage: Support chatbot greets user if they open live chat
+  backstage: Billing service logs the failed charge
+  support: Payment gateway webhook retry queue
+
+phase: Consideration
+  action: Opens order history
+  touchpoint: Order history screen
+  feeling: Mildly annoyed | Extra steps to fix something automatic
+  frontstage: Agent reviews account on escalation
+  backstage: CRM pulls billing history for agent view
+  support: Customer data platform sync
+
+phase: Resolution
+  action: Updates card details
+  touchpoint: Payment settings screen
+  feeling: Relieved | Glad it was quick once found
+  frontstage: Confirmation email sent by support team
+  backstage: Billing service retries the charge
+  support: Payment gateway processes the retry
+\`\`\`
+`;

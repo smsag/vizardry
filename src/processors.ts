@@ -35,10 +35,12 @@ import { parsePaceLayers } from "./pacelayers";
 import { parseConceptMap } from "./conceptmap";
 import { parseMatrix } from "./matrix";
 import { parseSCQA } from "./scqa";
+import { parseJourney } from "./journey";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderMatrix, renderSCQA,
+  renderJourneyMap,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -49,6 +51,7 @@ import {
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE,
   MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
+  JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
 } from "./templates";
 
 /**
@@ -88,6 +91,7 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
   { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
+  { id: "service-blueprint",  label: "Service Blueprint",     template: SERVICE_BLUEPRINT_TEMPLATE },
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [
@@ -283,6 +287,18 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
       renderSCQA(result.data, el, resolver, navigateTo, fullSource, app, ctx);
+    },
+  },
+  {
+    id: "journey",
+    label: "Customer Journey Map",
+    template: JOURNEY_TEMPLATE,
+    createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
+      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const result = parseJourney(strippedSource, variant);
+      if (!result.ok) { renderError(result.error, el); return; }
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderJourneyMap(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
 ];

@@ -720,6 +720,285 @@ button.vzd-btn {
   white-space: nowrap;
 }
 
+/* ══ Customer Journey Map / Service Blueprint ═══════════════════════
+   Transpose of the Story Map grid: fixed canonical lanes (rows) over
+   author-defined phase columns. Blueprint variant additionally renders
+   divider rows between the journey lanes and the staff/system lanes.
+   Column count (= total phases) is set via --vzd-journey-cols at render time.
+   ══════════════════════════════════════════════════════════════════ */
+
+.vzd-journey-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(var(--vzd-journey-cols), minmax(120px, 1fr));
+  gap: 0.4rem;
+  align-items: start;
+}
+
+.vzd-journey-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  flex-basis: 100%;
+  margin-top: 0.1rem;
+}
+
+.vzd-journey-meta-item {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.88);
+  color: var(--text-muted);
+}
+
+.vzd-journey-meta-item--editable {
+  cursor: text;
+}
+
+/* Expand/collapse variant button — sits in the header actions row */
+.vzd-journey-variant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: auto;
+  padding: 0 0.5rem;
+  flex-basis: 100%;
+  justify-content: center;
+  margin-top: 0.3rem;
+}
+
+.vzd-journey-variant-btn-label {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.82);
+  font-weight: 600;
+}
+
+/* Phase headers — one column each */
+.vzd-journey-phase-header {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 0.35rem 0.6rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vzd-journey-phase-header--editable {
+  cursor: text;
+}
+
+/* Divider row — labeled line between blueprint lane groups
+   ("Line of Interaction", "Line of Visibility", "Line of Internal Interaction") */
+.vzd-journey-divider-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.15rem 0;
+}
+
+.vzd-journey-divider-row::before,
+.vzd-journey-divider-row::after {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed var(--text-faint);
+}
+
+.vzd-journey-divider-label {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* Lane row — full-width wrapper giving each lane a tinted background */
+.vzd-journey-lane-row {
+  grid-column: 1 / -1;
+  background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+}
+
+.vzd-journey-lane-row[data-lane-key="painpoint"] {
+  background: color-mix(in srgb, var(--text-error) 6%, transparent);
+}
+
+.vzd-journey-lane-row[data-lane-key="opportunity"] {
+  background: color-mix(in srgb, var(--text-success) 6%, transparent);
+}
+
+/* Inner cell grid — mirrors the parent grid's column template */
+.vzd-journey-lane-cells {
+  display: grid;
+  grid-template-columns: repeat(var(--vzd-journey-cols), minmax(120px, 1fr));
+  gap: 0.4rem;
+  padding: 0 0.4rem 0.4rem;
+}
+
+/* Lane label — left accent stripe; sits inside its row wrapper */
+.vzd-journey-lane-label {
+  background: transparent;
+  border: none;
+  border-left: 3px solid var(--interactive-accent);
+  padding: 0.3rem 0.75rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Cell — invisible container; cards provide all visual weight */
+.vzd-journey-cell {
+  background: transparent;
+  border: none;
+  padding: 0.15rem 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.vzd-journey-cell-empty {
+  /* intentionally empty — no override needed */
+}
+
+/* Card — individual entry inside a lane cell */
+.vzd-journey-card {
+  position: relative;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, var(--radius-m));
+  padding: 0.3rem 0.4rem;
+}
+
+.vzd-journey-card-name {
+  font-size: var(--vzd-base, var(--font-ui-small));
+  font-weight: 500;
+  color: var(--text-normal);
+  line-height: 1.3;
+}
+
+.vzd-journey-card-subtitle {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
+  user-select: none;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+  line-height: 1.3;
+}
+
+.vzd-journey-card-name--editable {
+  cursor: text;
+}
+
+.vzd-journey-card-delete {
+  display: none;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: var(--background-modifier-error);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.vzd-journey-card:hover .vzd-journey-card-delete {
+  display: flex;
+}
+
+.vzd-journey-card-delete:hover {
+  filter: brightness(1.15);
+}
+
+.vzd-journey-card--draggable {
+  cursor: grab;
+}
+
+.vzd-journey-card--draggable:active {
+  cursor: grabbing;
+}
+
+.vzd-journey-card--ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.75;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.vzd-journey-card--placeholder {
+  border: 2px dashed var(--color-accent);
+  background: transparent;
+  opacity: 0.5;
+  min-height: 2rem;
+}
+
+.vzd-journey-card--hidden {
+  visibility: hidden;
+}
+
+/* Add card button — every cell gets one (no backlog concept here) */
+.vzd-journey-add-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  margin: 0.3rem auto 0;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.vzd-journey-cell:hover .vzd-journey-add-card {
+  opacity: 1;
+}
+
+.vzd-journey-add-card:hover {
+  background: var(--interactive-accent-hover);
+  opacity: 1 !important;
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-journey-grid {
+  width: 100%;
+}
+
+/* Phase carousel nav — shown on narrow viewports via JS */
+.vzd-journey-nav {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+
+.vzd-journey-nav-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.vzd-journey-nav-label {
+  flex: 1;
+  text-align: center;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.94);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 /* ══ Presentation overlay ════════════════════════════════════════════
    Covers the full Obsidian window. On iOS screen mirroring this fills

@@ -33,6 +33,8 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `fourls` | 4Ls Retrospective | Grid |
 | `carousel` | Image Carousel | Gallery |
 | `impact` | Impact Map | Tree |
+| `journey` | Customer Journey Map | Grid |
+| `journey, blueprint` (or insert as `service-blueprint`) | Service Blueprint | Grid |
 | `jobs` | Jobs Canvas | Grid |
 | `kata` | Product Kata | Grid |
 | `lean` | Lean Canvas | Grid |
@@ -766,6 +768,56 @@ slice: V1.1
 
 ---
 
+### Customer Journey Map / Service Blueprint
+
+~~~
+```vizardry
+type: journey
+persona: Returning online shopper
+scenario: Reordering a subscription item after a failed auto-renewal
+
+phase: Awareness
+  action: Receives renewal-failed email
+  touchpoint: Email notification
+  feeling: Confused | Didn't expect the renewal to fail
+  painpoint: Unclear why the renewal failed
+  opportunity: Add a one-tap "retry payment" link in the email
+
+phase: Consideration
+  action: Opens order history
+  touchpoint: Order history screen
+  feeling: Mildly annoyed | Extra steps to fix something automatic
+  opportunity: Surface "Update payment method" inline on order history
+```
+~~~
+
+One canvas that starts as a Customer Journey Map and can be expanded in place into a full Service Blueprint — no data is lost switching either direction.
+
+**Syntax:**
+- `persona:` / `scenario:` — optional header metadata
+- `phase: <name>` — one grid column; must be unique
+- `action:`, `touchpoint:`, `feeling:`, `painpoint:`, `opportunity:` — journey lanes, each rendered as a row of cards under every phase
+- `frontstage:`, `backstage:`, `support:` — Service Blueprint-only lanes (Frontstage Actions, Backstage Actions, Support Processes), separated by "Line of Interaction" / "Line of Visibility" / "Line of Internal Interaction" dividers
+- Any lane keyword supports `<keyword>: <name> | <subtitle>` for an optional subtitle
+- Multiple lines with the same keyword under one phase stack as multiple cards, in source order
+- Blueprint-only lane lines are always parsed even under `type: journey` — they simply aren't rendered until expanded, so nothing is lost switching views
+
+**Visual editing in Live Preview:**
+
+| Action | Gesture |
+|---|---|
+| **Add a card** | In edit mode, `+` button appears on hover in every cell |
+| **Reorder within a lane** | Drag a card up or down within the same lane row |
+| **Move to another phase** | Drag a card to the same lane in a different phase column |
+| **Rename persona / scenario** | Click the badge in the canvas header |
+| **Rename phase** | Double-click a phase header |
+| **Rename card** | Double-click a card's name |
+| **Expand to Service Blueprint** | Click **Expand to Service Blueprint** in the canvas header — adds Frontstage/Backstage/Support Process lanes |
+| **Collapse to Journey Map** | Click **Collapse to Journey Map** in the canvas header — blueprint-lane content stays in the source and reappears if expanded again |
+| **Cancel a drag** | Release outside the grid — card snaps back, no change |
+
+---
+
 ### Value Proposition Canvas
 
 ~~~
@@ -1171,6 +1223,16 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `task: <name>` or `task: <name> \| <subtitle>` | Task card with optional subtitle |
 | `slice: <name>` | Priority band |
 | Indented `step: <name> \| task A, task B` | Assigns tasks to this slice |
+
+### Customer Journey Map / Service Blueprint (type: journey, journey blueprint)
+
+| Syntax | Meaning |
+|---|---|
+| `persona: Description` | Optional persona in the canvas header |
+| `scenario: Description` | Optional scenario in the canvas header |
+| `phase: <name>` | One grid column; must be unique |
+| `action:` / `touchpoint:` / `feeling:` / `painpoint:` / `opportunity:` | Journey lane card, optionally `\| <subtitle>` |
+| `frontstage:` / `backstage:` / `support:` | Service Blueprint-only lane card (parsed but hidden under `type: journey`) |
 
 ### Venn Diagram (type: venn)
 
