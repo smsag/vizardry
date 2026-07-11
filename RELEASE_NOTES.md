@@ -1,3 +1,4 @@
-## Fixes
-- SIPOC, RACI, SCQA, Wardley Map, Mind Map, Impact Map, OST, and Fishbone no longer activate cell/node editing (click-to-edit, drag, rename, add, delete) while a note is open in read-only Reading View — they now correctly require Live Preview or Source Mode, matching every other canvas.
-- Canvas titles are no longer editable in Reading View. Previously every canvas's title could be clicked into edit mode regardless of view mode.
+## Features
+- New **Customer Journey Map** canvas (`type: journey`): phases as columns against fixed lanes for Actions, Touchpoints, Thoughts & Feelings, Pain Points, and Opportunities.
+- The same canvas can become a full **Service Blueprint** (`type: journey, blueprint`) — one shared syntax, two views, switched purely by editing the `type:` line (like SIPOC's table/flow views): Frontstage Actions, Backstage Actions, and Support Processes lanes are added, separated by Line of Interaction / Line of Visibility / Line of Internal Interaction dividers. Switching back to `type: journey` never drops data — blueprint-only lane content stays in the source and reappears if you switch back.
+- Live editing: add/delete/rename cards, drag to reorder within a lane or move a card to another phase, rename phases, and edit the persona/scenario header badges — all inline in Live Preview.
