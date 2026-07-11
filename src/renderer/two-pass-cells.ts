@@ -8,10 +8,10 @@
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import { renderBlockBody, activateBlockEdit } from "./block-editor";
 import { renderCardBlock, type CardDropTarget } from "./card-block";
 import type { LinkResolver } from "../shared/links";
+import { isEditModeActive } from "../shared/editor";
 
 export interface TwoPassCell {
   body: HTMLElement;
@@ -38,6 +38,11 @@ export function renderTwoPassCells(
   /** Tooltip shown on hover for non-card, click-to-edit cells. Omit for none. */
   editTooltip?: string,
 ): void {
+  // Read Mode still provides app/ctx (the post-processor runs there too), so
+  // gate the edit affordance on the actual view mode — otherwise a box/cell
+  // shows a hover border and click-to-edit cursor even though it's a no-op.
+  const isEditMode = !!(app && ctx && isEditModeActive(app));
+
   for (const { body, label, content, isCard } of cells) {
     if (isCard) {
       const siblings = cardTargets.filter(t => t.body !== body);
@@ -46,13 +51,12 @@ export function renderTwoPassCells(
     }
 
     renderBlockBody(body, content);
-    if (!app || !ctx) continue;
+    if (!isEditMode || !app || !ctx) continue;
 
     body.addClass("vzd-block-editable");
     if (editTooltip) body.setAttribute("title", editTooltip);
     body.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest("button, a")) return;
-      if (app.workspace.getActiveViewOfType(MarkdownView)?.getMode() === "preview") return;
       activateBlockEdit(body, label, body.dataset.blockContent ?? "", app, ctx, container);
     });
   }

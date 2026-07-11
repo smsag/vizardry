@@ -180,6 +180,18 @@ describe("renderCanvas", () => {
     const body = el.querySelector(".vizardry-block-empty");
     expect(body?.classList.contains("vzd-card-block-body")).toBe(true);
   });
+
+  it("does not apply the editable hover affordance to a block body in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present — otherwise a grey hover border shows on a box
+    // that isn't actually editable.
+    const el = container();
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderCanvas(swot, { strengths: "Fast team" }, new Set(), el, NULL_RESOLVER, vi.fn(), previewApp, ctx);
+    expect(el.querySelector(".vzd-block-editable")).toBeNull();
+  });
 });
 
 // ── renderMatrix (2×2/4×4 matrices — shares two-pass-cells.ts with renderCanvas) ──
@@ -218,6 +230,18 @@ describe("renderMatrix", () => {
     const cardData: MatrixData = { ...matrixData, allCards: true };
     renderMatrix(cardData, el);
     expect(el.querySelectorAll(".vzd-card-block-card").length).toBeGreaterThan(0);
+  });
+
+  it("does not apply the editable hover affordance to a cell body in Read Mode", () => {
+    // Read Mode still provides app/ctx (the post-processor runs there too);
+    // the edit affordance must be gated on the actual view mode, not just
+    // app/ctx being present — otherwise a grey hover border shows on a cell
+    // that isn't actually editable.
+    const el = container();
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMatrix(matrixData, el, undefined, previewApp, ctx);
+    expect(el.querySelector(".vzd-block-editable")).toBeNull();
   });
 });
 
