@@ -98,7 +98,7 @@ export function renderVennDiagram(
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "venn", title, undefined, source, onTitleEdit, app);
+  initCanvas(container, "venn", title, undefined, source, onTitleEdit, app, ctx);
 
   // Count Venn diagrams already rendered in the same workspace leaf to derive
   // the palette rotation. Scoped to the leaf so that diagrams in other open

@@ -22,7 +22,8 @@ export function parseConceptMap(source: string): ConceptMapResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (!trimmed || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
+    const lower = trimmed.toLowerCase();
+    if (!trimmed || trimmed.startsWith("//") || lower.startsWith("title:") || lower.startsWith("collapsed:")) continue;
 
     // Labeled edge: A -- label --> B
     const labeled = trimmed.match(/^(.+?)\s+--\s+(.+?)\s+-->\s+(.+)$/);

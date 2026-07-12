@@ -172,7 +172,7 @@ export function renderConceptMap(
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "conceptmap", title, undefined, source, onTitleEdit, app);
+  initCanvas(container, "conceptmap", title, undefined, source, onTitleEdit, app, ctx);
 
   const wrap = container.createEl("div", { cls: "vzd-cmap-wrap" });
 

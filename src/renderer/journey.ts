@@ -48,7 +48,7 @@ export function renderJourneyMap(
       renderMetaBadge(meta, "persona", t("journey.label.persona"), data.persona, isEditMode, app, ctx, container);
       renderMetaBadge(meta, "scenario", t("journey.label.scenario"), data.scenario, isEditMode, app, ctx, container);
     }
-  }, source, onTitleEdit, app);
+  }, source, onTitleEdit, app, ctx);
 
   const phases = data.phases;
   const totalCols = phases.length;

@@ -40,7 +40,7 @@ export function renderSCQA(
   const onTitleEdit = (isEditMode && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, el, newTitle, defaultTitle)
     : undefined;
-  initCanvas(el, data.variant, title, undefined, source, onTitleEdit, app);
+  initCanvas(el, data.variant, title, undefined, source, onTitleEdit, app, ctx);
 
   if (data.view === "tree") {
     const opts = data.variant === "scqa" ? SCQA_TREE_OPTIONS : SCR_TREE_OPTIONS;

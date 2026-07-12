@@ -149,3 +149,40 @@ export function moveCardBetweenBlocks(
   for (const { loc, value } of edits) applyBlockEdit(editor, loc, value);
   return true;
 }
+
+/**
+ * Adds or removes `collapsed: true` from the top of a canvas code fence.
+ * Called by the minimize button in initCanvas to persist collapsed state.
+ */
+export function writeCollapseState(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  container: HTMLElement,
+  collapsed: boolean,
+): void {
+  const resolved = resolveEditor(app, ctx, container, "writeCollapseState");
+  if (!resolved) return;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const lines: string[] = [];
+  for (let i = lineStart; i <= lineEnd; i++) lines.push(editor.getLine(i));
+
+  // Find existing collapsed: line (inside the fence, not the opener or closer)
+  const idx = lines.findIndex(
+    (l, i) => i > 0 && i < lines.length - 1 && l.trimStart().toLowerCase().startsWith("collapsed:")
+  );
+
+  if (collapsed && idx === -1) {
+    lines.splice(1, 0, "collapsed: true");
+  } else if (!collapsed && idx !== -1) {
+    lines.splice(idx, 1);
+  } else {
+    return;
+  }
+
+  editor.replaceRange(
+    lines.join("\n"),
+    { line: lineStart, ch: 0 },
+    { line: lineEnd, ch: editor.getLine(lineEnd).length },
+  );
+}

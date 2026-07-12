@@ -51,7 +51,7 @@ export function renderStoryMap(
     const meta = header.createEl("div", { cls: "vzd-story-meta" });
     renderMetaBadge(meta, "user", t("story.label.user"), map.user, isEditMode, app, ctx, container);
     renderMetaBadge(meta, "goal", t("story.label.goal"), map.goal, isEditMode, app, ctx, container);
-  } : undefined, source, onTitleEdit, app);
+  } : undefined, source, onTitleEdit, app, ctx);
 
   const allSteps = map.activities.flatMap(a => a.steps);
   const totalCols = allSteps.length;

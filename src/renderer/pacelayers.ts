@@ -25,7 +25,7 @@ export function renderPaceLayers(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
 
-  initCanvas(container, 'pacelayers', title, undefined, source, onTitleEdit, app);
+  initCanvas(container, 'pacelayers', title, undefined, source, onTitleEdit, app, ctx);
 
   if (data.context) {
     container.createDiv({ cls: 'vzd-pl-context', text: data.context });

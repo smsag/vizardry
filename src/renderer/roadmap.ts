@@ -37,7 +37,7 @@ export function renderRoadmap(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
 
-  initCanvas(container, "roadmap", title, undefined, source, onTitleEdit, app);
+  initCanvas(container, "roadmap", title, undefined, source, onTitleEdit, app, ctx);
   const doc = container.ownerDocument;
   const win = ownerWindow(container);
 

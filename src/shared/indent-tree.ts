@@ -4,10 +4,14 @@ export interface IndentLine {
   lineNum: number;
 }
 
-/** True for lines every parser skips outright: blank, `//` comments, and the
- *  canvas-title `title:` line (parsed separately via shared/title-edit). */
+/** True for lines every parser skips outright: blank, `//` comments, the
+ *  canvas-title `title:` line, and the global `collapsed:` param (both parsed
+ *  separately by initCanvas). */
 export function isSkippableLine(trimmed: string): boolean {
-  return trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:");
+  const lower = trimmed.toLowerCase();
+  return trimmed === "" || trimmed.startsWith("//")
+    || lower.startsWith("title:")
+    || lower.startsWith("collapsed:");
 }
 
 export function extractMeaningfulLines(source: string): IndentLine[] {
