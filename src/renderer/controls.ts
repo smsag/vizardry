@@ -275,7 +275,7 @@ export function addHeaderControls(
     container.toggleClass("vizardry-canvas--minimized", collapsed);
     setIcon(minimizeBtn, collapsed ? "chevron-down" : "chevron-up");
     minimizeBtn.setAttribute("aria-label", t(collapsed ? "controls.expand" : "controls.minimize"));
-    if (app && ctx) writeCollapseState(app, ctx, container, collapsed);
+    if (app && ctx) void writeCollapseState(app, ctx, container, collapsed);
   });
 }
 

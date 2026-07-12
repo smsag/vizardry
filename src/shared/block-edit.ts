@@ -152,37 +152,82 @@ export function moveCardBetweenBlocks(
 
 /**
  * Adds or removes `collapsed: true` from the top of a canvas code fence.
- * Called by the minimize button in initCanvas to persist collapsed state.
+ * Uses vault.process so it works in both Reading View and Live Preview —
+ * the previous editor-based approach silently failed in Reading View because
+ * there is no CM6 editor instance to write to in that mode.
  */
-export function writeCollapseState(
+export async function writeCollapseState(
   app: App,
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
   collapsed: boolean,
-): void {
-  const resolved = resolveEditor(app, ctx, container, "writeCollapseState");
-  if (!resolved) return;
-  const { editor, lineStart, lineEnd } = resolved;
+): Promise<void> {
+  const file = app.vault.getFileByPath(ctx.sourcePath);
+  if (!file) return;
 
-  const lines: string[] = [];
-  for (let i = lineStart; i <= lineEnd; i++) lines.push(editor.getLine(i));
+  const source = container.dataset.vzSource;
+  if (source === undefined) return;
 
-  // Find existing collapsed: line (inside the fence, not the opener or closer)
-  const idx = lines.findIndex(
-    (l, i) => i > 0 && i < lines.length - 1 && l.trimStart().toLowerCase().startsWith("collapsed:")
-  );
+  await app.vault.process(file, (content) => {
+    const result = patchFenceCollapseState(content, source, collapsed);
+    if (result === null) return content;
+    // Keep vzSource in sync so future operations find the updated fence.
+    container.dataset.vzSource = result.newSource;
+    return result.newContent;
+  });
+}
 
-  if (collapsed && idx === -1) {
-    lines.splice(1, 0, "collapsed: true");
-  } else if (!collapsed && idx !== -1) {
-    lines.splice(idx, 1);
-  } else {
-    return;
+/**
+ * Finds the code fence in `fileContent` whose body matches `source` (trimmed),
+ * then adds or removes a `collapsed: true` line at the top of the body.
+ * Returns null when the fence is not found or is already in the target state.
+ */
+function patchFenceCollapseState(
+  fileContent: string,
+  source: string,
+  collapsed: boolean,
+): { newContent: string; newSource: string } | null {
+  const normalised = source.trim();
+  const lines = fileContent.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const openMatch = lines[i].trim().match(/^(`{3,})/);
+    if (!openMatch) continue;
+    const closeRe = new RegExp(`^\`{${openMatch[1].length},}\\s*$`);
+
+    const fenceStart = i;
+    const bodyLines: string[] = [];
+    let j = i + 1;
+    for (; j < lines.length; j++) {
+      if (closeRe.test(lines[j].trim())) break;
+      bodyLines.push(lines[j]);
+    }
+
+    if (bodyLines.join("\n").trim() === normalised) {
+      const collapsedIdx = bodyLines.findIndex(
+        l => l.trimStart().toLowerCase().startsWith("collapsed:")
+      );
+      const newBodyLines = [...bodyLines];
+      if (collapsed && collapsedIdx === -1) {
+        newBodyLines.splice(0, 0, "collapsed: true");
+      } else if (!collapsed && collapsedIdx !== -1) {
+        newBodyLines.splice(collapsedIdx, 1);
+      } else {
+        return null;
+      }
+
+      const newLines = [
+        ...lines.slice(0, fenceStart + 1),
+        ...newBodyLines,
+        ...(j < lines.length ? [lines[j]] : []),
+        ...lines.slice(j + 1),
+      ];
+      return { newContent: newLines.join("\n"), newSource: newBodyLines.join("\n") };
+    }
+
+    i = j;
   }
 
-  editor.replaceRange(
-    lines.join("\n"),
-    { line: lineStart, ch: 0 },
-    { line: lineEnd, ch: editor.getLine(lineEnd).length },
-  );
+  console.warn("Vizardry: writeCollapseState — no matching code fence found");
+  return null;
 }
