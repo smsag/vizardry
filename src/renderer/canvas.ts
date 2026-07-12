@@ -99,7 +99,7 @@ export function renderCanvas(
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, framework.id, title, undefined, source, onTitleEdit, app);
+  initCanvas(container, framework.id, title, undefined, source, onTitleEdit, app, ctx);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);

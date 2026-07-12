@@ -98,7 +98,7 @@ function renderSIPOCTable(
   const onTitleEdit = (isEditMode && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
+  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app, ctx);
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-sipoc-table" });
@@ -403,7 +403,7 @@ function renderSIPOCFlowView(
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
     ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app);
+  initCanvas(container, "sipoc", title, undefined, source, onTitleEdit, app, ctx);
 
   const graph = deriveFlowGraph(data.rows, data.links);
   if ("error" in graph) {

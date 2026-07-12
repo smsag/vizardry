@@ -1,5 +1,5 @@
 import { setIcon, MarkdownView } from "obsidian";
-import type { App } from "obsidian";
+import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { applyFullWidth } from "./full-width";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { t } from "../i18n";
@@ -7,6 +7,7 @@ import { TITLE_MAX_LENGTH } from "../shared/title-edit";
 import { getPluginVersion } from "../shared/version";
 import type { LinkResolver } from "../shared/links";
 import { attachSectionPreview } from "./section-preview";
+import { writeCollapseState } from "../shared/block-edit";
 
 let nextId = 0;
 
@@ -62,6 +63,7 @@ export function initCanvas(
   source?: string,
   onTitleEdit?: (newTitle: string) => void,
   app?: App,
+  ctx?: MarkdownPostProcessorContext,
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", frameworkId);
@@ -74,6 +76,11 @@ export function initCanvas(
   container.style.minWidth = "100%";
   container.style.boxSizing = "border-box";
   ownerWindow(container).requestAnimationFrame(() => applyFullWidth(container));
+
+  // Restore collapsed state from source (written back by the minimize button).
+  const isCollapsed = source !== undefined &&
+    source.split("\n").some(l => l.trim().toLowerCase() === "collapsed: true");
+  if (isCollapsed) container.addClass("vizardry-canvas--minimized");
 
   const header = container.createEl("div", { cls: "vizardry-header" });
 
@@ -90,7 +97,7 @@ export function initCanvas(
   const copyText = source !== undefined
     ? fence + 'vizardry' + '\n' + source + '\n' + fence
     : undefined;
-  addHeaderControls(header, container, title, copyText, app);
+  addHeaderControls(header, container, title, copyText, app, ctx, isCollapsed);
   extraHeaderContent?.(header);
 }
 
@@ -146,7 +153,15 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
   });
 }
 
-export function addHeaderControls(header: HTMLElement, container: HTMLElement, title: string, copyText?: string, app?: App): void {
+export function addHeaderControls(
+  header: HTMLElement,
+  container: HTMLElement,
+  title: string,
+  copyText?: string,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+  initiallyCollapsed = false,
+): void {
   const actions = header.createEl("div", { cls: "vizardry-header-actions" });
 
   const STEP_PX = 2, MIN_STEP = -3, MAX_STEP = 6;
@@ -246,6 +261,22 @@ export function addHeaderControls(header: HTMLElement, container: HTMLElement, t
   setIcon(presentBtn, "expand");
   presentBtn.setAttribute("aria-label", t("controls.presentFullscreen"));
   presentBtn.addEventListener("click", (e) => { e.stopPropagation(); openPresentation(container, title); });
+
+  // Separator + minimize button — always last in the action bar
+  actions.createEl("span", { cls: "vzd-btn-separator" });
+
+  let collapsed = initiallyCollapsed;
+  const minimizeBtn = actions.createEl("button", { cls: "vzd-minimize-btn vzd-btn" });
+  setIcon(minimizeBtn, collapsed ? "chevron-down" : "chevron-up");
+  minimizeBtn.setAttribute("aria-label", t(collapsed ? "controls.expand" : "controls.minimize"));
+  minimizeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    collapsed = !collapsed;
+    container.toggleClass("vizardry-canvas--minimized", collapsed);
+    setIcon(minimizeBtn, collapsed ? "chevron-down" : "chevron-up");
+    minimizeBtn.setAttribute("aria-label", t(collapsed ? "controls.expand" : "controls.minimize"));
+    if (app && ctx) writeCollapseState(app, ctx, container, collapsed);
+  });
 }
 
 function openPresentation(sourceContainer: HTMLElement, title: string): void {

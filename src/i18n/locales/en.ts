@@ -49,6 +49,8 @@ export const en = {
   "controls.presentFullscreen": "Present fullscreen",
   "controls.reloadCanvas":      "Reload canvas",
   "controls.exitPresentation":  "Exit presentation",
+  "controls.minimize":          "Minimize",
+  "controls.expand":            "Expand",
 
   // ── Tree node editing ───────────────────────────────────────────────────────
   "tree.addChild":   "Add child node",

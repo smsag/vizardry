@@ -72,6 +72,7 @@ export function renderMatrix(
     source,
     undefined, // title not editable (no source write-back for title here)
     app,
+    ctx,
   );
 
   const wrap = container.createEl("div", { cls: "vzd-matrix-wrap" });

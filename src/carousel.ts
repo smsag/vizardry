@@ -14,7 +14,7 @@ export function parseCarouselBlock(source: string): CarouselResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (trimmed === "" || trimmed.startsWith("//")) continue;
+    if (trimmed === "" || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("collapsed:")) continue;
 
     const match = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (!match) {

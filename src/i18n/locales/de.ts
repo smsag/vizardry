@@ -40,6 +40,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "controls.presentFullscreen": "Vollbild-Präsentation",
   "controls.reloadCanvas":      "Canvas neu laden",
   "controls.exitPresentation":  "Präsentation beenden",
+  "controls.minimize":          "Minimieren",
+  "controls.expand":            "Maximieren",
 
   // ── Tree node editing ───────────────────────────────────────────────────────
   "tree.addChild":    "Kindknoten hinzufügen",

@@ -144,6 +144,34 @@ button.vzd-btn {
   flex-shrink: 0;
 }
 
+/* Pipe separator before the minimize button */
+.vzd-btn-separator {
+  display: inline-block;
+  width: 1px;
+  height: 1rem;
+  background: var(--divider-color);
+  margin: 0 0.2rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.vizardry-canvas:hover .vzd-btn-separator {
+  opacity: 0.5;
+}
+
+/* Minimized state: hide all canvas content except the header */
+.vizardry-canvas--minimized > *:not(.vizardry-header) {
+  display: none !important;
+}
+.vizardry-canvas--minimized {
+  margin-bottom: 0.25rem;
+}
+.vizardry-canvas--minimized .vizardry-header {
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--background-primary));
+  border-radius: var(--radius-s);
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 0;
+}
+
 .vizardry-title {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.5);
   font-weight: 600;

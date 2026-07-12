@@ -49,7 +49,7 @@ export function parseFrameworkSource(source: string): ParseResult {
       return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
     }
 
-    if (trimmed.toLowerCase().startsWith("title:")) {
+    if (trimmed.toLowerCase().startsWith("title:") || trimmed.toLowerCase().startsWith("collapsed:")) {
       i++;
       continue;
     }
