@@ -67,7 +67,13 @@ function activateCellEdit(
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
 ): void {
-  const minHeight = td.clientHeight;
+  // td padding is no longer zeroed in editing state, so the textarea sits
+  // inside the padded cell. Subtract vertical padding from clientHeight so
+  // the textarea's minHeight equals the inner content area, not the full cell.
+  const tdStyle = getComputedStyle(td);
+  const minHeight = Math.max(0,
+    td.clientHeight - parseFloat(tdStyle.paddingTop) - parseFloat(tdStyle.paddingBottom)
+  );
   activateTextareaEdit(td, td, currentValue, (value) => {
     writeSIPOCCell(app, ctx, container, rowIndex, cellKey, value);
   }, {

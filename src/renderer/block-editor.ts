@@ -30,12 +30,18 @@ export function activateBlockEdit(
 ): void {
   // Prevent re-entrancy
   if (body.hasClass("vzd-block-editing")) return;
+
+  // Capture height before emptying so the textarea seeds to the same size,
+  // preventing the block from snapping to a different height when editing starts.
+  const preEditHeight = body.offsetHeight;
+
   body.addClass("vzd-block-editing");
   body.removeClass("vizardry-block-empty");
   body.empty();
 
   const textarea = body.createEl("textarea", { cls: "vzd-plain-textarea vzd-block-textarea" });
   textarea.value = currentContent.trim();
+  if (preEditHeight > 0) textarea.style.minHeight = `${preEditHeight}px`;
 
   // Auto-size height to content
   const resize = (): void => {
