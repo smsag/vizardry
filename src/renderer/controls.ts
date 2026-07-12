@@ -78,7 +78,7 @@ export function initCanvas(
   ownerWindow(container).requestAnimationFrame(() => applyFullWidth(container));
 
   // Restore collapsed state from source (written back by the minimize button).
-  const isCollapsed = source !== null &&
+  const isCollapsed = source !== undefined &&
     source.split("\n").some(l => l.trim().toLowerCase() === "collapsed: true");
   if (isCollapsed) container.addClass("vizardry-canvas--minimized");
 
