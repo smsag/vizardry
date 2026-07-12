@@ -1,2 +1,3 @@
-## Fixes
-- **Grid boxes and matrix cells no longer show a hover border in Read Mode.** Hovering a SWOT (or any grid framework) box, or a Pain/Opportunity/Impact matrix cell, incorrectly showed the editable-hover border even in read-only Read Mode. The edit affordance is now correctly gated on the note actually being in Live Preview or Source Mode.
+## New features
+
+- **Minimize / expand for all canvases.** Every canvas now has a minimize button at the far right of the action bar (after `|`). Click it to collapse the canvas to its title bar. The header shows a subtle accent-colour tint when minimized so it stays easy to spot. Click the expand chevron to restore. Collapsed state is persisted in the code block source (`collapsed: true`) so it survives note close and reopen.
