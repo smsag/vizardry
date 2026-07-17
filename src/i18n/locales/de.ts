@@ -15,6 +15,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.lean.description":       "Riskanteste Annahmen aufgedeckt und priorisiert.",
   "framework.leanux.description":     "Team abgestimmt bevor die Entwicklung beginnt.",
   "framework.mindmap.description":    "Komplexe Ideen strukturiert und priorisiert.",
+  "framework.nodemap.description":    "Boxen platziert und verbunden, genau wo du sie hinsetzt.",
   "framework.opportunity.description":"Lösungen an echten Ergebnissen ausgerichtet.",
   "framework.ost.description":        "Ergebnis treibt Chancen, Lösungen und Experimente.",
   "framework.rac.description":        "Größte Risiken für Tests priorisiert.",
