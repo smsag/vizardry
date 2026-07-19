@@ -23,7 +23,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { resolveEditor } from "./editor";
+import { resolveEditor, isInsideVizardryFence } from "./editor";
 import { MarkdownView } from "obsidian";
 
 function makeMockEditor(lines: string[]) {
@@ -174,5 +174,56 @@ describe("resolveEditor", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(resolveEditor(app, ctx, el, "test")).toBeNull();
     warn.mockRestore();
+  });
+});
+
+describe("isInsideVizardryFence", () => {
+  it("returns true for a line inside a ```vizardry fence", () => {
+    const editor = makeMockEditor(["```vizardry", "type: lean", "block: Problem", "```"]);
+    expect(isInsideVizardryFence(editor as any, 1)).toBe(true);
+    expect(isInsideVizardryFence(editor as any, 2)).toBe(true);
+  });
+
+  it("returns false for a line inside a non-vizardry fence", () => {
+    const editor = makeMockEditor(["```js", "const x = 1;", "```"]);
+    expect(isInsideVizardryFence(editor as any, 1)).toBe(false);
+  });
+
+  it("returns false for a line outside any fence", () => {
+    const editor = makeMockEditor(["some text", "```vizardry", "type: lean", "```", "more text"]);
+    expect(isInsideVizardryFence(editor as any, 0)).toBe(false);
+    expect(isInsideVizardryFence(editor as any, 4)).toBe(false);
+  });
+
+  it("returns false on the opening and closing fence delimiter lines themselves", () => {
+    const editor = makeMockEditor(["```vizardry", "type: lean", "```"]);
+    expect(isInsideVizardryFence(editor as any, 0)).toBe(false);
+    expect(isInsideVizardryFence(editor as any, 2)).toBe(false);
+  });
+
+  it("returns true inside a nested example fence with fewer backticks than the outer vizardry fence", () => {
+    const editor = makeMockEditor([
+      "````vizardry",
+      "block: Notes",
+      "  Example:",
+      "  ```",
+      "  some code",
+      "  ```",
+      "````",
+    ]);
+    expect(isInsideVizardryFence(editor as any, 4)).toBe(true);
+  });
+
+  it("returns true for the correct fence when the document has multiple fences", () => {
+    const editor = makeMockEditor([
+      "```js",
+      "const x = 1;",
+      "```",
+      "```vizardry",
+      "type: lean",
+      "```",
+    ]);
+    expect(isInsideVizardryFence(editor as any, 1)).toBe(false);
+    expect(isInsideVizardryFence(editor as any, 4)).toBe(true);
   });
 });

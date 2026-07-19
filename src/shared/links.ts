@@ -1,4 +1,4 @@
-import type { App, MarkdownPostProcessorContext } from "obsidian";
+import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import { LINEAR_KEY_RE } from "./linear-enrichment";
 import { buildKeyRegex } from "./upvoty-enrichment";
 import { getUpvotyService } from "../upvoty";
@@ -176,14 +176,22 @@ export function extractInlineLinks(source: string): {
 }
 
 /**
+ * Returns all heading texts in `file` using Obsidian's metadata cache —
+ * synchronous and fast, no vault read required.
+ */
+export function getHeadingsForFile(app: App, file: TFile): string[] {
+  const cache = app.metadataCache.getFileCache(file);
+  return cache?.headings?.map(h => h.heading) ?? [];
+}
+
+/**
  * Returns all heading texts in the current note using Obsidian's metadata
  * cache — synchronous and fast, no vault read required.
  */
 export function getFileHeadings(app: App, ctx: MarkdownPostProcessorContext): string[] {
   const file = app.vault.getFileByPath(ctx.sourcePath);
   if (!file) return [];
-  const cache = app.metadataCache.getFileCache(file);
-  return cache?.headings?.map(h => h.heading) ?? [];
+  return getHeadingsForFile(app, file);
 }
 
 /**

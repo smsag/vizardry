@@ -149,6 +149,44 @@ function findCodeFenceBySource(
   return matches[0];
 }
 
+/**
+ * True when `line` sits inside the body of an open ```vizardry fence (not on
+ * the opening or closing fence delimiter itself). Used to scope the heading
+ * autocomplete suggester (see heading-suggest.ts) so it only ever activates
+ * inside a vizardry code block.
+ *
+ * Same fence-length-aware scanning as findCodeFenceBySource above: a closing
+ * fence must have at least as many backticks as the opening one, so a nested
+ * example fence with fewer backticks (e.g. inside a block's body content)
+ * doesn't falsely close the outer vizardry fence.
+ */
+export function isInsideVizardryFence(editor: MarkdownView["editor"], line: number): boolean {
+  let open = false;
+  let openLen = 0;
+  let lang = "";
+  const lineCount = editor.lineCount();
+
+  for (let i = 0; i <= line && i < lineCount; i++) {
+    const trimmed = editor.getLine(i).trim();
+    if (!open) {
+      const openMatch = trimmed.match(/^(`{3,})(.*)$/);
+      if (!openMatch) continue;
+      open = true;
+      openLen = openMatch[1].length;
+      lang = openMatch[2].trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+      if (i === line) return false; // cursor is on the opening fence line itself
+    } else {
+      const closeRe = new RegExp(`^\`{${openLen},}\\s*$`);
+      if (closeRe.test(trimmed)) {
+        if (i === line) return false; // cursor is on the closing fence line itself
+        open = false;
+      }
+    }
+  }
+
+  return open && lang === "vizardry";
+}
+
 export function insertTemplateAtCursor(editor: Editor, template: string): void {
   const cursor = editor.getCursor();
   const lineText = editor.getLine(cursor.line);
