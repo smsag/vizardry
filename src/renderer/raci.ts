@@ -1,11 +1,12 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RACIData } from "../types";
 import { t } from "../i18n";
-import { initCanvas } from "./controls";
+import { initCanvas, renderHeadingLink } from "./controls";
 import { activateTextareaEdit } from "./inline-edit";
 import { writeRACICell } from "../shared/raci-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
+import type { LinkResolver } from "../shared/links";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
 
@@ -60,6 +61,8 @@ export function renderRACIMatrix(
   source?: string,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "RACI Matrix";
@@ -108,6 +111,7 @@ export function renderRACIMatrix(
 
       if (value) {
         item.createEl("span", { cls: "vzd-raci-item-value", text: value });
+        renderHeadingLink(item, value, resolver, navigateTo, app, ctx?.sourcePath);
       }
 
       if (isEditMode) {

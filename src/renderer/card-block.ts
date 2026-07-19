@@ -239,7 +239,7 @@ export function renderCardBlock(
         onEnd: () => endDrag(),
         onClick: () => {
           if (app && ctx && container) {
-            activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container);
+            activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo);
           }
         },
       });
@@ -250,7 +250,7 @@ export function renderCardBlock(
   if (isEditMode && app && ctx && container) {
     body.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest(".vzd-card-block-card")) return;
-      activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container);
+      activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo);
     });
   }
 }

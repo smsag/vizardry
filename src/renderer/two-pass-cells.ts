@@ -50,14 +50,14 @@ export function renderTwoPassCells(
       continue;
     }
 
-    renderBlockBody(body, content);
+    renderBlockBody(body, content, resolver, navigateTo, app, ctx?.sourcePath);
     if (!isEditMode || !app || !ctx) continue;
 
     body.addClass("vzd-block-editable");
     if (editTooltip) body.setAttribute("title", editTooltip);
     body.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest("button, a")) return;
-      activateBlockEdit(body, label, body.dataset.blockContent ?? "", app, ctx, container);
+      activateBlockEdit(body, label, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo);
     });
   }
 }

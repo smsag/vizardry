@@ -3,11 +3,12 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 import type { ParsedPaceLayers, PaceLayerCell, PaceLayerName } from "../types";
 import { LAYER_CONFIG, LAYER_LABELS, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
-import { initCanvas, markInteractive } from "./controls";
+import { initCanvas, markInteractive, renderHeadingLink } from "./controls";
 import { activateTextareaEdit } from "./inline-edit";
 import { setupSlideCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { writePaceLayerCell } from "../shared/pacelayers-edit";
+import type { LinkResolver } from "../shared/links";
 import { t } from "../i18n";
 
 export function renderPaceLayers(
@@ -16,6 +17,8 @@ export function renderPaceLayers(
   source?: string,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   const isEditMode = !!(app && ctx && source !== undefined)
     && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
@@ -40,7 +43,8 @@ export function renderPaceLayers(
     contentEl.removeAttribute('data-placeholder');
     if (value.trim()) {
       value.split('\n').forEach(line => {
-        contentEl.createDiv({ cls: 'vzd-block-line', text: line });
+        const lineEl = contentEl.createDiv({ cls: 'vzd-block-line', text: line });
+        renderHeadingLink(lineEl, line, resolver, navigateTo, app, ctx?.sourcePath);
       });
     } else {
       contentEl.setAttribute('data-placeholder', placeholder);

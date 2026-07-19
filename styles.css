@@ -2073,13 +2073,20 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   margin-top: -2px; /* optical alignment with the first line of title text */
 }
 
-/* Heading-link affordance on card canvases (card blocks, Story, SCQA grid).
-   A subtle chain-link icon in the card's top-right corner — sits above the
-   card content and brightens on hover, matching the tree-node link icon. */
+/* Heading-link affordance on card canvases (card blocks, Story, SCQA grid),
+   plain grid/matrix/pace-layers bullet lines, and RACI cells.
+   A subtle chain-link icon in the corner — sits above the content and
+   brightens on hover, matching the tree-node link icon. */
 .vzd-card-block-card,
 .vzd-story-task-card,
-.vzd-scqa-card {
+.vzd-scqa-card,
+.vzd-block-line,
+.vzd-raci-item {
   position: relative;
+}
+
+.vzd-block-line {
+  padding-right: 1.1em;
 }
 
 .vzd-card-link-btn {

@@ -1107,22 +1107,24 @@ Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a b
 
 ## Linking elements to document headings
 
-Any canvas element can navigate to a heading in the same note. A small link icon signals the connection — clicking the block or node jumps to that heading.
+Any canvas element can navigate to a heading in the same note — not just a whole block, but every individual bullet line and every card. A small link icon signals the connection — clicking the block, bullet, card, or node jumps to that heading.
 
 **Three ways to connect:**
 
-*Inline wiki-link* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, Mind Map, and individual cards on the card canvases (card-mode blocks, Matrix, Story, Roadmap, SCQA grid):
+*Inline wiki-link* — append `[[#Heading]]` to any element declaration, including a plain bullet line inside a block's content. Works everywhere: every grid canvas block (both the block itself and each of its content lines), Matrix, RACI, Pace Layers, OST, Impact Map, Mind Map, and every card on the card canvases (card-mode blocks, Story, Roadmap, SCQA grid, Journey):
 
 ~~~
 ```vizardry
 type: lean
 block: Problem [[#Problem Discovery]]
-  Too many manual steps in the daily workflow
+  Too many manual steps in the daily workflow [[#Manual Steps]]
 
 block: Solution [[#Our Approach]]
   One-click automation for recurring tasks
 ```
 ~~~
+
+Here both the `Problem` block itself and its individual bullet line carry their own, independent link.
 
 *Inline Markdown link* — use standard Markdown anchor syntax `[label](#Anchor%20Text)` on the same line. The anchor is URL-decoded to match the heading:
 
@@ -1161,7 +1163,7 @@ The `Problem` and `Solution` blocks automatically get link icons because matchin
 - Inline annotations (`[[#Heading]]` or `[text](#Anchor)`) take priority over auto-detection
 - Heading text is matched case-insensitively
 - Annotations are stripped from display — only the element name is shown
-- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-card links (card-mode blocks, Matrix, Story, Roadmap, SCQA grid) refresh on the next render
+- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-line and per-card links (block content lines, card-mode blocks, Matrix, RACI, Pace Layers, Story, Roadmap, SCQA grid, Journey) refresh on the next render
 
 ### Section preview
 

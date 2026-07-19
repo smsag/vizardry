@@ -216,10 +216,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "RACI Matrix",
     template: RACI_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
       const result = parseRACIMatrix(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderRACIMatrix(result.data, el, fullSource, app, ctx);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderRACIMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
   {
@@ -239,9 +240,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Pace Layer Analysis",
     template: PACE_LAYERS_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const result = parsePaceLayers(parseSource, variant);
+      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const result = parsePaceLayers(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderPaceLayers(result.data, el, fullSource, app, ctx);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      renderPaceLayers(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
   {
