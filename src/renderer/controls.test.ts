@@ -10,7 +10,14 @@ vi.mock("html-to-image", () => ({
   toPng: vi.fn().mockResolvedValue("data:image/png;base64,abc"),
 }));
 
-import { initCanvas } from "./controls";
+const { mockGetLinearService, mockGetUpvotyService } = vi.hoisted(() => ({
+  mockGetLinearService: vi.fn(),
+  mockGetUpvotyService: vi.fn(),
+}));
+vi.mock("../linear", () => ({ getLinearService: mockGetLinearService }));
+vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
+
+import { initCanvas, renderHeadingLink } from "./controls";
 
 function container(): HTMLElement {
   const el = document.createElement("div");
@@ -20,6 +27,8 @@ function container(): HTMLElement {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  mockGetLinearService.mockReset();
+  mockGetUpvotyService.mockReset();
 });
 
 describe("editable title — keydown listener lifecycle", () => {
@@ -78,5 +87,55 @@ describe("editable title — keydown listener lifecycle", () => {
     expect(onTitleEdit).toHaveBeenCalledWith("My Title");
 
     vi.restoreAllMocks();
+  });
+});
+
+describe("renderHeadingLink — ticket fallback", () => {
+  it("renders a Linear ticket badge when resolve() finds nothing but resolveTicket() does", () => {
+    mockGetLinearService.mockReturnValue({ isEnabled: () => true });
+    const el = container();
+    const resolver = {
+      resolve: () => undefined,
+      resolveTicket: () => ({ service: "linear" as const, key: "CORE-1234" }),
+    };
+    renderHeadingLink(el, "Fix login bug", resolver, undefined);
+
+    const badge = el.querySelector(".vzd-linear-key");
+    expect(badge).toBeTruthy();
+    expect(badge?.textContent).toBe("CORE-1234");
+    expect(el.querySelector(".vzd-card-link-btn")).toBeNull();
+  });
+
+  it("renders an Upvoty ticket badge when resolve() finds nothing but resolveTicket() does", () => {
+    mockGetUpvotyService.mockReturnValue({ isEnabled: () => true });
+    const el = container();
+    const resolver = {
+      resolve: () => undefined,
+      resolveTicket: () => ({ service: "upvoty" as const, key: "UPV-abc123" }),
+    };
+    renderHeadingLink(el, "Add dark mode", resolver, undefined);
+
+    expect(el.querySelector(".vzd-upvoty-key")).toBeTruthy();
+  });
+
+  it("prefers the heading link over a ticket annotation when both resolve", () => {
+    mockGetLinearService.mockReturnValue({ isEnabled: () => true });
+    const el = container();
+    const resolver = {
+      resolve: () => "Some Heading",
+      resolveTicket: () => ({ service: "linear" as const, key: "CORE-1234" }),
+    };
+    renderHeadingLink(el, "Fix login bug", resolver, () => {});
+
+    expect(el.querySelector(".vzd-card-link-btn")).toBeTruthy();
+    expect(el.querySelector(".vzd-linear-key")).toBeNull();
+  });
+
+  it("renders nothing when neither resolve() nor resolveTicket() find a match", () => {
+    const el = container();
+    const resolver = { resolve: () => undefined, resolveTicket: () => undefined };
+    renderHeadingLink(el, "Untracked item", resolver, undefined);
+
+    expect(el.children.length).toBe(0);
   });
 });

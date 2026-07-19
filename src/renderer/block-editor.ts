@@ -2,9 +2,18 @@ import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { writeBlockContent } from "../shared/block-edit";
 import { renderInline } from "../shared/inline-markdown";
+import { renderHeadingLink } from "./controls";
+import type { LinkResolver } from "../shared/links";
 import { t } from "../i18n";
 
-export function renderBlockBody(body: HTMLElement, content: string): void {
+export function renderBlockBody(
+  body: HTMLElement,
+  content: string,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+  app?: App,
+  sourcePath?: string,
+): void {
   body.empty();
   // Keep dataset in sync so the click handler always has the latest content.
   body.dataset.blockContent = content;
@@ -15,7 +24,9 @@ export function renderBlockBody(body: HTMLElement, content: string): void {
     body.removeClass("vizardry-block-empty");
     body.addClass("vzd-block-body--filled");
     content.split("\n").forEach(line => {
-      renderInline(body.createEl("div", { cls: "vzd-block-line" }), line);
+      const lineEl = body.createEl("div", { cls: "vzd-block-line" });
+      renderInline(lineEl, line);
+      renderHeadingLink(lineEl, line, resolver, navigateTo, app, sourcePath);
     });
   }
 }
@@ -27,6 +38,8 @@ export function activateBlockEdit(
   app: App,
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
 ): void {
   // Prevent re-entrancy
   if (body.hasClass("vzd-block-editing")) return;
@@ -68,13 +81,13 @@ export function activateBlockEdit(
 
     if (!written) {
       new Notice(t("edit.writeFailed"));
-      renderBlockBody(body, currentContent);
+      renderBlockBody(body, currentContent, resolver, navigateTo, app, ctx.sourcePath);
       return;
     }
 
     // Optimistically re-render so the canvas updates immediately before
     // Obsidian triggers a full re-render from the source change.
-    renderBlockBody(body, newValue.trim());
+    renderBlockBody(body, newValue.trim(), resolver, navigateTo, app, ctx.sourcePath);
   };
 
   textarea.addEventListener("blur", commit);
@@ -82,7 +95,7 @@ export function activateBlockEdit(
     if (e.key === "Escape") {
       committed = true;
       body.removeClass("vzd-block-editing");
-      renderBlockBody(body, currentContent);
+      renderBlockBody(body, currentContent, resolver, navigateTo, app, ctx.sourcePath);
     }
     // Allow Tab to insert spaces rather than moving focus
     if (e.key === "Tab") {

@@ -101,10 +101,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Fishbone Diagram",
     template: FISHBONE_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseFishbone(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderFishbone(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -113,10 +113,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Impact Map",
     template: IMPACT_MAP_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseImpactMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderImpactMap(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -125,10 +125,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "User Story Map",
     template: STORY_MAP_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseStoryMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderStoryMap(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
@@ -137,10 +137,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Mind Map",
     template: MIND_MAP_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseMindMap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderMindMap(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -162,10 +162,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Opportunity Solution Tree",
     template: OST_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseOST(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderOST(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -216,10 +216,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "RACI Matrix",
     template: RACI_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseRACIMatrix(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderRACIMatrix(result.data, el, fullSource, app, ctx);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+      renderRACIMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
   {
@@ -227,10 +228,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Now/Next/Later Roadmap",
     template: ROADMAP_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseRoadmap(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderRoadmap(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -239,9 +240,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Pace Layer Analysis",
     template: PACE_LAYERS_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const result = parsePaceLayers(parseSource, variant);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
+      const result = parsePaceLayers(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderPaceLayers(result.data, el, fullSource, app, ctx);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+      renderPaceLayers(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
   {
@@ -269,10 +272,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Pain Point / Opportunity Matrix",
     template: MATRIX_PAIN_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseMatrix(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
@@ -281,10 +284,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "SCQA Narrative",
     template: SCQA_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseSCQA(strippedSource, "scqa");
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderSCQA(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -293,10 +296,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "SCR Narrative",
     template: SCR_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseSCQA(strippedSource, "scr");
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderSCQA(result.data, el, resolver, navigateTo, fullSource, app, ctx);
     },
   },
@@ -305,10 +308,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     label: "Customer Journey Map",
     template: JOURNEY_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseJourney(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderJourneyMap(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },

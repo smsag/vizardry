@@ -1107,22 +1107,24 @@ Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a b
 
 ## Linking elements to document headings
 
-Any canvas element can navigate to a heading in the same note. A small link icon signals the connection — clicking the block or node jumps to that heading.
+Any canvas element can navigate to a heading in the same note — not just a whole block, but every individual bullet line and every card. A small link icon signals the connection — clicking the block, bullet, card, or node jumps to that heading.
 
 **Three ways to connect:**
 
-*Inline wiki-link* — append `[[#Heading]]` to any element declaration. Works for grid canvases, OST, Impact Map, Mind Map, and individual cards on the card canvases (card-mode blocks, Matrix, Story, Roadmap, SCQA grid):
+*Inline wiki-link* — append `[[#Heading]]` to any element declaration, including a plain bullet line inside a block's content. Works everywhere: every grid canvas block (both the block itself and each of its content lines), Matrix, RACI, Pace Layers, OST, Impact Map, Mind Map, and every card on the card canvases (card-mode blocks, Story, Roadmap, SCQA grid, Journey):
 
 ~~~
 ```vizardry
 type: lean
 block: Problem [[#Problem Discovery]]
-  Too many manual steps in the daily workflow
+  Too many manual steps in the daily workflow [[#Manual Steps]]
 
 block: Solution [[#Our Approach]]
   One-click automation for recurring tasks
 ```
 ~~~
+
+Here both the `Problem` block itself and its individual bullet line carry their own, independent link.
 
 *Inline Markdown link* — use standard Markdown anchor syntax `[label](#Anchor%20Text)` on the same line. The anchor is URL-decoded to match the heading:
 
@@ -1161,13 +1163,29 @@ The `Problem` and `Solution` blocks automatically get link icons because matchin
 - Inline annotations (`[[#Heading]]` or `[text](#Anchor)`) take priority over auto-detection
 - Heading text is matched case-insensitively
 - Annotations are stripped from display — only the element name is shown
-- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-card links (card-mode blocks, Matrix, Story, Roadmap, SCQA grid) refresh on the next render
+- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-line and per-card links (block content lines, card-mode blocks, Matrix, RACI, Pace Layers, Story, Roadmap, SCQA grid, Journey) refresh on the next render
 
 ### Section preview
 
 A linked box or card shows a preview of just the linked section — the heading down to the next heading of the same or higher level, not the whole note. Trigger it with **Cmd/Ctrl + hover** on desktop, or a **long-press** on mobile (a drag needs deliberate movement, so holding still opens the preview). Dismiss by moving away, scrolling, pressing Escape, or tapping the close button on mobile.
 
 Currently available on grid boxes, Roadmap cards, and the card canvases (card-mode blocks, Matrix, Story, SCQA grid). Tree-node preview (OST, Mind Map, Impact, Fishbone, SCQA tree) is not wired yet.
+
+### Explicit ticket annotations
+
+The same `[label](target)` syntax used for heading links also recognizes an explicit Linear or Upvoty ticket key as the target, instead of a `#Heading` anchor:
+
+~~~
+```vizardry
+type: lean
+block: Solution
+  Fix login redirect issue [Fix login redirect issue](CORE-1234)
+```
+~~~
+
+This attaches a clickable ticket badge to a line even when its visible text doesn't contain the key itself — useful for a bullet written in prose. It's additive to, not a replacement for, the existing blind auto-detection that already turns a bare key like `CORE-1234` appearing anywhere in rendered text into a badge; this just covers the case auto-detection can't, where the key isn't in the visible text at all.
+
+Requires the corresponding integration (Linear or Upvoty) to be configured in settings — otherwise the annotation is silently stripped and no badge is shown. If both a heading and a ticket key could apply to the same element, the heading link wins.
 
 ---
 

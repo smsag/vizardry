@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { extractInlineLinks } from "./links";
+import { describe, it, expect, vi } from "vitest";
+
+const { mockGetUpvotyService } = vi.hoisted(() => ({ mockGetUpvotyService: vi.fn(() => null as { getKeyPrefix(): string } | null) }));
+vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
+
+import { extractInlineLinks, createLinkResolver } from "./links";
 
 describe("extractInlineLinks", () => {
   it("strips [[#Heading]] wiki-link annotations and records the mapping", () => {
@@ -78,5 +82,66 @@ describe("extractInlineLinks", () => {
       strengths: "SWOT Strengths",
       weaknesses: "Weaknesses",
     });
+  });
+
+  it("strips a Linear-shaped markdown-link target and captures it as a ticket annotation", () => {
+    const source = "block: Fix login bug [Fix login bug](CORE-1234)";
+    const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("block: Fix login bug");
+    expect(inlineLinks).toEqual({});
+    expect(inlineTicketLinks).toEqual({
+      "fix login bug": { service: "linear", key: "CORE-1234" },
+    });
+  });
+
+  it("strips an Upvoty-shaped markdown-link target and captures it as a ticket annotation when a service is configured", () => {
+    mockGetUpvotyService.mockReturnValue({ getKeyPrefix: () => "UPV" });
+    const source = "block: Add dark mode [Add dark mode](UPV-abcdefghij1234567890)";
+    const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("block: Add dark mode");
+    expect(inlineLinks).toEqual({});
+    expect(inlineTicketLinks).toEqual({
+      "add dark mode": { service: "upvoty", key: "UPV-abcdefghij1234567890" },
+    });
+  });
+
+  it("leaves an ordinary external link completely untouched (critical regression guard)", () => {
+    const source = "block: Docs [Docs](https://example.com)";
+    const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe(source);
+    expect(inlineLinks).toEqual({});
+    expect(inlineTicketLinks).toEqual({});
+  });
+
+  it("leaves an Upvoty-shaped-looking target untouched when no Upvoty service is configured", () => {
+    mockGetUpvotyService.mockReturnValue(null);
+    const source = "block: Add dark mode [Add dark mode](UPV-abcdefghij1234567890)";
+    const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe(source);
+    expect(inlineLinks).toEqual({});
+    expect(inlineTicketLinks).toEqual({});
+  });
+
+  it("strips a Linear-shaped target from a non-keyword line (e.g. OST child node)", () => {
+    const source = "outcome: Goal\n  Fix login bug [Fix login bug](CORE-1234)";
+    const { strippedSource, inlineTicketLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("outcome: Goal\n  Fix login bug");
+    expect(inlineTicketLinks).toEqual({
+      "fix login bug": { service: "linear", key: "CORE-1234" },
+    });
+  });
+});
+
+describe("createLinkResolver — resolveTicket", () => {
+  it("resolves a ticket annotation case-insensitively", () => {
+    const resolver = createLinkResolver({}, [], {
+      "fix login bug": { service: "linear", key: "CORE-1234" },
+    });
+    expect(resolver.resolveTicket?.("Fix Login Bug")).toEqual({ service: "linear", key: "CORE-1234" });
+  });
+
+  it("returns undefined when no ticket annotation matches", () => {
+    const resolver = createLinkResolver({}, []);
+    expect(resolver.resolveTicket?.("Untracked item")).toBeUndefined();
   });
 });

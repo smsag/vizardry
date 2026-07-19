@@ -1,11 +1,15 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi } from "vitest";
+import "../test-setup";
 
 vi.mock("obsidian", () => ({ setIcon: vi.fn() }));
-vi.mock("../linear", () => ({ getLinearService: () => null }));
+const { mockGetLinearService } = vi.hoisted(() => ({
+  mockGetLinearService: vi.fn((): { isEnabled(): boolean } | null => null),
+}));
+vi.mock("../linear", () => ({ getLinearService: mockGetLinearService }));
 vi.mock("../i18n", () => ({ t: (key: string) => key }));
 
-import { enrichLinearKeys } from "./linear-enrichment";
+import { enrichLinearKeys, renderLinearKeyBadge } from "./linear-enrichment";
 
 describe("enrichLinearKeys", () => {
   it("wraps a Linear key in plain text with a clickable badge", () => {
@@ -34,5 +38,33 @@ describe("enrichLinearKeys", () => {
 
     const badges = Array.from(el.querySelectorAll(".vzd-linear-key")).map(b => b.textContent);
     expect(badges).toEqual(["CORE-1"]);
+  });
+});
+
+describe("renderLinearKeyBadge", () => {
+  it("renders a .vzd-linear-key badge when the Linear integration is enabled", () => {
+    mockGetLinearService.mockReturnValue({ isEnabled: () => true });
+    const el = document.createElement("div");
+    renderLinearKeyBadge(el, "CORE-1234");
+
+    const badge = el.querySelector(".vzd-linear-key");
+    expect(badge).toBeTruthy();
+    expect(badge?.textContent).toBe("CORE-1234");
+  });
+
+  it("renders nothing when the Linear integration is disabled", () => {
+    mockGetLinearService.mockReturnValue({ isEnabled: () => false });
+    const el = document.createElement("div");
+    renderLinearKeyBadge(el, "CORE-1234");
+
+    expect(el.querySelector(".vzd-linear-key")).toBeNull();
+  });
+
+  it("renders nothing when the Linear service isn't configured at all", () => {
+    mockGetLinearService.mockReturnValue(null);
+    const el = document.createElement("div");
+    renderLinearKeyBadge(el, "CORE-1234");
+
+    expect(el.querySelector(".vzd-linear-key")).toBeNull();
   });
 });

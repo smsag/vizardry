@@ -141,6 +141,21 @@ describe("renderCanvas", () => {
     expect(navigateTo).toHaveBeenCalledWith("My Heading");
   });
 
+  it("renders a per-line link button when a plain (non-card) block's line resolves to a heading", () => {
+    const el = container();
+    const navigateTo = vi.fn();
+    renderCanvas(
+      swot, { strengths: "Fast team velocity" }, new Set(), el,
+      { resolve: (k: string) => k === "Fast team velocity" ? "Perf Section" : undefined },
+      navigateTo,
+    );
+    const line = el.querySelector(".vzd-block-line");
+    const btn = line?.querySelector<HTMLButtonElement>(".vzd-card-link-btn");
+    expect(btn).toBeTruthy();
+    btn?.click();
+    expect(navigateTo).toHaveBeenCalledWith("Perf Section");
+  });
+
   it("allCards forces every block to render as a card, ignoring per-block modifiers", () => {
     const el = container();
     renderCanvas(swot, { strengths: "Fast team" }, new Set(), el, NULL_RESOLVER, vi.fn(), undefined, undefined, undefined, true);
@@ -898,6 +913,17 @@ describe("renderRACIMatrix", () => {
     renderRACIMatrix(data, el, "type: raci", editModeApp, ctx);
     expect(el.querySelector(".vzd-raci-item--editable")).toBeTruthy();
     expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
+  });
+
+  it("renders a link button on a cell whose value resolves to a heading", () => {
+    const el = container();
+    const navigateTo = vi.fn();
+    const resolver = { resolve: (label: string) => label === "Write code" ? "Spec Heading" : undefined };
+    renderRACIMatrix(data, el, undefined, undefined, undefined, resolver, navigateTo);
+    const btn = el.querySelector<HTMLButtonElement>(".vzd-card-link-btn");
+    expect(btn).toBeTruthy();
+    btn?.click();
+    expect(navigateTo).toHaveBeenCalledWith("Spec Heading");
   });
 });
 

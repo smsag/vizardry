@@ -96,15 +96,15 @@ export function dispatchVizardry(
 
   try {
     if (definition) {
-      const { strippedSource, inlineLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const result = parseFrameworkSource(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderCanvas(definition, result.data, result.cardBlocks, el, resolver, navigateTo, app, ctx, source, result.allCards);
       // Re-evaluate link buttons whenever the note's headings change (e.g. a
       // matching heading is added outside the code block after first render).
       registerCanvasRelink(ctx.sourcePath, () => {
-        const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(app, ctx));
+        const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(app, ctx), inlineTicketLinks);
         relinkCanvas(el, definition, freshResolver, navigateTo);
       }, el);
     } else if (custom) {
