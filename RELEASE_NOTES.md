@@ -1,3 +1,5 @@
-## Fixes
+## New
 
-- **No more layout jumps when interacting with canvases.** Six sources of geometry-change-on-interaction have been eliminated: minimizing/expanding a canvas no longer shifts the header position; clicking a title to rename it no longer nudges surrounding elements; clicking into a RACI, SIPOC, or grid block to edit no longer causes the cell to snap to a different size; and the font-size +/− buttons now animate smoothly instead of snapping the whole canvas in one frame.
+- **Node Map canvas.** A new free-form, ERD-style canvas — boxes placed at explicit x/y coordinates and connected by directed, bidirectional, or undirected links, with optional labels, colors, and dashed style. In Live Preview: drag to reposition, drag from a box's `+` handle onto another box to link them, double-click to rename or edit body text, double-click empty canvas to add a box.
+- **Explicit Linear/Upvoty ticket annotations.** The same `[label](target)` markdown-link syntax used for linking elements to document headings now also recognizes an explicit ticket key as the target — `[Fix login bug](CORE-1234)` attaches a clickable Linear or Upvoty badge to that bullet or card, even when its visible text doesn't contain the key. Complements the existing blind auto-detection rather than replacing it.
+- **Heading links are now universal.** Every bullet line and every card can link to a note heading, not just whole grid blocks — RACI cells, Pace Layers cells, and per-line content in every grid/matrix block now get their own link icon.
