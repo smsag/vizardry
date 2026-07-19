@@ -22,6 +22,7 @@ export const en = {
   "framework.lean.description":       "Riskiest assumptions exposed and ranked.",
   "framework.leanux.description":     "Team aligned before building starts.",
   "framework.mindmap.description":    "Complex ideas structured and prioritised.",
+  "framework.nodemap.description":    "Boxes placed and connected exactly where you put them.",
   "framework.opportunity.description":"Solutions tied to real outcomes.",
   "framework.ost.description":        "Outcome drives opportunities, solutions, and experiments.",
   "framework.rac.description":        "Biggest risks ranked for testing.",

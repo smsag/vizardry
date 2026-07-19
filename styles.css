@@ -2894,6 +2894,228 @@ code:has(.vzd-upvoty-key) {
   font-size: 12px;
 }
 
+/* ── Node Map ────────────────────────────────────────────────────────────── */
+
+.vzd-nodemap-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+}
+
+.vzd-nodemap-svg {
+  display: block;
+}
+
+.vzd-nodemap-box {
+  fill: color-mix(in srgb, var(--vzd-nodemap-color, var(--text-muted)) 14%, var(--background-primary));
+  stroke: var(--vzd-nodemap-color, var(--background-modifier-border));
+  stroke-width: 1.5;
+}
+
+.vzd-nodemap-box--draggable {
+  cursor: grab;
+}
+
+.vzd-nodemap-box--dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 0 4px var(--interactive-accent));
+}
+
+.vzd-nodemap-svg--dragging {
+  cursor: grabbing;
+}
+
+.vzd-nodemap-box-host {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-family: var(--font-interface);
+  color: var(--text-normal);
+  overflow: hidden;
+}
+
+.vzd-nodemap-box-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.vzd-nodemap-box-body {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  cursor: text;
+}
+
+.vzd-nodemap-rename-input {
+  width: 100%;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+  padding: 0;
+}
+
+.vzd-nodemap-link {
+  stroke: var(--vzd-nodemap-color, var(--text-muted));
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.vzd-nodemap-link--dashed {
+  stroke-dasharray: 6 4;
+}
+
+.vzd-nodemap-link-hit {
+  stroke: transparent;
+  stroke-width: 14;
+  fill: none;
+}
+
+.vzd-nodemap-arrowhead {
+  fill: var(--text-muted);
+}
+
+.vzd-nodemap-link-label-bg {
+  fill: var(--background-primary);
+  stroke: none;
+}
+
+.vzd-nodemap-link-label {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-interface);
+  font-style: italic;
+}
+
+/* Unlink / delete "×" buttons — shared look for link and box controls */
+.vzd-nodemap-unlink-btn,
+.vzd-nodemap-box-delete-btn,
+.vzd-nodemap-box-color-btn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.vzd-nodemap-link-g:hover .vzd-nodemap-unlink-btn,
+.vzd-nodemap-box-controls:hover .vzd-nodemap-box-delete-btn,
+.vzd-nodemap-box-controls:hover .vzd-nodemap-box-color-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vzd-nodemap-unlink-circle {
+  fill: var(--background-primary);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.vzd-nodemap-box-delete-btn:hover .vzd-nodemap-unlink-circle {
+  fill: var(--background-modifier-error);
+  stroke: var(--background-modifier-error);
+}
+
+.vzd-nodemap-unlink-icon {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-interface);
+  pointer-events: none;
+}
+
+.vzd-nodemap-box-delete-btn:hover .vzd-nodemap-unlink-icon {
+  fill: var(--text-on-accent);
+}
+
+.vzd-nodemap-color-btn-circle {
+  fill: var(--background-primary);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+
+.vzd-nodemap-box-color-btn:hover .vzd-nodemap-color-btn-circle {
+  stroke: var(--interactive-accent);
+}
+
+/* + handle: revealed when hovering a box */
+.vzd-nodemap-add-handle-hit {
+  fill: var(--interactive-accent);
+  opacity: 0;
+  cursor: crosshair;
+}
+
+.vzd-nodemap-add-handle {
+  fill: var(--interactive-accent);
+  cursor: crosshair;
+}
+
+.vzd-nodemap-add-handle-icon {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--text-on-accent);
+  pointer-events: none;
+}
+
+.vzd-nodemap-link-draft {
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  fill: none;
+  pointer-events: none;
+}
+
+.vzd-nodemap-svg--drawing {
+  cursor: crosshair;
+}
+
+/* Color popover — plain HTML overlay positioned over the wrap, not the SVG */
+.vzd-nodemap-color-popover {
+  position: absolute;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+}
+
+.vzd-nodemap-color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--vzd-nodemap-color, transparent);
+  cursor: pointer;
+  padding: 0;
+}
+
+.vzd-nodemap-color-swatch--clear {
+  background: var(--background-primary);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Presentation mode */
+.vzd-presentation-wrap .vzd-nodemap-box-name {
+  font-size: 14px;
+}
+
+.vzd-presentation-wrap .vzd-nodemap-box-body {
+  font-size: 12px;
+}
+
+.vzd-presentation-wrap .vzd-nodemap-link-label {
+  font-size: 12px;
+}
+
 /* ══ Pain / Opportunity Matrix ══════════════════════════════════════════════ */
 
 .vzd-matrix-wrap {

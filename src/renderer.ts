@@ -9,6 +9,7 @@ export { renderRACIMatrix } from "./renderer/raci";
 export { renderRoadmap } from "./renderer/roadmap";
 export { renderPaceLayers } from "./renderer/pacelayers";
 export { renderConceptMap } from "./renderer/conceptmap";
+export { renderNodeMap } from "./renderer/nodemap";
 export { renderMatrix } from "./renderer/matrix";
 export { renderSCQA } from "./renderer/scqa";
 export { renderJourneyMap } from "./renderer/journey";

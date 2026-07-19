@@ -4,6 +4,7 @@ import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
+import { rectBoundary, type Vec2 } from "../shared/geometry";
 
 const W = 900;
 const H = 560;
@@ -16,23 +17,8 @@ const ARROW_LEN = 9;
 const LABEL_OFFSET = 13;
 const NODE_MARGIN = 14; // minimum gap between node edges after layout
 
-interface Vec2 { x: number; y: number; }
-
 function nodeWidth(label: string): number {
   return Math.max(80, Math.ceil(label.length * CHAR_W + NODE_PAD_X * 2));
-}
-
-/** Point on the boundary of a rect centered at (cx,cy) in the direction of (tx,ty). */
-function rectBoundary(
-  cx: number, cy: number, hw: number, hh: number,
-  tx: number, ty: number,
-): Vec2 {
-  const dx = tx - cx, dy = ty - cy;
-  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return { x: cx, y: cy };
-  const tX = Math.abs(dx) > 0.01 ? hw / Math.abs(dx) : Infinity;
-  const tY = Math.abs(dy) > 0.01 ? hh / Math.abs(dy) : Infinity;
-  const t = Math.min(tX, tY);
-  return { x: cx + dx * t, y: cy + dy * t };
 }
 
 function forceLayout(positions: Vec2[], edgeIdxs: { from: number; to: number }[]): void {

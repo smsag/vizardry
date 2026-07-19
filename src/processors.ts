@@ -33,13 +33,14 @@ import { parseRACIMatrix } from "./raci";
 import { parseRoadmap } from "./roadmap";
 import { parsePaceLayers } from "./pacelayers";
 import { parseConceptMap } from "./conceptmap";
+import { parseNodeMap } from "./nodemap";
 import { parseMatrix } from "./matrix";
 import { parseSCQA } from "./scqa";
 import { parseJourney } from "./journey";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers, renderConceptMap, renderMatrix, renderSCQA,
+  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap,
   renderError,
 } from "./renderer";
@@ -48,7 +49,7 @@ import {
   FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
-  ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE,
+  ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
@@ -251,6 +252,16 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const result = parseConceptMap(parseSource);
       if (!result.ok) { renderError(result.error, el); return; }
       renderConceptMap(result.data, el, app, ctx, fullSource);
+    },
+  },
+  {
+    id: "nodemap",
+    label: "Node Map",
+    template: NODE_MAP_TEMPLATE,
+    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
+      const result = parseNodeMap(parseSource);
+      if (!result.ok) { renderError(result.error, el); return; }
+      renderNodeMap(result.data, el, app, ctx, fullSource);
     },
   },
   {

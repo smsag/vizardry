@@ -44,6 +44,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `matrix, opportunity` | Opportunity Matrix | Grid |
 | `matrix, impact` | Impact / Effort Matrix | Grid |
 | `mindmap` | Mind Map | Tree |
+| `nodemap` | Node Map | Graph |
 | `opportunity` | Opportunity Canvas | Grid |
 | `ost` | Opportunity Solution Tree | Tree |
 | `pacelayers` or `pacelayers, shearing` | Pace Layer Analysis | Grid |
@@ -1060,6 +1061,50 @@ Nodes are inferred automatically from the edges — no separate node declaration
 
 ---
 
+### Node Map
+
+An ERD-style diagram: you place labeled boxes exactly where you want them and draw the connecting lines yourself — nothing auto-arranges. Good for system diagrams, entity relationships, or any sketch where the layout itself carries meaning.
+
+~~~
+```vizardry
+type: nodemap
+title: Order Processing System
+
+box: Customer [x: 40, y: 40, color: blue]
+box: Order Service [x: 320, y: 40]
+  Handles order creation
+  and validation
+box: Payment Gateway [x: 320, y: 220, color: green]
+
+link: Customer -> Order Service : places order
+link: Order Service -> Payment Gateway : charges card [color: green]
+```
+~~~
+
+Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a box to reveal a "+" handle; drag it onto another box to link them (dropping on empty space cancels instead of creating a new box). Double-click a box's name to rename it, or its body text to edit it. Hover a box or link for a delete "×" and a color-swatch button.
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `box: <name> [x: <num>, y: <num>]` | A box at the given top-left position |
+| `box: <name> [x: <num>, y: <num>, color: <name\|#hex>]` | A box with a color — palette name (red, orange, yellow, green, teal, blue, purple, pink, gray) or a `#hex` value |
+| Indented lines under `box:` | Optional multi-line body text for that box |
+| `link: A -> B` | Directed link (arrowhead at B) |
+| `link: A <-> B` | Bidirectional link (arrowhead at both ends) |
+| `link: A -- B` | Undirected link (no arrowhead) |
+| `link: A -> B : <label>` | Link with a label |
+| `link: A -> B [color: red, style: dashed]` | Link with a color and/or dashed line style |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- Coordinates are unbounded, non-negative numbers — the canvas grows to fit its content
+- Box names must be unique and cannot contain `:` or brackets
+- Self-links are not allowed, and every link must reference a declared box
+
+---
+
 ## Linking elements to document headings
 
 Any canvas element can navigate to a heading in the same note. A small link icon signals the connection — clicking the block or node jumps to that heading.
@@ -1292,6 +1337,19 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 |---|---|
 | `A -- label --> B` | Directed edge from A to B with a relationship label |
 | `A --> B` | Directed edge from A to B without a label |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+### Node Map (type: nodemap)
+
+| Syntax | Meaning |
+|---|---|
+| `box: <name> [x: <num>, y: <num>]` | A box at the given top-left position |
+| `box: <name> [x: <num>, y: <num>, color: <name\|#hex>]` | A box with a color |
+| Indented lines under `box:` | Optional multi-line body text |
+| `link: A -> B` / `A <-> B` / `A -- B` | Directed / bidirectional / undirected link |
+| `link: A -> B : <label>` | Link with a label |
+| `link: A -> B [color: red, style: dashed]` | Link with a color and/or dashed style |
 | `title: <text>` | Optional canvas title |
 | `// comment` | Ignored |
 

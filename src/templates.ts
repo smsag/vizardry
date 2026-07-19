@@ -330,6 +330,21 @@ Water -- enables --> Plants
 \`\`\`
 `;
 
+export const NODE_MAP_TEMPLATE = `\`\`\`vizardry
+type: nodemap
+title: Order Processing System
+
+box: Customer [x: 40, y: 40, color: blue]
+box: Order Service [x: 320, y: 40]
+  Handles order creation
+  and validation
+box: Payment Gateway [x: 320, y: 220, color: green]
+
+link: Customer -> Order Service : places order
+link: Order Service -> Payment Gateway : charges card [color: green]
+\`\`\`
+`;
+
 export const PACE_LAYERS_TEMPLATE = `\`\`\`vizardry
 // type: pacelayers, shearing | product | retro
 type: pacelayers, shearing
