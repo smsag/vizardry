@@ -1126,6 +1126,8 @@ block: Solution [[#Our Approach]]
 
 Here both the `Problem` block itself and its individual bullet line carry their own, independent link.
 
+Typing `[[#` inside a vizardry code block offers autocomplete for every heading in the note — Obsidian's native `[[` suggester doesn't work reliably inside code fences, so Vizardry provides its own.
+
 *Inline Markdown link* — use standard Markdown anchor syntax `[label](#Anchor%20Text)` on the same line. The anchor is URL-decoded to match the heading:
 
 ~~~
