@@ -1171,6 +1171,22 @@ A linked box or card shows a preview of just the linked section — the heading 
 
 Currently available on grid boxes, Roadmap cards, and the card canvases (card-mode blocks, Matrix, Story, SCQA grid). Tree-node preview (OST, Mind Map, Impact, Fishbone, SCQA tree) is not wired yet.
 
+### Explicit ticket annotations
+
+The same `[label](target)` syntax used for heading links also recognizes an explicit Linear or Upvoty ticket key as the target, instead of a `#Heading` anchor:
+
+~~~
+```vizardry
+type: lean
+block: Solution
+  Fix login redirect issue [Fix login redirect issue](CORE-1234)
+```
+~~~
+
+This attaches a clickable ticket badge to a line even when its visible text doesn't contain the key itself — useful for a bullet written in prose. It's additive to, not a replacement for, the existing blind auto-detection that already turns a bare key like `CORE-1234` appearing anywhere in rendered text into a badge; this just covers the case auto-detection can't, where the key isn't in the visible text at all.
+
+Requires the corresponding integration (Linear or Upvoty) to be configured in settings — otherwise the annotation is silently stripped and no badge is shown. If both a heading and a ticket key could apply to the same element, the heading link wins.
+
 ---
 
 ## Wardley Map — visual editing

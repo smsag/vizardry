@@ -3,7 +3,7 @@ import { t } from "../i18n";
 import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge } from "./key-enrichment";
 
 // Matches LINEAR-style identifiers like CORE-1234, PSINT-42, ENG-9999
-const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
+export const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 
 /**
  * Scans `container` for Linear issue keys in text nodes and replaces each
@@ -20,6 +20,22 @@ export function enrichLinearKeys(container: HTMLElement): void {
     attachTrigger(btn, key);
     return btn;
   });
+}
+
+/**
+ * Renders a `.vzd-linear-key` badge for an explicitly-annotated key (e.g.
+ * `[label](CORE-1234)`) — as opposed to `enrichLinearKeys`'s blind text-node
+ * scan, this is for a key the caller already knows, attached to an item
+ * whose own visible text may not contain it at all. No-ops if the Linear
+ * integration isn't enabled, matching the same gating `enrichLinearKeys`
+ * already applies before scanning (see main.ts) — never renders an inert
+ * badge that can't do anything when clicked.
+ */
+export function renderLinearKeyBadge(parent: HTMLElement, key: string): void {
+  if (!getLinearService()?.isEnabled()) return;
+  const btn = parent.createEl("button", { cls: "vzd-linear-key", text: key });
+  btn.setAttribute("aria-label", `Linear: ${key}`);
+  attachTrigger(btn, key);
 }
 
 // ── Click trigger ────────────────────────────────────────────────────────────

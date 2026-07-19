@@ -13,6 +13,8 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
 import { type LinkResolver, NULL_RESOLVER } from "../shared/links";
 import { bestTextColor } from "../shared/color-utils";
+import { renderLinearKeyBadge } from "../shared/linear-enrichment";
+import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 
 const COL_LABELS: Record<string, string> = {
   now:   "roadmap.col.now",
@@ -241,6 +243,12 @@ export function renderRoadmap(
         navigateTo(heading);
       });
       if (app && ctx) attachSectionPreview(app, card, heading, ctx.sourcePath);
+    } else {
+      const ticket = resolver.resolveTicket?.(item.title);
+      if (ticket) {
+        if (ticket.service === "linear") renderLinearKeyBadge(titleRow, ticket.key);
+        else renderUpvotyKeyBadge(titleRow, ticket.key);
+      }
     }
 
     if (item.subtitle) {

@@ -8,6 +8,8 @@ import { getPluginVersion } from "../shared/version";
 import type { LinkResolver } from "../shared/links";
 import { attachSectionPreview } from "./section-preview";
 import { writeCollapseState } from "../shared/block-edit";
+import { renderLinearKeyBadge } from "../shared/linear-enrichment";
+import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 
 let nextId = 0;
 
@@ -19,7 +21,9 @@ export function markInteractive(el: HTMLElement): void {
  * If `label` resolves to a heading in the current note, appends a chain-link
  * button to `parent` that jumps to it. Shared by the card canvases (card
  * blocks, Story, SCQA grid) so a linked card gets the same affordance the grid
- * boxes, roadmap cards, and tree nodes already have. No-op when unresolved.
+ * boxes, roadmap cards, and tree nodes already have. Falls back to an explicit
+ * Linear/Upvoty ticket badge when no heading matches but the label carries a
+ * `[label](CORE-1234)`-style annotation. No-op when neither resolves.
  */
 export function renderHeadingLink(
   parent: HTMLElement,
@@ -30,18 +34,25 @@ export function renderHeadingLink(
   sourcePath?: string,
 ): void {
   const heading = resolver?.resolve(label);
-  if (!heading || !navigateTo) return;
+  if (heading && navigateTo) {
+    const linkBtn = parent.createEl("button", { cls: "vzd-card-link-btn vzd-btn" });
+    setIcon(linkBtn, "link");
+    linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
+    linkBtn.dataset.heading = heading;
+    markInteractive(linkBtn);
+    linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
 
-  const linkBtn = parent.createEl("button", { cls: "vzd-card-link-btn vzd-btn" });
-  setIcon(linkBtn, "link");
-  linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
-  linkBtn.dataset.heading = heading;
-  markInteractive(linkBtn);
-  linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+    // Cmd/Ctrl-hover (desktop) or long-press (mobile) shows a clipped preview of
+    // the linked section on the whole box/card.
+    if (app && sourcePath) attachSectionPreview(app, parent, heading, sourcePath);
+    return;
+  }
 
-  // Cmd/Ctrl-hover (desktop) or long-press (mobile) shows a clipped preview of
-  // the linked section on the whole box/card.
-  if (app && sourcePath) attachSectionPreview(app, parent, heading, sourcePath);
+  const ticket = resolver?.resolveTicket?.(label);
+  if (ticket) {
+    if (ticket.service === "linear") renderLinearKeyBadge(parent, ticket.key);
+    else renderUpvotyKeyBadge(parent, ticket.key);
+  }
 }
 
 /**

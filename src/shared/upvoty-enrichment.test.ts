@@ -1,11 +1,15 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi } from "vitest";
+import "../test-setup";
 
 vi.mock("obsidian", () => ({ setIcon: vi.fn() }));
-vi.mock("../upvoty", () => ({ getUpvotyService: () => null }));
+const { mockGetUpvotyService } = vi.hoisted(() => ({
+  mockGetUpvotyService: vi.fn((): { isEnabled(): boolean } | null => null),
+}));
+vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
 vi.mock("../i18n", () => ({ t: (key: string) => key }));
 
-import { enrichUpvotyKeys, buildKeyRegex } from "./upvoty-enrichment";
+import { enrichUpvotyKeys, buildKeyRegex, renderUpvotyKeyBadge } from "./upvoty-enrichment";
 
 describe("enrichUpvotyKeys", () => {
   it("does nothing when the Upvoty service is unavailable (integration disabled)", () => {
@@ -33,5 +37,33 @@ describe("buildKeyRegex", () => {
     const re = buildKeyRegex("A+B");
     const match = re.exec("A+B-abcdefghij1234567890");
     expect(match?.[1]).toBe("A+B-abcdefghij1234567890");
+  });
+});
+
+describe("renderUpvotyKeyBadge", () => {
+  it("renders a .vzd-upvoty-key badge when the Upvoty integration is enabled", () => {
+    mockGetUpvotyService.mockReturnValue({ isEnabled: () => true });
+    const el = document.createElement("div");
+    renderUpvotyKeyBadge(el, "UPV-abc123");
+
+    const badge = el.querySelector(".vzd-upvoty-key");
+    expect(badge).toBeTruthy();
+    expect(badge?.textContent).toBe("UPV-abc123");
+  });
+
+  it("renders nothing when the Upvoty integration is disabled", () => {
+    mockGetUpvotyService.mockReturnValue({ isEnabled: () => false });
+    const el = document.createElement("div");
+    renderUpvotyKeyBadge(el, "UPV-abc123");
+
+    expect(el.querySelector(".vzd-upvoty-key")).toBeNull();
+  });
+
+  it("renders nothing when the Upvoty service isn't configured at all", () => {
+    mockGetUpvotyService.mockReturnValue(null);
+    const el = document.createElement("div");
+    renderUpvotyKeyBadge(el, "UPV-abc123");
+
+    expect(el.querySelector(".vzd-upvoty-key")).toBeNull();
   });
 });

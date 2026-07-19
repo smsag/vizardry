@@ -39,6 +39,21 @@ export function buildKeyRegex(prefix: string): RegExp {
   return new RegExp(`\\b(${escaped}-(?:${uuid}|${base62}))\\b`, "g");
 }
 
+/**
+ * Renders a `.vzd-upvoty-key` badge for an explicitly-annotated key (e.g.
+ * `[label](UPV-abc123...)`) — as opposed to `enrichUpvotyKeys`'s blind
+ * text-node scan, this is for a key the caller already knows, attached to an
+ * item whose own visible text may not contain it at all. No-ops if the
+ * Upvoty integration isn't enabled, matching the same gating
+ * `enrichUpvotyKeys` already applies before scanning (see main.ts).
+ */
+export function renderUpvotyKeyBadge(parent: HTMLElement, key: string): void {
+  if (!getUpvotyService()?.isEnabled()) return;
+  const btn = parent.createEl("button", { cls: "vzd-upvoty-key", text: shortenKey(key) });
+  btn.setAttribute("aria-label", `Upvoty: ${key}`);
+  attachTrigger(btn, key);
+}
+
 // ── Click trigger ────────────────────────────────────────────────────────────
 
 function attachTrigger(btn: HTMLElement, key: string): void {

@@ -9,6 +9,8 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { onDisconnected } from "../shared/lifecycle";
 import { isEditModeActive } from "../shared/editor";
 import { initCanvas, markInteractive } from "./controls";
+import { renderLinearKeyBadge } from "../shared/linear-enrichment";
+import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 import type { FrameworkDefinition } from "../types";
 
 // ── Relink registry ───────────────────────────────────────────────────────────
@@ -61,10 +63,15 @@ export function relinkCanvas(
     const labelRow = block.querySelector<HTMLElement>(".vizardry-block-label-row");
     if (!labelRow) continue;
 
-    // Remove stale link button (if any) before re-evaluating
+    // Remove stale link button / ticket badge (if any) before re-evaluating.
+    // The ticket badge must go too: if a heading is later added that matches
+    // this block's label, the heading link must win, not sit next to a stale
+    // ticket badge from before.
     labelRow.querySelector(".vizardry-block-link-btn")?.remove();
+    labelRow.querySelector(".vzd-linear-key, .vzd-upvoty-key")?.remove();
 
-    const heading = resolver.resolve(blockDef.label.toLowerCase());
+    const labelKey = blockDef.label.toLowerCase();
+    const heading = resolver.resolve(labelKey);
     if (heading) {
       const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
       setIcon(linkBtn, "link");
@@ -72,6 +79,12 @@ export function relinkCanvas(
       linkBtn.dataset.heading = heading;
       markInteractive(linkBtn);
       linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+    } else {
+      const ticket = resolver.resolveTicket?.(labelKey);
+      if (ticket) {
+        if (ticket.service === "linear") renderLinearKeyBadge(labelRow, ticket.key);
+        else renderUpvotyKeyBadge(labelRow, ticket.key);
+      }
     }
   }
 }
@@ -133,6 +146,12 @@ export function renderCanvas(
       markInteractive(linkBtn);
       linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
       if (app && ctx) attachSectionPreview(app, block, heading, ctx.sourcePath);
+    } else {
+      const ticket = resolver.resolveTicket?.(labelKey);
+      if (ticket) {
+        if (ticket.service === "linear") renderLinearKeyBadge(labelRow, ticket.key);
+        else renderUpvotyKeyBadge(labelRow, ticket.key);
+      }
     }
 
     const content = data[labelKey] ?? "";
