@@ -31,16 +31,22 @@ import type { Editor } from "obsidian";
 export interface KeywordTreeConfig {
   /** Keyword for each level, 0-indexed (e.g. {0: "effect", 1: "category", ...}). */
   levelKeyword: Record<number, string>;
+  /** When true, EVERY level nests one indent unit under its parent, including
+   *  level 1 (OST's outcome→opportunity, SCQA's situation→complication). When
+   *  false/omitted, level 1 sits at root indent alongside level 0 (Impact
+   *  Map's goal+actor, Fishbone's effect+category). */
+  strictNesting?: boolean;
 }
 
 function childKeywordOf(config: KeywordTreeConfig, parentLevel: number): string | undefined {
   return config.levelKeyword[parentLevel + 1];
 }
 
-/** True for the child keyword that sits at indent 0, same as the root
- *  (e.g. "category:" under "effect:") — always the level-1 keyword in this family. */
+/** True for a child keyword that sits at indent 0, same as the root
+ *  (e.g. "category:" under "effect:"). Only the level-1 keyword can, and only
+ *  when the config is NOT strict-nesting. */
 function childSitsAtRootIndent(config: KeywordTreeConfig, childKeyword: string): boolean {
-  return config.levelKeyword[1] === childKeyword;
+  return !config.strictNesting && config.levelKeyword[1] === childKeyword;
 }
 
 interface Match {

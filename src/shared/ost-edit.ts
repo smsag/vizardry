@@ -1,42 +1,45 @@
 /**
  * In-place source edits for the Opportunity Solution Tree (OST) canvas.
  *
- * Source format (indent-based, outcome keyword only on the root):
+ * Source format (keyword-per-level, strict-nesting — see keyword-tree.ts):
  *   outcome: Desired Outcome
- *     Opportunity One
- *       Solution A
- *         Experiment 1
- *           Assumption X
+ *     opportunity: Users don't grasp the value
+ *       solution: Add an interactive tour
+ *         experiment: A/B test tour vs. video
+ *           assumption: Users prefer guided tours
  *
- * Structurally identical to mindmap-edit.ts / scqa-edit.ts's rename/add/
- * delete (and driven by the same shared engine) — only the root keyword and
- * the max depth (4: outcome/opportunity/solution/experiment/assumption)
- * differ.
+ * Level keywords: 0 outcome · 1 opportunity · 2 solution · 3 experiment ·
+ * 4 assumption. Unlike Impact Map, every level nests one indent unit under
+ * its parent (strictNesting), so this is driven by the same keyword-tree
+ * engine with that flag set.
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { renameRootKwTreeNode, addRootKwTreeChild, deleteRootKwTreeNode } from "./rootkw-tree-edit";
-import type { RootKwTreeConfig } from "./rootkw-tree-edit";
+import { renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode } from "./keyword-tree-edit";
+import type { KeywordTreeConfig } from "./keyword-tree-edit";
 
-const CONFIG: RootKwTreeConfig = { rootKeyword: "outcome", maxDepth: 4 };
+const CONFIG: KeywordTreeConfig = {
+  levelKeyword: { 0: "outcome", 1: "opportunity", 2: "solution", 3: "experiment", 4: "assumption" },
+  strictNesting: true,
+};
 
 export function renameOSTNode(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
-  oldText: string, newText: string,
+  level: number, oldText: string, newText: string,
 ): boolean {
-  return renameRootKwTreeNode(app, ctx, el, CONFIG, oldText, newText);
+  return renameKeywordTreeNode(app, ctx, el, CONFIG, level, oldText, newText);
 }
 
 export function addOSTChild(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
-  parentText: string, newChildText: string,
+  parentLevel: number, parentText: string, newChildText: string,
 ): boolean {
-  return addRootKwTreeChild(app, ctx, el, CONFIG, parentText, newChildText);
+  return addKeywordTreeChild(app, ctx, el, CONFIG, parentLevel, parentText, newChildText);
 }
 
 export function deleteOSTNode(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
-  nodeText: string,
+  level: number, nodeText: string,
 ): boolean {
-  return deleteRootKwTreeNode(app, ctx, el, CONFIG, nodeText);
+  return deleteKeywordTreeNode(app, ctx, el, CONFIG, level, nodeText);
 }

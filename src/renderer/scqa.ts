@@ -59,13 +59,13 @@ function makeHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameSCQANode(app, ctx, el, node.text, newText)) showWriteFailedNotice(el);
+      if (!renameSCQANode(app, ctx, el, nodeVariant(el), node.level, node.text, newText)) showWriteFailedNotice(el);
     },
     onAddChild(node: TreeNode): void {
-      if (!addSCQAChild(app, ctx, el, node.text, childDefault(nodeVariant(el), node.level))) showWriteFailedNotice(el);
+      if (!addSCQAChild(app, ctx, el, nodeVariant(el), node.level, node.text, childDefault(nodeVariant(el), node.level))) showWriteFailedNotice(el);
     },
     onDelete(node: TreeNode): void {
-      if (!deleteSCQANode(app, ctx, el, node.text)) showWriteFailedNotice(el);
+      if (!deleteSCQANode(app, ctx, el, nodeVariant(el), node.level, node.text)) showWriteFailedNotice(el);
     },
   };
 }
@@ -137,7 +137,7 @@ function renderGrid(
     textEl.addEventListener("click", (e) => {
       e.stopPropagation();
       activateInlineEdit(textEl, node.text, (next) => {
-        if (!renameSCQANode(app!, ctx!, el, node.text, next)) showWriteFailedNotice(el);
+        if (!renameSCQANode(app!, ctx!, el, data.variant, node.level, node.text, next)) showWriteFailedNotice(el);
       }, { renderDisplay: (host, v) => { host.empty(); renderInline(host, v); } });
     });
 
@@ -148,7 +148,7 @@ function renderGrid(
       addBtn.setAttribute("aria-label", t("tree.addChild"));
       addBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (!addSCQAChild(app!, ctx!, el, node.text, childDefault(data.variant, node.level))) showWriteFailedNotice(el);
+        if (!addSCQAChild(app!, ctx!, el, data.variant, node.level, node.text, childDefault(data.variant, node.level))) showWriteFailedNotice(el);
       });
     }
 
@@ -158,7 +158,7 @@ function renderGrid(
       delBtn.setAttribute("aria-label", t("tree.deleteNode"));
       delBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (!deleteSCQANode(app!, ctx!, el, node.text)) showWriteFailedNotice(el);
+        if (!deleteSCQANode(app!, ctx!, el, data.variant, node.level, node.text)) showWriteFailedNotice(el);
       });
 
       // Drag to reorder among siblings (reorder-only — never re-parents).

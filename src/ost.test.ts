@@ -11,22 +11,67 @@ describe("parseOST", () => {
     expect(result.data.root.children).toHaveLength(0);
   });
 
-  it("parses a full 4-level tree", () => {
+  it("parses a full 5-level keyword tree, stripping each keyword", () => {
     const src = `
 outcome: Grow revenue
   opportunity: Increase conversion
     solution: Redesign checkout
       experiment: A/B test button colour
+        assumption: Colour drives clicks
 `.trim();
     const result = parseOST(src);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const opp = result.data.root.children[0];
-    expect(opp.text).toBe("opportunity: Increase conversion");
+    expect(opp.text).toBe("Increase conversion");
     expect(opp.level).toBe(1);
     const sol = opp.children[0];
-    expect(sol.level).toBe(2);
-    expect(sol.children[0].level).toBe(3);
+    expect(sol).toMatchObject({ text: "Redesign checkout", level: 2 });
+    const exp = sol.children[0];
+    expect(exp).toMatchObject({ text: "A/B test button colour", level: 3 });
+    expect(exp.children[0]).toMatchObject({ text: "Colour drives clicks", level: 4 });
+  });
+
+  it("allows several opportunities, solutions, experiments and assumptions as siblings", () => {
+    const src = `outcome: Grow revenue
+  opportunity: Opp A
+    solution: Sol A1
+      experiment: Exp
+        assumption: Ass 1
+        assumption: Ass 2
+    solution: Sol A2
+  opportunity: Opp B`;
+    const result = parseOST(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const opps = result.data.root.children;
+    expect(opps.map(o => o.text)).toEqual(["Opp A", "Opp B"]);
+    expect(opps[0].children.map(s => s.text)).toEqual(["Sol A1", "Sol A2"]);
+    expect(opps[0].children[0].children[0].children.map(a => a.text)).toEqual(["Ass 1", "Ass 2"]);
+  });
+
+  it("rejects a solution that is not nested under an opportunity", () => {
+    const result = parseOST("outcome: O\n  solution: Straight to a solution");
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/must be nested under a "opportunity:"/);
+  });
+
+  it("rejects a keyword node that is not indented under its parent", () => {
+    const result = parseOST("outcome: O\nopportunity: Not indented");
+    expect(result.ok).toBe(false);
+  });
+
+  it("still parses legacy bare-indent trees (back-compat)", () => {
+    const src = `outcome: Grow revenue
+  Increase conversion
+    Redesign checkout`;
+    const result = parseOST(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const opp = result.data.root.children[0];
+    expect(opp).toMatchObject({ text: "Increase conversion", level: 1 });
+    expect(opp.children[0]).toMatchObject({ text: "Redesign checkout", level: 2 });
   });
 
   it("parsed OSTNode has no layout fields (x/y/width/height)", () => {

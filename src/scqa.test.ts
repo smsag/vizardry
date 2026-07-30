@@ -108,6 +108,59 @@ describe("parseSCQA — SCR variant", () => {
   });
 });
 
+describe("parseSCQA — keyword form", () => {
+  it("parses the situation → complication → question → answer chain, stripping keywords", () => {
+    const src = `situation: Status quo
+  complication: Competitor shipped one-click checkout
+    question: How fast can we match it?
+      answer: Ship in Q3
+      answer: Buy a wallet layer
+  complication: Cart abandonment is up`;
+    const res = parseSCQA(src, "scqa");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.root.text).toBe("Status quo");
+    const comps = res.data.root.children;
+    expect(comps.map(c => c.text)).toEqual([
+      "Competitor shipped one-click checkout",
+      "Cart abandonment is up",
+    ]);
+    const question = comps[0].children[0];
+    expect(question).toMatchObject({ text: "How fast can we match it?", level: 2 });
+    expect(question.children.map(a => a.text)).toEqual(["Ship in Q3", "Buy a wallet layer"]);
+    expect(question.children.every(a => a.level === 3)).toBe(true);
+  });
+
+  it("parses the scr situation → complication → resolution chain", () => {
+    const src = `situation: Uptime was solid
+  complication: A config push broke payments
+    resolution: Add a staged rollout canary
+    resolution: Alert on error-rate spikes`;
+    const res = parseSCQA(src, "scr");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const comp = res.data.root.children[0];
+    expect(comp).toMatchObject({ text: "A config push broke payments", level: 1 });
+    expect(comp.children.map(r => r.text)).toEqual([
+      "Add a staged rollout canary",
+      "Alert on error-rate spikes",
+    ]);
+    expect(comp.children.every(r => r.level === 2)).toBe(true);
+  });
+
+  it("rejects a question that is not nested under a complication", () => {
+    const res = parseSCQA("situation: S\n  question: Orphan", "scqa");
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.error).toMatch(/must be nested under a "complication:"/);
+  });
+
+  it("rejects an answer keyword in the scr variant (not a valid level)", () => {
+    const res = parseSCQA("situation: S\n  complication: C\n    answer: nope", "scr");
+    expect(res.ok).toBe(false);
+  });
+});
+
 describe("parseSCQA — config lines", () => {
   it("reads view: tree", () => {
     const res = parseSCQA("view: tree\nsituation: S", "scqa");

@@ -130,42 +130,68 @@ describe("reorderSCQAInterior", () => {
       "  Complication one",
     ]);
   });
+
+  it("matches nodes by value in the keyword form, carrying whole subtrees", () => {
+    const lines = [
+      "situation: S",
+      "  complication: Complication one",
+      "    question: Question one",
+      "  complication: Complication two",
+      "    question: Question two",
+    ];
+    // nodeText is the stripped value; the keyworded line must still match.
+    const out = reorderSCQAInterior(lines, "Complication two", 0);
+    expect(out).toEqual([
+      "situation: S",
+      "  complication: Complication two",
+      "    question: Question two",
+      "  complication: Complication one",
+      "    question: Question one",
+    ]);
+  });
 });
 
 describe("renameSCQANode / addSCQAChild / deleteSCQANode", () => {
   it("renames the situation root", () => {
-    const editor = makeMockEditor(["situation: Old", "  Complication"]);
+    const editor = makeMockEditor(["situation: Old", "  complication: C"]);
     const { app, ctx, el } = fakeCtx(editor);
-    expect(renameSCQANode(app, ctx, el, "Old", "New")).toBe(true);
+    expect(renameSCQANode(app, ctx, el, "scqa", 0, "Old", "New")).toBe(true);
     expect(editor._state[0]).toBe("situation: New");
   });
 
-  it("adds a complication under the situation", () => {
+  it("adds a complication indented under the situation with its keyword", () => {
     const editor = makeMockEditor(["situation: S", "```"]);
     const { app, ctx, el } = fakeCtx(editor);
-    expect(addSCQAChild(app, ctx, el, "S", "New complication")).toBe(true);
-    expect(editor._state).toEqual(["situation: S", "  New complication", "```"]);
+    expect(addSCQAChild(app, ctx, el, "scqa", 0, "S", "New complication")).toBe(true);
+    expect(editor._state).toEqual(["situation: S", "  complication: New complication", "```"]);
+  });
+
+  it("adds a resolution under a complication in the scr variant", () => {
+    const editor = makeMockEditor(["situation: S", "  complication: C", "```"]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(addSCQAChild(app, ctx, el, "scr", 1, "C", "Fix it")).toBe(true);
+    expect(editor._state).toEqual(["situation: S", "  complication: C", "    resolution: Fix it", "```"]);
   });
 
   it("refuses to delete the situation root", () => {
-    const editor = makeMockEditor(["situation: S", "  Complication"]);
+    const editor = makeMockEditor(["situation: S", "  complication: C"]);
     const { app, ctx, el } = fakeCtx(editor);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(deleteSCQANode(app, ctx, el, "S")).toBe(false);
+    expect(deleteSCQANode(app, ctx, el, "scqa", 0, "S")).toBe(false);
     warn.mockRestore();
   });
 
   it("refuses to rename when the same label appears under two different complications", () => {
     const editor = makeMockEditor([
       "situation: S",
-      "  Complication A",
-      "    Question",
-      "  Complication B",
-      "    Question",
+      "  complication: Complication A",
+      "    question: Question",
+      "  complication: Complication B",
+      "    question: Question",
     ]);
     const { app, ctx, el } = fakeCtx(editor);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const result = renameSCQANode(app, ctx, el, "Question", "Renamed");
+    const result = renameSCQANode(app, ctx, el, "scqa", 2, "Question", "Renamed");
     warn.mockRestore();
     expect(result).toBe(false);
   });
