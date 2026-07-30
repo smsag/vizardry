@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 /**
- * Smoke tests for the ost-edit.ts wrapper around the shared
- * rootkw-tree-edit engine (see rootkw-tree-edit.test.ts for the thorough
- * behavioral coverage, including the maxDepth=4 regression test).
+ * Smoke tests for the ost-edit.ts wrapper around the shared keyword-tree
+ * engine (see keyword-tree-edit.test.ts for thorough behavioral coverage).
+ * OST is strict-nesting: every level indents one unit under its parent and
+ * carries its own keyword (outcome/opportunity/solution/experiment/assumption).
  */
 import { describe, it, expect, vi } from "vitest";
 
@@ -54,24 +55,64 @@ function fakeCtx(editor: ReturnType<typeof makeMockEditor>) {
 
 describe("ost-edit.ts", () => {
   it("renames the outcome root", () => {
-    const editor = makeMockEditor(["outcome: Old", "  Opportunity"]);
+    const editor = makeMockEditor(["outcome: Old", "  opportunity: Opp"]);
     const { app, ctx, el } = fakeCtx(editor);
-    expect(renameOSTNode(app, ctx, el, "Old", "New")).toBe(true);
+    expect(renameOSTNode(app, ctx, el, 0, "Old", "New")).toBe(true);
     expect(editor._state[0]).toBe("outcome: New");
   });
 
-  it("adds an opportunity under the outcome", () => {
+  it("renames a nested solution, preserving its keyword", () => {
+    const editor = makeMockEditor([
+      "outcome: O",
+      "  opportunity: Opp",
+      "    solution: Old solution",
+    ]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(renameOSTNode(app, ctx, el, 2, "Old solution", "New solution")).toBe(true);
+    expect(editor._state[2]).toBe("    solution: New solution");
+  });
+
+  it("adds an opportunity indented under the outcome with its keyword", () => {
     const editor = makeMockEditor(["outcome: O", "```"]);
     const { app, ctx, el } = fakeCtx(editor);
-    expect(addOSTChild(app, ctx, el, "O", "New opportunity")).toBe(true);
-    expect(editor._state).toEqual(["outcome: O", "  New opportunity", "```"]);
+    expect(addOSTChild(app, ctx, el, 0, "O", "New opportunity")).toBe(true);
+    expect(editor._state).toEqual(["outcome: O", "  opportunity: New opportunity", "```"]);
+  });
+
+  it("adds a solution under an opportunity, one level deeper", () => {
+    const editor = makeMockEditor(["outcome: O", "  opportunity: Opp", "```"]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(addOSTChild(app, ctx, el, 1, "Opp", "New solution")).toBe(true);
+    expect(editor._state).toEqual([
+      "outcome: O",
+      "  opportunity: Opp",
+      "    solution: New solution",
+      "```",
+    ]);
+  });
+
+  it("deletes a solution and its subtree", () => {
+    const editor = makeMockEditor([
+      "outcome: O",
+      "  opportunity: Opp",
+      "    solution: Doomed",
+      "      experiment: E",
+      "    solution: Kept",
+    ]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(deleteOSTNode(app, ctx, el, 2, "Doomed")).toBe(true);
+    expect(editor._state).toEqual([
+      "outcome: O",
+      "  opportunity: Opp",
+      "    solution: Kept",
+    ]);
   });
 
   it("refuses to delete the outcome root", () => {
-    const editor = makeMockEditor(["outcome: O", "  Opportunity"]);
+    const editor = makeMockEditor(["outcome: O", "  opportunity: Opp"]);
     const { app, ctx, el } = fakeCtx(editor);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(deleteOSTNode(app, ctx, el, "O")).toBe(false);
+    expect(deleteOSTNode(app, ctx, el, 0, "O")).toBe(false);
     warn.mockRestore();
   });
 });

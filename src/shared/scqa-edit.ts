@@ -1,57 +1,68 @@
 /**
  * In-place source edits for the SCQA / SCR narrative canvas.
  *
- * Rename / add / delete are structurally identical to mindmap-edit.ts /
- * ost-edit.ts (shared root-keyword-only tree family, `situation:` as the
- * root keyword) and driven by the same shared engine. Reorder — used only
- * by the grid view's drag — is SCQA-specific and stays here, implemented as
- * a pure line-array transform (`reorderSCQAInterior`) so it is unit-testable
- * without an editor, then applied by `reorderSCQANode`.
+ * Source format (keyword-per-level, strict-nesting — see keyword-tree.ts):
+ *   situation: Revenue is flat
+ *     complication: A competitor undercuts us
+ *       question: How do we defend share?      (scqa)
+ *         answer: Bundle services              (scqa — several allowed)
+ *       resolution: Launch a loyalty programme (scr — several allowed)
+ *
+ * Rename / add / delete run on the shared keyword-tree engine. The level
+ * keyword for depth 2+ depends on the variant (scqa: question/answer; scr:
+ * resolution), so the callers thread the variant in. Reorder — used only by
+ * the grid view's drag — is SCQA-specific and stays here as a pure line-array
+ * transform (`reorderSCQAInterior`), tolerant of both the keyword form and
+ * legacy bare-indent lines.
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { getEditorAccess, editorWrite } from "./tree-editor-access";
-import { renameRootKwTreeNode, addRootKwTreeChild, deleteRootKwTreeNode } from "./rootkw-tree-edit";
-import type { RootKwTreeConfig } from "./rootkw-tree-edit";
+import { renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode } from "./keyword-tree-edit";
+import type { KeywordTreeConfig } from "./keyword-tree-edit";
+import type { SCQAVariant } from "../types";
 
-const CONFIG: RootKwTreeConfig = { rootKeyword: "situation" };
+function configFor(variant: SCQAVariant): KeywordTreeConfig {
+  return variant === "scqa"
+    ? { levelKeyword: { 0: "situation", 1: "complication", 2: "question", 3: "answer" }, strictNesting: true }
+    : { levelKeyword: { 0: "situation", 1: "complication", 2: "resolution" }, strictNesting: true };
+}
 
 // ── Rename ───────────────────────────────────────────────────────────────────
 
 export function renameSCQANode(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  oldText: string,
-  newText: string,
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  variant: SCQAVariant, level: number, oldText: string, newText: string,
 ): boolean {
-  return renameRootKwTreeNode(app, ctx, el, CONFIG, oldText, newText);
+  return renameKeywordTreeNode(app, ctx, el, configFor(variant), level, oldText, newText);
 }
 
 // ── Add child ────────────────────────────────────────────────────────────────
 
 export function addSCQAChild(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  parentText: string,
-  newChildText: string,
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  variant: SCQAVariant, parentLevel: number, parentText: string, newChildText: string,
 ): boolean {
-  return addRootKwTreeChild(app, ctx, el, CONFIG, parentText, newChildText);
+  return addKeywordTreeChild(app, ctx, el, configFor(variant), parentLevel, parentText, newChildText);
 }
 
 // ── Delete ───────────────────────────────────────────────────────────────────
 
 export function deleteSCQANode(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  nodeText: string,
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  variant: SCQAVariant, level: number, nodeText: string,
 ): boolean {
-  return deleteRootKwTreeNode(app, ctx, el, CONFIG, nodeText);
+  return deleteKeywordTreeNode(app, ctx, el, configFor(variant), level, nodeText);
 }
 
 // ── Reorder (grid drag) ──────────────────────────────────────────────────────
+
+/** Strips a leading level keyword (`complication:` etc.) if present, so node
+ *  matching works for both the keyword form and legacy bare-indent lines. */
+function nodeValue(trimmed: string): string {
+  const m = /^(situation|complication|question|answer|resolution):\s*/i.exec(trimmed);
+  return m ? trimmed.slice(m[0].length) : trimmed;
+}
 
 export function reorderSCQANode(
   app: App,
@@ -81,7 +92,8 @@ export function reorderSCQANode(
  * Pure reorder: moves the subtree rooted at `nodeText` to `targetIndex` within
  * its sibling group, preserving every other line (config, comments, blanks).
  * Returns the new interior line array, or null when the move is a no-op or the
- * node isn't found.
+ * node isn't found. `nodeText` is the node's value with its keyword stripped;
+ * lines are matched the same way so keyword and legacy blocks both work.
  */
 export function reorderSCQAInterior(
   lines: string[],
@@ -99,7 +111,7 @@ export function reorderSCQAInterior(
   for (let i = 0; i < lines.length; i++) {
     const ind = indentOf(lines[i]);
     if (ind <= 0) continue;
-    if (lines[i].trim() === nodeText) { nodeLine = i; break; }
+    if (nodeValue(lines[i].trim()) === nodeText) { nodeLine = i; break; }
   }
   if (nodeLine === -1) return null;
 

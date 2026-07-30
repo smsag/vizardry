@@ -456,22 +456,24 @@ block: Factors for Success
 type: ost
 outcome: Increase weekly active users by 20% in Q3.
 
-  New users do not discover the first high-value workflow.
-    Guided quick-start path for first session.
-      A/B test quick-start entry point on onboarding screen.
-    Resume banner for incomplete workflows.
+  opportunity: New users do not discover the first high-value workflow.
+    solution: Guided quick-start path for first session.
+      experiment: A/B test quick-start entry point on onboarding screen.
+        assumption: A guided path lifts first-session completion.
+    solution: Resume banner for incomplete workflows.
 
-  Returning users struggle to continue unfinished work.
-    Resume banner for incomplete workflows.
-      Measure completion uplift from resume banner placement.
-    Discovery friction is the main onboarding bottleneck.
+  opportunity: Returning users struggle to continue unfinished work.
+    solution: Resume banner for incomplete workflows.
+      experiment: Measure completion uplift from resume banner placement.
 ```
 ~~~
 
 **Syntax:**
+- Each node names its level; the strict chain is `outcome → opportunity → solution → experiment → assumption`
 - `outcome:` — root node, no indent, required, one only
-- Indented lines — child nodes; depth = 1 opportunity, 2 solution, 3 experiment, 4 assumption
+- `opportunity:` / `solution:` / `experiment:` / `assumption:` — indented one level under their required parent; several siblings are allowed at every level
 - Blank lines and `// comment` lines are ignored
+- Legacy bare-indent trees (root keyword only, children by indentation) still render
 
 ---
 
@@ -487,14 +489,14 @@ type: scqa
 title: Why we're repricing
 
 situation: Conversion has been flat at 3% for two years
-  Competitor shipped one-click checkout
-    How quickly can we match it?
-      Ship express checkout in Q3
-    Do we build or buy the wallet layer?
-      Pilot a third-party wallet first
-  Cart abandonment is up 8% this quarter
-    Where do users drop off?
-      Instrument the funnel before deciding
+  complication: Competitor shipped one-click checkout
+    question: How quickly can we match it?
+      answer: Ship express checkout in Q3
+    question: Do we build or buy the wallet layer?
+      answer: Pilot a third-party wallet first
+  complication: Cart abandonment is up 8% this quarter
+    question: Where do users drop off?
+      answer: Instrument the funnel before deciding
 ```
 ~~~
 
@@ -505,17 +507,19 @@ resolution` — via `type: scr` instead of `type: scqa`:
 ```vizardry
 type: scr
 situation: Checkout ran at 99.9% uptime all year
-  A config push took payments down for 40 minutes
-    Add staged rollout with an automated config canary
+  complication: A config push took payments down for 40 minutes
+    resolution: Add staged rollout with an automated config canary
 ```
 ~~~
 
 **Syntax:**
+- Each node names its level; the strict chain is `situation → complication → question → answer` (SCQA) or `situation → complication → resolution` (SCR)
 - `situation:` — root node, no indent, required, one only
-- Indented lines — child nodes; SCQA depth = 1 complication, 2 question, 3 answer (a question may have several answers); SCR depth = 1 complication, 2 resolution
+- `complication:` / `question:` / `answer:` (or `resolution:`) — indented one level under their required parent; several siblings are allowed at every level
 - `view: grid` (default) or `view: tree` — chooses the card grid or the branching tree
 - Blank lines and `// comment` lines are ignored
 - In edit mode both views support inline rename, add (`+`), and delete (`×`); the grid also allows drag to reorder siblings
+- Legacy bare-indent narratives (root keyword only, children by indentation) still render
 
 ---
 
@@ -1272,20 +1276,31 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ### Opportunity Solution Tree (type: ost)
 
+Keyword-per-level, strict chain `outcome → opportunity → solution → experiment → assumption`. Several children are allowed at every level.
+
 | Syntax | Meaning |
 |---|---|
 | `outcome: <text>` | Root — no indent, required, one only |
-| Indented lines | Depth 1 = opportunity, 2 = solution, 3 = experiment, 4 = assumption |
+| `opportunity: <text>` | Indented under the outcome |
+| `solution: <text>` | Indented under an opportunity |
+| `experiment: <text>` | Indented under a solution |
+| `assumption: <text>` | Indented under an experiment |
+| Bare indented lines | Legacy form (root keyword only, level by indentation) — still rendered |
 | Blank lines / `// comment` | Ignored |
 
 ### SCQA / SCR Narrative (type: scqa, scr)
 
+Keyword-per-level, strict chain `situation → complication → question → answer` (scqa) or `situation → complication → resolution` (scr). Several children are allowed at every level.
+
 | Syntax | Meaning |
 |---|---|
 | `situation: <text>` | Root — no indent, required, one only |
-| Indented lines (scqa) | Depth 1 = complication, 2 = question, 3 = answer (a question may have several answers) |
-| Indented lines (scr) | Depth 1 = complication, 2 = resolution |
+| `complication: <text>` | Indented under the situation |
+| `question: <text>` | Indented under a complication (scqa only) |
+| `answer: <text>` | Indented under a question (scqa only) |
+| `resolution: <text>` | Indented under a complication (scr only) |
 | `view: grid \| tree` | Card grid (default) or branching tree |
+| Bare indented lines | Legacy form (root keyword only, level by indentation) — still rendered |
 | Blank lines / `// comment` | Ignored |
 
 ### SIPOC Diagram (type: sipoc, table | flow)

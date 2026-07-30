@@ -140,17 +140,17 @@ function makeOSTHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameOSTNode(app, ctx, el, node.text, newText)) {
+      if (!renameOSTNode(app, ctx, el, node.level, node.text, newText)) {
         showWriteFailedNotice(el);
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addOSTChild(app, ctx, el, node.text, t("tree.newNode"))) {
+      if (!addOSTChild(app, ctx, el, node.level, node.text, t("tree.newNode"))) {
         showWriteFailedNotice(el);
       }
     },
     onDelete(node: TreeNode): void {
-      if (!deleteOSTNode(app, ctx, el, node.text)) {
+      if (!deleteOSTNode(app, ctx, el, node.level, node.text)) {
         showWriteFailedNotice(el);
       }
     },

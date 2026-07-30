@@ -166,13 +166,14 @@ title: Opportunity Solution Tree
 
 outcome: Your desired outcome
 
-  Opportunity one
-    Solution A
-      Experiment 1
-    Solution B
+  opportunity: Opportunity one
+    solution: Solution A
+      experiment: Experiment 1
+        assumption: Assumption behind it
+    solution: Solution B
 
-  Opportunity two
-    Solution C
+  opportunity: Opportunity two
+    solution: Solution C
 \`\`\`
 `;
 
@@ -550,14 +551,14 @@ type: scqa
 title: SCQA Narrative
 
 situation: Conversion has been flat at 3% for two years
-  Competitor shipped one-click checkout
-    How quickly can we match it?
-      Ship express checkout in Q3
-    Do we build or buy the wallet layer?
-      Pilot a third-party wallet first
-  Cart abandonment is up 8% this quarter
-    Where do users drop off?
-      Instrument the funnel before deciding
+  complication: Competitor shipped one-click checkout
+    question: How quickly can we match it?
+      answer: Ship express checkout in Q3
+    question: Do we build or buy the wallet layer?
+      answer: Pilot a third-party wallet first
+  complication: Cart abandonment is up 8% this quarter
+    question: Where do users drop off?
+      answer: Instrument the funnel before deciding
 \`\`\`
 `;
 
@@ -566,10 +567,10 @@ type: scr
 title: SCR Narrative
 
 situation: Checkout ran at 99.9% uptime all year
-  A config push took payments down for 40 minutes
-    Add staged rollout with an automated config canary
-  On-call paging was delayed by 12 minutes
-    Route payment alerts to a dedicated high-priority channel
+  complication: A config push took payments down for 40 minutes
+    resolution: Add staged rollout with an automated config canary
+  complication: On-call paging was delayed by 12 minutes
+    resolution: Route payment alerts to a dedicated high-priority channel
 \`\`\`
 `;
 
