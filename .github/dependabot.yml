@@ -18,3 +18,9 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    # Hold TypeScript at its current major: @typescript-eslint caps its peer at
+    # "<6.1.0", so a TS major (e.g. 7.x) breaks `npm ci` for the whole group.
+    # Revisit once @typescript-eslint supports the newer TypeScript major.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
