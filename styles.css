@@ -3255,6 +3255,40 @@ code:has(.vzd-upvoty-key) {
   overflow-x: auto;
 }
 
+/* Optional axis titles (type: matrix with x-axis:/y-axis:). Adds a rotated
+   name gutter left of the y ticks and a centred name under the x ticks; empty
+   gutters collapse, so one axis can be titled without the other. */
+.vzd-matrix-wrap--axis-titled {
+  grid-template-areas:
+    "yname yaxis grid"
+    ".     .     xaxis"
+    ".     .     xname";
+  grid-template-columns: auto auto 1fr;
+  grid-template-rows: 1fr auto auto;
+}
+
+.vzd-matrix-yname {
+  grid-area: yname;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding-right: 0.15rem;
+}
+
+.vzd-matrix-xname {
+  grid-area: xname;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding-top: 0.15rem;
+}
+
 /* ── Scenario Matrix (GBN/Schwartz 2×2) ──────────────────────────────────────
    Two user-defined axes framing four named scenario quadrants; content renders
    as cards via the shared two-pass renderer. */

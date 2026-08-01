@@ -1,3 +1,5 @@
 ## 0.42.1
 
 - **Fix: Assumption Map heat model.** The Assumption Map previously reused the Impact/Effort matrix's additive diagonal heat, which wrongly warmed the top-right (important but already validated) and bottom-left (unproven but unimportant) corners. Assumption priority is a gate, not a sum — an assumption matters only when it is *both* important *and* unproven — so heat is now the product of importance × lack-of-evidence, concentrating it in the top-left leap-of-faith corner and cooling both off-diagonal corners. Impact/Effort keeps its additive diagonal.
+- **New: `type: matrix, scenario` alias.** The Scenario Matrix now also reads as a `matrix` variant, so all two-axis charts share one consistent `type: matrix, …` surface. `type: scenario` still works unchanged.
+- **New: optional axis titles on the priority matrices.** Any `type: matrix, …` grid can add `x-axis:` / `y-axis:` to rename the overall axis for its domain (e.g. `x-axis: Reach`). The curated tick labels and heat model are untouched — this only labels the axes; an absent axis title collapses its gutter, so either axis can be titled on its own.

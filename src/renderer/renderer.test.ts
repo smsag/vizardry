@@ -291,6 +291,25 @@ describe("renderMatrix", () => {
     expect(cells[12].className).not.toContain("vzd-matrix-cell--low");
   });
 
+  it("renders no axis-title gutters by default", () => {
+    const el = container();
+    renderMatrix(matrixData, el);
+    expect(el.querySelector(".vzd-matrix-wrap--axis-titled")).toBeNull();
+    expect(el.querySelector(".vzd-matrix-xname")).toBeNull();
+    expect(el.querySelector(".vzd-matrix-yname")).toBeNull();
+  });
+
+  it("renders optional axis-title gutters when x-axis/y-axis are provided", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "impact", xAxis: "Reach", yAxis: "Value" }, el);
+    const wrap = el.querySelector(".vzd-matrix-wrap");
+    expect(wrap?.classList.contains("vzd-matrix-wrap--axis-titled")).toBe(true);
+    expect(el.querySelector(".vzd-matrix-xname")?.textContent).toBe("Reach");
+    expect(el.querySelector(".vzd-matrix-yname")?.textContent).toBe("Value");
+    // Curated tick labels are untouched by the override.
+    expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Impact");
+  });
+
   it("does not apply the editable hover affordance to a cell body in Read Mode", () => {
     // Read Mode still provides app/ctx (the post-processor runs there too);
     // the edit affordance must be gated on the actual view mode, not just

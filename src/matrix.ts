@@ -8,6 +8,31 @@ function resolveMatrixType(value: string): MatrixType | null {
 }
 
 /**
+ * Pulls optional `x-axis:` / `y-axis:` title overrides out of the top-level
+ * lines, blanking them (never removing — keeps line numbers stable for error
+ * messages) so parseFrameworkSource never sees a line it doesn't understand.
+ * Only the axis *name* is taken; a `| low | high` pole suffix (scenario syntax)
+ * is tolerated and ignored, since the 4×4 grid has its own curated tick labels.
+ */
+function extractAxisTitles(lines: string[]): { xAxis?: string; yAxis?: string } {
+  const out: { xAxis?: string; yAxis?: string } = {};
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    const lower = trimmed.toLowerCase();
+    let key: "xAxis" | "yAxis" | null = null;
+    if (lower.startsWith("x-axis:")) key = "xAxis";
+    else if (lower.startsWith("y-axis:")) key = "yAxis";
+    if (!key) continue;
+    const raw = trimmed.slice("x-axis:".length); // same length as "y-axis:"
+    const pipeIdx = raw.indexOf("|");
+    const name = (pipeIdx !== -1 ? raw.slice(0, pipeIdx) : raw).trim();
+    if (name) out[key] = name;
+    lines[i] = "";
+  }
+  return out;
+}
+
+/**
  * Parses the Pain/Opportunity/Impact matrix source.
  *
  * `typeOverride`, when provided (e.g. by the vizardry dispatcher, which
@@ -23,7 +48,7 @@ export function parseMatrix(source: string, typeOverride?: string): MatrixResult
   if (typeOverride !== undefined) {
     const resolved = resolveMatrixType(typeOverride);
     if (!resolved) {
-      return { ok: false, error: `Unknown type "${typeOverride.trim().toLowerCase()}" — expected "pain", "opportunity", "impact", or "assumption"` };
+      return { ok: false, error: `Unknown type "${typeOverride.trim().toLowerCase()}" — expected "pain", "opportunity", "impact", "assumption", or "scenario"` };
     }
     type = resolved;
     // The dispatcher already blanked the type: line it dispatched on, but
@@ -40,15 +65,17 @@ export function parseMatrix(source: string, typeOverride?: string): MatrixResult
       const value = trimmed.slice("type:".length);
       const resolved = resolveMatrixType(value);
       if (!resolved) {
-        return { ok: false, error: `Unknown type "${value.trim().toLowerCase()}" — expected "pain", "opportunity", "impact", or "assumption"` };
+        return { ok: false, error: `Unknown type "${value.trim().toLowerCase()}" — expected "pain", "opportunity", "impact", "assumption", or "scenario"` };
       }
       type = resolved;
       lines[i] = ""; // blank, not remove — keeps line numbers stable for error messages
     }
   }
 
+  const { xAxis, yAxis } = extractAxisTitles(lines);
+
   const result = parseFrameworkSource(lines.join("\n"));
   if (!result.ok) return result;
 
-  return { ok: true, data: { type, data: result.data, cardBlocks: result.cardBlocks, allCards: result.allCards } };
+  return { ok: true, data: { type, data: result.data, cardBlocks: result.cardBlocks, allCards: result.allCards, xAxis, yAxis } };
 }

@@ -104,6 +104,14 @@ export function renderMatrix(
   const wrap = container.createEl("div", { cls: "vzd-matrix-wrap" });
   wrap.dataset.type = data.type;
 
+  // Optional axis-title overrides (D): rename the overall axis without touching
+  // the curated tick labels or heat. Reflows the grid to reserve name gutters.
+  if (data.xAxis || data.yAxis) {
+    wrap.classList.add("vzd-matrix-wrap--axis-titled");
+    if (data.yAxis) wrap.createEl("div", { cls: "vzd-matrix-yname", text: data.yAxis });
+    if (data.xAxis) wrap.createEl("div", { cls: "vzd-matrix-xname", text: data.xAxis });
+  }
+
   // Y-axis labels
   const yAxis = wrap.createEl("div", { cls: "vzd-matrix-y-axis" });
   ROWS.forEach((_, rowIdx) => {

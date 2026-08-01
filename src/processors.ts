@@ -276,9 +276,18 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
     template: MATRIX_PAIN_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
       const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+      // `type: matrix, scenario` is an accepted alias for the 2×2 scenario
+      // matrix — same surface grammar, but a distinct engine (named quadrants,
+      // no heat) so it delegates rather than sharing the priority-grid parser.
+      if (variant === "scenario") {
+        const sc = parseScenario(strippedSource);
+        if (!sc.ok) { renderError(sc.error, el); return; }
+        renderScenario(sc.data, el, fullSource, app, ctx, resolver, navigateTo);
+        return;
+      }
       const result = parseMatrix(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },

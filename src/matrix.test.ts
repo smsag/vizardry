@@ -91,4 +91,31 @@ describe("parseMatrix", () => {
     if (!result.ok) return;
     expect(result.data.allCards).toBe(true);
   });
+
+  // ── Optional axis-title overrides (x-axis:/y-axis:) ──────────────────────────
+
+  it("leaves axis titles undefined when not specified", () => {
+    const result = parseMatrix("type: impact\nblock: very-major-1\n  X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.xAxis).toBeUndefined();
+    expect(result.data.yAxis).toBeUndefined();
+  });
+
+  it("extracts x-axis: and y-axis: title overrides", () => {
+    const result = parseMatrix("type: impact\nx-axis: Reach\ny-axis: Value\nblock: very-major-1\n  X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.xAxis).toBe("Reach");
+    expect(result.data.yAxis).toBe("Value");
+    // The override lines must not reach the grid parser as stray blocks.
+    expect(result.data.data["very-major-1"]).toBe("X");
+  });
+
+  it("tolerates a scenario-style pole suffix, keeping only the axis name", () => {
+    const result = parseMatrix("type: impact\nx-axis: Reach | few | many\nblock: very-major-1\n  X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.xAxis).toBe("Reach");
+  });
 });

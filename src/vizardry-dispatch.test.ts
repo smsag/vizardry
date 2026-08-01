@@ -143,6 +143,25 @@ describe("dispatchVizardry", () => {
     expect(el.querySelector(".vzd-matrix-wrap")?.getAttribute("data-type")).toBe("opportunity");
   });
 
+  it("accepts `type: matrix, scenario` as an alias for the scenario renderer", () => {
+    const el = container();
+    const src = [
+      "type: matrix, scenario",
+      "x-axis: Energy | Cheap | Expensive",
+      "y-axis: Autonomy | Slow | Fast",
+      "top-left: Gridlock",
+      "  Private cars stay cheap",
+      "top-right: Robo-taxis",
+      "bottom-left: Status quo",
+      "bottom-right: Shared & electric",
+    ].join("\n");
+    dispatchVizardry(src, el, fakeCtx(), fakeApp());
+    expect(el.classList.contains("vizardry-error")).toBe(false);
+    // Routes to the scenario engine, not the 4×4 priority grid.
+    expect(el.querySelector(".vzd-scenario-wrap")).toBeTruthy();
+    expect(el.querySelector(".vzd-matrix-wrap")).toBeNull();
+  });
+
   it("dispatches a compound-variant id (pacelayers) and applies the variant", () => {
     const el = container();
     dispatchVizardry("type: pacelayers, product\nlayer: Fashion\n  note: X", el, fakeCtx(), fakeApp());

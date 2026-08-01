@@ -528,6 +528,10 @@ export interface MatrixData {
   data: Record<string, string>;
   cardBlocks: Set<string>;
   allCards: boolean;
+  /** Optional axis-title overrides. The curated tick labels and heat model are
+   *  unchanged — these only rename the overall axis (e.g. "Reach" for effort). */
+  xAxis?: string;
+  yAxis?: string;
 }
 
 export type MatrixResult = Result<MatrixData>;
