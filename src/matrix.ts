@@ -1,10 +1,31 @@
-import type { MatrixData, MatrixResult, MatrixType } from "./types";
+import type { MatrixData, MatrixLayout, MatrixResult, MatrixType } from "./types";
 import { parseFrameworkSource } from "./parser";
+import { parsePlot } from "./plot";
 
 function resolveMatrixType(value: string): MatrixType | null {
   const v = value.trim().toLowerCase();
   if (v === "pain" || v === "opportunity" || v === "impact" || v === "assumption") return v;
   return null;
+}
+
+/**
+ * Pulls the optional `layout:` line (grid | plot) out of the top-level lines,
+ * blanking it. Defaults to "grid" so every existing matrix is unaffected.
+ * Returns an error string for an unrecognised value.
+ */
+function extractLayout(lines: string[]): { layout: MatrixLayout } | { error: string } {
+  let layout: MatrixLayout = "grid";
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed.toLowerCase().startsWith("layout:")) continue;
+    const value = trimmed.slice("layout:".length).trim().toLowerCase();
+    if (value !== "grid" && value !== "plot") {
+      return { error: `Line ${i + 1}: unknown layout "${value}" — expected "grid" or "plot"` };
+    }
+    layout = value;
+    lines[i] = "";
+  }
+  return { layout };
 }
 
 /**
@@ -72,10 +93,23 @@ export function parseMatrix(source: string, typeOverride?: string): MatrixResult
     }
   }
 
+  const layoutRes = extractLayout(lines);
+  if ("error" in layoutRes) return { ok: false, error: layoutRes.error };
+  const { layout } = layoutRes;
+
+  // Plot mode is a different engine (continuous coordinates, author-declared
+  // heat) — its axis lines are data, so it does NOT go through the grid parser
+  // or the grid axis-title extraction.
+  if (layout === "plot") {
+    const plotRes = parsePlot(lines.join("\n"));
+    if (!plotRes.ok) return plotRes;
+    return { ok: true, data: { type, layout, data: {}, cardBlocks: new Set(), allCards: false, plot: plotRes.data } };
+  }
+
   const { xAxis, yAxis } = extractAxisTitles(lines);
 
   const result = parseFrameworkSource(lines.join("\n"));
   if (!result.ok) return result;
 
-  return { ok: true, data: { type, data: result.data, cardBlocks: result.cardBlocks, allCards: result.allCards, xAxis, yAxis } };
+  return { ok: true, data: { type, layout, data: result.data, cardBlocks: result.cardBlocks, allCards: result.allCards, xAxis, yAxis } };
 }

@@ -9,7 +9,7 @@ import type { LinkResolver } from "../shared/links";
 const ROWS = ["very-major", "major", "minor", "very-minor"] as const;
 const COLS = [1, 2, 3, 4] as const;
 
-const BASE_COLORS: Record<MatrixType, string> = {
+export const BASE_COLORS: Record<MatrixType, string> = {
   pain:        "hsl(0, 70%, 55%)",
   opportunity: "hsl(220, 65%, 55%)",
   impact:      "hsl(145, 55%, 42%)",

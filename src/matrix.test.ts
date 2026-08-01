@@ -118,4 +118,30 @@ describe("parseMatrix", () => {
     if (!result.ok) return;
     expect(result.data.xAxis).toBe("Reach");
   });
+
+  // ── layout: grid | plot ──────────────────────────────────────────────────────
+
+  it("defaults layout to grid", () => {
+    const result = parseMatrix("type: impact\nblock: very-major-1\n  X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.layout).toBe("grid");
+    expect(result.data.plot).toBeUndefined();
+  });
+
+  it("errors on an unknown layout", () => {
+    const result = parseMatrix("type: impact\nlayout: bogus\nblock: very-major-1\n  X");
+    expect(result).toEqual({ ok: false, error: expect.stringContaining("unknown layout") });
+  });
+
+  it("routes layout: plot to the plot parser, not the grid parser", () => {
+    const src = "type: impact\nlayout: plot\nx-axis: Effort | Low | High\ny-axis: Impact | Low | High\nitem: A | x: 0.2, y: 0.8";
+    const result = parseMatrix(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.layout).toBe("plot");
+    expect(result.data.plot?.items[0]).toMatchObject({ label: "A", x: 0.2, y: 0.8 });
+    // Grid fields stay empty in plot mode.
+    expect(Object.keys(result.data.data)).toHaveLength(0);
+  });
 });

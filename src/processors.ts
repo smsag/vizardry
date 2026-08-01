@@ -41,7 +41,7 @@ import { parseJourney } from "./journey";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderScenario, renderSCQA,
+  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderPlot, renderScenario, renderSCQA,
   renderJourneyMap,
   renderError,
 } from "./renderer";
@@ -52,7 +52,7 @@ import {
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
-  SCENARIO_TEMPLATE,
+  MATRIX_PLOT_TEMPLATE, SCENARIO_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
 } from "./templates";
@@ -94,6 +94,7 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
   { id: "assumption-matrix",  label: "Assumption Map",        template: MATRIX_ASSUMPTION_TEMPLATE },
+  { id: "plot-matrix",        label: "Plotted Matrix",        template: MATRIX_PLOT_TEMPLATE },
   { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
   { id: "service-blueprint",  label: "Service Blueprint",     template: SERVICE_BLUEPRINT_TEMPLATE },
 ];
@@ -288,7 +289,11 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       }
       const result = parseMatrix(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
+      if (result.data.layout === "plot") {
+        renderPlot(result.data, el, fullSource, app, ctx, resolver, navigateTo);
+      } else {
+        renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
+      }
     },
   },
   {
