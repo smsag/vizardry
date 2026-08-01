@@ -1341,6 +1341,141 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   user-select: none;
 }
 
+/* ── OST swim-lane style ──────────────────────────────────────────────────────
+   The Opportunity Solution Tree renders as labelled horizontal bands with
+   outlined, wrapping node boxes and chevron bullet lists. Lane hues are
+   theme-aware: soft in light mode, brighter in dark mode. Each box's border and
+   the connectors feeding its lane pick up the matching hue via CSS variables
+   set in ostTreeOptions().
+   ──────────────────────────────────────────────────────────────────────── */
+
+.vizardry-ost {
+  --vzd-ost-outcome: #4c8bf5;      /* blue   */
+  --vzd-ost-opportunity: #37a169;  /* green  */
+  --vzd-ost-solution: #dd7f2e;     /* orange */
+  --vzd-ost-experiment: #d4a72c;   /* yellow */
+}
+
+.theme-dark .vizardry-ost {
+  --vzd-ost-outcome: #6ea8ff;
+  --vzd-ost-opportunity: #56c98a;
+  --vzd-ost-solution: #f0a05a;
+  --vzd-ost-experiment: #e9c14e;
+}
+
+/* Dashed band divider spanning the canvas width */
+.vzd-ost-lane-divider {
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+/* Left-gutter lane label */
+.vzd-ost-lane-label {
+  font-family: var(--font-interface);
+  font-size: var(--vzd-base, var(--font-ui-small));
+  font-style: italic;
+  fill: var(--text-muted);
+  user-select: none;
+}
+
+/* foreignObject wrapper — let content define height without clipping */
+.vzd-ost-fo { overflow: visible; }
+
+/* Node box body: caption + wrapped label + bullets, left-aligned */
+.vzd-ost-node {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 9px 12px 10px 12px;
+  font-family: var(--font-interface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vzd-ost-caption {
+  font-size: 11px;
+  line-height: 14px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.vzd-ost-label {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-normal);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.vzd-ost-node--linked .vzd-ost-label {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+/* Chevron bullet list */
+.vzd-ost-bullets {
+  list-style: none;
+  margin: 5px 0 0 0;
+  padding: 0;
+}
+
+.vzd-ost-bullet {
+  position: relative;
+  padding-left: 14px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--text-normal);
+  overflow-wrap: anywhere;
+}
+
+.vzd-ost-bullet::before {
+  content: "\203A"; /* › single right chevron */
+  position: absolute;
+  left: 2px;
+  color: var(--vzd-ost-accent, var(--text-muted));
+  font-weight: 600;
+}
+
+.vzd-ost-bullet-text { cursor: text; }
+
+/* Bullet delete button — revealed on node hover, like the SVG affordances */
+.vzd-ost-bullet-del {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  line-height: 1;
+}
+
+.vzd-ost-bullet-add-btn {
+  margin-top: 3px;
+  padding: 1px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+g.vzd-tree-node--editable:hover .vzd-ost-bullet-del,
+g.vzd-tree-node--editable:hover .vzd-ost-bullet-add-btn {
+  opacity: 1;
+}
+
+.vzd-ost-bullet-add-btn:hover { color: var(--text-normal); }
+.vzd-ost-bullet-del:hover { color: var(--text-error); }
+
 /* ── Tree live-edit interactions ─────────────────────────────────────────────
    Edit affordances: dblclick-to-rename, "+" add-child, "×" delete.
    Controls are hidden at rest and revealed on node hover via opacity

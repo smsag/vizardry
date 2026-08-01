@@ -1,14 +1,14 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FishboneDiagram, ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas } from "./controls";
-import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, OST_TREE_OPTIONS, renderTree } from "./tree";
+import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions, renderTree } from "./tree";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
 import { renameMindMapNode, addMindMapChild, deleteMindMapNode } from "../shared/mindmap-edit";
-import { renameOSTNode, addOSTChild, deleteOSTNode } from "../shared/ost-edit";
+import { renameOSTNode, addOSTChild, deleteOSTNode, addOSTBullet, editOSTBullet, deleteOSTBullet } from "../shared/ost-edit";
 import { renameImpactNode, addImpactChild, deleteImpactNode } from "../shared/impact-edit";
 import { renameFishboneNode, addFishboneChild, deleteFishboneNode } from "../shared/fishbone-edit";
 
@@ -130,7 +130,7 @@ export function renderOST(
   initCanvas(el, "ost", title, undefined, source, onTitleEdit, app, ctx);
 
   const editHandlers = isEditMode ? makeOSTHandlers(app!, ctx!, el) : undefined;
-  renderTree(adaptOSTToTree(tree), OST_TREE_OPTIONS, el, resolver, navigateTo, editHandlers);
+  renderTree(adaptOSTToTree(tree), ostTreeOptions(), el, resolver, navigateTo, editHandlers);
 }
 
 function makeOSTHandlers(
@@ -140,17 +140,32 @@ function makeOSTHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameOSTNode(app, ctx, el, node.level, node.text, newText)) {
+      if (!renameOSTNode(app, ctx, el, node.key ?? "", node.level, node.text, newText)) {
         showWriteFailedNotice(el);
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addOSTChild(app, ctx, el, node.level, node.text, t("tree.newNode"))) {
+      if (!addOSTChild(app, ctx, el, node.key ?? "", node.level, node.text, t("tree.newNode"))) {
         showWriteFailedNotice(el);
       }
     },
     onDelete(node: TreeNode): void {
-      if (!deleteOSTNode(app, ctx, el, node.level, node.text)) {
+      if (!deleteOSTNode(app, ctx, el, node.key ?? "", node.level, node.text)) {
+        showWriteFailedNotice(el);
+      }
+    },
+    onAddBullet(node: TreeNode, text: string): void {
+      if (!addOSTBullet(app, ctx, el, node.key ?? "", node.text, text)) {
+        showWriteFailedNotice(el);
+      }
+    },
+    onEditBullet(node: TreeNode, oldText: string, newText: string): void {
+      if (!editOSTBullet(app, ctx, el, node.key ?? "", node.text, oldText, newText)) {
+        showWriteFailedNotice(el);
+      }
+    },
+    onDeleteBullet(node: TreeNode, text: string): void {
+      if (!deleteOSTBullet(app, ctx, el, node.key ?? "", node.text, text)) {
         showWriteFailedNotice(el);
       }
     },

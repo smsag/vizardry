@@ -164,16 +164,18 @@ export const OST_TEMPLATE = `\`\`\`vizardry
 type: ost
 title: Opportunity Solution Tree
 
-outcome: Your desired outcome
+outcome: 2x the rental listings on the platform in mid-west areas of the US
 
-  opportunity: Opportunity one
-    solution: Solution A
-      experiment: Experiment 1
-        assumption: Assumption behind it
-    solution: Solution B
+  need: I want to rent out my house to tenants who pay on time.
+    solution: Provide a platform to view renter information in one place.
+      Tenant credit checks
+      Background checks
+      Income verification
+      experiment: Usability testing with landlords
 
-  opportunity: Opportunity two
-    solution: Solution C
+  pain: I feel anxious about all the documentation.
+
+  desire: I'd like tenant reviews from previous landlords.
 \`\`\`
 `;
 

@@ -6,6 +6,7 @@ import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { rectBoundary, type Vec2 } from "../shared/geometry";
+import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
 import { resolveNodeMapColor } from "../shared/nodemap-colors";
 import { wireRenameInputKeys, createBlurGuard, activateTextareaEdit } from "./inline-edit";
 import {
@@ -43,9 +44,8 @@ function measureBox(box: NodeMapBox): { width: number; height: number } {
   const width = Math.max(MIN_BOX_WIDTH, Math.min(MAX_BOX_WIDTH, nameW));
   let height = HEADER_H;
   if (box.body) {
-    const charsPerLine = Math.max(10, Math.floor((width - BOX_PAD_X * 2) / (CHAR_W - 1)));
-    let lines = 0;
-    for (const para of box.body.split("\n")) lines += Math.max(1, Math.ceil(para.length / charsPerLine));
+    const charsPerLine = estimateCharsPerLine(width - BOX_PAD_X * 2, { charW: CHAR_W, min: 10 });
+    const lines = wrappedLineCount(box.body, charsPerLine);
     height += lines * BODY_LINE_H + BODY_PAD_Y;
   }
   return { width, height };

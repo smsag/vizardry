@@ -32,7 +32,20 @@ vi.mock("html-to-image", () => ({
 // ── Renderer imports (after mocks are declared) ───────────────────────────────
 import { renderError, renderCanvas } from "./canvas";
 import { renderMatrix } from "./matrix";
-import { renderTree, OST_TREE_OPTIONS, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
+import { renderTree, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
+import type { TreeRenderOptions } from "../types";
+
+// A plain top-down classic (non-wrap) tree config for exercising renderTree's
+// generic SVG path — the OST now uses the wrap/lane path, so it no longer fits.
+const CLASSIC_OPTS: TreeRenderOptions = {
+  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
+  hPadding: 24, vPadding: 24, maxLabelChars: 22,
+  canvasClass: "vizardry-ost", wrapperClass: "vizardry-ost-wrapper",
+  levelStyles: [
+    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
+    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
+  ],
+};
 import { renderMindMap, renderImpactMap, renderOST } from "./tree-canvases";
 import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
@@ -270,12 +283,22 @@ describe("renderTree", () => {
   it("renders an SVG with nodes for a flat tree", () => {
     const el = container();
     const root = makeNode("Root", 0, [makeNode("Child A", 1), makeNode("Child B", 1)]);
-    renderTree({ root }, OST_TREE_OPTIONS, el);
+    renderTree({ root }, CLASSIC_OPTS, el);
     expect(el.querySelector("svg")).toBeTruthy();
     const texts = el.querySelectorAll("text");
     const labels = Array.from(texts).map(t => t.textContent);
     expect(labels).toContain("Root");
     expect(labels).toContain("Child A");
+  });
+
+  it("classic (non-wrap) configs emit no lane bands or foreignObject nodes", () => {
+    const el = container();
+    const root = makeNode("Root", 0, [makeNode("Child", 1)]);
+    renderTree({ root }, CLASSIC_OPTS, el);
+    expect(el.querySelector(".vzd-ost-lane-divider")).toBeNull();
+    expect(el.querySelector(".vzd-ost-node")).toBeNull();
+    // Labels still live in plain <text>, unchanged from before the OST redesign.
+    expect(el.querySelector("text.vzd-tree-text-main")).toBeTruthy();
   });
 
   it("renders a deeper tree without throwing", () => {
@@ -300,16 +323,55 @@ describe("renderTree", () => {
 // ── renderOST ─────────────────────────────────────────────────────────────────
 
 describe("renderOST", () => {
+  // A full 4-lane tree: outcome → need → solution (with bullets) → experiment.
+  const fullTree: OSTTree = {
+    root: {
+      text: "Grow revenue", level: 0, key: "outcome", bullets: [],
+      children: [{
+        text: "I want tenants who pay on time", level: 1, key: "need", bullets: [],
+        children: [{
+          text: "Provide a platform", level: 2, key: "solution",
+          bullets: ["Tenant credit checks", "Background checks"],
+          children: [{ text: "Usability testing", level: 3, key: "experiment", bullets: [], children: [] }],
+        }],
+      }],
+    },
+  };
+
   it("renders OST without throwing", () => {
     const el = container();
-    const tree: OSTTree = {
-      root: {
-        text: "Outcome", level: 0,
-        children: [{ text: "Opportunity", level: 1, children: [] }],
-      },
-    };
-    expect(() => renderOST(tree, el)).not.toThrow();
-    expect(el.querySelector("svg")).toBeTruthy();
+    expect(() => renderOST(fullTree, el)).not.toThrow();
+    expect(el.querySelector("svg.vizardry-ost")).toBeTruthy();
+  });
+
+  it("draws labelled swim-lane bands with dashed dividers", () => {
+    const el = container();
+    renderOST(fullTree, el);
+    // Four lanes → three dividers between them.
+    expect(el.querySelectorAll(".vzd-ost-lane-divider").length).toBe(3);
+    const labels = Array.from(el.querySelectorAll(".vzd-ost-lane-label")).map(l => l.textContent);
+    expect(labels).toEqual(["Outcome space", "Opportunity Space", "Solution Space", "Experimentation Space"]);
+  });
+
+  it("shows the per-keyword italic caption only on opportunity nodes", () => {
+    const el = container();
+    renderOST(fullTree, el);
+    const captions = Array.from(el.querySelectorAll(".vzd-ost-caption")).map(c => c.textContent);
+    expect(captions).toEqual(["Customer need"]); // outcome/solution/experiment carry none
+  });
+
+  it("renders bullets as a chevron list inside the node", () => {
+    const el = container();
+    renderOST(fullTree, el);
+    const bullets = Array.from(el.querySelectorAll(".vzd-ost-bullet-text")).map(b => b.textContent);
+    expect(bullets).toEqual(["Tenant credit checks", "Background checks"]);
+  });
+
+  it("renders node labels via foreignObject, not truncated <text>", () => {
+    const el = container();
+    renderOST(fullTree, el);
+    const labels = Array.from(el.querySelectorAll(".vzd-ost-label")).map(l => l.textContent);
+    expect(labels).toContain("Provide a platform");
   });
 });
 

@@ -82,11 +82,16 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "impact.level.deliverable": "Lieferobjekt",
 
   // ── Opportunity Solution Tree level labels ──────────────────────────────────
-  "ost.level.outcome":     "Ergebnis",
-  "ost.level.opportunity": "Chance",
-  "ost.level.solution":    "Lösung",
-  "ost.level.experiment":  "Experiment",
-  "ost.level.assumption":  "Annahme",
+  "ost.lane.outcome":      "Ergebnisraum",
+  "ost.lane.opportunity":  "Chancenraum",
+  "ost.lane.solution":     "Lösungsraum",
+  "ost.lane.experiment":   "Experimentierraum",
+
+  "ost.caption.need":      "Kundenbedürfnis",
+  "ost.caption.pain":      "Kundenschmerzpunkt",
+  "ost.caption.desire":    "Kundenwunsch",
+
+  "ost.addBullet":         "Detail hinzufügen",
 
   // ── SCQA / SCR level labels ─────────────────────────────────────────────────
   "scqa.level.situation":    "Situation",

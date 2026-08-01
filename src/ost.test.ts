@@ -8,70 +8,103 @@ describe("parseOST", () => {
     if (!result.ok) return;
     expect(result.data.root.text).toBe("Grow revenue");
     expect(result.data.root.level).toBe(0);
+    expect(result.data.root.key).toBe("outcome");
     expect(result.data.root.children).toHaveLength(0);
   });
 
-  it("parses a full 5-level keyword tree, stripping each keyword", () => {
+  it("parses the full outcome→opportunity→solution→experiment chain, stripping each keyword", () => {
     const src = `
 outcome: Grow revenue
-  opportunity: Increase conversion
+  need: Increase conversion
     solution: Redesign checkout
       experiment: A/B test button colour
-        assumption: Colour drives clicks
 `.trim();
     const result = parseOST(src);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const opp = result.data.root.children[0];
-    expect(opp.text).toBe("Increase conversion");
-    expect(opp.level).toBe(1);
+    expect(opp).toMatchObject({ text: "Increase conversion", level: 1, key: "need" });
     const sol = opp.children[0];
-    expect(sol).toMatchObject({ text: "Redesign checkout", level: 2 });
-    const exp = sol.children[0];
-    expect(exp).toMatchObject({ text: "A/B test button colour", level: 3 });
-    expect(exp.children[0]).toMatchObject({ text: "Colour drives clicks", level: 4 });
+    expect(sol).toMatchObject({ text: "Redesign checkout", level: 2, key: "solution" });
+    expect(sol.children[0]).toMatchObject({ text: "A/B test button colour", level: 3, key: "experiment" });
   });
 
-  it("allows several opportunities, solutions, experiments and assumptions as siblings", () => {
+  it("accepts need / pain / desire as siblings in the opportunity lane (all level 1)", () => {
+    const src = `outcome: O
+  need: I want tenants who pay on time
+  pain: I feel anxious about paperwork
+  desire: I'd like tenant reviews`;
+    const result = parseOST(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const opps = result.data.root.children;
+    expect(opps.map(o => o.level)).toEqual([1, 1, 1]);
+    expect(opps.map(o => o.key)).toEqual(["need", "pain", "desire"]);
+  });
+
+  it("allows several opportunities and solutions as siblings", () => {
     const src = `outcome: Grow revenue
-  opportunity: Opp A
+  need: Opp A
     solution: Sol A1
       experiment: Exp
-        assumption: Ass 1
-        assumption: Ass 2
     solution: Sol A2
-  opportunity: Opp B`;
+  desire: Opp B`;
     const result = parseOST(src);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const opps = result.data.root.children;
     expect(opps.map(o => o.text)).toEqual(["Opp A", "Opp B"]);
     expect(opps[0].children.map(s => s.text)).toEqual(["Sol A1", "Sol A2"]);
-    expect(opps[0].children[0].children[0].children.map(a => a.text)).toEqual(["Ass 1", "Ass 2"]);
+  });
+
+  it("collects bare indented lines as bullets on the enclosing node", () => {
+    const src = `outcome: O
+  need: N
+    solution: Provide a platform
+      Tenant credit checks
+      Background checks
+      experiment: Usability testing`;
+    const result = parseOST(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const sol = result.data.root.children[0].children[0];
+    expect(sol.bullets).toEqual(["Tenant credit checks", "Background checks"]);
+    // A keyworded line under the same solution is still a child, not a bullet.
+    expect(sol.children.map(c => c.text)).toEqual(["Usability testing"]);
+  });
+
+  it("allows bullets on any node, including the outcome", () => {
+    const src = `outcome: O
+  Context note one
+  Context note two
+  need: N`;
+    const result = parseOST(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.bullets).toEqual(["Context note one", "Context note two"]);
+    expect(result.data.root.children.map(c => c.key)).toEqual(["need"]);
   });
 
   it("rejects a solution that is not nested under an opportunity", () => {
     const result = parseOST("outcome: O\n  solution: Straight to a solution");
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/must be nested under a "opportunity:"/);
+    expect(result.error).toMatch(/must be nested under a "need:"/);
   });
 
   it("rejects a keyword node that is not indented under its parent", () => {
-    const result = parseOST("outcome: O\nopportunity: Not indented");
+    const result = parseOST("outcome: O\nneed: Not indented");
     expect(result.ok).toBe(false);
   });
 
-  it("still parses legacy bare-indent trees (back-compat)", () => {
-    const src = `outcome: Grow revenue
-  Increase conversion
-    Redesign checkout`;
-    const result = parseOST(src);
+  it("treats a dropped legacy keyword as plain bullet text (breaking change)", () => {
+    // `opportunity:`/`assumption:` are no longer keywords; a legacy line now
+    // falls through to a bullet rather than an opportunity node.
+    const result = parseOST("outcome: O\n  opportunity: Old keyword");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const opp = result.data.root.children[0];
-    expect(opp).toMatchObject({ text: "Increase conversion", level: 1 });
-    expect(opp.children[0]).toMatchObject({ text: "Redesign checkout", level: 2 });
+    expect(result.data.root.children).toHaveLength(0);
+    expect(result.data.root.bullets).toEqual(["opportunity: Old keyword"]);
   });
 
   it("parsed OSTNode has no layout fields (x/y/width/height)", () => {
@@ -90,7 +123,7 @@ outcome: Grow revenue
   });
 
   it("returns error when first line is not outcome:", () => {
-    const result = parseOST("opportunity: Oops");
+    const result = parseOST("need: Oops");
     expect(result).toEqual({ ok: false, error: expect.stringContaining("first line must be") });
   });
 
@@ -105,14 +138,8 @@ outcome: Grow revenue
     expect(result).toEqual({ ok: false, error: expect.stringContaining("non-empty label") });
   });
 
-  it("returns error when indentation exceeds max depth", () => {
-    const src = "outcome: Root\n  l1\n    l2\n      l3\n        l4\n          too deep";
-    const result = parseOST(src);
-    expect(result.ok).toBe(false);
-  });
-
   it("ignores blank lines and comments", () => {
-    const src = "// comment\noutcome: Root\n\n  // child comment\n  opportunity: Opp";
+    const src = "// comment\noutcome: Root\n\n  // child comment\n  need: Opp";
     const result = parseOST(src);
     expect(result.ok).toBe(true);
     if (!result.ok) return;

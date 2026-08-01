@@ -90,12 +90,19 @@ export const en = {
   "impact.level.impact":      "Impact",
   "impact.level.deliverable": "Deliverable",
 
-  // ── Opportunity Solution Tree level labels ──────────────────────────────────
-  "ost.level.outcome":     "Outcome",
-  "ost.level.opportunity": "Opportunity",
-  "ost.level.solution":    "Solution",
-  "ost.level.experiment":  "Experiment",
-  "ost.level.assumption":  "Assumption",
+  // ── Opportunity Solution Tree swim-lane labels ──────────────────────────────
+  "ost.lane.outcome":      "Outcome space",
+  "ost.lane.opportunity":  "Opportunity Space",
+  "ost.lane.solution":     "Solution Space",
+  "ost.lane.experiment":   "Experimentation Space",
+
+  // ── Opportunity Solution Tree opportunity captions (per keyword) ─────────────
+  "ost.caption.need":      "Customer need",
+  "ost.caption.pain":      "Customer pain point",
+  "ost.caption.desire":    "Customer desire",
+
+  // Add-bullet affordance inside an OST node
+  "ost.addBullet":         "Add detail",
 
   // ── SCQA / SCR level labels ─────────────────────────────────────────────────
   "scqa.level.situation":    "Situation",
