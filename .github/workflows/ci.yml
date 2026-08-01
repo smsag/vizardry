@@ -14,5 +14,36 @@ permissions:
   contents: read
 
 jobs:
+  # Kept as an inline job named `ci` (not a reusable-workflow call) so the
+  # required status check stays `ci` — matching branch protection on main.
+  # These steps mirror verify.yml, which release.yml uses for its gate; keep
+  # the two in sync when changing the pipeline.
   ci:
-    uses: ./.github/workflows/verify.yml
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Docs check
+        run: bash scripts/docs-check.sh
+
+      - name: Build
+        run: npm run build
