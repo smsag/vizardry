@@ -1,24 +1,16 @@
-name: CI
+name: Verify
 
+# Reusable verification pipeline: install, typecheck, lint, test, docs-check,
+# build. Called by both ci.yml (on push/PR) and release.yml (as a gate before
+# publishing) so a release runs the exact same checks as CI — no drift.
 on:
-  push:
-    branches: [main]
-  pull_request:
-
-# Cancel superseded runs for the same ref (new push to a PR supersedes the old).
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  # Kept as an inline job named `ci` (not a reusable-workflow call) so the
-  # required status check stays `ci` — matching branch protection on main.
-  # These steps mirror verify.yml, which release.yml uses for its gate; keep
-  # the two in sync when changing the pipeline.
-  ci:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
