@@ -1,7 +1,5 @@
-## 0.40.0
+## 0.41.0
 
-- **Redesigned Opportunity Solution Tree.** The OST now renders as labelled horizontal swim-lanes — Outcome, Opportunity, Solution, Experimentation — each with its own theme-aware colour, outlined boxes that wrap their full text, and per-node italic captions. The Opportunity lane accepts three keywords (`need:`, `pain:`, `desire:`) that share the lane and set the caption. Any node can carry **chevron bullets**: a bare indented line under a node becomes a bullet (add/edit/remove them inline in Live Preview).
+- **SCQA / SCR tree view is now a swim-lane diagram.** With `view: tree`, the narrative renders as labelled horizontal bands — Situation / Complication / Question / Answer (or … / Resolution for SCR) — each with its own theme-aware colour, outlined boxes that wrap their full text, and the role shown as an italic caption. It now shares the Opportunity Solution Tree's visual language. Any node can carry **chevron bullets** (a bare indented line under a node), with inline add/edit/remove in Live Preview. The card **grid view is unchanged**, and legacy bare-indent narratives still render.
 
-  **Breaking change:** the `opportunity:` and `assumption:` keywords and the legacy bare-indent form were removed. Rename `opportunity:` lines to `need:`/`pain:`/`desire:`, and express former `assumption:` detail as bullets under a solution. A leftover `opportunity:` line now renders as a bullet rather than a node.
-
-- **SCQA / SCR keyword-per-level syntax.** The narrative canvases now name each level on its own line (`situation:` → `complication:` → `question:` → `answer:`, or `resolution:` for SCR), matching the rest of the tree family.
+- **Fix: Opportunity Solution Tree box sizing.** Node boxes now measure their real wrapped height from the DOM, so multi-line labels no longer clip and bullet lists always stay inside their box (previously an under-measured box could push bullets to the top-left corner).
