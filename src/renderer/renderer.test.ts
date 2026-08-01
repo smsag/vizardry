@@ -344,16 +344,16 @@ describe("renderOST", () => {
     expect(el.querySelector("svg.vizardry-ost")).toBeTruthy();
   });
 
-  it("renders into a detached container and leaves no sizer behind", () => {
-    // Obsidian often renders a block before its container is in the document
-    // (Live Preview widgets, background panes). The height measurer must mount
-    // its sizer on document.body — not the detached el — and clean it up.
+  it("renders content as native SVG (no foreignObject), even in a detached container", () => {
+    // Node bodies are drawn as SVG <text>, not HTML in a <foreignObject> — the
+    // latter is what iOS WebKit mispositioned to the canvas origin. Rendering
+    // must not depend on the container being attached/laid out.
     const el = document.createElement("div"); // deliberately NOT attached
     expect(() => renderOST(fullTree, el)).not.toThrow();
     expect(el.querySelector("svg.vizardry-ost")).toBeTruthy();
     expect(el.querySelectorAll(".vzd-lane-bullet-text").length).toBe(2);
-    // The offscreen sizer is disposed after layout — none linger on the body.
-    expect(document.body.querySelector(".vzd-lane-sizer")).toBeNull();
+    // No foreignObject is used for node content (read mode).
+    expect(el.querySelector("foreignObject")).toBeNull();
   });
 
   it("draws labelled swim-lane bands with dashed dividers", () => {
@@ -379,11 +379,17 @@ describe("renderOST", () => {
     expect(bullets).toEqual(["Tenant credit checks", "Background checks"]);
   });
 
-  it("renders node labels via foreignObject, not truncated <text>", () => {
+  it("renders node labels as native SVG text (no foreignObject for content)", () => {
     const el = container();
     renderOST(fullTree, el);
-    const labels = Array.from(el.querySelectorAll(".vzd-lane-label")).map(l => l.textContent);
+    // Each label is a <text> with one <tspan> per wrapped line; joining the
+    // lines by space reconstructs the original text.
+    const labels = Array.from(el.querySelectorAll(".vzd-lane-label-text")).map(
+      t => Array.from(t.querySelectorAll("tspan")).map(s => s.textContent).join(" ").trim(),
+    );
     expect(labels).toContain("Provide a platform");
+    // Read mode uses no foreignObject at all (rename overlay is edit-only).
+    expect(el.querySelector("foreignObject")).toBeNull();
   });
 });
 

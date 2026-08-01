@@ -33,6 +33,9 @@ export const moment = {
   locale: () => "en",
 };
 
+// Platform — renderers read isMobile for compact layouts. Default: desktop.
+export const Platform = { isMobile: false, isDesktop: true };
+
 // Notice is used in main.ts — stub to avoid import errors.
 export class Notice {
   constructor(_msg: string) {}

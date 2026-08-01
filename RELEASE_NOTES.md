@@ -1,3 +1,4 @@
-## 0.41.1
+## 0.41.2
 
-- **Fix: misplaced / clipped content in the OST and SCQA/SCR swim-lane views.** Node boxes are now measured against `document.body` instead of their (often not-yet-attached) render container, so the real wrapped height is always available. Previously, when Obsidian rendered a block into a detached container — common in Live Preview and background panes — the measurement returned zero and fell back to an estimate that under-sized boxes, clipping multi-line text and pushing chevron bullets out of place. Boxes now fit their caption, wrapped label, and bullets in every view.
+- **Fix: OST / SCQA-SCR swim-lane content misplaced on mobile (iOS).** Node bodies — caption, wrapped label, and chevron bullets — are now drawn as native SVG text instead of HTML inside an SVG `<foreignObject>`. iOS WebKit mispositioned foreignObject content (bullets jumping to the canvas corner, boxes appearing empty); native SVG text honours the layout on every platform, matching the plugin's other tree diagrams. Because the renderer now wraps text itself and sizes each box to that exact line count, boxes can no longer clip their own text. Bullet add/edit/delete and node rename still work (via SVG affordances and a transient input overlay).
+- **Mobile: narrower swim-lane layout.** Boxes, gaps, and the lane gutter shrink on mobile to reduce horizontal scrolling.

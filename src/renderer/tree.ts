@@ -12,9 +12,10 @@ import type {
   TreeNodeStyle,
   TreeRenderOptions,
 } from "../types";
+import { Platform } from "obsidian";
 import { createSvgEl } from "../shared/svg";
-import { wireRenameInputKeys, createBlurGuard, activateInlineEdit } from "./inline-edit";
-import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
+import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
+import { createTextMeasurer, wrapText, type TextMeasurer } from "../shared/text-wrap";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import type { TranslationKey } from "../i18n";
@@ -130,69 +131,68 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
 }
 
 // ── Swim-lane layout (direction: "lanes") ───────────────────────────────────
-// Every level is a horizontal band. Boxes wrap their text (variable height) via
-// foreignObject; a band's height is the tallest box in it. Node → lane is the
-// node's own level, so need/pain/desire (all level 1) share the Opportunity band.
+// Every level is a horizontal band. Boxes wrap their text (variable height) and
+// draw it as NATIVE SVG <text>/<tspan> — never foreignObject HTML, which iOS
+// WebKit mispositions inside a transformed group (bullets teleporting to the
+// canvas origin). Because the renderer emits exactly the lines the wrapper
+// computes AND sizes the box to that count, a box can never clip its own text.
+// Node → lane is the node's own level, so need/pain/desire (all level 1) share
+// the Opportunity band.
 
-// Box interior metrics — used only for the character-count FALLBACK estimate
-// (test/headless environments with no layout engine). The live renderer
-// measures real wrapped height from the DOM, so these need not be exact.
-const LANE_PAD_X = 12;
-const LANE_PAD_TOP = 9;
-const LANE_PAD_BOTTOM = 10;
-const LANE_LABEL_LINE_H = 18;
-const LANE_CAPTION_H = 16;      // italic caption line + gap below it
-const LANE_BULLET_LINE_H = 17;
-const LANE_BULLETS_TOP_GAP = 5;
-const LANE_CHAR_W = 7;
+// Box interior metrics (authoritative — the renderer draws to these).
+const LANE_PAD_X = 14;
+const LANE_PAD_TOP = 11;
+const LANE_PAD_BOTTOM = 12;
+const LANE_CAPTION_SIZE = 11;
+const LANE_CAPTION_BASE = 11;   // baseline offset from the caption block top
+const LANE_CAPTION_H = 17;      // caption line box incl. small gap below it
+const LANE_LABEL_SIZE = 13.5;
+const LANE_LABEL_BASE = 14;
+const LANE_LABEL_LH = 19;
+const LANE_BULLET_SIZE = 12.5;
+const LANE_BULLET_BASE = 13;
+const LANE_BULLET_LH = 18;
+const LANE_BULLETS_TOP_GAP = 6;
+const LANE_CHEVRON_INDENT = 15; // bullet text x-offset; the chevron sits at PAD_X
+const LANE_ADD_BULLET_H = 18;   // "+ Add detail" row height (edit mode)
 
-/** Fallback height when real DOM metrics are unavailable (headless/tests).
- *  Estimating wrapped lines from an average glyph width under-counts for a
- *  proportional font, so this is only a backstop — see makeNodeMeasurer. */
-function estimateNodeHeight(node: TreeNode, opts: TreeRenderOptions): number {
-  const cpl = estimateCharsPerLine(opts.nodeW - LANE_PAD_X * 2, { charW: LANE_CHAR_W, min: 8 });
-  let h = LANE_PAD_TOP + LANE_PAD_BOTTOM;
-  if (opts.captionPosition === "top" && node.sublabel) h += LANE_CAPTION_H;
-  h += wrappedLineCount(node.text, cpl) * LANE_LABEL_LINE_H;
-  if (node.bullets && node.bullets.length > 0) {
-    h += LANE_BULLETS_TOP_GAP;
-    for (const b of node.bullets) h += wrappedLineCount(b, cpl - 3) * LANE_BULLET_LINE_H;
-  }
-  return Math.max(opts.nodeH, h);
+/** Pre-wrapped, laid-out content for one swim-lane node. Built once during
+ *  layout (so height is exact) and reused by the renderer. */
+interface LaneNodeModel {
+  captionLines: string[];      // 0 or 1 line
+  labelLines: string[];
+  bulletLines: string[][];     // per bullet, its wrapped lines
+  showAddBullet: boolean;
+  height: number;
 }
+const laneModels = new WeakMap<TreeNode, LaneNodeModel>();
 
-/** Measures node-box heights using the real, CSS-styled DOM so wrapped text
- *  and bullets always fit. A hidden sizer div (same width, classes, and font
- *  as a live node) is laid out and its offsetHeight read. Returns 0-height
- *  cases via the character-count fallback so headless tests still get a size.
- *  Call dispose() once layout is done to remove the sizer. */
-interface NodeMeasurer { measure(node: TreeNode): number; dispose(): void; }
+function buildLaneModel(
+  node: TreeNode, opts: TreeRenderOptions, measurer: TextMeasurer, showAddBullet: boolean,
+): LaneNodeModel {
+  const innerW = opts.nodeW - LANE_PAD_X * 2;
+  const captionLines = (opts.captionPosition === "top" && node.sublabel) ? [node.sublabel] : [];
+  const labelLines = wrapText(node.text, innerW, s => measurer.width(s, LANE_LABEL_SIZE));
+  const bulletInnerW = innerW - LANE_CHEVRON_INDENT;
+  const bulletLines = (node.bullets ?? []).map(
+    b => wrapText(b, bulletInnerW, s => measurer.width(s, LANE_BULLET_SIZE)),
+  );
 
-function makeNodeMeasurer(
-  el: HTMLElement, opts: TreeRenderOptions, editHandlers: TreeEditHandlers | undefined,
-): NodeMeasurer {
-  // Mount the sizer on document.body, NOT on `el`. Obsidian frequently renders a
-  // block into a detached / not-yet-laid-out container (Live Preview widgets,
-  // background panes), where offsetHeight on an element under `el` would be 0 —
-  // forcing the under-counting estimate and clipping wrapped boxes. document.body
-  // is always laid out, so measurement is reliable. Node width is fixed, so the
-  // parent context doesn't change wrapping.
-  const doc = el.ownerDocument ?? document;
-  const sizer = (doc.body ?? el).createEl("div", { cls: "vzd-lane-sizer" });
-  sizer.style.width = `${opts.nodeW}px`;
-  const noop = (): void => {};
-  return {
-    measure(node: TreeNode): number {
-      while (sizer.firstChild) sizer.removeChild(sizer.firstChild);
-      const style = getTreeStyle(node.level, opts);
-      const host = buildLaneNodeHost(node, opts, style, undefined, undefined, editHandlers, noop);
-      host.style.height = "auto"; // override the live "height: 100%" so it sizes to content
-      sizer.appendChild(host);
-      const measured = host.offsetHeight;
-      return measured > 0 ? Math.max(opts.nodeH, measured) : estimateNodeHeight(node, opts);
-    },
-    dispose(): void { sizer.remove(); },
+  let h = LANE_PAD_TOP + LANE_PAD_BOTTOM;
+  if (captionLines.length) h += LANE_CAPTION_H;
+  h += labelLines.length * LANE_LABEL_LH;
+  if (bulletLines.length > 0 || showAddBullet) {
+    h += LANE_BULLETS_TOP_GAP;
+    for (const bl of bulletLines) h += bl.length * LANE_BULLET_LH;
+    if (showAddBullet) h += LANE_ADD_BULLET_H;
+  }
+
+  const model: LaneNodeModel = {
+    captionLines, labelLines, bulletLines, showAddBullet,
+    height: Math.max(opts.nodeH, h),
   };
+  laneModels.set(node, model);
+  return model;
 }
 
 /** Position siblings along X (depth-independent), keeping children centred
@@ -217,14 +217,16 @@ function layoutXOnly(node: TreeNode, opts: TreeRenderOptions, left: number): num
 
 interface LaneLayout { bandTop: number[]; laneHeight: number[]; contentBottom: number; }
 
-function layoutTreeNodeLanes(root: TreeNode, opts: TreeRenderOptions, measurer?: NodeMeasurer): LaneLayout {
+function layoutTreeNodeLanes(root: TreeNode, opts: TreeRenderOptions, showAddBullet: boolean): LaneLayout {
   const gutter = opts.gutterWidth ?? 0;
+  const measurer = createTextMeasurer();
 
-  // 1. Measure every box; track the tallest per lane.
+  // 1. Wrap + size every box (exact height from our own line count); track the
+  //    tallest per lane.
   const laneHeight: number[] = [];
   const measure = (n: TreeNode): void => {
     n.width = opts.nodeW;
-    n.height = measurer ? measurer.measure(n) : estimateNodeHeight(n, opts);
+    n.height = buildLaneModel(n, opts, measurer, showAddBullet).height;
     laneHeight[n.level] = Math.max(laneHeight[n.level] ?? 0, n.height);
     n.children.forEach(measure);
   };
@@ -377,129 +379,78 @@ function renderDelButton(
   });
 }
 
-/** One rendered bullet <li>: text span + (in edit mode) dblclick-to-edit and
- *  an "×" remove button. */
-function buildBulletLi(
-  text: string, node: TreeNode,
-  editHandlers: TreeEditHandlers | undefined, closeRename: () => void,
-): HTMLLIElement {
-  const li = document.createElement("li");
-  li.className = "vzd-lane-bullet";
-  const span = document.createElement("span");
-  span.className = "vzd-lane-bullet-text";
-  span.textContent = text;
-  li.appendChild(span);
-
-  if (editHandlers?.onEditBullet) {
-    span.addEventListener("dblclick", (e) => {
-      e.stopPropagation();
-      closeRename();
-      activateInlineEdit(span, text, (nv) => {
-        if (nv && nv !== text) editHandlers.onEditBullet!(node, text, nv);
-      });
-    });
-  }
-  if (editHandlers?.onDeleteBullet) {
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "vzd-lane-bullet-del";
-    del.textContent = "×";
-    del.setAttribute("aria-label", t("tree.deleteNode"));
-    del.addEventListener("click", (e) => {
-      e.stopPropagation();
-      closeRename();
-      editHandlers.onDeleteBullet!(node, text);
-    });
-    li.appendChild(del);
-  }
-  return li;
+/** A multi-line SVG <text> anchored at (x, topY): one <tspan> per line, first
+ *  line's baseline at topY + baseOffset, each subsequent line down lineHeight. */
+function svgTextLines(
+  lines: string[], x: number, topY: number, baseOffset: number, lineHeight: number,
+  cls: string, fill?: string,
+): SVGTextElement {
+  const attrs: Record<string, string> = { x: String(x), y: String(topY + baseOffset), class: cls };
+  if (fill) attrs.fill = fill;
+  const text = createSvgEl("text", attrs) as SVGTextElement;
+  lines.forEach((line, i) => {
+    const tspanAttrs: Record<string, string> = { x: String(x) };
+    if (i > 0) tspanAttrs.dy = String(lineHeight);
+    const tspan = createSvgEl("tspan", tspanAttrs);
+    tspan.textContent = line === "" ? " " : line;
+    text.appendChild(tspan);
+  });
+  return text;
 }
 
-/** The trailing "+ Add detail" affordance that appends a new bullet. */
-function buildAddBulletLi(
-  node: TreeNode, editHandlers: TreeEditHandlers, closeRename: () => void,
-): HTMLLIElement {
-  const li = document.createElement("li");
-  li.className = "vzd-lane-bullet-add";
-  const renderBtn = (): void => {
-    li.textContent = "";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "vzd-lane-bullet-add-btn";
-    btn.textContent = `+ ${t("ost.addBullet")}`;
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      closeRename();
-      activateInlineEdit(li, "", (nv) => { if (nv) editHandlers.onAddBullet!(node, nv); }, {
-        shouldCommit: (v) => !!v,
-        renderDisplay: () => renderBtn(),
-      });
-    });
-    li.appendChild(btn);
-  };
-  renderBtn();
-  return li;
-}
-
-/** OST swim-lane node: outlined box with a foreignObject body (italic caption,
- *  wrapped label, chevron bullet list) plus HTML/SVG edit affordances. */
-/** Builds the HTML body of an OST node (caption + wrapped label + chevron
- *  bullets), with link + inline-edit wiring. Shared by the live renderer and
- *  the offscreen height measurer so both lay out identically. */
-function buildLaneNodeHost(
-  node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
-  resolver: LinkResolver | undefined, navigateTo: ((h: string) => void) | undefined,
-  editHandlers: TreeEditHandlers | undefined, closeRename: () => void,
-): HTMLElement {
+/** Opens a transient text input over an SVG region for rename / bullet edits.
+ *  The foreignObject is appended to the SVG ROOT with absolute coordinates —
+ *  never inside a transformed <g> — so iOS WebKit positions it correctly
+ *  (the same pattern the classic tree rename uses). */
+function openLaneInput(
+  svg: SVGSVGElement, renameState: RenameState, closeRename: () => void,
+  x: number, y: number, w: number, h: number, value: string, color: string,
+  onCommit: (value: string) => void,
+): void {
+  closeRename();
+  const fo = createSvgEl("foreignObject", {
+    x: String(x), y: String(y), width: String(w), height: String(h), class: "vzd-tree-rename-fo",
+  }) as SVGForeignObjectElement;
   const host = document.createElement("div");
-  host.className = "vzd-lane-node";
-  if (style.strokeVar) host.style.setProperty("--vzd-lane-accent", style.strokeVar);
+  host.className = "vzd-tree-rename-host";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = value;
+  input.className = "vzd-rename-input vzd-tree-rename-input";
+  input.style.color = color;
+  host.appendChild(input);
+  fo.appendChild(host);
+  svg.appendChild(fo);
+  renameState.fo = fo;
+  input.focus();
+  input.select();
 
-  if (opts.captionPosition === "top" && node.sublabel) {
-    const cap = document.createElement("div");
-    cap.className = "vzd-lane-caption";
-    cap.textContent = node.sublabel;
-    host.appendChild(cap);
-  }
-
-  const labelEl = document.createElement("div");
-  labelEl.className = "vzd-lane-label";
-  labelEl.textContent = node.text;
-  host.appendChild(labelEl);
-
-  const heading = resolver?.resolve(node.text);
-  if (heading && navigateTo) {
-    host.classList.add("vzd-lane-node--linked");
-    labelEl.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
-  }
-
-  if ((node.bullets && node.bullets.length > 0) || editHandlers?.onAddBullet) {
-    const ul = document.createElement("ul");
-    ul.className = "vzd-lane-bullets";
-    for (const b of node.bullets ?? []) ul.appendChild(buildBulletLi(b, node, editHandlers, closeRename));
-    if (editHandlers?.onAddBullet) ul.appendChild(buildAddBulletLi(node, editHandlers, closeRename));
-    host.appendChild(ul);
-  }
-
-  if (editHandlers) {
-    labelEl.addEventListener("dblclick", (e) => {
-      e.stopPropagation();
-      closeRename();
-      activateInlineEdit(labelEl, node.text, (nv) => {
-        if (nv && nv !== node.text) editHandlers.onRename(node, nv);
-      });
-    });
-  }
-
-  return host;
+  const blurGuard = createBlurGuard();
+  wireRenameInputKeys(input, (commit) => {
+    blurGuard.dispose();
+    closeRename();
+    if (commit) onCommit(input.value.trim());
+  }, { stopPropagation: true, ignoreBlur: blurGuard.ignoreBlur });
 }
 
-function renderWrapNode(
+/** OST/SCQA swim-lane node, drawn entirely as native SVG (outlined box, italic
+ *  caption, wrapped label, chevron bullet rows) — no foreignObject for content,
+ *  so it renders correctly on every engine incl. iOS WebKit. Edit affordances:
+ *  dblclick label/bullet → transient input overlay; per-bullet "×" and a
+ *  "+ Add detail" row; plus the shared add-child / delete node buttons. */
+function renderLaneNode(
   group: SVGGElement, node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
   resolver: LinkResolver | undefined, navigateTo: ((h: string) => void) | undefined,
-  editHandlers: TreeEditHandlers | undefined, closeRename: () => void, direction: TreeDirection,
+  editHandlers: TreeEditHandlers | undefined, svg: SVGSVGElement, renameState: RenameState,
+  closeRename: () => void, direction: TreeDirection,
 ): void {
-  const h = node.height || opts.nodeH;
+  const model = laneModels.get(node)
+    ?? buildLaneModel(node, opts, createTextMeasurer(), !!editHandlers?.onAddBullet);
+  const h = node.height || model.height;
+  const textFill = style.textVar;
+  const accent = style.strokeVar ?? "var(--text-muted)";
+  const innerW = opts.nodeW - LANE_PAD_X * 2;
+
   const rectAttrs: Record<string, string> = {
     width: String(opts.nodeW), height: String(h), rx: String(style.borderRadius),
     fill: style.fillVar, stroke: style.strokeVar ?? "var(--background-modifier-border)",
@@ -508,11 +459,114 @@ function renderWrapNode(
   if (style.dashed) rectAttrs["stroke-dasharray"] = "6 3";
   group.appendChild(createSvgEl("rect", rectAttrs));
 
-  const fo = createSvgEl("foreignObject", {
-    x: "0", y: "0", width: String(opts.nodeW), height: String(h), class: "vzd-lane-fo",
-  }) as SVGForeignObjectElement;
-  fo.appendChild(buildLaneNodeHost(node, opts, style, resolver, navigateTo, editHandlers, closeRename));
-  group.appendChild(fo);
+  const title = createSvgEl("title");
+  title.textContent = node.text;
+  group.appendChild(title);
+
+  let top = LANE_PAD_TOP;
+
+  if (model.captionLines.length) {
+    group.appendChild(svgTextLines(
+      model.captionLines, LANE_PAD_X, top, LANE_CAPTION_BASE, LANE_CAPTION_H, "vzd-lane-caption",
+    ));
+    top += LANE_CAPTION_H;
+  }
+
+  const labelTop = top;
+  const labelText = svgTextLines(
+    model.labelLines, LANE_PAD_X, top, LANE_LABEL_BASE, LANE_LABEL_LH, "vzd-lane-label-text", textFill,
+  );
+  group.appendChild(labelText);
+  top += model.labelLines.length * LANE_LABEL_LH;
+
+  const heading = resolver?.resolve(node.text);
+  if (heading && navigateTo) {
+    labelText.classList.add("vzd-lane-label--linked");
+    labelText.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+  }
+  if (editHandlers) {
+    labelText.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      openLaneInput(
+        svg, renameState, closeRename,
+        node.x + LANE_PAD_X - 2, node.y + labelTop, innerW + 4, model.labelLines.length * LANE_LABEL_LH + 4,
+        node.text, textFill,
+        (v) => { if (v && v !== node.text) editHandlers.onRename(node, v); },
+      );
+    });
+  }
+
+  if (model.bulletLines.length > 0 || model.showAddBullet) {
+    top += LANE_BULLETS_TOP_GAP;
+    const bulletX = LANE_PAD_X + LANE_CHEVRON_INDENT;
+    const bulletW = opts.nodeW - LANE_PAD_X - bulletX;
+
+    model.bulletLines.forEach((lines, bi) => {
+      const rowTop = top;
+      const rowH = lines.length * LANE_BULLET_LH;
+      const bullet = node.bullets![bi];
+
+      const chevron = createSvgEl("text", {
+        x: String(LANE_PAD_X), y: String(rowTop + LANE_BULLET_BASE), class: "vzd-lane-chevron", fill: accent,
+      });
+      chevron.textContent = "›";
+      group.appendChild(chevron);
+
+      const bText = svgTextLines(
+        lines, bulletX, rowTop, LANE_BULLET_BASE, LANE_BULLET_LH, "vzd-lane-bullet-text", textFill,
+      );
+      group.appendChild(bText);
+
+      if (editHandlers?.onEditBullet) {
+        bText.addEventListener("dblclick", (e) => {
+          e.stopPropagation();
+          openLaneInput(
+            svg, renameState, closeRename,
+            node.x + bulletX - 2, node.y + rowTop, bulletW + 4, rowH + 4, bullet, textFill,
+            (v) => { if (v && v !== bullet) editHandlers.onEditBullet!(node, bullet, v); },
+          );
+        });
+      }
+      if (editHandlers?.onDeleteBullet) {
+        const del = createSvgEl("g", {
+          class: "vzd-lane-bullet-del",
+          transform: `translate(${opts.nodeW - LANE_PAD_X}, ${rowTop + LANE_BULLET_BASE - 4})`,
+          "aria-label": t("tree.deleteNode"),
+        }) as SVGGElement;
+        del.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-lane-bullet-del-hit" }));
+        const dx = createSvgEl("text", {
+          x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle", class: "vzd-lane-bullet-del-x",
+        });
+        dx.textContent = "×";
+        del.appendChild(dx);
+        del.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeRename();
+          editHandlers.onDeleteBullet!(node, bullet);
+        });
+        group.appendChild(del);
+      }
+      top += rowH;
+    });
+
+    if (model.showAddBullet && editHandlers?.onAddBullet) {
+      const addTop = top;
+      const add = createSvgEl("text", {
+        x: String(bulletX), y: String(addTop + LANE_BULLET_BASE), class: "vzd-lane-bullet-add",
+      });
+      add.textContent = `+ ${t("ost.addBullet")}`;
+      add.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openLaneInput(
+          svg, renameState, closeRename,
+          node.x + bulletX - 2, node.y + addTop, bulletW + 4, LANE_ADD_BULLET_H, "", textFill,
+          (v) => { if (v) editHandlers.onAddBullet!(node, v); },
+        );
+      });
+      group.appendChild(add);
+      top += LANE_ADD_BULLET_H;
+    }
+  }
 
   if (editHandlers) {
     group.classList.add("vzd-tree-node--editable");
@@ -536,7 +590,7 @@ function renderTreeNodes(
   const style = getTreeStyle(node.level, opts);
 
   if (opts.wrap) {
-    renderWrapNode(group, node, opts, style, resolver, navigateTo, editHandlers, closeRename, direction);
+    renderLaneNode(group, node, opts, style, resolver, navigateTo, editHandlers, svg, renameState, closeRename, direction);
     svg.appendChild(group);
     for (const child of node.children) {
       renderTreeNodes(child, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename, direction);
@@ -684,11 +738,7 @@ export function renderTree(
   // ── Layout ────────────────────────────────────────────────────────────────
   let laneLayout: LaneLayout | undefined;
   if (isLanes) {
-    // Measure real wrapped heights off a hidden sizer in the (attached) container,
-    // falling back to the char-count estimate in headless environments.
-    const measurer = makeNodeMeasurer(el, opts, editHandlers);
-    laneLayout = layoutTreeNodeLanes(tree.root, opts, measurer);
-    measurer.dispose();
+    laneLayout = layoutTreeNodeLanes(tree.root, opts, !!editHandlers?.onAddBullet);
   } else if (isHorizontal) {
     layoutTreeNodeH(tree.root, opts);
     if (direction === "left") {
@@ -764,20 +814,23 @@ export interface LaneTreeConfig {
 
 /** Builds swim-lane render options shared by OST and SCQA/SCR: top-down bands,
  *  wrapped outlined boxes, italic top captions, colour-per-lane borders and
- *  connectors. Rebuilt per call so lane labels track the current UI language. */
+ *  connectors. Rebuilt per call so lane labels track the current UI language.
+ *  On mobile the boxes, gaps, and gutter shrink to reduce horizontal scroll. */
 export function laneTreeOptions(cfg: LaneTreeConfig): TreeRenderOptions {
   const laneStyle = (strokeVar: string): TreeNodeStyle => ({
     fillVar: "var(--background-primary)", textVar: "var(--text-normal)",
     strokeVar, outline: true, borderRadius: 8, dashed: false,
   });
+  const compact = !!Platform?.isMobile;
   return {
-    nodeW: 230, nodeH: 54, levelGap: 58, siblingGap: 24,
-    hPadding: 24, vPadding: 28, maxLabelChars: 1000,
+    nodeW: compact ? 176 : 230, nodeH: 54, levelGap: compact ? 48 : 58,
+    siblingGap: compact ? 14 : 24,
+    hPadding: compact ? 12 : 24, vPadding: 28, maxLabelChars: 1000,
     maxAddLevel: cfg.maxAddLevel,
     direction: "lanes",
     wrap: true,
     captionPosition: "top",
-    gutterWidth: cfg.gutterWidth ?? 150,
+    gutterWidth: cfg.gutterWidth ?? (compact ? 96 : 150),
     canvasClass: cfg.canvasClass,
     wrapperClass: cfg.wrapperClass,
     lanes: cfg.lanes,
