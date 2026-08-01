@@ -1,29 +1,63 @@
 name: Release Obsidian plugin
 
 on:
-  push:
-    tags:
-      - "*"
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g. 0.35.0). Creates the tag if it doesn't exist yet."
+        description: "Version to release (e.g. 0.44.0). Must match manifest.json. The tag is created from the current ref if it doesn't exist yet."
         required: true
+  # Also fire on a pushed version tag. NOTE: client tag pushes are blocked by
+  # org policy in the usual dev flow, so releases normally come from the manual
+  # dispatch above — the runner's GITHUB_TOKEN creates the tag inside
+  # `gh release create`, which is not subject to that block.
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+# Never cancel a release mid-flight.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
+  # Gate: run the full CI verification before publishing anything.
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   release:
+    needs: verify
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           cache: npm
 
       - run: npm ci
+
+      - name: Resolve and verify version
+        id: ver
+        run: |
+          tag="${{ github.event.inputs.version }}"
+          if [ -z "$tag" ]; then tag="${GITHUB_REF#refs/tags/}"; fi
+          mv=$(jq -r '.version' manifest.json)
+          # verify.yml/docs-check already assert manifest==package and versions.json
+          # coverage; this adds the check docs-check can't: the release tag itself.
+          if [ "$tag" != "$mv" ]; then
+            echo "::error::release tag '$tag' does not match manifest.json version '$mv'"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: npm run build
@@ -32,9 +66,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${{ github.event.inputs.version }}"
-          if [ -z "$tag" ]; then
-            tag="${GITHUB_REF#refs/tags/}"
+          tag="${{ steps.ver.outputs.tag }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::a release for '$tag' already exists — bump the version first"
+            exit 1
           fi
           notes_file="RELEASE_NOTES.md"
           if [ ! -f "$notes_file" ]; then
@@ -43,5 +78,6 @@ jobs:
           fi
           gh release create "$tag" \
             --title "$tag" \
+            --target "${{ github.sha }}" \
             --notes-file "$notes_file" \
             main.js manifest.json styles.css
