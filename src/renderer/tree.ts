@@ -134,8 +134,9 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
 // foreignObject; a band's height is the tallest box in it. Node → lane is the
 // node's own level, so need/pain/desire (all level 1) share the Opportunity band.
 
-// Box interior metrics — kept in sync with the .vzd-ost-node CSS rules so the
-// measured height matches what the browser actually lays out (no clipping).
+// Box interior metrics — used only for the character-count FALLBACK estimate
+// (test/headless environments with no layout engine). The live renderer
+// measures real wrapped height from the DOM, so these need not be exact.
 const OST_PAD_X = 12;
 const OST_PAD_TOP = 9;
 const OST_PAD_BOTTOM = 10;
@@ -145,7 +146,10 @@ const OST_BULLET_LINE_H = 17;
 const OST_BULLETS_TOP_GAP = 5;
 const OST_CHAR_W = 7;
 
-function measureNodeHeight(node: TreeNode, opts: TreeRenderOptions): number {
+/** Fallback height when real DOM metrics are unavailable (headless/tests).
+ *  Estimating wrapped lines from an average glyph width under-counts for a
+ *  proportional font, so this is only a backstop — see makeNodeMeasurer. */
+function estimateNodeHeight(node: TreeNode, opts: TreeRenderOptions): number {
   const cpl = estimateCharsPerLine(opts.nodeW - OST_PAD_X * 2, { charW: OST_CHAR_W, min: 8 });
   let h = OST_PAD_TOP + OST_PAD_BOTTOM;
   if (opts.captionPosition === "top" && node.sublabel) h += OST_CAPTION_H;
@@ -155,6 +159,33 @@ function measureNodeHeight(node: TreeNode, opts: TreeRenderOptions): number {
     for (const b of node.bullets) h += wrappedLineCount(b, cpl - 3) * OST_BULLET_LINE_H;
   }
   return Math.max(opts.nodeH, h);
+}
+
+/** Measures node-box heights using the real, CSS-styled DOM so wrapped text
+ *  and bullets always fit. A hidden sizer div (same width, classes, and font
+ *  as a live node) is laid out and its offsetHeight read. Returns 0-height
+ *  cases via the character-count fallback so headless tests still get a size.
+ *  Call dispose() once layout is done to remove the sizer. */
+interface NodeMeasurer { measure(node: TreeNode): number; dispose(): void; }
+
+function makeNodeMeasurer(
+  el: HTMLElement, opts: TreeRenderOptions, editHandlers: TreeEditHandlers | undefined,
+): NodeMeasurer {
+  const sizer = el.createEl("div", { cls: "vzd-ost-sizer" });
+  sizer.style.width = `${opts.nodeW}px`;
+  const noop = (): void => {};
+  return {
+    measure(node: TreeNode): number {
+      while (sizer.firstChild) sizer.removeChild(sizer.firstChild);
+      const style = getTreeStyle(node.level, opts);
+      const host = buildOstNodeHost(node, opts, style, undefined, undefined, editHandlers, noop);
+      host.style.height = "auto"; // override the live "height: 100%" so it sizes to content
+      sizer.appendChild(host);
+      const measured = host.offsetHeight;
+      return measured > 0 ? Math.max(opts.nodeH, measured) : estimateNodeHeight(node, opts);
+    },
+    dispose(): void { sizer.remove(); },
+  };
 }
 
 /** Position siblings along X (depth-independent), keeping children centred
@@ -179,14 +210,14 @@ function layoutXOnly(node: TreeNode, opts: TreeRenderOptions, left: number): num
 
 interface LaneLayout { bandTop: number[]; laneHeight: number[]; contentBottom: number; }
 
-function layoutTreeNodeLanes(root: TreeNode, opts: TreeRenderOptions): LaneLayout {
+function layoutTreeNodeLanes(root: TreeNode, opts: TreeRenderOptions, measurer?: NodeMeasurer): LaneLayout {
   const gutter = opts.gutterWidth ?? 0;
 
   // 1. Measure every box; track the tallest per lane.
   const laneHeight: number[] = [];
   const measure = (n: TreeNode): void => {
     n.width = opts.nodeW;
-    n.height = measureNodeHeight(n, opts);
+    n.height = measurer ? measurer.measure(n) : estimateNodeHeight(n, opts);
     laneHeight[n.level] = Math.max(laneHeight[n.level] ?? 0, n.height);
     n.children.forEach(measure);
   };
@@ -405,23 +436,14 @@ function buildAddBulletLi(
 
 /** OST swim-lane node: outlined box with a foreignObject body (italic caption,
  *  wrapped label, chevron bullet list) plus HTML/SVG edit affordances. */
-function renderWrapNode(
-  group: SVGGElement, node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
+/** Builds the HTML body of an OST node (caption + wrapped label + chevron
+ *  bullets), with link + inline-edit wiring. Shared by the live renderer and
+ *  the offscreen height measurer so both lay out identically. */
+function buildOstNodeHost(
+  node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
   resolver: LinkResolver | undefined, navigateTo: ((h: string) => void) | undefined,
-  editHandlers: TreeEditHandlers | undefined, closeRename: () => void, direction: TreeDirection,
-): void {
-  const h = node.height || opts.nodeH;
-  const rectAttrs: Record<string, string> = {
-    width: String(opts.nodeW), height: String(h), rx: String(style.borderRadius),
-    fill: style.fillVar, stroke: style.strokeVar ?? "var(--background-modifier-border)",
-    "stroke-width": "1.5", class: "vzd-ost-node-rect",
-  };
-  if (style.dashed) rectAttrs["stroke-dasharray"] = "6 3";
-  group.appendChild(createSvgEl("rect", rectAttrs));
-
-  const fo = createSvgEl("foreignObject", {
-    x: "0", y: "0", width: String(opts.nodeW), height: String(h), class: "vzd-ost-fo",
-  }) as SVGForeignObjectElement;
+  editHandlers: TreeEditHandlers | undefined, closeRename: () => void,
+): HTMLElement {
   const host = document.createElement("div");
   host.className = "vzd-ost-node";
   if (style.strokeVar) host.style.setProperty("--vzd-ost-accent", style.strokeVar);
@@ -452,11 +474,7 @@ function renderWrapNode(
     host.appendChild(ul);
   }
 
-  fo.appendChild(host);
-  group.appendChild(fo);
-
   if (editHandlers) {
-    group.classList.add("vzd-tree-node--editable");
     labelEl.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       closeRename();
@@ -464,6 +482,33 @@ function renderWrapNode(
         if (nv && nv !== node.text) editHandlers.onRename(node, nv);
       });
     });
+  }
+
+  return host;
+}
+
+function renderWrapNode(
+  group: SVGGElement, node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
+  resolver: LinkResolver | undefined, navigateTo: ((h: string) => void) | undefined,
+  editHandlers: TreeEditHandlers | undefined, closeRename: () => void, direction: TreeDirection,
+): void {
+  const h = node.height || opts.nodeH;
+  const rectAttrs: Record<string, string> = {
+    width: String(opts.nodeW), height: String(h), rx: String(style.borderRadius),
+    fill: style.fillVar, stroke: style.strokeVar ?? "var(--background-modifier-border)",
+    "stroke-width": "1.5", class: "vzd-ost-node-rect",
+  };
+  if (style.dashed) rectAttrs["stroke-dasharray"] = "6 3";
+  group.appendChild(createSvgEl("rect", rectAttrs));
+
+  const fo = createSvgEl("foreignObject", {
+    x: "0", y: "0", width: String(opts.nodeW), height: String(h), class: "vzd-ost-fo",
+  }) as SVGForeignObjectElement;
+  fo.appendChild(buildOstNodeHost(node, opts, style, resolver, navigateTo, editHandlers, closeRename));
+  group.appendChild(fo);
+
+  if (editHandlers) {
+    group.classList.add("vzd-tree-node--editable");
     renderAddButton(group, node, opts, direction, editHandlers, closeRename);
     renderDelButton(group, node, opts, editHandlers, closeRename);
   }
@@ -632,7 +677,11 @@ export function renderTree(
   // ── Layout ────────────────────────────────────────────────────────────────
   let laneLayout: LaneLayout | undefined;
   if (isLanes) {
-    laneLayout = layoutTreeNodeLanes(tree.root, opts);
+    // Measure real wrapped heights off a hidden sizer in the (attached) container,
+    // falling back to the char-count estimate in headless environments.
+    const measurer = makeNodeMeasurer(el, opts, editHandlers);
+    laneLayout = layoutTreeNodeLanes(tree.root, opts, measurer);
+    measurer.dispose();
   } else if (isHorizontal) {
     layoutTreeNodeH(tree.root, opts);
     if (direction === "left") {
