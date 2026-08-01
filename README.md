@@ -33,6 +33,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `fourls` | 4Ls Retrospective | Grid |
 | `carousel` | Image Carousel | Gallery |
 | `experiment` | Experiment Canvas | Grid |
+| `fishbone` | Fishbone Diagram | Tree |
 | `impact` | Impact Map | Tree |
 | `journey` | Customer Journey Map | Grid |
 | `journey, blueprint` (or insert as `service-blueprint`) | Service Blueprint | Grid |
@@ -40,10 +41,8 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `kata` | Product Kata | Grid |
 | `lean` | Lean Canvas | Grid |
 | `leanux` | Lean UX Canvas | Grid |
-| `matrix` or `matrix, pain` | Pain Point Matrix | Grid |
-| `matrix, opportunity` | Opportunity Matrix | Grid |
-| `matrix, impact` | Impact / Effort Matrix | Grid |
-| `matrix, assumption` | Assumption Map (importance × evidence) | Grid |
+| `matrix` | Matrix — blank two-axis chart | Grid |
+| `matrix, pain` · `opportunity` · `impact` · `assumption` · `scenario` | Matrix presets (Pain, Opportunity, Impact/Effort, Assumption Map, Scenario 2×2) | Grid |
 | `mindmap` | Mind Map | Tree |
 | `nodemap` | Node Map | Graph |
 | `opportunity` | Opportunity Canvas | Grid |
@@ -53,7 +52,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `pacelayers, retro` | Pace Layer Analysis (retro variant) | Grid |
 | `rac` | Riskiest Assumptions Canvas | Grid |
 | `raci` | RACI Matrix | Table |
-| `scenario` | Scenario Matrix (GBN/Schwartz 2×2) | Grid |
+| `roadmap` | Now/Next/Later Roadmap | Grid |
 | `scqa` | SCQA Narrative | Grid / Tree |
 | `scr` | SCR Narrative | Grid / Tree |
 | `sipoc` or `sipoc, table` | SIPOC Diagram | Table |
@@ -1131,6 +1130,191 @@ Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a b
 
 ---
 
+### Matrix
+
+One two-axis engine covering priority grids, scenario 2×2s, and free scatter plots. Two `x:`/`y:` tick axes form a cell grid; **items** are cards placed at a coordinate or snapped to a cell. A **preset** fills the axes, per-cell heat, and colour.
+
+~~~
+```vizardry
+type: matrix, impact
+title: Q3 Prioritisation
+
+item: Fix mobile checkout at: t1
+  Wallet payments rejected
+item: Saved filter presets at: t2
+item: AI task summaries at: t7
+item: On-prem deployment at: t16
+item: Dark mode [0.28, 0.24]
+```
+~~~
+
+Presets are `pain` · `opportunity` · `impact` · `assumption` · `scenario` — each fills a default 4×4 (2×2 for `scenario`) with the right axis labels and heat. The example above snaps most items to cells (`at: t1`) and drops one at a free coordinate (`[0.28, 0.24]`).
+
+**From scratch** — omit the preset and define your own axes, then name/tint cells yourself:
+
+~~~
+```vizardry
+type: matrix
+title: Effort vs Reach
+
+x: Effort | Low | High
+y: Reach | Narrow | Wide
+
+t1: Do first | very-high
+t4: Skip | low
+
+item: Fix mobile checkout [0.15, 0.9]
+item: AI summaries [0.7, 0.8]
+```
+~~~
+
+**Scenario** — the `scenario` preset is a 2×2; name the four quadrants and drop items in:
+
+~~~
+```vizardry
+type: matrix, scenario
+title: Future of Work 2030
+
+x: AI capability | Assistive | Autonomous
+y: Regulation | Light-touch | Strict
+
+t1: Wild West
+t2: Compliance moat
+t3: Copilot era
+t4: Licensed autonomy
+
+item: Agents everywhere at: t1
+item: Audit + certification at: t2
+```
+~~~
+
+**Syntax:**
+- `type: matrix[, preset]` — preset ∈ `pain` · `opportunity` · `impact` · `assumption` · `scenario`, or omit for a blank chart
+- `x: Title | tick | tick …` / `y: Title | tick | tick …` — ticks are equal bands; N x-ticks × M y-ticks define an N×M cell grid
+- `tN: Name | heat` — name and/or tint a cell; cells are auto-ided `t1…t(N·M)` in reading order (**t1 = top-left**); heat ∈ `very-high` · `high` · `medium` · `low`, tinted from the chart's single base colour
+- `item: Label [x, y]` — a card at a coordinate in `[0, 1]` (origin bottom-left)
+- `item: Label at: tN` — a card snapped to a cell centre
+- Indented lines under an item — its card body
+- Link an item label to a heading or Linear/Upvoty ticket with `[[#Heading]]` / `[text](TICKET)` placed **before** the position token, e.g. `item: Fix login [Fix login](CORE-1234) at: t1`
+
+**In edit mode:** drag an item to reposition (writes `[x, y]` back to the source), click it to edit its body.
+
+---
+
+### Pace Layer Analysis
+
+~~~
+```vizardry
+type: pacelayers, product
+title: Pace Layer Analysis
+context: Our SaaS product — B2B team collaboration tool
+
+layer: Fashion
+  note: Team sentiment is shifting toward async-first. Standup fatigue is real.
+
+layer: Infrastructure
+  obs: Auth service is a bottleneck — every new integration depends on it
+  feed: Engineers report deploy confidence is low without better observability
+  idea: Introduce feature flags to decouple deploy from release
+
+layer: Governance
+  obs: SOC 2 audit is scheduled for Q3 — data handling policies need review
+  idea: Rewrite auth middleware; document data retention policy
+
+layer: Nature
+  note: Network effects are structural — the product gets more valuable as more teammates join.
+```
+~~~
+
+Six layers from fastest (Fashion) to slowest (Nature). Outer layers take a free-text `note:`; the middle working layers take `obs:` (observation), `feed:` (feedback signal), and `idea:` (action). Variants (`shearing` · `product` · `retro`) relabel the layers for different lenses.
+
+---
+
+### RACI Matrix
+
+~~~
+```vizardry
+type: raci
+title: Release RACI
+
+task: Define requirements
+  responsible: Developer
+  accountable: PM
+  consulted: QA
+  informed: Stakeholder
+
+task: Build feature
+  responsible: Developer
+  accountable: PM
+  consulted: QA
+  informed: Stakeholder, Client
+
+task: Test & sign off
+  responsible: QA
+  accountable: PM
+  consulted: Developer
+  informed: Stakeholder
+```
+~~~
+
+One row per `task:`, with `responsible:` / `accountable:` / `consulted:` / `informed:` roles below it (comma-separate multiple names). Renders as a table with people as columns and R/A/C/I badges in the cells.
+
+---
+
+### Fishbone Diagram
+
+~~~
+```vizardry
+type: fishbone
+title: Why did the launch slip?
+
+effect: Launch slipped by three weeks
+
+category: People
+  cause: Lack of training
+    subcause: No onboarding process
+  cause: High turnover
+
+category: Process
+  cause: Unclear requirements
+  cause: Manual handoffs
+
+category: Technology
+  cause: Legacy system
+    subcause: No API available
+  cause: Missing monitoring
+```
+~~~
+
+An Ishikawa diagram: the `effect:` is the fish head; each `category:` is a bone with `cause:` and nested `subcause:` branches feeding into it.
+
+---
+
+### Now/Next/Later Roadmap
+
+~~~
+```vizardry
+type: roadmap
+title: Product Roadmap
+
+now:
+  item: Ship login flow | CORE-1234
+  item: Fix checkout bug
+
+next:
+  item: Onboarding redesign | CORE-5678
+  item: Performance audit
+
+later:
+  item: Internationalisation
+  item: Dark mode
+```
+~~~
+
+Three time-horizon columns (`now:` / `next:` / `later:`), each holding `item:` cards. An optional `| <key>` after an item attaches a Linear/Jira-style ticket badge.
+
+---
+
 ## Linking elements to document headings
 
 Any canvas element can navigate to a heading in the same note — not just a whole block, but every individual bullet line and every card. A small link icon signals the connection — clicking the block, bullet, card, or node jumps to that heading.
@@ -1449,48 +1633,39 @@ The `type:` line self-identifies as `pacelayers` plus a variant, e.g. `type: pac
 
 ---
 
-### Priority Matrix (type: matrix, pain | opportunity | impact | assumption)
+### Matrix (type: matrix[, preset])
 
-A 4×4 grid with a top-left-hot heat gradient. The variant sets the axis labels; cells are declared by their row-col key.
+One two-axis engine — priority grids, scenario 2×2s, and free scatter plots are all the same model. `x:`/`y:` tick axes form a cell grid; items are cards placed at a coordinate or snapped to a cell. See the [Matrix example](#matrix) above for full examples.
 
 | Syntax | Meaning |
 |---|---|
-| `type: matrix, <variant>` | `pain` (default) · `opportunity` · `impact` · `assumption` |
-| `block: <row>-<col>` | A cell — rows `very-major` · `major` · `minor` · `very-minor` (top→bottom), cols `1`–`4` (left→right) |
-| `block: <row>-<col> \| card` | Render that cell's lines as draggable cards |
-| Indented lines under a `block:` | The cell's content (one card per line in card mode) |
+| `type: matrix[, <preset>]` | Preset ∈ `pain` · `opportunity` · `impact` · `assumption` · `scenario`, or omit for a blank chart. A preset supplies default axes, per-cell heat, and colour |
+| `x: Title \| tick \| tick …` | X-axis title + equal-band tick labels (left→right) |
+| `y: Title \| tick \| tick …` | Y-axis title + equal-band tick labels (bottom→top). N x-ticks × M y-ticks = an N×M cell grid |
+| `tN: Name \| heat` | Name and/or tint a cell. Cells are auto-ided `t1…t(N·M)` in reading order (t1 = top-left); heat ∈ `very-high` · `high` · `medium` · `low` |
+| `item: Label [x, y]` | A card at a coordinate in `[0, 1]` (origin bottom-left) |
+| `item: Label at: tN` | A card snapped to the centre of cell `tN` |
+| Indented lines under an `item:` | The card body |
+| `item: Label [[#Heading]] [x, y]` | Link the item label to a heading (annotation **before** the position token) |
+| `item: Label [text](TICKET) at: tN` | Link the item label to a Linear/Upvoty ticket |
+| Blank lines / `// comment` | Ignored |
 
-For **`assumption`** (importance × evidence): rows are importance (very high → very low), columns are evidence (`1` = none → `4` = strong). Top-left (`very-major-1`) is the riskiest — important but unproven — to test first.
+The `assumption` preset uses a gated heat (importance × evidence) so only the top-left leap-of-faith cell is hot; `pain`/`opportunity`/`impact` use an even top-left-hot diagonal; `scenario` is a 2×2 with no heat.
+
+> **Breaking change (0.44.0):** the old matrix/scenario syntax was replaced. `block: <row>-<col>` cells, `| card`, `layout: plot`, `zone:`, and `type: scenario` with `x-axis:`/`top-left:` are all gone — rewrite blocks in the unified grammar above.
 
 ---
 
-### Scenario Matrix (type: scenario)
-
-A GBN/Schwartz 2×2: two user-defined critical uncertainties frame four named scenarios (no priority heat — all quadrants are equal).
-
-~~~
-```vizardry
-type: scenario
-title: Future of Mobility 2035
-
-x-axis: Energy price | Cheap energy | Expensive energy
-y-axis: Autonomy adoption | Slow adoption | Fast adoption
-
-top-left: Gridlock
-  Cars stay private
-  Cities congest
-top-right: Robo-taxis everywhere
-bottom-left: Status quo
-bottom-right: Shared & electric
-```
-~~~
+### RACI Matrix (type: raci)
 
 | Syntax | Meaning |
 |---|---|
-| `x-axis: <name> \| <low> \| <high>` | Horizontal axis — `low` pole on the left, `high` on the right (required) |
-| `y-axis: <name> \| <low> \| <high>` | Vertical axis — `low` pole at the bottom, `high` at the top (required) |
-| `top-left:` / `top-right:` / `bottom-left:` / `bottom-right: <name>` | A quadrant's scenario name (top = high y, bottom = low y, left = low x, right = high x) |
-| Indented lines under a quadrant | Detail, rendered as cards that can link to headings and be dragged between scenarios |
+| `task: <name>` | One row (an activity or deliverable) |
+| Indented `responsible: <names>` | Who does the work (R) — comma-separate multiple |
+| Indented `accountable: <names>` | Who owns the outcome (A) |
+| Indented `consulted: <names>` | Who is consulted (C) |
+| Indented `informed: <names>` | Who is kept informed (I) |
+| `title: <text>` | Optional canvas title |
 
 ---
 
