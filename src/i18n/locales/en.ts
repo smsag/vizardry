@@ -173,7 +173,8 @@ export const en = {
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
 
   // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
-  "framework.matrix.description": "Map pain points, opportunities, or impact vs. effort on a 4×4 grid.",
+  "framework.matrix.description": "Map pain points, opportunities, impact vs. effort, or assumptions on a 4×4 grid.",
+  "framework.scenario.description": "Two critical uncertainties, four scenarios — a GBN/Schwartz 2×2.",
 
   "matrix.row.pain.1": "Very Major Pain",
   "matrix.row.pain.2": "Major Pain",
@@ -190,6 +191,11 @@ export const en = {
   "matrix.row.impact.3": "Low Impact",
   "matrix.row.impact.4": "Very Low Impact",
 
+  "matrix.row.assumption.1": "Very High Importance",
+  "matrix.row.assumption.2": "High Importance",
+  "matrix.row.assumption.3": "Low Importance",
+  "matrix.row.assumption.4": "Very Low Importance",
+
   "matrix.col.pain.1": "Mentioned by Everyone",
   "matrix.col.pain.2": "Mentioned by Many",
   "matrix.col.pain.3": "Mentioned by Some",
@@ -205,9 +211,15 @@ export const en = {
   "matrix.col.impact.3": "High Effort",
   "matrix.col.impact.4": "Very High Effort",
 
+  "matrix.col.assumption.1": "No Evidence",
+  "matrix.col.assumption.2": "Little Evidence",
+  "matrix.col.assumption.3": "Some Evidence",
+  "matrix.col.assumption.4": "Strong Evidence",
+
   "matrix.subtitle.pain":        "(Current State)",
   "matrix.subtitle.opportunity": "(Future State)",
   "matrix.subtitle.impact":      "(Prioritisation)",
+  "matrix.subtitle.assumption":  "(Test Riskiest First)",
 
   "matrix.legend.veryHigh": "Very High",
   "matrix.legend.high":     "High",

@@ -3,7 +3,7 @@ import { parseFrameworkSource } from "./parser";
 
 function resolveMatrixType(value: string): MatrixType | null {
   const v = value.trim().toLowerCase();
-  if (v === "pain" || v === "opportunity" || v === "impact") return v;
+  if (v === "pain" || v === "opportunity" || v === "impact" || v === "assumption") return v;
   return null;
 }
 
@@ -23,7 +23,7 @@ export function parseMatrix(source: string, typeOverride?: string): MatrixResult
   if (typeOverride !== undefined) {
     const resolved = resolveMatrixType(typeOverride);
     if (!resolved) {
-      return { ok: false, error: `Unknown type "${typeOverride.trim().toLowerCase()}" — expected "pain", "opportunity", or "impact"` };
+      return { ok: false, error: `Unknown type "${typeOverride.trim().toLowerCase()}" — expected "pain", "opportunity", "impact", or "assumption"` };
     }
     type = resolved;
     // The dispatcher already blanked the type: line it dispatched on, but
@@ -40,7 +40,7 @@ export function parseMatrix(source: string, typeOverride?: string): MatrixResult
       const value = trimmed.slice("type:".length);
       const resolved = resolveMatrixType(value);
       if (!resolved) {
-        return { ok: false, error: `Unknown type "${value.trim().toLowerCase()}" — expected "pain", "opportunity", or "impact"` };
+        return { ok: false, error: `Unknown type "${value.trim().toLowerCase()}" — expected "pain", "opportunity", "impact", or "assumption"` };
       }
       type = resolved;
       lines[i] = ""; // blank, not remove — keeps line numbers stable for error messages

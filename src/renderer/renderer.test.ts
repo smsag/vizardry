@@ -32,6 +32,7 @@ vi.mock("html-to-image", () => ({
 // ── Renderer imports (after mocks are declared) ───────────────────────────────
 import { renderError, renderCanvas } from "./canvas";
 import { renderMatrix } from "./matrix";
+import { renderScenario } from "./scenario";
 import { renderTree, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
 import type { TreeRenderOptions } from "../types";
 
@@ -260,6 +261,13 @@ describe("renderMatrix", () => {
     expect(el.querySelectorAll(".vzd-card-block-card").length).toBeGreaterThan(0);
   });
 
+  it("renders the assumption variant (4x4 grid)", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "assumption" }, el);
+    expect(el.querySelectorAll(".vzd-matrix-cell")).toHaveLength(16);
+    expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Importance");
+  });
+
   it("does not apply the editable hover affordance to a cell body in Read Mode", () => {
     // Read Mode still provides app/ctx (the post-processor runs there too);
     // the edit affordance must be gated on the actual view mode, not just
@@ -270,6 +278,39 @@ describe("renderMatrix", () => {
     const ctx = { sourcePath: "note.md" } as any;
     renderMatrix(matrixData, el, undefined, previewApp, ctx);
     expect(el.querySelector(".vzd-block-editable")).toBeNull();
+  });
+});
+
+// ── renderScenario (GBN/Schwartz 2×2) ─────────────────────────────────────────
+
+describe("renderScenario", () => {
+  const data = {
+    xAxis: { name: "Energy price", low: "Cheap", high: "Expensive" },
+    yAxis: { name: "Autonomy", low: "Slow", high: "Fast" },
+    quadrants: {
+      "top-left": { name: "Gridlock", content: "Cars stay private" },
+      "top-right": { name: "Robo-taxis", content: "" },
+      "bottom-left": { name: "Status quo", content: "" },
+      "bottom-right": { name: "Shared", content: "Micromobility booms" },
+    },
+  } as const;
+
+  it("renders four quadrant cells with names, axis names and poles", () => {
+    const el = container();
+    expect(() => renderScenario(data as any, el)).not.toThrow();
+    expect(el.querySelectorAll(".vzd-scenario-cell")).toHaveLength(4);
+    const names = Array.from(el.querySelectorAll(".vzd-scenario-cell-name")).map(n => n.textContent);
+    expect(names).toEqual(["Gridlock", "Robo-taxis", "Status quo", "Shared"]);
+    expect(el.querySelector(".vzd-scenario-yname")?.textContent).toBe("Autonomy");
+    expect(el.querySelector(".vzd-scenario-xname")?.textContent).toBe("Energy price");
+    const poles = Array.from(el.querySelectorAll(".vzd-scenario-pole")).map(p => p.textContent);
+    expect(poles).toEqual(expect.arrayContaining(["Fast", "Slow", "Cheap", "Expensive"]));
+  });
+
+  it("renders quadrant detail as cards", () => {
+    const el = container();
+    renderScenario(data as any, el);
+    expect(el.querySelectorAll(".vzd-card-block-card").length).toBeGreaterThan(0);
   });
 });
 

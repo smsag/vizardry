@@ -1,3 +1,4 @@
-## 0.41.3
+## 0.42.0
 
-- **Fix: OST / SCQA-SCR swim-lane views no longer show an inner vertical scrollbar.** These top-down diagrams now grow to their full height so the note scrolls vertically, instead of being capped and scrolling inside the canvas. Wide trees still scroll horizontally.
+- **New: Assumption Map (`type: matrix, assumption`).** An importance × evidence variant of the priority matrix. Rows are importance (very high → very low), columns are evidence (none → strong); the top-left cell (important but unproven) is the riskiest — the leap-of-faith assumptions to test first.
+- **New: Scenario Matrix (`type: scenario`).** A GBN/Schwartz 2×2: define two critical uncertainties as axes (`x-axis: name | low | high`, `y-axis: …`) and name the four scenario quadrants (`top-left:` … with indented detail). Quadrant detail renders as cards that can link to headings and be dragged between scenarios.

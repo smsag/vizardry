@@ -521,7 +521,7 @@ export type NodeMapResult = Result<NodeMapData>;
 
 // ── Pain / Opportunity Matrix ─────────────────────────────────────────────────
 
-export type MatrixType = "pain" | "opportunity" | "impact";
+export type MatrixType = "pain" | "opportunity" | "impact" | "assumption";
 
 export interface MatrixData {
   type: MatrixType;
@@ -531,3 +531,29 @@ export interface MatrixData {
 }
 
 export type MatrixResult = Result<MatrixData>;
+
+// ── Scenario Matrix (GBN / Schwartz 2×2) ────────────────────────────────────
+// Two user-defined critical uncertainties as axes, each with a low and high
+// pole, producing four named scenario quadrants. Unlike the priority matrix,
+// all quadrants are equal (no heat). Quadrant content renders as cards.
+
+export interface ScenarioAxis {
+  name: string;
+  low: string;   // left pole (x) / bottom pole (y)
+  high: string;  // right pole (x) / top pole (y)
+}
+
+export type ScenarioQuadrantKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+export interface ScenarioQuadrant {
+  name: string;
+  content: string; // "\n"-joined detail lines, rendered as cards
+}
+
+export interface ScenarioData {
+  xAxis: ScenarioAxis;
+  yAxis: ScenarioAxis;
+  quadrants: Record<ScenarioQuadrantKey, ScenarioQuadrant>;
+}
+
+export type ScenarioResult = Result<ScenarioData>;

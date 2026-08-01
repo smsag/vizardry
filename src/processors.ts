@@ -35,12 +35,13 @@ import { parsePaceLayers } from "./pacelayers";
 import { parseConceptMap } from "./conceptmap";
 import { parseNodeMap } from "./nodemap";
 import { parseMatrix } from "./matrix";
+import { parseScenario } from "./scenario";
 import { parseSCQA } from "./scqa";
 import { parseJourney } from "./journey";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
+  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderScenario, renderSCQA,
   renderJourneyMap,
   renderError,
 } from "./renderer";
@@ -50,7 +51,8 @@ import {
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
-  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
+  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
+  SCENARIO_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
 } from "./templates";
@@ -91,6 +93,7 @@ export interface ModalOnlyOption {
 export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
+  { id: "assumption-matrix",  label: "Assumption Map",        template: MATRIX_ASSUMPTION_TEMPLATE },
   { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
   { id: "service-blueprint",  label: "Service Blueprint",     template: SERVICE_BLUEPRINT_TEMPLATE },
 ];
@@ -277,6 +280,18 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
+    },
+  },
+  {
+    id: "scenario",
+    label: "Scenario Matrix",
+    template: SCENARIO_TEMPLATE,
+    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
+      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
+      const result = parseScenario(strippedSource);
+      if (!result.ok) { renderError(result.error, el); return; }
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+      renderScenario(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
   {

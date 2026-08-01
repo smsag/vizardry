@@ -43,6 +43,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `matrix` or `matrix, pain` | Pain Point Matrix | Grid |
 | `matrix, opportunity` | Opportunity Matrix | Grid |
 | `matrix, impact` | Impact / Effort Matrix | Grid |
+| `matrix, assumption` | Assumption Map (importance × evidence) | Grid |
 | `mindmap` | Mind Map | Tree |
 | `nodemap` | Node Map | Graph |
 | `opportunity` | Opportunity Canvas | Grid |
@@ -52,6 +53,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `pacelayers, retro` | Pace Layer Analysis (retro variant) | Grid |
 | `rac` | Riskiest Assumptions Canvas | Grid |
 | `raci` | RACI Matrix | Table |
+| `scenario` | Scenario Matrix (GBN/Schwartz 2×2) | Grid |
 | `scqa` | SCQA Narrative | Grid / Tree |
 | `scr` | SCR Narrative | Grid / Tree |
 | `sipoc` or `sipoc, table` | SIPOC Diagram | Table |
@@ -1444,6 +1446,51 @@ The `type:` line self-identifies as `pacelayers` plus a variant, e.g. `type: pac
 | `obs:` | Observation from this layer |
 | `feed:` | Signal or feedback from this layer |
 | `idea:` | Action idea or hypothesis |
+
+---
+
+### Priority Matrix (type: matrix, pain | opportunity | impact | assumption)
+
+A 4×4 grid with a top-left-hot heat gradient. The variant sets the axis labels; cells are declared by their row-col key.
+
+| Syntax | Meaning |
+|---|---|
+| `type: matrix, <variant>` | `pain` (default) · `opportunity` · `impact` · `assumption` |
+| `block: <row>-<col>` | A cell — rows `very-major` · `major` · `minor` · `very-minor` (top→bottom), cols `1`–`4` (left→right) |
+| `block: <row>-<col> \| card` | Render that cell's lines as draggable cards |
+| Indented lines under a `block:` | The cell's content (one card per line in card mode) |
+
+For **`assumption`** (importance × evidence): rows are importance (very high → very low), columns are evidence (`1` = none → `4` = strong). Top-left (`very-major-1`) is the riskiest — important but unproven — to test first.
+
+---
+
+### Scenario Matrix (type: scenario)
+
+A GBN/Schwartz 2×2: two user-defined critical uncertainties frame four named scenarios (no priority heat — all quadrants are equal).
+
+~~~
+```vizardry
+type: scenario
+title: Future of Mobility 2035
+
+x-axis: Energy price | Cheap energy | Expensive energy
+y-axis: Autonomy adoption | Slow adoption | Fast adoption
+
+top-left: Gridlock
+  Cars stay private
+  Cities congest
+top-right: Robo-taxis everywhere
+bottom-left: Status quo
+bottom-right: Shared & electric
+```
+~~~
+
+| Syntax | Meaning |
+|---|---|
+| `x-axis: <name> \| <low> \| <high>` | Horizontal axis — `low` pole on the left, `high` on the right (required) |
+| `y-axis: <name> \| <low> \| <high>` | Vertical axis — `low` pole at the bottom, `high` at the top (required) |
+| `top-left:` / `top-right:` / `bottom-left:` / `bottom-right: <name>` | A quadrant's scenario name (top = high y, bottom = low y, left = low x, right = high x) |
+| Indented lines under a quadrant | Detail, rendered as cards that can link to headings and be dragged between scenarios |
 
 ---
 
