@@ -5,7 +5,7 @@
   "minAppVersion": "1.4.0",
   "description": "Renders product management frameworks as visual canvases inline in Read View.",
   "author": "Steffen Seitz",
-  "authorUrl": "",
+  "authorUrl": "https://github.com/smsag",
   "fundingUrl": "",
   "isDesktopOnly": false
 }

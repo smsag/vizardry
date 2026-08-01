@@ -9,11 +9,29 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
-  "keywords": [],
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "product-management",
+    "canvas",
+    "diagrams"
+  ],
   "author": "Steffen Seitz <vizardry@grembl.de>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smsag/vizardry.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smsag/vizardry/issues"
+  },
+  "homepage": "https://github.com/smsag/vizardry#readme",
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
