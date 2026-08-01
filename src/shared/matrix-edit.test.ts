@@ -1,9 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Tests for the plot-mode write-back: writeItemPosition (drag → x/y) and
+ * Tests for matrix `item:` write-back: writeItemPosition (drag → [x,y]) and
  * writeItemContent (edit → body). Uses the same minimal Obsidian fakes as
- * block-edit.test.ts so the surgical editor patches can be verified without
- * Obsidian's runtime.
+ * block-edit.test.ts.
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -15,16 +14,12 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { writeItemPosition, writeItemContent } from "./plot-edit";
+import { writeItemPosition, writeItemContent } from "./matrix-edit";
 import { MarkdownView } from "obsidian";
 
 function makeMockEditor(lines: string[]) {
   const replaceRange = vi.fn();
-  return {
-    getLine: (n: number) => lines[n] ?? "",
-    lineCount: () => lines.length,
-    replaceRange,
-  };
+  return { getLine: (n: number) => lines[n] ?? "", lineCount: () => lines.length, replaceRange };
 }
 type MockEditor = ReturnType<typeof makeMockEditor>;
 
@@ -43,46 +38,42 @@ function makeCtx(sourcePath: string, lineStart: number, lineEnd: number) {
 }
 
 const FENCE = [
-  "```vizardry",                       // 0
-  "type: matrix, impact",              // 1
-  "layout: plot",                      // 2
-  "x-axis: Effort | Low | High",       // 3
-  "y-axis: Impact | Low | High",       // 4
-  "item: Fix checkout | x: 0.2, y: 0.8", // 5
-  "  Wallet rejected",                 // 6
-  "item: Dark mode | x: 0.3, y: 0.25", // 7
-  "```",                               // 8
+  "```vizardry",                          // 0
+  "type: matrix, impact",                 // 1
+  "item: Fix checkout [0.2, 0.8]",        // 2
+  "  Wallet rejected",                    // 3
+  "item: Dark mode at: t7",               // 4
+  "```",                                  // 5
 ];
 
 describe("writeItemPosition", () => {
-  it("rewrites the header's coordinates, preserving the label text", () => {
+  it("rewrites a coordinate item's header, preserving the label", () => {
     const editor = makeMockEditor([...FENCE]);
     const app = makeApp("note.md", editor) as any;
-    const ok = writeItemPosition(app, makeCtx("note.md", 0, 8) as any, document.createElement("div"), "Fix checkout", 0.5, 0.6);
+    const ok = writeItemPosition(app, makeCtx("note.md", 0, 5) as any, document.createElement("div"), "Fix checkout", 0.5, 0.6);
     expect(ok).toBe(true);
     expect(editor.replaceRange).toHaveBeenCalledWith(
-      "item: Fix checkout | x: 0.5, y: 0.6",
-      { line: 5, ch: 0 },
-      { line: 5, ch: FENCE[5].length },
+      "item: Fix checkout [0.5, 0.6]",
+      { line: 2, ch: 0 },
+      { line: 2, ch: FENCE[2].length },
     );
   });
 
-  it("rounds coordinates to two decimals to limit diff churn", () => {
+  it("converts an `at:` item to coordinates on drag, rounding to 2 dp", () => {
     const editor = makeMockEditor([...FENCE]);
     const app = makeApp("note.md", editor) as any;
-    writeItemPosition(app, makeCtx("note.md", 0, 8) as any, document.createElement("div"), "Dark mode", 0.126, 0.874);
+    writeItemPosition(app, makeCtx("note.md", 0, 5) as any, document.createElement("div"), "Dark mode", 0.126, 0.874);
     expect(editor.replaceRange).toHaveBeenCalledWith(
-      "item: Dark mode | x: 0.13, y: 0.87",
-      { line: 7, ch: 0 },
-      { line: 7, ch: FENCE[7].length },
+      "item: Dark mode [0.13, 0.87]",
+      { line: 4, ch: 0 },
+      { line: 4, ch: FENCE[4].length },
     );
   });
 
   it("returns false when the item is not found", () => {
     const editor = makeMockEditor([...FENCE]);
     const app = makeApp("note.md", editor) as any;
-    const ok = writeItemPosition(app, makeCtx("note.md", 0, 8) as any, document.createElement("div"), "Ghost", 0.5, 0.5);
-    expect(ok).toBe(false);
+    expect(writeItemPosition(app, makeCtx("note.md", 0, 5) as any, document.createElement("div"), "Ghost", 0.5, 0.5)).toBe(false);
     expect(editor.replaceRange).not.toHaveBeenCalled();
   });
 });
@@ -91,23 +82,21 @@ describe("writeItemContent", () => {
   it("replaces an existing indented body", () => {
     const editor = makeMockEditor([...FENCE]);
     const app = makeApp("note.md", editor) as any;
-    const ok = writeItemContent(app, makeCtx("note.md", 0, 8) as any, document.createElement("div"), "Fix checkout", "New detail");
-    expect(ok).toBe(true);
+    writeItemContent(app, makeCtx("note.md", 0, 5) as any, document.createElement("div"), "Fix checkout", "New detail");
     expect(editor.replaceRange).toHaveBeenCalledWith(
       "  New detail",
-      { line: 6, ch: 0 },
-      { line: 6, ch: FENCE[6].length },
+      { line: 3, ch: 0 },
+      { line: 3, ch: FENCE[3].length },
     );
   });
 
   it("inserts a body after the header when the item had none", () => {
     const editor = makeMockEditor([...FENCE]);
     const app = makeApp("note.md", editor) as any;
-    const ok = writeItemContent(app, makeCtx("note.md", 0, 8) as any, document.createElement("div"), "Dark mode", "Now has detail");
-    expect(ok).toBe(true);
+    writeItemContent(app, makeCtx("note.md", 0, 5) as any, document.createElement("div"), "Dark mode", "Now detailed");
     expect(editor.replaceRange).toHaveBeenCalledWith(
-      "\n  Now has detail",
-      { line: 7, ch: FENCE[7].length },
+      "\n  Now detailed",
+      { line: 4, ch: FENCE[4].length },
     );
   });
 });

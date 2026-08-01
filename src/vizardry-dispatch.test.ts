@@ -136,45 +136,42 @@ describe("dispatchVizardry", () => {
     expect(el.classList.contains("vizardry-error")).toBe(false);
   });
 
-  it("dispatches a compound-variant id (matrix) and applies the variant", () => {
+  it("dispatches a matrix preset variant and renders the unified engine", () => {
     const el = container();
-    dispatchVizardry("type: matrix, opportunity\nblock: very-major-1\n  X", el, fakeCtx(), fakeApp());
+    dispatchVizardry("type: matrix, opportunity\nitem: Idea at: t1", el, fakeCtx(), fakeApp());
     expect(el.classList.contains("vizardry-error")).toBe(false);
-    expect(el.querySelector(".vzd-matrix-wrap")?.getAttribute("data-type")).toBe("opportunity");
+    expect(el.querySelector(".vzd-mx-wrap")?.getAttribute("data-preset")).toBe("opportunity");
+    expect(el.querySelector(".vzd-mx-item-label")?.textContent).toBe("Idea");
   });
 
-  it("accepts `type: matrix, scenario` as an alias for the scenario renderer", () => {
+  it("renders a preset-less matrix from author-defined axes", () => {
+    const el = container();
+    const src = [
+      "type: matrix",
+      "x: Effort | Low | High",
+      "y: Reach | Narrow | Wide",
+      "t1: Do first | very-high",
+      "item: Fix checkout [0.2, 0.8]",
+    ].join("\n");
+    dispatchVizardry(src, el, fakeCtx(), fakeApp());
+    expect(el.classList.contains("vizardry-error")).toBe(false);
+    expect(el.querySelector(".vzd-mx-wrap")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-mx-cell")).toHaveLength(4); // 2×2
+  });
+
+  it("scenario is now a matrix preset (2×2)", () => {
     const el = container();
     const src = [
       "type: matrix, scenario",
-      "x-axis: Energy | Cheap | Expensive",
-      "y-axis: Autonomy | Slow | Fast",
-      "top-left: Gridlock",
-      "  Private cars stay cheap",
-      "top-right: Robo-taxis",
-      "bottom-left: Status quo",
-      "bottom-right: Shared & electric",
+      "x: AI | Assistive | Autonomous",
+      "y: Regulation | Light | Strict",
+      "t1: Wild West",
+      "item: Agents at: t1",
     ].join("\n");
     dispatchVizardry(src, el, fakeCtx(), fakeApp());
     expect(el.classList.contains("vizardry-error")).toBe(false);
-    // Routes to the scenario engine, not the 4×4 priority grid.
-    expect(el.querySelector(".vzd-scenario-wrap")).toBeTruthy();
-    expect(el.querySelector(".vzd-matrix-wrap")).toBeNull();
-  });
-
-  it("renders a matrix with layout: plot via the plot renderer", () => {
-    const el = container();
-    const src = [
-      "type: matrix, impact",
-      "layout: plot",
-      "x-axis: Effort | Low | High",
-      "y-axis: Impact | Low | High",
-      "item: Fix checkout | x: 0.2, y: 0.8",
-    ].join("\n");
-    dispatchVizardry(src, el, fakeCtx(), fakeApp());
-    expect(el.classList.contains("vizardry-error")).toBe(false);
-    expect(el.querySelector(".vzd-plot-wrap")).toBeTruthy();
-    expect(el.querySelector(".vzd-matrix-wrap")).toBeNull();
+    expect(el.querySelectorAll(".vzd-mx-cell")).toHaveLength(4);
+    expect(el.querySelector(".vzd-mx-cell-name")?.textContent).toBe("Wild West");
   });
 
   it("dispatches a compound-variant id (pacelayers) and applies the variant", () => {

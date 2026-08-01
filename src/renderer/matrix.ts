@@ -1,61 +1,32 @@
+import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { MatrixData, MatrixType } from "../types";
+import type { MatrixData, MatrixItem, MatrixPreset } from "../types";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n/locales/en";
-import { initCanvas } from "./controls";
-import { renderTwoPassCells, buildCardDropTargets, type TwoPassCell } from "./two-pass-cells";
-import type { LinkResolver } from "../shared/links";
+import { initCanvas, renderHeadingLink } from "./controls";
+import { renderBlockBody } from "./block-editor";
+import { presetColor } from "../matrix-presets";
+import { writeItemPosition, writeItemContent } from "../shared/matrix-edit";
+import { isEditModeActive } from "../shared/editor";
+import { classifyTicketTarget, type LinkResolver } from "../shared/links";
 
-const ROWS = ["very-major", "major", "minor", "very-minor"] as const;
-const COLS = [1, 2, 3, 4] as const;
+const DRAG_THRESHOLD = 4;
+const pct = (n: number): string => `${(n * 100).toFixed(3)}%`;
 
-export const BASE_COLORS: Record<MatrixType, string> = {
-  pain:        "hsl(0, 70%, 55%)",
-  opportunity: "hsl(220, 65%, 55%)",
-  impact:      "hsl(145, 55%, 42%)",
-  assumption:  "hsl(265, 55%, 58%)",
+const TITLES: Record<MatrixPreset, string> = {
+  pain: "Pain Point Matrix",
+  opportunity: "Opportunity Matrix",
+  impact: "Impact / Effort Matrix",
+  assumption: "Assumption Map",
+  scenario: "Scenario Matrix",
 };
 
-type Heat = "very-high" | "high" | "medium" | "low";
-
-// Impact/Effort (and pain/opportunity): both axes point the same way — index 1
-// is the "good" end on each — so priority is an even diagonal gradient. Both
-// off-diagonal corners (big bet / fill-in) genuinely deserve a middling heat.
-function additiveHeat(row: number, col: number): Heat {
-  const score = (row - 1) + (col - 1);
-  if (score <= 1) return "very-high";
-  if (score <= 3) return "high";
-  if (score <= 5) return "medium";
-  return "low";
-}
-
-// Assumption Map: importance × evidence are NOT the same kind of axis. An
-// assumption is worth testing only when it is important AND unproven — a gate,
-// not a sum. So heat is the product of importance and ignorance, concentrating
-// it in the top-left (important + no evidence = the leap-of-faith) and cooling
-// BOTH off-diagonal corners (validated / nobody-cares) to cold.
-function gatedHeat(row: number, col: number): Heat {
-  const importance = ROWS.length + 1 - row; // very-high importance (row 1) → 4
-  const ignorance = COLS.length + 1 - col;  // no evidence (col 1) → 4
-  const score = importance * ignorance;     // 1 … 16, peaks top-left
-  if (score >= 12) return "very-high";
-  if (score >= 8) return "high";
-  if (score >= 5) return "medium";
-  return "low";
-}
-
-function heatLevel(type: MatrixType, row: number, col: number): Heat {
-  return type === "assumption" ? gatedHeat(row, col) : additiveHeat(row, col);
-}
-
-function rowKey(type: MatrixType, rowIdx: number): TranslationKey {
-  return `matrix.row.${type}.${rowIdx + 1}` as TranslationKey;
-}
-
-function colKey(type: MatrixType, colIdx: number): TranslationKey {
-  return `matrix.col.${type}.${colIdx + 1}` as TranslationKey;
-}
-
+/**
+ * The one matrix renderer: two tick-labelled axes form an N×M cell grid (tinted
+ * by heat, optionally named); items are cards placed at a free `[x, y]`
+ * coordinate or snapped to a cell centre. In edit mode items drag to reposition
+ * (writing `[x, y]` back) and click to edit their body.
+ */
 export function renderMatrix(
   data: MatrixData,
   container: HTMLElement,
@@ -65,82 +36,226 @@ export function renderMatrix(
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
 ): void {
-  const defaultTitle = data.type === "pain" ? "Pain Point Matrix"
-    : data.type === "opportunity" ? "Opportunity Matrix"
-    : data.type === "assumption" ? "Assumption Map"
-    : "Impact / Effort Matrix";
+  container.style.setProperty("--vzd-matrix-base", presetColor(data.preset));
 
-  // Set base color on container so legend pills (inside header) inherit it.
-  container.style.setProperty("--vzd-matrix-base", BASE_COLORS[data.type]);
-  // vzSource (the resolveEditor Live-Preview fallback) is set by initCanvas.
+  const cols = data.xAxis.ticks.length;
+  const rows = data.yAxis.ticks.length;
+  const hasHeat = data.cells.some(c => c.heat);
 
   initCanvas(
     container,
     "matrix",
-    defaultTitle,
-    (header) => {
-      // Inject legend between title and action buttons.
-      const actionsDiv = header.querySelector(".vizardry-header-actions");
-      const legend = header.createEl("div", { cls: "vzd-matrix-legend" });
-
-      const levels: Array<{ key: TranslationKey; cls: string }> = [
-        { key: "matrix.legend.veryHigh", cls: "vzd-matrix-legend-pill--very-high" },
-        { key: "matrix.legend.high",     cls: "vzd-matrix-legend-pill--high" },
-        { key: "matrix.legend.medium",   cls: "vzd-matrix-legend-pill--medium" },
-        { key: "matrix.legend.low",      cls: "vzd-matrix-legend-pill--low" },
-      ];
-      for (const { key, cls } of levels) {
-        legend.createEl("span", { cls: `vzd-matrix-legend-pill ${cls}`, text: t(key) });
-      }
-
-      if (actionsDiv) header.insertBefore(legend, actionsDiv);
-    },
+    data.preset ? TITLES[data.preset] : "Matrix",
+    hasHeat ? (header) => renderLegend(header) : undefined,
     source,
-    undefined, // title not editable (no source write-back for title here)
+    undefined,
     app,
     ctx,
   );
 
-  const wrap = container.createEl("div", { cls: "vzd-matrix-wrap" });
-  wrap.dataset.type = data.type;
+  const editMode = !!(app && ctx && isEditModeActive(app));
 
-  // Optional axis-title overrides (D): rename the overall axis without touching
-  // the curated tick labels or heat. Reflows the grid to reserve name gutters.
-  if (data.xAxis || data.yAxis) {
-    wrap.classList.add("vzd-matrix-wrap--axis-titled");
-    if (data.yAxis) wrap.createEl("div", { cls: "vzd-matrix-yname", text: data.yAxis });
-    if (data.xAxis) wrap.createEl("div", { cls: "vzd-matrix-xname", text: data.xAxis });
+  const wrap = container.createEl("div", { cls: "vzd-mx-wrap" });
+  if (data.preset) wrap.dataset.preset = data.preset;
+
+  wrap.createEl("div", { cls: "vzd-mx-yname" }).createEl("span", { text: data.yAxis.title });
+
+  const main = wrap.createEl("div", { cls: "vzd-mx-main" });
+
+  // Y tick bands (top → bottom in the DOM; data ticks are bottom → top).
+  const yTicks = main.createEl("div", { cls: "vzd-mx-yticks" });
+  for (let r = rows - 1; r >= 0; r--) {
+    yTicks.createEl("div", { cls: "vzd-mx-tick", text: data.yAxis.ticks[r] });
   }
 
-  // Y-axis labels
-  const yAxis = wrap.createEl("div", { cls: "vzd-matrix-y-axis" });
-  ROWS.forEach((_, rowIdx) => {
-    yAxis.createEl("div", { cls: "vzd-matrix-y-label", text: t(rowKey(data.type, rowIdx)) });
+  const area = main.createEl("div", { cls: "vzd-mx-area" });
+
+  // Cell grid background (reading order: top row first).
+  const grid = area.createEl("div", { cls: "vzd-mx-cells" });
+  if (cols > 0 && rows > 0) {
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    for (const cell of data.cells) {
+      const el = grid.createEl("div", { cls: "vzd-mx-cell" });
+      if (cell.heat) el.classList.add(`vzd-mx-cell--${cell.heat}`);
+      if (cell.name) el.createEl("div", { cls: "vzd-mx-cell-name", text: cell.name });
+    }
+  }
+
+  // Item overlay.
+  const overlay = area.createEl("div", { cls: "vzd-mx-items" });
+  for (const item of data.items) {
+    renderItem(item, overlay, area, cols, rows, container, editMode, app, ctx, resolver, navigateTo);
+  }
+
+  // X tick bands (left → right).
+  const xTicks = main.createEl("div", { cls: "vzd-mx-xticks" });
+  for (let c = 0; c < cols; c++) {
+    xTicks.createEl("div", { cls: "vzd-mx-tick", text: data.xAxis.ticks[c] });
+  }
+
+  wrap.createEl("div", { cls: "vzd-mx-xname", text: data.xAxis.title });
+}
+
+function renderLegend(header: HTMLElement): void {
+  const actionsDiv = header.querySelector(".vizardry-header-actions");
+  const legend = header.createEl("div", { cls: "vzd-matrix-legend" });
+  const levels: Array<{ key: TranslationKey; cls: string }> = [
+    { key: "matrix.legend.veryHigh", cls: "vzd-matrix-legend-pill--very-high" },
+    { key: "matrix.legend.high",     cls: "vzd-matrix-legend-pill--high" },
+    { key: "matrix.legend.medium",   cls: "vzd-matrix-legend-pill--medium" },
+    { key: "matrix.legend.low",      cls: "vzd-matrix-legend-pill--low" },
+  ];
+  for (const { key, cls } of levels) {
+    legend.createEl("span", { cls: `vzd-matrix-legend-pill ${cls}`, text: t(key) });
+  }
+  if (actionsDiv) header.insertBefore(legend, actionsDiv);
+}
+
+/** A resolver that returns the item's own explicit link annotation, falling
+ *  back to the shared resolver (heading auto-detect, blind ticket enrichment). */
+function itemLinkResolver(item: MatrixItem, base?: LinkResolver): LinkResolver | undefined {
+  if (!item.linkHeading && !item.linkTicket) return base;
+  return {
+    resolve: (l) => item.linkHeading ?? base?.resolve(l),
+    resolveTicket: (l) => (item.linkTicket ? classifyTicketTarget(item.linkTicket) ?? undefined : base?.resolveTicket?.(l)),
+  };
+}
+
+/** Resolves an item's position to plane coordinates (0…1, origin bottom-left). */
+function itemXY(item: MatrixItem, cols: number, rows: number): { x: number; y: number } {
+  if (item.at && cols > 0 && rows > 0) {
+    const n = Number(item.at.slice(1));
+    const col = ((n - 1) % cols) + 1;
+    const row = Math.floor((n - 1) / cols) + 1; // 1 = top
+    return { x: (col - 0.5) / cols, y: 1 - (row - 0.5) / rows };
+  }
+  return { x: item.x ?? 0.5, y: item.y ?? 0.5 };
+}
+
+function renderItem(
+  item: MatrixItem,
+  overlay: HTMLElement,
+  area: HTMLElement,
+  cols: number,
+  rows: number,
+  container: HTMLElement,
+  editMode: boolean,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+): void {
+  const { x, y } = itemXY(item, cols, rows);
+  const el = overlay.createEl("div", { cls: "vzd-mx-item" });
+  el.style.left = pct(x);
+  el.style.top = pct(1 - y);
+  el.createEl("div", { cls: "vzd-mx-item-dot" });
+  const card = el.createEl("div", { cls: "vzd-mx-item-card" });
+  const labelEl = card.createEl("div", { cls: "vzd-mx-item-label", text: item.label });
+  // Link the label to a heading/ticket: explicit annotation on the item line,
+  // or a heading whose name matches the label (auto-detect via the shared resolver).
+  renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
+  const body = card.createEl("div", { cls: "vizardry-block-body" });
+  renderBlockBody(body, item.content, resolver, navigateTo, app, ctx?.sourcePath);
+
+  if (!editMode || !app || !ctx) return;
+  el.classList.add("vzd-mx-item--editable");
+  wireItem(el, card, body, item, area, container, app, ctx, resolver, navigateTo);
+}
+
+function wireItem(
+  el: HTMLElement,
+  card: HTMLElement,
+  body: HTMLElement,
+  item: MatrixItem,
+  area: HTMLElement,
+  container: HTMLElement,
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+): void {
+  el.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("a, button, textarea")) return;
+    e.preventDefault();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+    let nx = 0.5;
+    let ny = 0.5;
+    el.setPointerCapture(e.pointerId);
+
+    const onMove = (ev: PointerEvent): void => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
+      moved = true;
+      el.classList.add("vzd-mx-item--dragging");
+      const rect = area.getBoundingClientRect();
+      nx = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      ny = Math.max(0, Math.min(1, 1 - (ev.clientY - rect.top) / rect.height));
+      el.style.left = pct(nx);
+      el.style.top = pct(1 - ny);
+    };
+
+    const onUp = (): void => {
+      el.releasePointerCapture(e.pointerId);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.classList.remove("vzd-mx-item--dragging");
+      if (moved) {
+        item.x = nx; item.y = ny; item.at = undefined;
+        if (!writeItemPosition(app, ctx, container, item.label, nx, ny)) new Notice(t("edit.writeFailed"));
+      } else {
+        openItemEditor(card, body, item, container, app, ctx, resolver, navigateTo);
+      }
+    };
+
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
   });
+}
 
-  // 4×4 grid — two-pass so card-mode cells can share a sibling registry for
-  // cross-cell drag-and-drop. First pass creates all DOM; second pass renders.
-  const grid = wrap.createEl("div", { cls: "vzd-matrix-grid" });
+function openItemEditor(
+  card: HTMLElement,
+  body: HTMLElement,
+  item: MatrixItem,
+  container: HTMLElement,
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+): void {
+  if (card.hasClass("vzd-mx-item-editing")) return;
+  card.addClass("vzd-mx-item-editing");
+  body.empty();
 
-  const cells: TwoPassCell[] = [];
+  const textarea = body.createEl("textarea", { cls: "vzd-plain-textarea vzd-block-textarea" });
+  textarea.value = item.content;
+  const resize = (): void => { textarea.style.height = "auto"; textarea.style.height = `${textarea.scrollHeight}px`; };
+  resize();
+  textarea.addEventListener("input", resize);
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
-  ROWS.forEach((rowName, rowIdx) => {
-    COLS.forEach((col) => {
-      const blockKey = `${rowName}-${col}`;
-      const heat = heatLevel(data.type, rowIdx + 1, col);
-      const cell = grid.createEl("div", { cls: `vzd-matrix-cell vzd-matrix-cell--${heat}` });
-      const body = cell.createEl("div", { cls: "vizardry-block-body" });
-      cells.push({ body, label: blockKey, content: data.data[blockKey] ?? "", isCard: data.allCards || data.cardBlocks.has(blockKey) });
-    });
-  });
+  let committed = false;
+  const finish = (write: boolean): void => {
+    if (committed) return;
+    committed = true;
+    card.removeClass("vzd-mx-item-editing");
+    const newValue = textarea.value.trim();
+    if (write && writeItemContent(app, ctx, container, item.label, newValue)) {
+      item.content = newValue;
+      renderBlockBody(body, newValue, resolver, navigateTo, app, ctx.sourcePath);
+    } else {
+      if (write) new Notice(t("edit.writeFailed"));
+      renderBlockBody(body, item.content, resolver, navigateTo, app, ctx.sourcePath);
+    }
+  };
 
-  // All card-mode bodies available as cross-cell drop targets for every card cell.
-  const cardTargets = buildCardDropTargets(cells);
-  renderTwoPassCells(cells, cardTargets, container, app, ctx, resolver, navigateTo);
-
-  // X-axis labels
-  const xAxis = wrap.createEl("div", { cls: "vzd-matrix-x-axis" });
-  COLS.forEach((_, colIdx) => {
-    xAxis.createEl("div", { cls: "vzd-matrix-x-label", text: t(colKey(data.type, colIdx)) });
+  textarea.addEventListener("blur", () => finish(true));
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
   });
 }

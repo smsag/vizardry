@@ -382,238 +382,86 @@ layer: Nature
 
 export const MATRIX_PAIN_TEMPLATE = `\`\`\`vizardry
 type: matrix, pain
-title: Pain Point Matrix
+title: Support Pain Points
 
-block: very-major-1 | card
-  Checkout fails on mobile
-  Payment provider rejects wallets
-
-block: very-major-2
-  Onboarding takes > 30 min
-
-block: very-major-3
-  SSO setup requires IT ticket
-
-block: very-major-4
-  Data export corrupts special characters
-
-block: major-1 | card
-  Search returns stale results
-  Filters reset on page reload
-
-block: major-2
-  Notifications arrive hours late
-
-block: major-3
-  No bulk-edit on list view
-
-block: major-4
-  PDF reports miss last row
-
-block: minor-1
-  Dashboard loads slowly on first visit
-
-block: minor-2
-  Date picker defaults to wrong timezone
-
-block: minor-3
-  Avatar upload crops faces incorrectly
-
-block: minor-4
-  Tooltip overlaps button on small screens
-
-block: very-minor-1
-  Hover state missing on secondary nav
-
-block: very-minor-2
-  Success toast disappears too fast
-
-block: very-minor-3
-  Changelog link 404s in footer
-
-block: very-minor-4
-  Favicon not shown in Safari pinned tabs
+item: Checkout fails on mobile at: t1
+  Wallet payments rejected
+item: Onboarding takes > 30 min at: t2
+item: Stale search results at: t6
+item: Favicon missing in Safari at: t16
 \`\`\`
 `;
 
 export const MATRIX_OPP_TEMPLATE = `\`\`\`vizardry
 type: matrix, opportunity
-title: Opportunity Matrix
+title: Roadmap Opportunities
 
-block: very-major-1 | card
-  Self-serve onboarding wizard
+item: Self-serve onboarding at: t1
   In-app sample project
-
-block: very-major-2
-  AI-assisted task summarisation
-
-block: very-major-3
-  Native mobile app
-
-block: very-major-4
-  On-premise deployment option
-
-block: major-1 | card
-  Saved filter presets
-  Keyboard shortcut layer
-
-block: major-2
-  Public API with webhooks
-
-block: major-3
-  Advanced role-based permissions
-
-block: major-4
-  White-label theming per workspace
-
-block: minor-1
-  Quick-add from notification tray
-
-block: minor-2
-  CSV import for bulk data entry
-
-block: minor-3
-  Two-way calendar sync
-
-block: minor-4
-  Custom email notification templates
-
-block: very-minor-1
-  Drag-to-reorder sidebar sections
-
-block: very-minor-2
-  Collapsible panel in list view
-
-block: very-minor-3
-  Dark mode for embedded widgets
-
-block: very-minor-4
-  Branded share links
+item: Public API + webhooks at: t6
+item: Quick-add from tray at: t11
 \`\`\`
 `;
 
 export const MATRIX_IMPACT_TEMPLATE = `\`\`\`vizardry
 type: matrix, impact
-title: Impact / Effort Matrix
+title: Q3 Prioritisation
 
-block: very-major-1 | card
-  Fix mobile checkout flow
-  Add saved filter presets
-
-block: very-major-2
-  Self-serve onboarding wizard
-
-block: very-major-3
-  Public API with webhooks
-
-block: very-major-4
-  On-premise deployment option
-
-block: major-1 | card
-  Keyboard shortcut layer
-  Quick-add from notification tray
-
-block: major-2
-  AI-assisted task summarisation
-
-block: major-3
-  Advanced role-based permissions
-
-block: major-4
-  Native mobile app
-
-block: minor-1
-  CSV import for bulk data entry
-
-block: minor-2
-  Two-way calendar sync
-
-block: minor-3
-  Collapsible panel in list view
-
-block: minor-4
-  Custom email notification templates
-
-block: very-minor-1
-  Drag-to-reorder sidebar sections
-
-block: very-minor-2
-  Dark mode for embedded widgets
-
-block: very-minor-3
-  Branded share links
-
-block: very-minor-4
-  Changelog link fix in footer
+item: Fix mobile checkout at: t1
+  Wallet payments rejected
+item: Saved filter presets at: t2
+item: AI task summaries at: t7
+item: On-prem deployment at: t16
+item: Dark mode [0.28, 0.24]
 \`\`\`
 `;
 
 export const MATRIX_ASSUMPTION_TEMPLATE = `\`\`\`vizardry
 type: matrix, assumption
-title: Assumption Map
+title: Riskiest Assumptions
 
-// Rows = importance (top = most important), columns = evidence (left = none).
-// Top-left is the riskiest: important but unproven — test these first.
+item: Users will pay monthly at: t1
+  No pricing tests yet
+item: Buyers self-onboard at: t2
+item: Prefer usage-based pricing at: t7
+item: Want dark mode at: t13
+\`\`\`
+`;
 
-block: very-major-1 | card
-  Users will pay a monthly subscription
-  Buyers can self-onboard without sales
+export const MATRIX_SCENARIO_TEMPLATE = `\`\`\`vizardry
+type: matrix, scenario
+title: Future of Work 2030
 
-block: very-major-2
-  Teams will invite coworkers on their own
+x: AI capability | Assistive | Autonomous
+y: Regulation | Light-touch | Strict
 
-block: major-1
-  SMBs prefer usage-based pricing
+t1: Wild West
+t2: Compliance moat
+t3: Copilot era
+t4: Licensed autonomy
 
-block: major-3
-  Support load stays flat as we scale
-
-block: minor-2
-  Users want a dark mode
-
-block: very-minor-4
-  Footer changelog link is discoverable
+item: Agents everywhere at: t1
+  Few guardrails
+item: Audit + certification at: t2
+item: Humans in the loop at: t3
+item: Certified niche agents at: t4
 \`\`\`
 `;
 
 export const MATRIX_PLOT_TEMPLATE = `\`\`\`vizardry
-type: matrix, impact
-layout: plot
-title: Q3 Bets
+type: matrix
+title: Effort vs Reach
 
-x-axis: Effort | Low | High
-y-axis: Customer impact | Low | High
+x: Effort | Low | High
+y: Reach | Narrow | Wide
 
-zone: top-left | Quick wins | heat: very-high
-zone: bottom-right | Money pits | heat: low
+t1: Do first | very-high
+t4: Skip | low
 
-item: Fix mobile checkout | x: 0.18, y: 0.9
-  Payment provider rejects wallets
-item: Saved filter presets | x: 0.32, y: 0.72
-item: AI task summaries | x: 0.7, y: 0.82
-item: On-prem deployment | x: 0.85, y: 0.35
-item: Dark mode | x: 0.28, y: 0.24
-\`\`\`
-`;
-
-export const SCENARIO_TEMPLATE = `\`\`\`vizardry
-type: scenario
-title: Future of Mobility 2035
-
-x-axis: Energy price | Cheap energy | Expensive energy
-y-axis: Autonomy adoption | Slow adoption | Fast adoption
-
-top-left: Gridlock
-  Cars stay private and cheap to run
-  Cities congest, transit underfunded
-top-right: Robo-taxis everywhere
-  On-demand autonomous fleets dominate
-  Car ownership drops sharply
-bottom-left: Status quo
-  Incremental efficiency gains only
-bottom-right: Shared & electric
-  Micromobility and car-sharing boom
-  Density-friendly street redesign
+item: Fix mobile checkout [0.15, 0.9]
+  Wallet payments rejected
+item: AI summaries [0.7, 0.8]
+item: On-prem deploy [0.88, 0.3]
 \`\`\`
 `;
 
