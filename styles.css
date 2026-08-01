@@ -3255,6 +3255,40 @@ code:has(.vzd-upvoty-key) {
   overflow-x: auto;
 }
 
+/* Optional axis titles (type: matrix with x-axis:/y-axis:). Adds a rotated
+   name gutter left of the y ticks and a centred name under the x ticks; empty
+   gutters collapse, so one axis can be titled without the other. */
+.vzd-matrix-wrap--axis-titled {
+  grid-template-areas:
+    "yname yaxis grid"
+    ".     .     xaxis"
+    ".     .     xname";
+  grid-template-columns: auto auto 1fr;
+  grid-template-rows: 1fr auto auto;
+}
+
+.vzd-matrix-yname {
+  grid-area: yname;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding-right: 0.15rem;
+}
+
+.vzd-matrix-xname {
+  grid-area: xname;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding-top: 0.15rem;
+}
+
 /* ── Scenario Matrix (GBN/Schwartz 2×2) ──────────────────────────────────────
    Two user-defined axes framing four named scenario quadrants; content renders
    as cards via the shared two-pass renderer. */
@@ -3441,6 +3475,145 @@ code:has(.vzd-upvoty-key) {
 .vzd-matrix-legend-pill--low {
   background: color-mix(in srgb, var(--vzd-matrix-base) 10%, var(--background-secondary));
   border: 1px dashed color-mix(in srgb, var(--vzd-matrix-base) 22%, var(--background-secondary));
+}
+
+/* ── Plotted matrix (layout: plot) ───────────────────────────────────────────
+   Continuous scatter on two labelled axes. Items are absolutely positioned by
+   their 0…1 coordinates (origin bottom-left); zones tint author-declared heat
+   regions; --vzd-matrix-base (set on the container) drives all colour. */
+.vzd-plot-wrap {
+  display: grid;
+  grid-template-areas: "yname main" ".     xname";
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 4px 6px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 2px;
+}
+
+.vzd-plot-yname {
+  grid-area: yname;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.vzd-plot-xname {
+  grid-area: xname;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding-top: 0.15rem;
+}
+
+.vzd-plot-main {
+  grid-area: main;
+  display: grid;
+  grid-template-areas: "yticks area" ".      xticks";
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 4px;
+  min-width: 440px;
+}
+
+.vzd-plot-yticks { grid-area: yticks; position: relative; width: 5.5em; }
+.vzd-plot-xticks { grid-area: xticks; position: relative; height: 1.5em; }
+
+.vzd-plot-tick {
+  position: absolute;
+  font-size: 0.72em;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.vzd-plot-tick--y { right: 0.4em; transform: translateY(-50%); text-align: right; }
+.vzd-plot-tick--x { top: 0.2em; transform: translateX(-50%); }
+
+.vzd-plot-area {
+  grid-area: area;
+  position: relative;
+  min-height: 340px;
+  border-left: 2px solid var(--background-modifier-border);
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+/* Subtle mid-axis cross to anchor the eye at (0.5, 0.5). */
+.vzd-plot-area::before,
+.vzd-plot-area::after {
+  content: "";
+  position: absolute;
+  background: var(--background-modifier-border);
+  opacity: 0.5;
+}
+.vzd-plot-area::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+.vzd-plot-area::after  { top: 50%; left: 0; right: 0; height: 1px; }
+
+.vzd-plot-zone {
+  position: absolute;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+.vzd-plot-zone-label {
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  font-size: 0.72em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.vzd-plot-zone--very-high { background: color-mix(in srgb, var(--vzd-matrix-base) 30%, transparent); }
+.vzd-plot-zone--high      { background: color-mix(in srgb, var(--vzd-matrix-base) 20%, transparent); }
+.vzd-plot-zone--medium    { background: color-mix(in srgb, var(--vzd-matrix-base) 12%, transparent); }
+.vzd-plot-zone--low       { background: color-mix(in srgb, var(--vzd-matrix-base) 6%, transparent); }
+
+/* Zero-size anchor point: the dot marks the exact coordinate, the card hangs
+   below it. */
+.vzd-plot-item { position: absolute; width: 0; height: 0; z-index: 2; }
+.vzd-plot-item-dot {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--vzd-matrix-base);
+  border: 2px solid var(--background-primary);
+  box-shadow: 0 0 0 1px var(--vzd-matrix-base);
+}
+.vzd-plot-item-card {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  transform: translateX(-50%);
+  max-width: 160px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 3px 7px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.vzd-plot-item-label { font-weight: 700; font-size: 0.8em; color: var(--text-normal); }
+.vzd-plot-item-card .vizardry-block-body { font-size: 0.75em; color: var(--text-muted); }
+.vzd-plot-item-card .vizardry-block-empty { display: none; }
+.vzd-plot-item--editable .vzd-plot-item-dot,
+.vzd-plot-item--editable .vzd-plot-item-card { cursor: grab; }
+.vzd-plot-item--editable .vzd-plot-item-card:hover { border-color: var(--vzd-matrix-base); }
+.vzd-plot-item--dragging { z-index: 5; }
+.vzd-plot-item--dragging .vzd-plot-item-dot,
+.vzd-plot-item--dragging .vzd-plot-item-card { cursor: grabbing; }
+
+@media (max-width: 480px) {
+  .vzd-plot-main { min-width: 320px; }
+  .vzd-plot-area { min-height: 260px; }
+  .vzd-plot-yticks { width: 4.5em; }
+  .vzd-plot-tick { font-size: 0.66em; }
 }
 
 /* Presentation mode */

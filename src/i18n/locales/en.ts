@@ -173,7 +173,7 @@ export const en = {
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
 
   // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
-  "framework.matrix.description": "Map pain points, opportunities, impact vs. effort, or assumptions on a 4×4 grid.",
+  "framework.matrix.description": "Map pain points, opportunities, impact vs. effort, or assumptions on a 4×4 grid — or plot items freely on the axes with layout: plot.",
   "framework.scenario.description": "Two critical uncertainties, four scenarios — a GBN/Schwartz 2×2.",
 
   "matrix.row.pain.1": "Very Major Pain",

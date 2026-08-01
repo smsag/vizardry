@@ -523,14 +523,61 @@ export type NodeMapResult = Result<NodeMapData>;
 
 export type MatrixType = "pain" | "opportunity" | "impact" | "assumption";
 
+/** Discrete binned cells (default) vs continuous plotted coordinates. */
+export type MatrixLayout = "grid" | "plot";
+
 export interface MatrixData {
   type: MatrixType;
+  layout: MatrixLayout;
   data: Record<string, string>;
   cardBlocks: Set<string>;
   allCards: boolean;
+  /** Optional axis-title overrides. The curated tick labels and heat model are
+   *  unchanged — these only rename the overall axis (e.g. "Reach" for effort). */
+  xAxis?: string;
+  yAxis?: string;
+  /** Present only when layout === "plot". */
+  plot?: PlotData;
 }
 
 export type MatrixResult = Result<MatrixData>;
+
+// ── Plotted matrix (layout: plot) ─────────────────────────────────────────────
+// A continuous scatter on two axes: items are placed by (x, y) coordinates in
+// [0, 1] (origin bottom-left), axes carry any number of tick labels, and heat
+// is author-declared via zones rather than derived from cell position.
+
+export type Heat = "very-high" | "high" | "medium" | "low";
+
+export interface PlotAxisTick {
+  pos: number;   // 0…1
+  label: string;
+}
+
+export interface PlotAxis {
+  title: string;
+  ticks: PlotAxisTick[];
+}
+
+export interface PlotItem {
+  label: string;
+  content: string; // "\n"-joined detail lines, rendered as a card body
+  x: number;       // 0…1, left→right
+  y: number;       // 0…1, bottom→top
+}
+
+export interface PlotZone {
+  rect: [number, number, number, number]; // [x0, y0, x1, y1] in 0…1, corners
+  label?: string;
+  heat?: Heat;
+}
+
+export interface PlotData {
+  xAxis: PlotAxis;
+  yAxis: PlotAxis;
+  items: PlotItem[];
+  zones: PlotZone[];
+}
 
 // ── Scenario Matrix (GBN / Schwartz 2×2) ────────────────────────────────────
 // Two user-defined critical uncertainties as axes, each with a low and high

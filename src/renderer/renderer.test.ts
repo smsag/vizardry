@@ -32,6 +32,7 @@ vi.mock("html-to-image", () => ({
 // ── Renderer imports (after mocks are declared) ───────────────────────────────
 import { renderError, renderCanvas } from "./canvas";
 import { renderMatrix } from "./matrix";
+import { renderPlot } from "./plot";
 import { renderScenario } from "./scenario";
 import { renderTree, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
 import type { TreeRenderOptions } from "../types";
@@ -228,6 +229,7 @@ describe("renderCanvas", () => {
 describe("renderMatrix", () => {
   const matrixData: MatrixData = {
     type: "opportunity",
+    layout: "grid",
     data: { "very-major-1": "First idea", "major-2": "Second idea" },
     cardBlocks: new Set(),
     allCards: false,
@@ -268,6 +270,48 @@ describe("renderMatrix", () => {
     expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Importance");
   });
 
+  it("concentrates assumption heat in the top-left (gated), not along the diagonal", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "assumption" }, el);
+    // Cells render row-major: index = rowIdx*4 + (col-1).
+    const cells = Array.from(el.querySelectorAll<HTMLElement>(".vzd-matrix-cell"));
+    const cls = (i: number) => cells[i].className;
+    // top-left = important + no evidence = leap-of-faith → hottest.
+    expect(cls(0)).toContain("vzd-matrix-cell--very-high");
+    // top-right = important but validated → cold (nothing left to test).
+    expect(cls(3)).toContain("vzd-matrix-cell--low");
+    // bottom-left = unproven but unimportant → cold (not worth testing).
+    expect(cls(12)).toContain("vzd-matrix-cell--low");
+  });
+
+  it("keeps the additive diagonal for impact/effort — off-diagonal corners are not cold", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "impact" }, el);
+    const cells = Array.from(el.querySelectorAll<HTMLElement>(".vzd-matrix-cell"));
+    // top-right (big bet) and bottom-left (fill-in) stay mid-priority, not low.
+    expect(cells[3].className).not.toContain("vzd-matrix-cell--low");
+    expect(cells[12].className).not.toContain("vzd-matrix-cell--low");
+  });
+
+  it("renders no axis-title gutters by default", () => {
+    const el = container();
+    renderMatrix(matrixData, el);
+    expect(el.querySelector(".vzd-matrix-wrap--axis-titled")).toBeNull();
+    expect(el.querySelector(".vzd-matrix-xname")).toBeNull();
+    expect(el.querySelector(".vzd-matrix-yname")).toBeNull();
+  });
+
+  it("renders optional axis-title gutters when x-axis/y-axis are provided", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "impact", xAxis: "Reach", yAxis: "Value" }, el);
+    const wrap = el.querySelector(".vzd-matrix-wrap");
+    expect(wrap?.classList.contains("vzd-matrix-wrap--axis-titled")).toBe(true);
+    expect(el.querySelector(".vzd-matrix-xname")?.textContent).toBe("Reach");
+    expect(el.querySelector(".vzd-matrix-yname")?.textContent).toBe("Value");
+    // Curated tick labels are untouched by the override.
+    expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Impact");
+  });
+
   it("does not apply the editable hover affordance to a cell body in Read Mode", () => {
     // Read Mode still provides app/ctx (the post-processor runs there too);
     // the edit affordance must be gated on the actual view mode, not just
@@ -278,6 +322,78 @@ describe("renderMatrix", () => {
     const ctx = { sourcePath: "note.md" } as any;
     renderMatrix(matrixData, el, undefined, previewApp, ctx);
     expect(el.querySelector(".vzd-block-editable")).toBeNull();
+  });
+});
+
+// ── renderPlot (layout: plot — continuous scatter) ────────────────────────────
+
+describe("renderPlot", () => {
+  const plotData: MatrixData = {
+    type: "impact",
+    layout: "plot",
+    data: {},
+    cardBlocks: new Set(),
+    allCards: false,
+    plot: {
+      xAxis: { title: "Effort", ticks: [{ pos: 0, label: "Low" }, { pos: 1, label: "High" }] },
+      yAxis: { title: "Impact", ticks: [{ pos: 0, label: "Low" }, { pos: 1, label: "High" }] },
+      items: [
+        { label: "Fix checkout", content: "Wallet rejected", x: 0.2, y: 0.8 },
+        { label: "Dark mode", content: "", x: 0.3, y: 0.25 },
+      ],
+      zones: [{ rect: [0, 0.5, 0.5, 1], label: "Quick wins", heat: "very-high" }],
+    },
+  };
+
+  it("renders the plot frame with axis titles and ticks", () => {
+    const el = container();
+    renderPlot(plotData, el);
+    expect(el.querySelector(".vzd-plot-wrap")).toBeTruthy();
+    expect(el.querySelector(".vzd-plot-xname")?.textContent).toBe("Effort");
+    expect(el.querySelector(".vzd-plot-yname")?.textContent).toBe("Impact");
+    expect(el.querySelectorAll(".vzd-plot-tick--x")).toHaveLength(2);
+    expect(el.querySelectorAll(".vzd-plot-tick--y")).toHaveLength(2);
+  });
+
+  it("positions items by their coordinates (top = 1 - y)", () => {
+    const el = container();
+    renderPlot(plotData, el);
+    const items = Array.from(el.querySelectorAll<HTMLElement>(".vzd-plot-item"));
+    expect(items).toHaveLength(2);
+    expect(items[0].querySelector(".vzd-plot-item-label")?.textContent).toBe("Fix checkout");
+    expect(items[0].style.left).toContain("20");   // x = 0.2 → 20%
+    expect(items[0].style.top).toContain("20");     // 1 - 0.8 = 0.2 → 20%
+  });
+
+  it("renders a heat zone sized from its rect", () => {
+    const el = container();
+    renderPlot(plotData, el);
+    const zone = el.querySelector<HTMLElement>(".vzd-plot-zone--very-high");
+    expect(zone).toBeTruthy();
+    expect(zone?.querySelector(".vzd-plot-zone-label")?.textContent).toBe("Quick wins");
+  });
+
+  it("shows the heat legend only when a zone declares heat", () => {
+    const withHeat = container();
+    renderPlot(plotData, withHeat);
+    expect(withHeat.querySelector(".vzd-matrix-legend")).toBeTruthy();
+
+    const noHeat = container();
+    renderPlot({ ...plotData, plot: { ...plotData.plot!, zones: [] } }, noHeat);
+    expect(noHeat.querySelector(".vzd-matrix-legend")).toBeNull();
+  });
+
+  it("adds the editable affordance only in edit mode", () => {
+    const readEl = container();
+    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderPlot(plotData, readEl, undefined, previewApp, ctx);
+    expect(readEl.querySelector(".vzd-plot-item--editable")).toBeNull();
+
+    const editEl = container();
+    const sourceApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    renderPlot(plotData, editEl, undefined, sourceApp, ctx);
+    expect(editEl.querySelector(".vzd-plot-item--editable")).toBeTruthy();
   });
 });
 

@@ -576,6 +576,26 @@ block: very-minor-4
 \`\`\`
 `;
 
+export const MATRIX_PLOT_TEMPLATE = `\`\`\`vizardry
+type: matrix, impact
+layout: plot
+title: Q3 Bets
+
+x-axis: Effort | Low | High
+y-axis: Customer impact | Low | High
+
+zone: top-left | Quick wins | heat: very-high
+zone: bottom-right | Money pits | heat: low
+
+item: Fix mobile checkout | x: 0.18, y: 0.9
+  Payment provider rejects wallets
+item: Saved filter presets | x: 0.32, y: 0.72
+item: AI task summaries | x: 0.7, y: 0.82
+item: On-prem deployment | x: 0.85, y: 0.35
+item: Dark mode | x: 0.28, y: 0.24
+\`\`\`
+`;
+
 export const SCENARIO_TEMPLATE = `\`\`\`vizardry
 type: scenario
 title: Future of Mobility 2035

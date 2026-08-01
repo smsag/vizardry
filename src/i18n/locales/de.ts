@@ -162,7 +162,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.roadmap.description": "Jetzt, Demnächst und Später Prioritäten auf einen Blick.",
 
   // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
-  "framework.matrix.description": "Schmerzpunkte, Chancen, Impact vs. Aufwand oder Annahmen auf einem 4×4-Raster.",
+  "framework.matrix.description": "Schmerzpunkte, Chancen, Impact vs. Aufwand oder Annahmen auf einem 4×4-Raster — oder Elemente frei auf den Achsen platzieren mit layout: plot.",
   "framework.scenario.description": "Zwei kritische Unsicherheiten, vier Szenarien — eine GBN/Schwartz-2×2-Matrix.",
 
   "matrix.row.pain.1": "Sehr großer Schmerzpunkt",
