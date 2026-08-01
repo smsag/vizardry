@@ -295,7 +295,7 @@ describe("renderTree", () => {
     const el = container();
     const root = makeNode("Root", 0, [makeNode("Child", 1)]);
     renderTree({ root }, CLASSIC_OPTS, el);
-    expect(el.querySelector(".vzd-lane-lane-divider")).toBeNull();
+    expect(el.querySelector(".vzd-lane-divider")).toBeNull();
     expect(el.querySelector(".vzd-lane-node")).toBeNull();
     // Labels still live in plain <text>, unchanged from before the OST redesign.
     expect(el.querySelector("text.vzd-tree-text-main")).toBeTruthy();
@@ -348,8 +348,8 @@ describe("renderOST", () => {
     const el = container();
     renderOST(fullTree, el);
     // Four lanes → three dividers between them.
-    expect(el.querySelectorAll(".vzd-lane-lane-divider").length).toBe(3);
-    const labels = Array.from(el.querySelectorAll(".vzd-lane-lane-label")).map(l => l.textContent);
+    expect(el.querySelectorAll(".vzd-lane-divider").length).toBe(3);
+    const labels = Array.from(el.querySelectorAll(".vzd-lane-gutter-label")).map(l => l.textContent);
     expect(labels).toEqual(["Outcome space", "Opportunity Space", "Solution Space", "Experimentation Space"]);
   });
 
@@ -400,10 +400,50 @@ describe("renderSCQA", () => {
     expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(4);
   });
 
-  it("renders the tree view without throwing", () => {
+  it("renders the tree view as labelled swim-lanes with role captions", () => {
     const el = container();
     expect(() => renderSCQA({ ...data, view: "tree" }, el)).not.toThrow();
-    expect(el.querySelector("svg")).toBeTruthy();
+    expect(el.querySelector("svg.vizardry-scqa")).toBeTruthy();
+    // Four narrative lanes → three dividers; gutter labels are the role names.
+    expect(el.querySelectorAll(".vzd-lane-divider").length).toBe(3);
+    const laneLabels = Array.from(el.querySelectorAll(".vzd-lane-gutter-label")).map(l => l.textContent);
+    expect(laneLabels).toEqual(["Situation", "Complication", "Question", "Answer"]);
+    // The role also shows as each box's italic caption.
+    const captions = Array.from(el.querySelectorAll(".vzd-lane-caption")).map(c => c.textContent);
+    expect(captions).toEqual(["Situation", "Complication", "Question", "Answer"]);
+  });
+
+  it("renders chevron bullets on an SCQA tree node", () => {
+    const el = container();
+    const withBullets = {
+      variant: "scqa" as const, view: "tree" as const,
+      root: { text: "S", level: 0, children: [
+        { text: "C", level: 1, children: [
+          { text: "Q", level: 2, children: [
+            { text: "A", level: 3, bullets: ["Backed by data", "Low cost"], children: [] },
+          ] },
+        ] },
+      ] },
+    };
+    renderSCQA(withBullets, el);
+    const bullets = Array.from(el.querySelectorAll(".vzd-lane-bullet-text")).map(b => b.textContent);
+    expect(bullets).toEqual(["Backed by data", "Low cost"]);
+  });
+
+  it("renders the SCR tree view with three lanes (two dividers)", () => {
+    const el = container();
+    const scr = {
+      variant: "scr" as const, view: "tree" as const,
+      root: { text: "S", level: 0, children: [
+        { text: "C", level: 1, children: [
+          { text: "R", level: 2, children: [] },
+        ] },
+      ] },
+    };
+    renderSCQA(scr, el);
+    expect(el.querySelectorAll(".vzd-lane-divider").length).toBe(2);
+    const laneLabels = Array.from(el.querySelectorAll(".vzd-lane-gutter-label")).map(l => l.textContent);
+    expect(laneLabels).toEqual(["Situation", "Complication", "Resolution"]);
   });
 
   it("renders a heading-link affordance on a card whose text resolves", () => {

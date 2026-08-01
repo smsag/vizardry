@@ -1363,15 +1363,33 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   --vzd-ost-experiment: #e9c14e;
 }
 
+/* SCQA / SCR lane hues (situation → complication → question → answer |
+   resolution). SCR reuses situation/complication + resolution. */
+.vizardry-scqa {
+  --vzd-scqa-situation: #4c8bf5;     /* blue   */
+  --vzd-scqa-complication: #d9534f;  /* red    */
+  --vzd-scqa-question: #7a5bd6;      /* purple */
+  --vzd-scqa-answer: #37a169;        /* green  */
+  --vzd-scqa-resolution: #37a169;    /* green  */
+}
+
+.theme-dark .vizardry-scqa {
+  --vzd-scqa-situation: #6ea8ff;
+  --vzd-scqa-complication: #e8807c;
+  --vzd-scqa-question: #a58be6;
+  --vzd-scqa-answer: #56c98a;
+  --vzd-scqa-resolution: #56c98a;
+}
+
 /* Dashed band divider spanning the canvas width */
-.vzd-lane-lane-divider {
+.vzd-lane-divider {
   stroke: var(--background-modifier-border);
   stroke-width: 1;
   stroke-dasharray: 4 4;
 }
 
 /* Left-gutter lane label */
-.vzd-lane-lane-label {
+.vzd-lane-gutter-label {
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   font-style: italic;

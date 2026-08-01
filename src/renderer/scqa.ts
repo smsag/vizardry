@@ -2,7 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas, markInteractive, renderHeadingLink } from "./controls";
 import {
-  renderTree, adaptSCQAToTree, SCQA_TREE_OPTIONS, SCR_TREE_OPTIONS,
+  renderTree, adaptSCQAToTree, scqaTreeOptions,
 } from "./tree";
 import { renderInline } from "../shared/inline-markdown";
 import { activateInlineEdit } from "./inline-edit";
@@ -13,6 +13,7 @@ import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import {
   renameSCQANode, addSCQAChild, deleteSCQANode, reorderSCQANode,
+  addSCQABullet, editSCQABullet, deleteSCQABullet,
 } from "../shared/scqa-edit";
 import { enableDragGesture } from "../shared/drag-gesture";
 import { onDisconnected } from "../shared/lifecycle";
@@ -43,9 +44,8 @@ export function renderSCQA(
   initCanvas(el, data.variant, title, undefined, source, onTitleEdit, app, ctx);
 
   if (data.view === "tree") {
-    const opts = data.variant === "scqa" ? SCQA_TREE_OPTIONS : SCR_TREE_OPTIONS;
     const editHandlers = isEditMode ? makeHandlers(app!, ctx!, el) : undefined;
-    renderTree(adaptSCQAToTree(data), opts, el, resolver, navigateTo, editHandlers);
+    renderTree(adaptSCQAToTree(data), scqaTreeOptions(data.variant), el, resolver, navigateTo, editHandlers);
     return;
   }
 
@@ -66,6 +66,15 @@ function makeHandlers(
     },
     onDelete(node: TreeNode): void {
       if (!deleteSCQANode(app, ctx, el, nodeVariant(el), node.level, node.text)) showWriteFailedNotice(el);
+    },
+    onAddBullet(node: TreeNode, text: string): void {
+      if (!addSCQABullet(app, ctx, el, nodeVariant(el), node.level, node.text, text)) showWriteFailedNotice(el);
+    },
+    onEditBullet(node: TreeNode, oldText: string, newText: string): void {
+      if (!editSCQABullet(app, ctx, el, nodeVariant(el), node.level, node.text, oldText, newText)) showWriteFailedNotice(el);
+    },
+    onDeleteBullet(node: TreeNode, text: string): void {
+      if (!deleteSCQABullet(app, ctx, el, nodeVariant(el), node.level, node.text, text)) showWriteFailedNotice(el);
     },
   };
 }

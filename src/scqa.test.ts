@@ -155,9 +155,25 @@ describe("parseSCQA — keyword form", () => {
     expect(res.error).toMatch(/must be nested under a "complication:"/);
   });
 
-  it("rejects an answer keyword in the scr variant (not a valid level)", () => {
+  it("treats an out-of-vocabulary keyword as a bullet (answer in the scr variant)", () => {
+    // With bullets enabled, a line that is not a valid level keyword for the
+    // variant becomes a chevron bullet on the enclosing node rather than an error.
     const res = parseSCQA("situation: S\n  complication: C\n    answer: nope", "scr");
-    expect(res.ok).toBe(false);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.root.children[0].bullets).toEqual(["answer: nope"]);
+  });
+
+  it("collects bare indented lines as bullets on the enclosing node", () => {
+    const res = parseSCQA(
+      "situation: S\n  complication: C\n    question: Q\n      answer: A\n        Backed by usage data\n        Low build cost",
+      "scqa",
+    );
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const answer = res.data.root.children[0].children[0].children[0];
+    expect(answer.text).toBe("A");
+    expect(answer.bullets).toEqual(["Backed by usage data", "Low build cost"]);
   });
 });
 
@@ -174,6 +190,17 @@ describe("parseSCQA — config lines", () => {
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.data.variant).toBe("scr");
+  });
+
+  it("still parses the legacy bare-indent form structurally (bullets don't force strict)", () => {
+    // No child keywords → legacy parse; C and R are nodes, not bullets.
+    const res = parseSCQA("situation: S\n  C\n    R", "scqa");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(flatten(res.data.root)).toEqual([
+      { text: "S", level: 0 }, { text: "C", level: 1 }, { text: "R", level: 2 },
+    ]);
+    expect(res.data.root.children[0].bullets ?? []).toEqual([]);
   });
 
   it("rejects an unknown view", () => {

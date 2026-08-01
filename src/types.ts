@@ -131,6 +131,10 @@ export interface SCQANode {
   text: string;
   level: number;          // scqa: 0 situation, 1 complication, 2 question, 3 answer
                           // scr:  0 situation, 1 complication, 2 resolution
+  /** Source keyword (situation/complication/…) — set by the parser. */
+  key?: string;
+  /** Bare indented lines under this node, rendered as chevron bullets. */
+  bullets?: string[];
   children: SCQANode[];
 }
 

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { reorderSCQAInterior, renameSCQANode, addSCQAChild, deleteSCQANode } from "./scqa-edit";
+import {
+  reorderSCQAInterior, renameSCQANode, addSCQAChild, deleteSCQANode,
+  addSCQABullet, editSCQABullet, deleteSCQABullet,
+} from "./scqa-edit";
 
 vi.mock("obsidian", () => ({
   MarkdownView: class MockMarkdownView {
@@ -194,5 +197,39 @@ describe("renameSCQANode / addSCQAChild / deleteSCQANode", () => {
     const result = renameSCQANode(app, ctx, el, "scqa", 2, "Question", "Renamed");
     warn.mockRestore();
     expect(result).toBe(false);
+  });
+});
+
+describe("SCQA bullets", () => {
+  it("adds a bullet under an answer node", () => {
+    const editor = makeMockEditor([
+      "situation: S", "  complication: C", "    question: Q", "      answer: A", "```",
+    ]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(addSCQABullet(app, ctx, el, "scqa", 3, "A", "Backed by data")).toBe(true);
+    expect(editor._state).toEqual([
+      "situation: S", "  complication: C", "    question: Q", "      answer: A",
+      "        Backed by data", "```",
+    ]);
+  });
+
+  it("edits a bullet, leaving keyword children untouched", () => {
+    const editor = makeMockEditor([
+      "situation: S", "  complication: C", "    resolution: R", "      Old detail",
+    ]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(editSCQABullet(app, ctx, el, "scr", 2, "R", "Old detail", "New detail")).toBe(true);
+    expect(editor._state[3]).toBe("      New detail");
+  });
+
+  it("deletes a bullet", () => {
+    const editor = makeMockEditor([
+      "situation: S", "  complication: C", "    resolution: R", "      Keep", "      Drop",
+    ]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(deleteSCQABullet(app, ctx, el, "scr", 2, "R", "Drop")).toBe(true);
+    expect(editor._state).toEqual([
+      "situation: S", "  complication: C", "    resolution: R", "      Keep",
+    ]);
   });
 });

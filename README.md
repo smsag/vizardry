@@ -497,7 +497,10 @@ outcome: Increase weekly active users by 20% in Q3.
 
 A narrative hierarchy: one `situation:` branches into complications, each into
 questions, each holding one or more answers. It renders as a top-down grid of cards
-by default and can morph into an OST-style branching tree with `view: tree`.
+by default and can morph into a **swim-lane tree** with `view: tree` — labelled
+bands (Situation / Complication / Question / Answer), one theme-aware colour per
+lane, and outlined boxes that wrap their text, sharing the Opportunity Solution
+Tree's visual language.
 
 ~~~
 ```vizardry
@@ -532,9 +535,10 @@ situation: Checkout ran at 99.9% uptime all year
 - Each node names its level; the strict chain is `situation → complication → question → answer` (SCQA) or `situation → complication → resolution` (SCR)
 - `situation:` — root node, no indent, required, one only
 - `complication:` / `question:` / `answer:` (or `resolution:`) — indented one level under their required parent; several siblings are allowed at every level
-- `view: grid` (default) or `view: tree` — chooses the card grid or the branching tree
+- `view: grid` (default) or `view: tree` — chooses the card grid or the swim-lane tree
+- A **bare (keyword-less) indented line** under a node becomes a chevron bullet on it (any node may carry bullets) — in the tree view
 - Blank lines and `// comment` lines are ignored
-- In edit mode both views support inline rename, add (`+`), and delete (`×`); the grid also allows drag to reorder siblings
+- In edit mode both views support inline rename, add (`+`), and delete (`×`); the tree view also lets you add/edit/remove bullets inline, and the grid allows drag to reorder siblings
 - Legacy bare-indent narratives (root keyword only, children by indentation) still render
 
 ---
@@ -1316,8 +1320,9 @@ Keyword-per-level, strict chain `situation → complication → question → ans
 | `question: <text>` | Indented under a complication (scqa only) |
 | `answer: <text>` | Indented under a question (scqa only) |
 | `resolution: <text>` | Indented under a complication (scr only) |
-| `view: grid \| tree` | Card grid (default) or branching tree |
-| Bare indented lines | Legacy form (root keyword only, level by indentation) — still rendered |
+| `view: grid \| tree` | Card grid (default) or swim-lane tree |
+| Bare indented line under a node | A chevron bullet on that node (tree view) |
+| Bare indented lines (no child keywords) | Legacy form — level by indentation, still rendered |
 | Blank lines / `// comment` | Ignored |
 
 ### SIPOC Diagram (type: sipoc, table | flow)

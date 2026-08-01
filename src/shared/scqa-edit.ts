@@ -18,7 +18,10 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { getEditorAccess, editorWrite } from "./tree-editor-access";
-import { renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode } from "./keyword-tree-edit";
+import {
+  renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode,
+  addKeywordTreeBullet, editKeywordTreeBullet, deleteKeywordTreeBullet,
+} from "./keyword-tree-edit";
 import type { KeywordTreeConfig } from "./keyword-tree-edit";
 import type { SCQAVariant } from "../types";
 
@@ -26,6 +29,11 @@ function configFor(variant: SCQAVariant): KeywordTreeConfig {
   return variant === "scqa"
     ? { levelKeyword: { 0: "situation", 1: "complication", 2: "question", 3: "answer" }, strictNesting: true }
     : { levelKeyword: { 0: "situation", 1: "complication", 2: "resolution" }, strictNesting: true };
+}
+
+/** The keyword at a given level (1:1 for SCQA/SCR — no aliases). */
+function keywordAt(variant: SCQAVariant, level: number): string {
+  return configFor(variant).levelKeyword[level] ?? "";
 }
 
 // ── Rename ───────────────────────────────────────────────────────────────────
@@ -53,6 +61,29 @@ export function deleteSCQANode(
   variant: SCQAVariant, level: number, nodeText: string,
 ): boolean {
   return deleteKeywordTreeNode(app, ctx, el, configFor(variant), level, nodeText);
+}
+
+// ── Bullets ──────────────────────────────────────────────────────────────────
+
+export function addSCQABullet(
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  variant: SCQAVariant, level: number, nodeText: string, bulletText: string,
+): boolean {
+  return addKeywordTreeBullet(app, ctx, el, configFor(variant), keywordAt(variant, level), nodeText, bulletText);
+}
+
+export function editSCQABullet(
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  variant: SCQAVariant, level: number, nodeText: string, oldBullet: string, newBullet: string,
+): boolean {
+  return editKeywordTreeBullet(app, ctx, el, configFor(variant), keywordAt(variant, level), nodeText, oldBullet, newBullet);
+}
+
+export function deleteSCQABullet(
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  variant: SCQAVariant, level: number, nodeText: string, bulletText: string,
+): boolean {
+  return deleteKeywordTreeBullet(app, ctx, el, configFor(variant), keywordAt(variant, level), nodeText, bulletText);
 }
 
 // ── Reorder (grid drag) ──────────────────────────────────────────────────────

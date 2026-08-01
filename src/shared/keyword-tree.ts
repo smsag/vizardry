@@ -51,8 +51,12 @@ export interface KwTreeNode {
 export interface KwTreeOptions {
   /** Extra accepted keywords per level, e.g. { 1: ["pain", "desire"] }. */
   aliases?: Record<number, string[]>;
-  /** Treat bare indented lines as bullets on the enclosing node. */
+  /** Treat bare indented lines as bullets on the enclosing node (strict form). */
   allowBullets?: boolean;
+  /** Never fall back to the legacy bare-indent parse — always parse as the
+   *  keyword form. OST sets this (it dropped legacy); SCQA leaves it off so
+   *  keyword-less legacy blocks still parse structurally. */
+  forceStrict?: boolean;
 }
 
 export type KwTreeResult =
@@ -123,10 +127,11 @@ export function parseKeywordTree(source: string, levels: string[], opts: KwTreeO
   }
 
   // Detect the format: keyword-per-level (canonical) vs. legacy bare-indent.
-  // Bullets imply the canonical form (bare lines are data, not structure).
+  // forceStrict pins the keyword form (OST); otherwise a keyword-less block is
+  // treated as legacy, so SCQA's bare-indent notes keep parsing structurally.
   const hasKeywords = meaningful.slice(1).some(l => recognise(l.text, entries) !== null);
 
-  return (hasKeywords || opts.allowBullets)
+  return (hasKeywords || opts.forceStrict)
     ? parseStrict(meaningful, entries, rootKw, rootText, opts)
     : parseLegacy(meaningful, levels, rootText);
 }
