@@ -1307,6 +1307,14 @@ button.vzd-btn {
   max-height: 600px;
 }
 
+/* Swim-lane diagrams (OST + SCQA/SCR tree) are top-down and can be tall. Let
+   them grow to their full height so the NOTE scrolls vertically — no inner
+   vertical scrollbar. Horizontal scroll is kept for wide trees. */
+.vizardry-ost-wrapper,
+.vizardry-scqa-wrapper {
+  max-height: none;
+}
+
 /* Main node label — inherits --vzd-base so A+/A− applies */
 .vzd-tree-text-main {
   font-family: var(--font-interface);
