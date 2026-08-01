@@ -25,7 +25,7 @@ const OST_LEVELS = ["outcome", "need", "solution", "experiment"];
 const OST_ALIASES = { 1: ["pain", "desire"] };
 
 export function parseOST(source: string): OSTResult {
-  const result = parseKeywordTree(source, OST_LEVELS, { aliases: OST_ALIASES, allowBullets: true });
+  const result = parseKeywordTree(source, OST_LEVELS, { aliases: OST_ALIASES, allowBullets: true, forceStrict: true });
   if (!result.ok) return result;
   return { ok: true, data: { root: result.root } };
 }

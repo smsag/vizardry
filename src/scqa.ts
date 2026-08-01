@@ -53,7 +53,7 @@ export function parseSCQA(source: string, fenceVariant: SCQAVariant): SCQAResult
   }
 
   const levels = variant === "scqa" ? SCQA_LEVELS : SCR_LEVELS;
-  const result = parseKeywordTree(kept.join("\n"), levels);
+  const result = parseKeywordTree(kept.join("\n"), levels, { allowBullets: true });
   if (!result.ok) return result;
 
   return { ok: true, data: { variant, view, root: result.root } };

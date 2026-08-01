@@ -1363,15 +1363,33 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   --vzd-ost-experiment: #e9c14e;
 }
 
+/* SCQA / SCR lane hues (situation → complication → question → answer |
+   resolution). SCR reuses situation/complication + resolution. */
+.vizardry-scqa {
+  --vzd-scqa-situation: #4c8bf5;     /* blue   */
+  --vzd-scqa-complication: #d9534f;  /* red    */
+  --vzd-scqa-question: #7a5bd6;      /* purple */
+  --vzd-scqa-answer: #37a169;        /* green  */
+  --vzd-scqa-resolution: #37a169;    /* green  */
+}
+
+.theme-dark .vizardry-scqa {
+  --vzd-scqa-situation: #6ea8ff;
+  --vzd-scqa-complication: #e8807c;
+  --vzd-scqa-question: #a58be6;
+  --vzd-scqa-answer: #56c98a;
+  --vzd-scqa-resolution: #56c98a;
+}
+
 /* Dashed band divider spanning the canvas width */
-.vzd-ost-lane-divider {
+.vzd-lane-divider {
   stroke: var(--background-modifier-border);
   stroke-width: 1;
   stroke-dasharray: 4 4;
 }
 
 /* Left-gutter lane label */
-.vzd-ost-lane-label {
+.vzd-lane-gutter-label {
   font-family: var(--font-interface);
   font-size: var(--vzd-base, var(--font-ui-small));
   font-style: italic;
@@ -1382,10 +1400,10 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 /* foreignObject wrapper — clip to the box. The box height is measured from the
    real DOM (see makeNodeMeasurer) so content fits; `hidden` (never `visible`)
    is deliberate — overflow:visible makes Blink paint spill at the SVG origin. */
-.vzd-ost-fo { overflow: hidden; }
+.vzd-lane-fo { overflow: hidden; }
 
 /* Offscreen sizer used to measure real wrapped node height before layout */
-.vzd-ost-sizer {
+.vzd-lane-sizer {
   position: absolute;
   visibility: hidden;
   left: -99999px;
@@ -1394,7 +1412,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 }
 
 /* Node box body: caption + wrapped label + bullets, left-aligned */
-.vzd-ost-node {
+.vzd-lane-node {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
@@ -1405,7 +1423,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   overflow: hidden;
 }
 
-.vzd-ost-caption {
+.vzd-lane-caption {
   font-size: 11px;
   line-height: 14px;
   font-style: italic;
@@ -1413,7 +1431,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   margin-bottom: 2px;
 }
 
-.vzd-ost-label {
+.vzd-lane-label {
   font-size: 13px;
   line-height: 18px;
   color: var(--text-normal);
@@ -1421,7 +1439,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   overflow-wrap: anywhere;
 }
 
-.vzd-ost-node--linked .vzd-ost-label {
+.vzd-lane-node--linked .vzd-lane-label {
   cursor: pointer;
   text-decoration: underline;
   text-decoration-style: dotted;
@@ -1429,13 +1447,13 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 }
 
 /* Chevron bullet list */
-.vzd-ost-bullets {
+.vzd-lane-bullets {
   list-style: none;
   margin: 5px 0 0 0;
   padding: 0;
 }
 
-.vzd-ost-bullet {
+.vzd-lane-bullet {
   position: relative;
   padding-left: 14px;
   font-size: 12px;
@@ -1444,18 +1462,18 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   overflow-wrap: anywhere;
 }
 
-.vzd-ost-bullet::before {
+.vzd-lane-bullet::before {
   content: "\203A"; /* › single right chevron */
   position: absolute;
   left: 2px;
-  color: var(--vzd-ost-accent, var(--text-muted));
+  color: var(--vzd-lane-accent, var(--text-muted));
   font-weight: 600;
 }
 
-.vzd-ost-bullet-text { cursor: text; }
+.vzd-lane-bullet-text { cursor: text; }
 
 /* Bullet delete button — revealed on node hover, like the SVG affordances */
-.vzd-ost-bullet-del {
+.vzd-lane-bullet-del {
   margin-left: 6px;
   padding: 0 4px;
   border: none;
@@ -1467,7 +1485,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   line-height: 1;
 }
 
-.vzd-ost-bullet-add-btn {
+.vzd-lane-bullet-add-btn {
   margin-top: 3px;
   padding: 1px 4px;
   border: none;
@@ -1479,13 +1497,13 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   transition: opacity 0.12s ease;
 }
 
-g.vzd-tree-node--editable:hover .vzd-ost-bullet-del,
-g.vzd-tree-node--editable:hover .vzd-ost-bullet-add-btn {
+g.vzd-tree-node--editable:hover .vzd-lane-bullet-del,
+g.vzd-tree-node--editable:hover .vzd-lane-bullet-add-btn {
   opacity: 1;
 }
 
-.vzd-ost-bullet-add-btn:hover { color: var(--text-normal); }
-.vzd-ost-bullet-del:hover { color: var(--text-error); }
+.vzd-lane-bullet-add-btn:hover { color: var(--text-normal); }
+.vzd-lane-bullet-del:hover { color: var(--text-error); }
 
 /* ── Tree live-edit interactions ─────────────────────────────────────────────
    Edit affordances: dblclick-to-rename, "+" add-child, "×" delete.

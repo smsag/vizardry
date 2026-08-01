@@ -137,26 +137,26 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
 // Box interior metrics — used only for the character-count FALLBACK estimate
 // (test/headless environments with no layout engine). The live renderer
 // measures real wrapped height from the DOM, so these need not be exact.
-const OST_PAD_X = 12;
-const OST_PAD_TOP = 9;
-const OST_PAD_BOTTOM = 10;
-const OST_LABEL_LINE_H = 18;
-const OST_CAPTION_H = 16;      // italic caption line + gap below it
-const OST_BULLET_LINE_H = 17;
-const OST_BULLETS_TOP_GAP = 5;
-const OST_CHAR_W = 7;
+const LANE_PAD_X = 12;
+const LANE_PAD_TOP = 9;
+const LANE_PAD_BOTTOM = 10;
+const LANE_LABEL_LINE_H = 18;
+const LANE_CAPTION_H = 16;      // italic caption line + gap below it
+const LANE_BULLET_LINE_H = 17;
+const LANE_BULLETS_TOP_GAP = 5;
+const LANE_CHAR_W = 7;
 
 /** Fallback height when real DOM metrics are unavailable (headless/tests).
  *  Estimating wrapped lines from an average glyph width under-counts for a
  *  proportional font, so this is only a backstop — see makeNodeMeasurer. */
 function estimateNodeHeight(node: TreeNode, opts: TreeRenderOptions): number {
-  const cpl = estimateCharsPerLine(opts.nodeW - OST_PAD_X * 2, { charW: OST_CHAR_W, min: 8 });
-  let h = OST_PAD_TOP + OST_PAD_BOTTOM;
-  if (opts.captionPosition === "top" && node.sublabel) h += OST_CAPTION_H;
-  h += wrappedLineCount(node.text, cpl) * OST_LABEL_LINE_H;
+  const cpl = estimateCharsPerLine(opts.nodeW - LANE_PAD_X * 2, { charW: LANE_CHAR_W, min: 8 });
+  let h = LANE_PAD_TOP + LANE_PAD_BOTTOM;
+  if (opts.captionPosition === "top" && node.sublabel) h += LANE_CAPTION_H;
+  h += wrappedLineCount(node.text, cpl) * LANE_LABEL_LINE_H;
   if (node.bullets && node.bullets.length > 0) {
-    h += OST_BULLETS_TOP_GAP;
-    for (const b of node.bullets) h += wrappedLineCount(b, cpl - 3) * OST_BULLET_LINE_H;
+    h += LANE_BULLETS_TOP_GAP;
+    for (const b of node.bullets) h += wrappedLineCount(b, cpl - 3) * LANE_BULLET_LINE_H;
   }
   return Math.max(opts.nodeH, h);
 }
@@ -171,14 +171,14 @@ interface NodeMeasurer { measure(node: TreeNode): number; dispose(): void; }
 function makeNodeMeasurer(
   el: HTMLElement, opts: TreeRenderOptions, editHandlers: TreeEditHandlers | undefined,
 ): NodeMeasurer {
-  const sizer = el.createEl("div", { cls: "vzd-ost-sizer" });
+  const sizer = el.createEl("div", { cls: "vzd-lane-sizer" });
   sizer.style.width = `${opts.nodeW}px`;
   const noop = (): void => {};
   return {
     measure(node: TreeNode): number {
       while (sizer.firstChild) sizer.removeChild(sizer.firstChild);
       const style = getTreeStyle(node.level, opts);
-      const host = buildOstNodeHost(node, opts, style, undefined, undefined, editHandlers, noop);
+      const host = buildLaneNodeHost(node, opts, style, undefined, undefined, editHandlers, noop);
       host.style.height = "auto"; // override the live "height: 100%" so it sizes to content
       sizer.appendChild(host);
       const measured = host.offsetHeight;
@@ -252,7 +252,7 @@ function renderLaneBands(svg: SVGSVGElement, opts: TreeRenderOptions, layout: La
       const dy = top - opts.levelGap / 2;
       svg.appendChild(createSvgEl("line", {
         x1: "0", y1: String(dy), x2: String(svgW), y2: String(dy),
-        class: "vzd-ost-lane-divider",
+        class: "vzd-lane-divider",
       }));
     }
 
@@ -260,7 +260,7 @@ function renderLaneBands(svg: SVGSVGElement, opts: TreeRenderOptions, layout: La
     if (lane) {
       const label = createSvgEl("text", {
         x: String(opts.hPadding), y: String(top + bh / 2),
-        "dominant-baseline": "middle", class: "vzd-ost-lane-label",
+        "dominant-baseline": "middle", class: "vzd-lane-gutter-label",
       });
       label.textContent = lane.label;
       svg.appendChild(label);
@@ -377,9 +377,9 @@ function buildBulletLi(
   editHandlers: TreeEditHandlers | undefined, closeRename: () => void,
 ): HTMLLIElement {
   const li = document.createElement("li");
-  li.className = "vzd-ost-bullet";
+  li.className = "vzd-lane-bullet";
   const span = document.createElement("span");
-  span.className = "vzd-ost-bullet-text";
+  span.className = "vzd-lane-bullet-text";
   span.textContent = text;
   li.appendChild(span);
 
@@ -395,7 +395,7 @@ function buildBulletLi(
   if (editHandlers?.onDeleteBullet) {
     const del = document.createElement("button");
     del.type = "button";
-    del.className = "vzd-ost-bullet-del";
+    del.className = "vzd-lane-bullet-del";
     del.textContent = "×";
     del.setAttribute("aria-label", t("tree.deleteNode"));
     del.addEventListener("click", (e) => {
@@ -413,12 +413,12 @@ function buildAddBulletLi(
   node: TreeNode, editHandlers: TreeEditHandlers, closeRename: () => void,
 ): HTMLLIElement {
   const li = document.createElement("li");
-  li.className = "vzd-ost-bullet-add";
+  li.className = "vzd-lane-bullet-add";
   const renderBtn = (): void => {
     li.textContent = "";
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "vzd-ost-bullet-add-btn";
+    btn.className = "vzd-lane-bullet-add-btn";
     btn.textContent = `+ ${t("ost.addBullet")}`;
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -439,36 +439,36 @@ function buildAddBulletLi(
 /** Builds the HTML body of an OST node (caption + wrapped label + chevron
  *  bullets), with link + inline-edit wiring. Shared by the live renderer and
  *  the offscreen height measurer so both lay out identically. */
-function buildOstNodeHost(
+function buildLaneNodeHost(
   node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
   resolver: LinkResolver | undefined, navigateTo: ((h: string) => void) | undefined,
   editHandlers: TreeEditHandlers | undefined, closeRename: () => void,
 ): HTMLElement {
   const host = document.createElement("div");
-  host.className = "vzd-ost-node";
-  if (style.strokeVar) host.style.setProperty("--vzd-ost-accent", style.strokeVar);
+  host.className = "vzd-lane-node";
+  if (style.strokeVar) host.style.setProperty("--vzd-lane-accent", style.strokeVar);
 
   if (opts.captionPosition === "top" && node.sublabel) {
     const cap = document.createElement("div");
-    cap.className = "vzd-ost-caption";
+    cap.className = "vzd-lane-caption";
     cap.textContent = node.sublabel;
     host.appendChild(cap);
   }
 
   const labelEl = document.createElement("div");
-  labelEl.className = "vzd-ost-label";
+  labelEl.className = "vzd-lane-label";
   labelEl.textContent = node.text;
   host.appendChild(labelEl);
 
   const heading = resolver?.resolve(node.text);
   if (heading && navigateTo) {
-    host.classList.add("vzd-ost-node--linked");
+    host.classList.add("vzd-lane-node--linked");
     labelEl.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
   }
 
   if ((node.bullets && node.bullets.length > 0) || editHandlers?.onAddBullet) {
     const ul = document.createElement("ul");
-    ul.className = "vzd-ost-bullets";
+    ul.className = "vzd-lane-bullets";
     for (const b of node.bullets ?? []) ul.appendChild(buildBulletLi(b, node, editHandlers, closeRename));
     if (editHandlers?.onAddBullet) ul.appendChild(buildAddBulletLi(node, editHandlers, closeRename));
     host.appendChild(ul);
@@ -496,15 +496,15 @@ function renderWrapNode(
   const rectAttrs: Record<string, string> = {
     width: String(opts.nodeW), height: String(h), rx: String(style.borderRadius),
     fill: style.fillVar, stroke: style.strokeVar ?? "var(--background-modifier-border)",
-    "stroke-width": "1.5", class: "vzd-ost-node-rect",
+    "stroke-width": "1.5", class: "vzd-lane-node-rect",
   };
   if (style.dashed) rectAttrs["stroke-dasharray"] = "6 3";
   group.appendChild(createSvgEl("rect", rectAttrs));
 
   const fo = createSvgEl("foreignObject", {
-    x: "0", y: "0", width: String(opts.nodeW), height: String(h), class: "vzd-ost-fo",
+    x: "0", y: "0", width: String(opts.nodeW), height: String(h), class: "vzd-lane-fo",
   }) as SVGForeignObjectElement;
-  fo.appendChild(buildOstNodeHost(node, opts, style, resolver, navigateTo, editHandlers, closeRename));
+  fo.appendChild(buildLaneNodeHost(node, opts, style, resolver, navigateTo, editHandlers, closeRename));
   group.appendChild(fo);
 
   if (editHandlers) {
@@ -738,15 +738,27 @@ export function renderTree(
 //   Level 2 -- secondary-bg, solid, r=6 (sub-branches)
 //   Level 3 -- secondary-bg, dashed pill, muted text (leaves / hypotheses)
 //
-// The OST breaks away into the swim-lane style (see ostTreeOptions): outlined
-// boxes coloured per lane, wrapped text, italic captions, chevron bullets.
+// OST and SCQA/SCR break away into the swim-lane style (see laneTreeOptions):
+// outlined boxes coloured per lane, wrapped text, italic captions, chevron
+// bullets. The shared factory below is the "boilerplate" both diagrams supply
+// their own lane labels + hue variables to.
 
-/**
- * OST render options, rebuilt per call so lane labels track the current UI
- * language. Each level is a lane; the Opportunity lane (level 1) accents the
- * whole band, and connectors flowing into a lane inherit its colour.
- */
-export function ostTreeOptions(): TreeRenderOptions {
+/** Config a swim-lane diagram supplies to build its render options. `hueVars`
+ *  are CSS colour references (one per lane); `lanes[i]` labels lane i. */
+export interface LaneTreeConfig {
+  canvasClass: string;
+  wrapperClass: string;
+  lanes: { label: string }[];
+  hueVars: string[];
+  /** Deepest level that may add a child (leaf level has none). */
+  maxAddLevel: number;
+  gutterWidth?: number;
+}
+
+/** Builds swim-lane render options shared by OST and SCQA/SCR: top-down bands,
+ *  wrapped outlined boxes, italic top captions, colour-per-lane borders and
+ *  connectors. Rebuilt per call so lane labels track the current UI language. */
+export function laneTreeOptions(cfg: LaneTreeConfig): TreeRenderOptions {
   const laneStyle = (strokeVar: string): TreeNodeStyle => ({
     fillVar: "var(--background-primary)", textVar: "var(--text-normal)",
     strokeVar, outline: true, borderRadius: 8, dashed: false,
@@ -754,26 +766,38 @@ export function ostTreeOptions(): TreeRenderOptions {
   return {
     nodeW: 230, nodeH: 54, levelGap: 58, siblingGap: 24,
     hPadding: 24, vPadding: 28, maxLabelChars: 1000,
-    maxAddLevel: 3,
+    maxAddLevel: cfg.maxAddLevel,
     direction: "lanes",
     wrap: true,
     captionPosition: "top",
-    gutterWidth: 150,
+    gutterWidth: cfg.gutterWidth ?? 150,
+    canvasClass: cfg.canvasClass,
+    wrapperClass: cfg.wrapperClass,
+    lanes: cfg.lanes,
+    levelStyles: cfg.hueVars.map(v => laneStyle(v)),
+  };
+}
+
+/** OST swim-lane options: outcome / opportunity (need·pain·desire) / solution /
+ *  experiment lanes, each with its own theme-aware hue. */
+export function ostTreeOptions(): TreeRenderOptions {
+  return laneTreeOptions({
     canvasClass: "vizardry-ost",
     wrapperClass: "vizardry-ost-wrapper",
+    maxAddLevel: 3,
     lanes: [
       { label: t("ost.lane.outcome") },
       { label: t("ost.lane.opportunity") },
       { label: t("ost.lane.solution") },
       { label: t("ost.lane.experiment") },
     ],
-    levelStyles: [
-      laneStyle("var(--vzd-ost-outcome)"),
-      laneStyle("var(--vzd-ost-opportunity)"),
-      laneStyle("var(--vzd-ost-solution)"),
-      laneStyle("var(--vzd-ost-experiment)"),
+    hueVars: [
+      "var(--vzd-ost-outcome)",
+      "var(--vzd-ost-opportunity)",
+      "var(--vzd-ost-solution)",
+      "var(--vzd-ost-experiment)",
     ],
-  };
+  });
 }
 
 export const MINDMAP_OPTS: TreeRenderOptions = {
@@ -889,28 +913,10 @@ export function adaptFishboneToTree(diagram: FishboneDiagram): { root: TreeNode 
 }
 
 // -- SCQA / SCR ---------------------------------------------------------------
-// Top-down narrative tree. SCQA has 4 levels (situation → complication →
-// question → answer); SCR collapses to 3 (situation → complication →
-// resolution). Shares the OST/Impact visual language.
-
-export const SCQA_TREE_OPTIONS: TreeRenderOptions = {
-  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
-  hPadding: 24, vPadding: 24, maxLabelChars: 22,
-  maxAddLevel: 3,
-  canvasClass: "vizardry-scqa",
-  wrapperClass: "vizardry-scqa-wrapper",
-  levelStyles: [
-    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
-    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
-  ],
-};
-
-export const SCR_TREE_OPTIONS: TreeRenderOptions = {
-  ...SCQA_TREE_OPTIONS,
-  maxAddLevel: 2,
-};
+// Top-down narrative tree rendered in the shared swim-lane style. SCQA has 4
+// lanes (situation → complication → question → answer); SCR collapses to 3
+// (situation → complication → resolution). The role name is both the lane
+// label and each box's italic caption.
 
 const SCQA_LEVEL_KEYS: TranslationKey[] = [
   "scqa.level.situation",
@@ -925,12 +931,34 @@ const SCR_LEVEL_KEYS: TranslationKey[] = [
   "scr.level.resolution",
 ];
 
+function scqaLevelKeys(variant: SCQAData["variant"]): TranslationKey[] {
+  return variant === "scqa" ? SCQA_LEVEL_KEYS : SCR_LEVEL_KEYS;
+}
+
+/** SCQA/SCR swim-lane options — one lane per narrative level, each with a
+ *  theme-aware hue; lane labels reuse the role names. */
+export function scqaTreeOptions(variant: SCQAData["variant"]): TreeRenderOptions {
+  const keys = scqaLevelKeys(variant);
+  const hueName = variant === "scqa"
+    ? ["situation", "complication", "question", "answer"]
+    : ["situation", "complication", "resolution"];
+  return laneTreeOptions({
+    canvasClass: "vizardry-scqa",
+    wrapperClass: "vizardry-scqa-wrapper",
+    maxAddLevel: variant === "scqa" ? 3 : 2,
+    lanes: keys.map(k => ({ label: t(k) })),
+    hueVars: hueName.map(h => `var(--vzd-scqa-${h})`),
+  });
+}
+
 export function adaptSCQAToTree(data: SCQAData): { root: TreeNode } {
-  const keys = data.variant === "scqa" ? SCQA_LEVEL_KEYS : SCR_LEVEL_KEYS;
+  const keys = scqaLevelKeys(data.variant);
   const convert = (node: SCQANode): TreeNode => ({
     text: node.text,
     level: node.level,
+    key: node.key,
     sublabel: t(keys[Math.min(node.level, keys.length - 1)]),
+    bullets: node.bullets,
     children: node.children.map(convert),
     x: 0, y: 0, width: 0, height: 0,
   });
