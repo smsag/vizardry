@@ -284,6 +284,20 @@ describe("renderMatrix", () => {
     expect(noHeat.querySelector(".vzd-matrix-legend")).toBeNull();
   });
 
+  it("links an item label to a heading (auto-detect and explicit annotation)", () => {
+    const resolver = { resolve: (l: string) => (l.toLowerCase() === "fix checkout" ? "Checkout rework" : undefined) } as any;
+    const nav = () => {};
+
+    const auto = container();
+    renderMatrix(build("item: Fix checkout [0.2,0.8]", "impact"), auto, undefined, undefined, undefined, resolver, nav);
+    expect(auto.querySelector(".vzd-mx-item-label .vzd-card-link-btn")).toBeTruthy();
+
+    const explicit = container();
+    const blank = { resolve: () => undefined } as any;
+    renderMatrix(build("item: Spec [[#Rework]] at: t1", "impact"), explicit, undefined, undefined, undefined, blank, nav);
+    expect(explicit.querySelector(".vzd-mx-item-label .vzd-card-link-btn")).toBeTruthy();
+  });
+
   it("adds the editable affordance only in edit mode", () => {
     const ctx = { sourcePath: "note.md" } as any;
     const data = build("item: Fix [0.2,0.8]", "impact");

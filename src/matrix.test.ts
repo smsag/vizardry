@@ -110,4 +110,27 @@ describe("parseMatrix", () => {
     const r = parseMatrix("title: My Matrix\n// a note\nitem: A [0.5,0.5]", "impact");
     expect(r.ok).toBe(true);
   });
+
+  // ── Item link annotations (before the position token) ────────────────────────
+
+  it("extracts a [[#Heading]] annotation from an item, keeping label and position", () => {
+    const r = parseMatrix("item: Fix checkout [[#Checkout rework]] [0.2, 0.8]", "impact");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.items[0]).toMatchObject({ label: "Fix checkout", linkHeading: "Checkout rework", x: 0.2, y: 0.8 });
+  });
+
+  it("extracts a ticket annotation from an item", () => {
+    const r = parseMatrix("item: Fix login [Fix login](CORE-1234) at: t1", "impact");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.items[0]).toMatchObject({ label: "Fix login", linkTicket: "CORE-1234", at: "t1" });
+  });
+
+  it("treats a markdown link to an anchor as a heading annotation", () => {
+    const r = parseMatrix("item: Spec [see](#Rework) at: t2", "impact");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.items[0]).toMatchObject({ label: "Spec", linkHeading: "Rework" });
+  });
 });

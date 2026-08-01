@@ -18,6 +18,12 @@ plane. Old matrix/scenario blocks must be rewritten (there is no back-compat).
   A card (indented lines = body) placed at a free coordinate (`[x,y]` in 0…1,
   origin bottom-left) or snapped to a cell centre. In edit mode items drag to
   reposition (writing `[x, y]` back) and click to edit their body.
+- **Item linking.** An item label links to a heading or a Linear/Upvoty ticket:
+  auto-detected when the label matches a heading name, or via an explicit
+  `[[#Heading]]` / `[text](TICKET)` annotation placed before the position token
+  (e.g. `item: Fix login [Fix login](CORE-1234) at: t1`). Item bodies keep full
+  link support, and the global Linear/Upvoty key enrichment still scans all
+  rendered text.
 
 Gone entirely: `layout:`, `block:` + cell-key labels, `zone:`, `cards:` /
 `| card`, the `top-left:` quadrant keywords, and the three different `x-axis:`

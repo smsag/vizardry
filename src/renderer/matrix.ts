@@ -3,12 +3,12 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { MatrixData, MatrixItem, MatrixPreset } from "../types";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n/locales/en";
-import { initCanvas } from "./controls";
+import { initCanvas, renderHeadingLink } from "./controls";
 import { renderBlockBody } from "./block-editor";
 import { presetColor } from "../matrix-presets";
 import { writeItemPosition, writeItemContent } from "../shared/matrix-edit";
 import { isEditModeActive } from "../shared/editor";
-import type { LinkResolver } from "../shared/links";
+import { classifyTicketTarget, type LinkResolver } from "../shared/links";
 
 const DRAG_THRESHOLD = 4;
 const pct = (n: number): string => `${(n * 100).toFixed(3)}%`;
@@ -112,6 +112,16 @@ function renderLegend(header: HTMLElement): void {
   if (actionsDiv) header.insertBefore(legend, actionsDiv);
 }
 
+/** A resolver that returns the item's own explicit link annotation, falling
+ *  back to the shared resolver (heading auto-detect, blind ticket enrichment). */
+function itemLinkResolver(item: MatrixItem, base?: LinkResolver): LinkResolver | undefined {
+  if (!item.linkHeading && !item.linkTicket) return base;
+  return {
+    resolve: (l) => item.linkHeading ?? base?.resolve(l),
+    resolveTicket: (l) => (item.linkTicket ? classifyTicketTarget(item.linkTicket) ?? undefined : base?.resolveTicket?.(l)),
+  };
+}
+
 /** Resolves an item's position to plane coordinates (0…1, origin bottom-left). */
 function itemXY(item: MatrixItem, cols: number, rows: number): { x: number; y: number } {
   if (item.at && cols > 0 && rows > 0) {
@@ -142,7 +152,10 @@ function renderItem(
   el.style.top = pct(1 - y);
   el.createEl("div", { cls: "vzd-mx-item-dot" });
   const card = el.createEl("div", { cls: "vzd-mx-item-card" });
-  card.createEl("div", { cls: "vzd-mx-item-label", text: item.label });
+  const labelEl = card.createEl("div", { cls: "vzd-mx-item-label", text: item.label });
+  // Link the label to a heading/ticket: explicit annotation on the item line,
+  // or a heading whose name matches the label (auto-detect via the shared resolver).
+  renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
   const body = card.createEl("div", { cls: "vizardry-block-body" });
   renderBlockBody(body, item.content, resolver, navigateTo, app, ctx?.sourcePath);
 

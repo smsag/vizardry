@@ -552,6 +552,10 @@ export interface MatrixItem {
   y?: number;
   /** Cell id the item is snapped to (e.g. "t1"). Undefined for free coordinates. */
   at?: string;
+  /** Explicit `[[#Heading]]` / `[text](#anchor)` annotation on the item line. */
+  linkHeading?: string;
+  /** Explicit `[text](TICKET)` annotation — the raw target, classified at render. */
+  linkTicket?: string;
 }
 
 export interface MatrixData {

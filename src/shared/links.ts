@@ -39,7 +39,7 @@ export const NULL_RESOLVER: LinkResolver = { resolve: () => undefined };
  * principle collide for an all-digit Upvoty base62 id, an accepted
  * ambiguity rather than something worth a more elaborate disambiguation.
  */
-function classifyTicketTarget(target: string): TicketMatch | null {
+export function classifyTicketTarget(target: string): TicketMatch | null {
   LINEAR_KEY_RE.lastIndex = 0;
   const linearMatch = LINEAR_KEY_RE.exec(target);
   if (linearMatch && linearMatch[0] === target) {

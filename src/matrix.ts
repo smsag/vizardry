@@ -43,9 +43,37 @@ function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
 }
 
-/** Parses an `item: Label [x,y]` / `item: Label at: tN` header plus its body. */
+const WIKI_LINK_RE = /\[\[#([^\]]+)\]\]/;
+const MD_LINK_RE = /\[[^\]]*\]\(([^)]+)\)/;
+
+/** Parses an `item: Label [x,y]` / `item: Label at: tN` header plus its body.
+ *  A `[[#Heading]]` or `[text](target)` link annotation may precede the position
+ *  token (placed before the coordinate so the shared inline-link stripper, which
+ *  only fires at end-of-line, leaves it for us). */
 function parseItem(lines: string[], headerIdx: number): { item: MatrixItem; nextIdx: number } | { error: string } {
-  const value = lines[headerIdx].trim().slice("item:".length).trim();
+  let value = lines[headerIdx].trim().slice("item:".length).trim();
+
+  let linkHeading: string | undefined;
+  let linkTicket: string | undefined;
+  const strip = (m: RegExpMatchArray): void => {
+    value = (value.slice(0, m.index) + value.slice((m.index ?? 0) + m[0].length)).trim();
+  };
+  const wiki = value.match(WIKI_LINK_RE);
+  if (wiki) {
+    linkHeading = wiki[1].trim();
+    strip(wiki);
+  } else {
+    const md = value.match(MD_LINK_RE);
+    if (md) {
+      const target = md[1].trim();
+      if (target.startsWith("#")) {
+        try { linkHeading = decodeURIComponent(target.slice(1)); } catch { linkHeading = target.slice(1); }
+      } else {
+        linkTicket = target;
+      }
+      strip(md);
+    }
+  }
 
   let label = value;
   let x: number | undefined;
@@ -84,7 +112,7 @@ function parseItem(lines: string[], headerIdx: number): { item: MatrixItem; next
   }
   while (body.length > 0 && body[body.length - 1].trim() === "") body.pop();
 
-  return { item: { label, content: body.join("\n"), x, y, at }, nextIdx: i };
+  return { item: { label, content: body.join("\n"), x, y, at, linkHeading, linkTicket }, nextIdx: i };
 }
 
 /**
