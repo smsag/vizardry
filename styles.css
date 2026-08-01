@@ -1397,113 +1397,59 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   user-select: none;
 }
 
-/* foreignObject wrapper — clip to the box. The box height is measured from the
-   real DOM (see makeNodeMeasurer) so content fits; `hidden` (never `visible`)
-   is deliberate — overflow:visible makes Blink paint spill at the SVG origin. */
-.vzd-lane-fo { overflow: hidden; }
-
-/* Offscreen sizer used to measure real wrapped node height before layout */
-.vzd-lane-sizer {
-  position: absolute;
-  visibility: hidden;
-  left: -99999px;
-  top: 0;
-  pointer-events: none;
-}
-
-/* Node box body: caption + wrapped label + bullets, left-aligned */
-.vzd-lane-node {
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  padding: 9px 12px 10px 12px;
+/* Node content is drawn as NATIVE SVG text (no foreignObject) so it positions
+   correctly on every engine, including iOS WebKit. All lane text inherits the
+   interface font and is non-selectable. */
+.vzd-lane-caption,
+.vzd-lane-label-text,
+.vzd-lane-bullet-text,
+.vzd-lane-chevron,
+.vzd-lane-bullet-add,
+.vzd-lane-bullet-del-x {
   font-family: var(--font-interface);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  user-select: none;
 }
 
 .vzd-lane-caption {
   font-size: 11px;
-  line-height: 14px;
   font-style: italic;
-  color: var(--text-muted);
-  margin-bottom: 2px;
+  fill: var(--text-muted);
 }
 
-.vzd-lane-label {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--text-normal);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
+.vzd-lane-label-text { font-size: 13.5px; }
 
-.vzd-lane-node--linked .vzd-lane-label {
+.vzd-lane-label--linked {
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
+  text-decoration: underline dotted;
   text-underline-offset: 2px;
 }
 
-/* Chevron bullet list */
-.vzd-lane-bullets {
-  list-style: none;
-  margin: 5px 0 0 0;
-  padding: 0;
-}
+.vzd-lane-bullet-text { font-size: 12.5px; }
 
-.vzd-lane-bullet {
-  position: relative;
-  padding-left: 14px;
-  font-size: 12px;
-  line-height: 17px;
-  color: var(--text-normal);
-  overflow-wrap: anywhere;
-}
-
-.vzd-lane-bullet::before {
-  content: "\203A"; /* › single right chevron */
-  position: absolute;
-  left: 2px;
-  color: var(--vzd-lane-accent, var(--text-muted));
+.vzd-lane-chevron {
+  font-size: 12.5px;
   font-weight: 600;
 }
 
-.vzd-lane-bullet-text { cursor: text; }
+/* Bullet edit affordances — visible whenever the node is editable (no hover
+   gating, so they work on touch/mobile too). */
+.vzd-tree-node--editable .vzd-lane-label-text,
+.vzd-tree-node--editable .vzd-lane-bullet-text { cursor: text; }
 
-/* Bullet delete button — revealed on node hover, like the SVG affordances */
-.vzd-lane-bullet-del {
-  margin-left: 6px;
-  padding: 0 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-faint);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-  line-height: 1;
-}
-
-.vzd-lane-bullet-add-btn {
-  margin-top: 3px;
-  padding: 1px 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
+.vzd-lane-bullet-add {
   font-size: 11px;
+  fill: var(--text-muted);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease;
 }
+.vzd-lane-bullet-add:hover { fill: var(--text-normal); }
 
-g.vzd-tree-node--editable:hover .vzd-lane-bullet-del,
-g.vzd-tree-node--editable:hover .vzd-lane-bullet-add-btn {
-  opacity: 1;
+.vzd-lane-bullet-del { cursor: pointer; }
+.vzd-lane-bullet-del-hit { fill: transparent; }
+.vzd-lane-bullet-del-x {
+  font-size: 13px;
+  fill: var(--text-faint);
 }
-
-.vzd-lane-bullet-add-btn:hover { color: var(--text-normal); }
-.vzd-lane-bullet-del:hover { color: var(--text-error); }
+.vzd-lane-bullet-del:hover .vzd-lane-bullet-del-x { fill: var(--text-error); }
 
 /* ── Tree live-edit interactions ─────────────────────────────────────────────
    Edit affordances: dblclick-to-rename, "+" add-child, "×" delete.
