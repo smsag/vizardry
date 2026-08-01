@@ -18,6 +18,7 @@ import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
 import { ALL_FRAMEWORKS } from "./frameworks-registry";
 import { dispatchVizardry } from "./vizardry-dispatch";
 import { insertTemplateAtCursor } from "./shared/editor";
+import { VizardryHeadingSuggest } from "./heading-suggest";
 import { updatePersistedData } from "./shared/persisted-data";
 import { t, tFrameworkDescription } from "./i18n";
 
@@ -66,6 +67,12 @@ export default class VizardryPlugin extends Plugin {
     } catch (err) {
       console.error(`${tag}: failed to register the "vizardry" processor`, err);
     }
+
+    // ── Heading autocomplete inside vizardry blocks ────────────────────
+    // Obsidian's native [[ suggester still triggers inside a fenced code
+    // block but silently fails to insert — this offers a working [[#Heading]]
+    // completion scoped to vizardry fences. See heading-suggest.ts.
+    this.registerEditorSuggest(new VizardryHeadingSuggest(this.app));
 
     // ── Heading change listener ────────────────────────────────────────
     // When any file's metadata (headings) changes, refresh link buttons on
