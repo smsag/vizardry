@@ -173,7 +173,7 @@ export const en = {
   "framework.roadmap.description": "Now, Next, and Later priorities at a glance.",
 
   // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
-  "framework.matrix.description": "Map pain points, opportunities, impact vs. effort, or assumptions on a 4×4 grid — or plot items freely on the axes with layout: plot.",
+  "framework.matrix.description": "Two tick axes form a cell grid; place items as cards freely or in cells. Presets: pain, opportunity, impact, assumption, scenario.",
   "framework.scenario.description": "Two critical uncertainties, four scenarios — a GBN/Schwartz 2×2.",
 
   "matrix.row.pain.1": "Very Major Pain",
@@ -225,6 +225,20 @@ export const en = {
   "matrix.legend.high":     "High",
   "matrix.legend.medium":   "Medium",
   "matrix.legend.low":      "Low",
+
+  // Preset axis titles (the tick labels reuse matrix.row.* / matrix.col.*)
+  "matrix.axis.pain.x":        "Prevalence",
+  "matrix.axis.pain.y":        "Severity",
+  "matrix.axis.opportunity.x": "Effort",
+  "matrix.axis.opportunity.y": "Benefit",
+  "matrix.axis.impact.x":      "Effort",
+  "matrix.axis.impact.y":      "Impact",
+  "matrix.axis.assumption.x":  "Evidence",
+  "matrix.axis.assumption.y":  "Importance",
+  "matrix.axis.scenario.x":    "Uncertainty A",
+  "matrix.axis.scenario.y":    "Uncertainty B",
+  "matrix.scenario.low":       "Low",
+  "matrix.scenario.high":      "High",
 
   // ── Upvoty enrichment ────────────────────────────────────────────────────────
   "upvoty.loading":          "Loading…",

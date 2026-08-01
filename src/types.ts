@@ -519,88 +519,47 @@ export interface NodeMapData {
 
 export type NodeMapResult = Result<NodeMapData>;
 
-// ── Pain / Opportunity Matrix ─────────────────────────────────────────────────
+// ── Matrix (one unified model) ────────────────────────────────────────────────
+// A matrix is two tick-labelled axes forming a grid of cells, plus items placed
+// on the plane. `x:`/`y:` ticks are equal bands, so N x-ticks × M y-ticks define
+// an N×M cell grid. Cells are auto-ided t1…t(N·M) in reading order (t1 = top-left).
+// A preset fills default ticks + per-cell heat + colour. Items are cards placed
+// by free coordinate ([x,y] in 0…1, origin bottom-left) or snapped to a cell.
 
-export type MatrixType = "pain" | "opportunity" | "impact" | "assumption";
+export type MatrixPreset = "pain" | "opportunity" | "impact" | "assumption" | "scenario";
 
-/** Discrete binned cells (default) vs continuous plotted coordinates. */
-export type MatrixLayout = "grid" | "plot";
-
-export interface MatrixData {
-  type: MatrixType;
-  layout: MatrixLayout;
-  data: Record<string, string>;
-  cardBlocks: Set<string>;
-  allCards: boolean;
-  /** Optional axis-title overrides. The curated tick labels and heat model are
-   *  unchanged — these only rename the overall axis (e.g. "Reach" for effort). */
-  xAxis?: string;
-  yAxis?: string;
-  /** Present only when layout === "plot". */
-  plot?: PlotData;
-}
-
-export type MatrixResult = Result<MatrixData>;
-
-// ── Plotted matrix (layout: plot) ─────────────────────────────────────────────
-// A continuous scatter on two axes: items are placed by (x, y) coordinates in
-// [0, 1] (origin bottom-left), axes carry any number of tick labels, and heat
-// is author-declared via zones rather than derived from cell position.
-
+/** Cell-tint emphasis level; the hue comes from the chart's single base colour. */
 export type Heat = "very-high" | "high" | "medium" | "low";
 
-export interface PlotAxisTick {
-  pos: number;   // 0…1
-  label: string;
-}
-
-export interface PlotAxis {
+export interface MatrixAxis {
   title: string;
-  ticks: PlotAxisTick[];
+  ticks: string[]; // band labels, left→right (x) / bottom→top (y)
 }
 
-export interface PlotItem {
-  label: string;
-  content: string; // "\n"-joined detail lines, rendered as a card body
-  x: number;       // 0…1, left→right
-  y: number;       // 0…1, bottom→top
-}
-
-export interface PlotZone {
-  rect: [number, number, number, number]; // [x0, y0, x1, y1] in 0…1, corners
-  label?: string;
+export interface MatrixCell {
+  id: string;      // "t1"… reading order, t1 = top-left
+  col: number;     // 1…N, left→right
+  row: number;     // 1…M, top→bottom
+  name?: string;   // author label shown in the cell
   heat?: Heat;
 }
 
-export interface PlotData {
-  xAxis: PlotAxis;
-  yAxis: PlotAxis;
-  items: PlotItem[];
-  zones: PlotZone[];
+export interface MatrixItem {
+  label: string;
+  content: string; // "\n"-joined detail lines, rendered as a card body
+  /** Free coordinate in 0…1 (origin bottom-left). Undefined when snapped to a cell. */
+  x?: number;
+  y?: number;
+  /** Cell id the item is snapped to (e.g. "t1"). Undefined for free coordinates. */
+  at?: string;
 }
 
-// ── Scenario Matrix (GBN / Schwartz 2×2) ────────────────────────────────────
-// Two user-defined critical uncertainties as axes, each with a low and high
-// pole, producing four named scenario quadrants. Unlike the priority matrix,
-// all quadrants are equal (no heat). Quadrant content renders as cards.
-
-export interface ScenarioAxis {
-  name: string;
-  low: string;   // left pole (x) / bottom pole (y)
-  high: string;  // right pole (x) / top pole (y)
+export interface MatrixData {
+  preset: MatrixPreset | null;
+  xAxis: MatrixAxis;
+  yAxis: MatrixAxis;
+  cells: MatrixCell[]; // only cells the author named/heated (or the preset heated)
+  items: MatrixItem[];
 }
 
-export type ScenarioQuadrantKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-
-export interface ScenarioQuadrant {
-  name: string;
-  content: string; // "\n"-joined detail lines, rendered as cards
-}
-
-export interface ScenarioData {
-  xAxis: ScenarioAxis;
-  yAxis: ScenarioAxis;
-  quadrants: Record<ScenarioQuadrantKey, ScenarioQuadrant>;
-}
-
-export type ScenarioResult = Result<ScenarioData>;
+export type MatrixResult = Result<MatrixData>;

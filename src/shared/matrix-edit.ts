@@ -2,20 +2,22 @@ import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 
 /**
- * Write-back for `layout: plot` items. Two operations, both locating the
- * `item: <Label>` header inside the fence the same way (prefix + `|`/end match,
- * mirroring findBlockBody's contract for `block:`):
+ * Write-back for matrix `item:` lines. Both operations locate the
+ * `item: <Label>` header inside the fence (prefix match, tolerating a trailing
+ * `[x,y]` or `at: tN` position token):
  *
- *  - writeItemPosition: rewrite the header's `x:`/`y:` modifier after a drag.
+ *  - writeItemPosition: rewrite the header to `item: <Label> [x, y]` after a drag.
  *  - writeItemContent:  replace the item's indented body after an edit.
  */
 
+const COORD_RE = /\[\s*-?\d*\.?\d+\s*,\s*-?\d*\.?\d+\s*\]/;
+const AT_RE = /\bat:\s*t\d+\b/i;
+
 type ItemLocation = {
   headerLine: number;
-  /** The label text exactly as written in source (original case). */
-  labelText: string;
+  labelText: string; // label as written (original case, position token stripped)
   bodyStart: number;
-  bodyEnd: number; // bodyEnd < bodyStart means the body is currently empty
+  bodyEnd: number;   // bodyEnd < bodyStart means the body is currently empty
 };
 
 function findItem(editor: Editor, lineStart: number, lineEnd: number, itemLabel: string): ItemLocation | null {
@@ -24,16 +26,13 @@ function findItem(editor: Editor, lineStart: number, lineEnd: number, itemLabel:
   let labelText = itemLabel;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw: string = editor.getLine(ln);
-    const trimmed = raw.trim();
+    const trimmed = editor.getLine(ln).trim();
     const normalised = trimmed.toLowerCase();
     if (normalised.startsWith(targetPrefix)) {
       const after = normalised.slice(targetPrefix.length).trimStart();
-      if (after === "" || after.startsWith("|")) {
+      if (after === "" || after.startsWith("[") || after.startsWith("at:")) {
         headerLine = ln;
-        const value = trimmed.slice("item:".length);
-        const pipeIdx = value.indexOf("|");
-        labelText = (pipeIdx !== -1 ? value.slice(0, pipeIdx) : value).trim();
+        labelText = trimmed.slice("item:".length).replace(COORD_RE, "").replace(AT_RE, "").trim();
         break;
       }
     }
@@ -43,16 +42,15 @@ function findItem(editor: Editor, lineStart: number, lineEnd: number, itemLabel:
   let bodyStart = headerLine + 1;
   let bodyEnd = bodyStart - 1;
   for (let ln = bodyStart; ln <= lineEnd; ln++) {
-    const raw: string = editor.getLine(ln);
-    const trimmed = raw.trim();
-    if (trimmed !== "" && !raw.startsWith(" ") && !raw.startsWith("\t")) break;
+    const raw = editor.getLine(ln);
+    if (raw.trim() !== "" && !raw.startsWith(" ") && !raw.startsWith("\t")) break;
     bodyEnd = ln;
   }
   return { headerLine, labelText, bodyStart, bodyEnd };
 }
 
-/** Rewrites the `item:` header line with fresh coordinates, preserving the
- *  label's original text. Coordinates are rounded to 2 dp to limit diff churn. */
+/** Rewrites the header with fresh `[x, y]` coordinates (2 dp), dropping any
+ *  previous `[x,y]` or `at: tN` token and preserving the label text. */
 export function writeItemPosition(
   app: App,
   ctx: MarkdownPostProcessorContext,
@@ -73,7 +71,7 @@ export function writeItemPosition(
 
   const rx = Math.round(x * 100) / 100;
   const ry = Math.round(y * 100) / 100;
-  const newHeader = `item: ${loc.labelText} | x: ${rx}, y: ${ry}`;
+  const newHeader = `item: ${loc.labelText} [${rx}, ${ry}]`;
   editor.replaceRange(
     newHeader,
     { line: loc.headerLine, ch: 0 },

@@ -32,8 +32,7 @@ vi.mock("html-to-image", () => ({
 // ── Renderer imports (after mocks are declared) ───────────────────────────────
 import { renderError, renderCanvas } from "./canvas";
 import { renderMatrix } from "./matrix";
-import { renderPlot } from "./plot";
-import { renderScenario } from "./scenario";
+import { parseMatrix } from "../matrix";
 import { renderTree, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
 import type { TreeRenderOptions } from "../types";
 
@@ -224,209 +223,80 @@ describe("renderCanvas", () => {
   });
 });
 
-// ── renderMatrix (2×2/4×4 matrices — shares two-pass-cells.ts with renderCanvas) ──
+// ── renderMatrix (one unified engine: cells + items) ──────────────────────────
 
 describe("renderMatrix", () => {
-  const matrixData: MatrixData = {
-    type: "opportunity",
-    layout: "grid",
-    data: { "very-major-1": "First idea", "major-2": "Second idea" },
-    cardBlocks: new Set(),
-    allCards: false,
+  const build = (src: string, preset?: string): MatrixData => {
+    const r = parseMatrix(src, preset);
+    if (!r.ok) throw new Error(r.error);
+    return r.data;
   };
 
-  it("renders 16 cells (4x4 grid)", () => {
+  it("renders an N×M cell grid with heat classes from a preset", () => {
     const el = container();
-    renderMatrix(matrixData, el);
-    expect(el.querySelectorAll(".vzd-matrix-cell")).toHaveLength(16);
+    renderMatrix(build("item: Fix [0.2,0.8]\n  body", "impact"), el);
+    expect(el.querySelectorAll(".vzd-mx-cell")).toHaveLength(16);
+    // t1 (top-left, first in reading order) is the hot corner.
+    const cells = Array.from(el.querySelectorAll(".vzd-mx-cell"));
+    expect(cells[0].className).toContain("vzd-mx-cell--very-high");
   });
 
-  it("renders plain-text cell content and wires click-to-edit with the correct current content", () => {
+  it("renders axis titles and per-band ticks", () => {
     const el = container();
-    const app = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
-    const ctx = { sourcePath: "note.md" } as any;
-    renderMatrix(matrixData, el, undefined, app, ctx);
-
-    const bodies = Array.from(el.querySelectorAll<HTMLElement>(".vizardry-block-body"));
-    const filled = bodies.find(b => b.textContent?.includes("First idea"));
-    expect(filled).toBeTruthy();
-    expect(filled?.classList.contains("vzd-block-editable")).toBe(true);
-    // renderBlockBody() populates dataset.blockContent — the click handler
-    // must see the cell's actual text, not an empty string.
-    expect(filled?.dataset.blockContent).toBe("First idea");
+    renderMatrix(build("item: Fix [0.2,0.8]", "impact"), el);
+    expect(el.querySelector(".vzd-mx-xname")?.textContent).toBe("Effort");
+    expect(el.querySelector(".vzd-mx-yname")?.textContent).toBe("Impact");
+    expect(el.querySelectorAll(".vzd-mx-xticks .vzd-mx-tick")).toHaveLength(4);
+    expect(el.querySelectorAll(".vzd-mx-yticks .vzd-mx-tick")).toHaveLength(4);
   });
 
-  it("renders card-mode cells as draggable cards, with cross-cell drop targets", () => {
+  it("positions a free-coordinate item (top = 1 - y)", () => {
     const el = container();
-    const cardData: MatrixData = { ...matrixData, allCards: true };
-    renderMatrix(cardData, el);
-    expect(el.querySelectorAll(".vzd-card-block-card").length).toBeGreaterThan(0);
+    renderMatrix(build("item: Fix checkout [0.2, 0.8]", "impact"), el);
+    const item = el.querySelector<HTMLElement>(".vzd-mx-item");
+    expect(item?.querySelector(".vzd-mx-item-label")?.textContent).toBe("Fix checkout");
+    expect(item?.style.left).toContain("20");   // x 0.2 → 20%
+    expect(item?.style.top).toContain("20");     // 1 - 0.8 → 20%
   });
 
-  it("renders the assumption variant (4x4 grid)", () => {
+  it("snaps an `at:` item to its cell centre", () => {
     const el = container();
-    renderMatrix({ ...matrixData, type: "assumption" }, el);
-    expect(el.querySelectorAll(".vzd-matrix-cell")).toHaveLength(16);
-    expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Importance");
+    // t7 in a 4×4 = col 3, row 2 (top-based) → centre (0.625, 0.625).
+    renderMatrix(build("item: Dark mode at: t7", "impact"), el);
+    const item = el.querySelector<HTMLElement>(".vzd-mx-item");
+    expect(item?.style.left).toContain("62.5");
+    expect(item?.style.top).toContain("37.5"); // 1 - 0.625 = 0.375
   });
 
-  it("concentrates assumption heat in the top-left (gated), not along the diagonal", () => {
+  it("names a cell when the author labels it", () => {
     const el = container();
-    renderMatrix({ ...matrixData, type: "assumption" }, el);
-    // Cells render row-major: index = rowIdx*4 + (col-1).
-    const cells = Array.from(el.querySelectorAll<HTMLElement>(".vzd-matrix-cell"));
-    const cls = (i: number) => cells[i].className;
-    // top-left = important + no evidence = leap-of-faith → hottest.
-    expect(cls(0)).toContain("vzd-matrix-cell--very-high");
-    // top-right = important but validated → cold (nothing left to test).
-    expect(cls(3)).toContain("vzd-matrix-cell--low");
-    // bottom-left = unproven but unimportant → cold (not worth testing).
-    expect(cls(12)).toContain("vzd-matrix-cell--low");
+    renderMatrix(build("x: E | Lo | Hi\ny: R | Lo | Hi\nt1: Do first | very-high"), el);
+    expect(el.querySelector(".vzd-mx-cell-name")?.textContent).toBe("Do first");
   });
 
-  it("keeps the additive diagonal for impact/effort — off-diagonal corners are not cold", () => {
-    const el = container();
-    renderMatrix({ ...matrixData, type: "impact" }, el);
-    const cells = Array.from(el.querySelectorAll<HTMLElement>(".vzd-matrix-cell"));
-    // top-right (big bet) and bottom-left (fill-in) stay mid-priority, not low.
-    expect(cells[3].className).not.toContain("vzd-matrix-cell--low");
-    expect(cells[12].className).not.toContain("vzd-matrix-cell--low");
-  });
-
-  it("renders no axis-title gutters by default", () => {
-    const el = container();
-    renderMatrix(matrixData, el);
-    expect(el.querySelector(".vzd-matrix-wrap--axis-titled")).toBeNull();
-    expect(el.querySelector(".vzd-matrix-xname")).toBeNull();
-    expect(el.querySelector(".vzd-matrix-yname")).toBeNull();
-  });
-
-  it("renders optional axis-title gutters when x-axis/y-axis are provided", () => {
-    const el = container();
-    renderMatrix({ ...matrixData, type: "impact", xAxis: "Reach", yAxis: "Value" }, el);
-    const wrap = el.querySelector(".vzd-matrix-wrap");
-    expect(wrap?.classList.contains("vzd-matrix-wrap--axis-titled")).toBe(true);
-    expect(el.querySelector(".vzd-matrix-xname")?.textContent).toBe("Reach");
-    expect(el.querySelector(".vzd-matrix-yname")?.textContent).toBe("Value");
-    // Curated tick labels are untouched by the override.
-    expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Impact");
-  });
-
-  it("does not apply the editable hover affordance to a cell body in Read Mode", () => {
-    // Read Mode still provides app/ctx (the post-processor runs there too);
-    // the edit affordance must be gated on the actual view mode, not just
-    // app/ctx being present — otherwise a grey hover border shows on a cell
-    // that isn't actually editable.
-    const el = container();
-    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
-    const ctx = { sourcePath: "note.md" } as any;
-    renderMatrix(matrixData, el, undefined, previewApp, ctx);
-    expect(el.querySelector(".vzd-block-editable")).toBeNull();
-  });
-});
-
-// ── renderPlot (layout: plot — continuous scatter) ────────────────────────────
-
-describe("renderPlot", () => {
-  const plotData: MatrixData = {
-    type: "impact",
-    layout: "plot",
-    data: {},
-    cardBlocks: new Set(),
-    allCards: false,
-    plot: {
-      xAxis: { title: "Effort", ticks: [{ pos: 0, label: "Low" }, { pos: 1, label: "High" }] },
-      yAxis: { title: "Impact", ticks: [{ pos: 0, label: "Low" }, { pos: 1, label: "High" }] },
-      items: [
-        { label: "Fix checkout", content: "Wallet rejected", x: 0.2, y: 0.8 },
-        { label: "Dark mode", content: "", x: 0.3, y: 0.25 },
-      ],
-      zones: [{ rect: [0, 0.5, 0.5, 1], label: "Quick wins", heat: "very-high" }],
-    },
-  };
-
-  it("renders the plot frame with axis titles and ticks", () => {
-    const el = container();
-    renderPlot(plotData, el);
-    expect(el.querySelector(".vzd-plot-wrap")).toBeTruthy();
-    expect(el.querySelector(".vzd-plot-xname")?.textContent).toBe("Effort");
-    expect(el.querySelector(".vzd-plot-yname")?.textContent).toBe("Impact");
-    expect(el.querySelectorAll(".vzd-plot-tick--x")).toHaveLength(2);
-    expect(el.querySelectorAll(".vzd-plot-tick--y")).toHaveLength(2);
-  });
-
-  it("positions items by their coordinates (top = 1 - y)", () => {
-    const el = container();
-    renderPlot(plotData, el);
-    const items = Array.from(el.querySelectorAll<HTMLElement>(".vzd-plot-item"));
-    expect(items).toHaveLength(2);
-    expect(items[0].querySelector(".vzd-plot-item-label")?.textContent).toBe("Fix checkout");
-    expect(items[0].style.left).toContain("20");   // x = 0.2 → 20%
-    expect(items[0].style.top).toContain("20");     // 1 - 0.8 = 0.2 → 20%
-  });
-
-  it("renders a heat zone sized from its rect", () => {
-    const el = container();
-    renderPlot(plotData, el);
-    const zone = el.querySelector<HTMLElement>(".vzd-plot-zone--very-high");
-    expect(zone).toBeTruthy();
-    expect(zone?.querySelector(".vzd-plot-zone-label")?.textContent).toBe("Quick wins");
-  });
-
-  it("shows the heat legend only when a zone declares heat", () => {
+  it("shows the heat legend only when some cell has heat", () => {
     const withHeat = container();
-    renderPlot(plotData, withHeat);
+    renderMatrix(build("item: A [0.5,0.5]", "impact"), withHeat);
     expect(withHeat.querySelector(".vzd-matrix-legend")).toBeTruthy();
 
     const noHeat = container();
-    renderPlot({ ...plotData, plot: { ...plotData.plot!, zones: [] } }, noHeat);
+    renderMatrix(build("x: E | Lo | Hi\ny: R | Lo | Hi\nitem: A [0.5,0.5]"), noHeat);
     expect(noHeat.querySelector(".vzd-matrix-legend")).toBeNull();
   });
 
   it("adds the editable affordance only in edit mode", () => {
+    const ctx = { sourcePath: "note.md" } as any;
+    const data = build("item: Fix [0.2,0.8]", "impact");
+
     const readEl = container();
     const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
-    const ctx = { sourcePath: "note.md" } as any;
-    renderPlot(plotData, readEl, undefined, previewApp, ctx);
-    expect(readEl.querySelector(".vzd-plot-item--editable")).toBeNull();
+    renderMatrix(data, readEl, undefined, previewApp, ctx);
+    expect(readEl.querySelector(".vzd-mx-item--editable")).toBeNull();
 
     const editEl = container();
     const sourceApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
-    renderPlot(plotData, editEl, undefined, sourceApp, ctx);
-    expect(editEl.querySelector(".vzd-plot-item--editable")).toBeTruthy();
-  });
-});
-
-// ── renderScenario (GBN/Schwartz 2×2) ─────────────────────────────────────────
-
-describe("renderScenario", () => {
-  const data = {
-    xAxis: { name: "Energy price", low: "Cheap", high: "Expensive" },
-    yAxis: { name: "Autonomy", low: "Slow", high: "Fast" },
-    quadrants: {
-      "top-left": { name: "Gridlock", content: "Cars stay private" },
-      "top-right": { name: "Robo-taxis", content: "" },
-      "bottom-left": { name: "Status quo", content: "" },
-      "bottom-right": { name: "Shared", content: "Micromobility booms" },
-    },
-  } as const;
-
-  it("renders four quadrant cells with names, axis names and poles", () => {
-    const el = container();
-    expect(() => renderScenario(data as any, el)).not.toThrow();
-    expect(el.querySelectorAll(".vzd-scenario-cell")).toHaveLength(4);
-    const names = Array.from(el.querySelectorAll(".vzd-scenario-cell-name")).map(n => n.textContent);
-    expect(names).toEqual(["Gridlock", "Robo-taxis", "Status quo", "Shared"]);
-    expect(el.querySelector(".vzd-scenario-yname")?.textContent).toBe("Autonomy");
-    expect(el.querySelector(".vzd-scenario-xname")?.textContent).toBe("Energy price");
-    const poles = Array.from(el.querySelectorAll(".vzd-scenario-pole")).map(p => p.textContent);
-    expect(poles).toEqual(expect.arrayContaining(["Fast", "Slow", "Cheap", "Expensive"]));
-  });
-
-  it("renders quadrant detail as cards", () => {
-    const el = container();
-    renderScenario(data as any, el);
-    expect(el.querySelectorAll(".vzd-card-block-card").length).toBeGreaterThan(0);
+    renderMatrix(data, editEl, undefined, sourceApp, ctx);
+    expect(editEl.querySelector(".vzd-mx-item--editable")).toBeTruthy();
   });
 });
 

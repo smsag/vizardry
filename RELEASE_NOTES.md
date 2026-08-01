@@ -1,6 +1,24 @@
-## 0.43.0
+## 0.44.0
 
-- **New: plotted matrices (`layout: plot`).** Any `type: matrix, …` canvas can now switch from the discrete 4×4 grid to a continuous scatter on its two axes. Axes take any number of tick labels (`x-axis: Effort | Low | High`, or an indented `pos | label` list); items are placed by coordinates (`item: Fix checkout | x: 0.2, y: 0.8`) with an optional card body; and heat is **author-declared** via `zone:` rectangles or named quadrants (`zone: top-left | Quick wins | heat: very-high`) rather than derived — so the colouring can never contradict freely-chosen axes. In edit mode, items drag to reposition (writing `x`/`y` back, rounded to 2 dp) and click to edit their body. Insert one from the command palette via **Plotted Matrix**. The default layout stays `grid`, so every existing matrix is unchanged.
-- **Fix: Assumption Map heat model.** The Assumption Map previously reused the Impact/Effort matrix's additive diagonal heat, which wrongly warmed the top-right (important but already validated) and bottom-left (unproven but unimportant) corners. Assumption priority is a gate, not a sum, so heat is now the product of importance × lack-of-evidence, concentrating it in the top-left leap-of-faith corner. Impact/Effort keeps its additive diagonal.
-- **New: `type: matrix, scenario` alias.** The Scenario Matrix now also reads as a `matrix` variant, so all two-axis charts share one `type: matrix, …` surface. `type: scenario` still works.
-- **New: optional axis titles on the grid matrices.** Any `type: matrix, …` grid can add `x-axis:` / `y-axis:` to rename the overall axis; curated tick labels and heat are untouched.
+**Breaking: the matrix DSL is now one unified grammar.** All matrix charts —
+priority grids, scenario 2×2s, and free scatter plots — collapse into a single
+model: two tick-labelled axes forming a cell grid, plus items placed on the
+plane. Old matrix/scenario blocks must be rewritten (there is no back-compat).
+
+- **`type: matrix[, preset]`** — one type. Preset ∈ `pain`, `opportunity`,
+  `impact`, `assumption`, `scenario`, or omit for a blank chart. A preset fills
+  the axes, per-cell heat, and colour, and adapts its heat to whatever grid the
+  ticks define. `type: scenario` is gone — it's `type: matrix, scenario`.
+- **`x:` / `y:`** — `Title | tick | tick | …`. Ticks are equal bands, so N×M
+  ticks define an N×M cell grid (a 4×4 is just four ticks per axis).
+- **`tN: Name | heat`** — name and/or tint a cell. Cells are auto-ided
+  `t1…t(N·M)` in reading order (t1 = top-left). Heat ∈ `very-high`, `high`,
+  `medium`, `low`, tinted from the chart's single base colour.
+- **`item: Label [x, y]`** or **`item: Label at: tN`** — one content keyword.
+  A card (indented lines = body) placed at a free coordinate (`[x,y]` in 0…1,
+  origin bottom-left) or snapped to a cell centre. In edit mode items drag to
+  reposition (writing `[x, y]` back) and click to edit their body.
+
+Gone entirely: `layout:`, `block:` + cell-key labels, `zone:`, `cards:` /
+`| card`, the `top-left:` quadrant keywords, and the three different `x-axis:`
+grammars. One type, one axis grammar, one content keyword, one heat concept.

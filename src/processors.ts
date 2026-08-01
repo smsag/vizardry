@@ -35,13 +35,12 @@ import { parsePaceLayers } from "./pacelayers";
 import { parseConceptMap } from "./conceptmap";
 import { parseNodeMap } from "./nodemap";
 import { parseMatrix } from "./matrix";
-import { parseScenario } from "./scenario";
 import { parseSCQA } from "./scqa";
 import { parseJourney } from "./journey";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
-  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderPlot, renderScenario, renderSCQA,
+  renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap,
   renderError,
 } from "./renderer";
@@ -52,7 +51,7 @@ import {
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
-  MATRIX_PLOT_TEMPLATE, SCENARIO_TEMPLATE,
+  MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
 } from "./templates";
@@ -94,6 +93,7 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
   { id: "assumption-matrix",  label: "Assumption Map",        template: MATRIX_ASSUMPTION_TEMPLATE },
+  { id: "scenario-matrix",    label: "Scenario Matrix",       template: MATRIX_SCENARIO_TEMPLATE },
   { id: "plot-matrix",        label: "Plotted Matrix",        template: MATRIX_PLOT_TEMPLATE },
   { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
   { id: "service-blueprint",  label: "Service Blueprint",     template: SERVICE_BLUEPRINT_TEMPLATE },
@@ -273,39 +273,14 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   },
   {
     id: "matrix",
-    label: "Pain Point / Opportunity Matrix",
-    template: MATRIX_PAIN_TEMPLATE,
+    label: "Matrix",
+    template: MATRIX_IMPACT_TEMPLATE,
     createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
       const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      // `type: matrix, scenario` is an accepted alias for the 2×2 scenario
-      // matrix — same surface grammar, but a distinct engine (named quadrants,
-      // no heat) so it delegates rather than sharing the priority-grid parser.
-      if (variant === "scenario") {
-        const sc = parseScenario(strippedSource);
-        if (!sc.ok) { renderError(sc.error, el); return; }
-        renderScenario(sc.data, el, fullSource, app, ctx, resolver, navigateTo);
-        return;
-      }
       const result = parseMatrix(strippedSource, variant);
       if (!result.ok) { renderError(result.error, el); return; }
-      if (result.data.layout === "plot") {
-        renderPlot(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-      } else {
-        renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-      }
-    },
-  },
-  {
-    id: "scenario",
-    label: "Scenario Matrix",
-    template: SCENARIO_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseScenario(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderScenario(result.data, el, fullSource, app, ctx, resolver, navigateTo);
+      renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
     },
   },
   {

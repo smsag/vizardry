@@ -3241,247 +3241,12 @@ code:has(.vzd-upvoty-key) {
   font-size: 12px;
 }
 
-/* ══ Pain / Opportunity Matrix ══════════════════════════════════════════════ */
+/* ══ Matrix (one unified engine) ════════════════════════════════════════════
+   Two tick-labelled axes form an N×M cell grid (tinted by heat, optionally
+   named); items are cards placed by [x,y] or snapped to a cell. --vzd-matrix-base
+   is set inline on the container and drives all colour. */
 
-.vzd-matrix-wrap {
-  display: grid;
-  grid-template-areas:
-    "yaxis grid"
-    ".     xaxis";
-  grid-template-columns: auto 1fr;
-  grid-template-rows: 1fr auto;
-  gap: 0.25rem 0.5rem;
-  width: 100%;
-  overflow-x: auto;
-}
-
-/* Optional axis titles (type: matrix with x-axis:/y-axis:). Adds a rotated
-   name gutter left of the y ticks and a centred name under the x ticks; empty
-   gutters collapse, so one axis can be titled without the other. */
-.vzd-matrix-wrap--axis-titled {
-  grid-template-areas:
-    "yname yaxis grid"
-    ".     .     xaxis"
-    ".     .     xname";
-  grid-template-columns: auto auto 1fr;
-  grid-template-rows: 1fr auto auto;
-}
-
-.vzd-matrix-yname {
-  grid-area: yname;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-weight: 600;
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  padding-right: 0.15rem;
-}
-
-.vzd-matrix-xname {
-  grid-area: xname;
-  text-align: center;
-  font-weight: 600;
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  padding-top: 0.15rem;
-}
-
-/* ── Scenario Matrix (GBN/Schwartz 2×2) ──────────────────────────────────────
-   Two user-defined axes framing four named scenario quadrants; content renders
-   as cards via the shared two-pass renderer. */
-.vzd-scenario-wrap {
-  display: flex;
-  align-items: stretch;
-  gap: 6px;
-  width: 100%;
-  overflow-x: auto;
-  padding: 6px 2px;
-}
-
-.vzd-scenario-yname {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-weight: 600;
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-}
-
-.vzd-scenario-plot {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 440px;
-  gap: 4px;
-}
-
-.vzd-scenario-pole {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller, 0.78em);
-  font-style: italic;
-}
-
-.vzd-scenario-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 8px;
-  flex: 1;
-}
-
-.vzd-scenario-cell {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--background-modifier-border);
-  border-top: 3px solid var(--vzd-scenario-accent, var(--interactive-accent));
-  border-radius: 8px;
-  padding: 8px 10px;
-  min-height: 128px;
-  background: var(--background-primary);
-}
-
-.vzd-scenario-cell[data-quad="top-left"]     { --vzd-scenario-accent: hsl(220, 60%, 55%); }
-.vzd-scenario-cell[data-quad="top-right"]    { --vzd-scenario-accent: hsl(145, 50%, 45%); }
-.vzd-scenario-cell[data-quad="bottom-left"]  { --vzd-scenario-accent: hsl(35, 75%, 50%); }
-.vzd-scenario-cell[data-quad="bottom-right"] { --vzd-scenario-accent: hsl(265, 50%, 58%); }
-
-.vzd-scenario-cell-name {
-  font-weight: 700;
-  color: var(--text-normal);
-  margin-bottom: 4px;
-}
-
-.vzd-scenario-cell .vizardry-block-body { flex: 1; }
-
-.vzd-scenario-xrow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.vzd-scenario-xname {
-  font-weight: 600;
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-}
-
-/* Type-based base color, also set as inline style on container for legend scope */
-.vzd-matrix-wrap[data-type="pain"]        { --vzd-matrix-base: hsl(0, 70%, 55%); }
-.vzd-matrix-wrap[data-type="opportunity"] { --vzd-matrix-base: hsl(220, 65%, 55%); }
-
-.vzd-matrix-y-axis {
-  grid-area: yaxis;
-  display: grid;
-  grid-template-rows: repeat(4, 1fr);
-  gap: 0.25rem;
-}
-
-.vzd-matrix-y-label {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 0.5rem;
-  font-size: 0.8em;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-align: right;
-  white-space: nowrap;
-}
-
-.vzd-matrix-grid {
-  grid-area: grid;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(80px, 1fr));
-  grid-template-rows: repeat(4, minmax(72px, auto));
-  gap: 0.25rem;
-  min-width: 380px;
-}
-
-.vzd-matrix-x-axis {
-  grid-area: xaxis;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(80px, 1fr));
-  gap: 0.25rem;
-}
-
-.vzd-matrix-x-label {
-  font-size: 0.8em;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-align: center;
-  padding-top: 0.15rem;
-}
-
-.vzd-matrix-cell {
-  border-radius: var(--radius-s);
-  padding: 0.4rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-height: 72px;
-}
-
-/* Heat levels — color-mix from type base, following story-map pattern */
-.vzd-matrix-cell--very-high {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 55%, var(--background-secondary));
-  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 70%, var(--background-secondary));
-}
-.vzd-matrix-cell--high {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 35%, var(--background-secondary));
-  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 50%, var(--background-secondary));
-}
-.vzd-matrix-cell--medium {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 20%, var(--background-secondary));
-  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 32%, var(--background-secondary));
-}
-.vzd-matrix-cell--low {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 10%, var(--background-secondary));
-  border: 1px dashed color-mix(in srgb, var(--vzd-matrix-base) 22%, var(--background-secondary));
-}
-
-/* Legend pills inside vizardry-header; base var inherited from container */
-.vzd-matrix-legend {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.vzd-matrix-legend-pill {
-  font-size: 0.75em;
-  font-weight: 600;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  color: var(--text-normal);
-}
-
-.vzd-matrix-legend-pill--very-high {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 55%, var(--background-secondary));
-}
-.vzd-matrix-legend-pill--high {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 35%, var(--background-secondary));
-}
-.vzd-matrix-legend-pill--medium {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 20%, var(--background-secondary));
-}
-.vzd-matrix-legend-pill--low {
-  background: color-mix(in srgb, var(--vzd-matrix-base) 10%, var(--background-secondary));
-  border: 1px dashed color-mix(in srgb, var(--vzd-matrix-base) 22%, var(--background-secondary));
-}
-
-/* ── Plotted matrix (layout: plot) ───────────────────────────────────────────
-   Continuous scatter on two labelled axes. Items are absolutely positioned by
-   their 0…1 coordinates (origin bottom-left); zones tint author-declared heat
-   regions; --vzd-matrix-base (set on the container) drives all colour. */
-.vzd-plot-wrap {
+.vzd-mx-wrap {
   display: grid;
   grid-template-areas: "yname main" ".     xname";
   grid-template-columns: auto 1fr;
@@ -3492,7 +3257,7 @@ code:has(.vzd-upvoty-key) {
   padding: 6px 2px;
 }
 
-.vzd-plot-yname {
+.vzd-mx-yname {
   grid-area: yname;
   display: flex;
   align-items: center;
@@ -3504,7 +3269,7 @@ code:has(.vzd-upvoty-key) {
   font-size: var(--font-ui-small);
 }
 
-.vzd-plot-xname {
+.vzd-mx-xname {
   grid-area: xname;
   text-align: center;
   font-weight: 600;
@@ -3513,7 +3278,7 @@ code:has(.vzd-upvoty-key) {
   padding-top: 0.15rem;
 }
 
-.vzd-plot-main {
+.vzd-mx-main {
   grid-area: main;
   display: grid;
   grid-template-areas: "yticks area" ".      xticks";
@@ -3523,59 +3288,66 @@ code:has(.vzd-upvoty-key) {
   min-width: 440px;
 }
 
-.vzd-plot-yticks { grid-area: yticks; position: relative; width: 5.5em; }
-.vzd-plot-xticks { grid-area: xticks; position: relative; height: 1.5em; }
+.vzd-mx-yticks {
+  grid-area: yticks;
+  display: grid;
+  align-items: center;
+  justify-items: end;
+  gap: 0;
+  width: 6em;
+}
+.vzd-mx-xticks {
+  grid-area: xticks;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  justify-items: center;
+}
+.vzd-mx-yticks { grid-auto-rows: 1fr; }
 
-.vzd-plot-tick {
-  position: absolute;
+.vzd-mx-tick {
   font-size: 0.72em;
   font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
+  text-align: center;
+  padding: 0 0.4em;
 }
-.vzd-plot-tick--y { right: 0.4em; transform: translateY(-50%); text-align: right; }
-.vzd-plot-tick--x { top: 0.2em; transform: translateX(-50%); }
+.vzd-mx-yticks .vzd-mx-tick { text-align: right; }
 
-.vzd-plot-area {
+.vzd-mx-area {
   grid-area: area;
   position: relative;
   min-height: 340px;
-  border-left: 2px solid var(--background-modifier-border);
-  border-bottom: 2px solid var(--background-modifier-border);
 }
-/* Subtle mid-axis cross to anchor the eye at (0.5, 0.5). */
-.vzd-plot-area::before,
-.vzd-plot-area::after {
-  content: "";
-  position: absolute;
-  background: var(--background-modifier-border);
-  opacity: 0.5;
-}
-.vzd-plot-area::before { left: 50%; top: 0; bottom: 0; width: 1px; }
-.vzd-plot-area::after  { top: 50%; left: 0; right: 0; height: 1px; }
 
-.vzd-plot-zone {
+/* Cell grid background. */
+.vzd-mx-cells {
   position: absolute;
-  border-radius: 6px;
-  box-sizing: border-box;
+  inset: 0;
+  display: grid;
+  gap: 2px;
 }
-.vzd-plot-zone-label {
-  position: absolute;
-  top: 4px;
-  left: 7px;
+.vzd-mx-cell {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 3px 5px;
+  min-width: 0;
+  background: var(--background-primary);
+}
+.vzd-mx-cell--very-high { background: color-mix(in srgb, var(--vzd-matrix-base) 40%, var(--background-secondary)); }
+.vzd-mx-cell--high      { background: color-mix(in srgb, var(--vzd-matrix-base) 26%, var(--background-secondary)); }
+.vzd-mx-cell--medium    { background: color-mix(in srgb, var(--vzd-matrix-base) 15%, var(--background-secondary)); }
+.vzd-mx-cell--low       { background: color-mix(in srgb, var(--vzd-matrix-base) 7%, var(--background-secondary)); }
+.vzd-mx-cell-name {
   font-size: 0.72em;
   font-weight: 600;
   color: var(--text-muted);
 }
-.vzd-plot-zone--very-high { background: color-mix(in srgb, var(--vzd-matrix-base) 30%, transparent); }
-.vzd-plot-zone--high      { background: color-mix(in srgb, var(--vzd-matrix-base) 20%, transparent); }
-.vzd-plot-zone--medium    { background: color-mix(in srgb, var(--vzd-matrix-base) 12%, transparent); }
-.vzd-plot-zone--low       { background: color-mix(in srgb, var(--vzd-matrix-base) 6%, transparent); }
 
-/* Zero-size anchor point: the dot marks the exact coordinate, the card hangs
-   below it. */
-.vzd-plot-item { position: absolute; width: 0; height: 0; z-index: 2; }
-.vzd-plot-item-dot {
+/* Item overlay: zero-size anchors positioned over the cell grid. */
+.vzd-mx-items { position: absolute; inset: 0; }
+.vzd-mx-item { position: absolute; width: 0; height: 0; z-index: 2; }
+.vzd-mx-item-dot {
   position: absolute;
   left: -5px;
   top: -5px;
@@ -3586,7 +3358,7 @@ code:has(.vzd-upvoty-key) {
   border: 2px solid var(--background-primary);
   box-shadow: 0 0 0 1px var(--vzd-matrix-base);
 }
-.vzd-plot-item-card {
+.vzd-mx-item-card {
   position: absolute;
   left: 0;
   top: 9px;
@@ -3599,30 +3371,40 @@ code:has(.vzd-upvoty-key) {
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
-.vzd-plot-item-label { font-weight: 700; font-size: 0.8em; color: var(--text-normal); }
-.vzd-plot-item-card .vizardry-block-body { font-size: 0.75em; color: var(--text-muted); }
-.vzd-plot-item-card .vizardry-block-empty { display: none; }
-.vzd-plot-item--editable .vzd-plot-item-dot,
-.vzd-plot-item--editable .vzd-plot-item-card { cursor: grab; }
-.vzd-plot-item--editable .vzd-plot-item-card:hover { border-color: var(--vzd-matrix-base); }
-.vzd-plot-item--dragging { z-index: 5; }
-.vzd-plot-item--dragging .vzd-plot-item-dot,
-.vzd-plot-item--dragging .vzd-plot-item-card { cursor: grabbing; }
+.vzd-mx-item-label { font-weight: 700; font-size: 0.8em; color: var(--text-normal); }
+.vzd-mx-item-card .vizardry-block-body { font-size: 0.75em; color: var(--text-muted); }
+.vzd-mx-item-card .vizardry-block-empty { display: none; }
+.vzd-mx-item--editable .vzd-mx-item-dot,
+.vzd-mx-item--editable .vzd-mx-item-card { cursor: grab; }
+.vzd-mx-item--editable .vzd-mx-item-card:hover { border-color: var(--vzd-matrix-base); }
+.vzd-mx-item--dragging { z-index: 5; }
+.vzd-mx-item--dragging .vzd-mx-item-dot,
+.vzd-mx-item--dragging .vzd-mx-item-card { cursor: grabbing; }
+
+/* Heat legend pills inside the canvas header; base var inherited from container. */
+.vzd-matrix-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.vzd-matrix-legend-pill {
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  color: var(--text-normal);
+}
+.vzd-matrix-legend-pill--very-high { background: color-mix(in srgb, var(--vzd-matrix-base) 40%, var(--background-secondary)); }
+.vzd-matrix-legend-pill--high      { background: color-mix(in srgb, var(--vzd-matrix-base) 26%, var(--background-secondary)); }
+.vzd-matrix-legend-pill--medium    { background: color-mix(in srgb, var(--vzd-matrix-base) 15%, var(--background-secondary)); }
+.vzd-matrix-legend-pill--low       { background: color-mix(in srgb, var(--vzd-matrix-base) 7%, var(--background-secondary)); }
 
 @media (max-width: 480px) {
-  .vzd-plot-main { min-width: 320px; }
-  .vzd-plot-area { min-height: 260px; }
-  .vzd-plot-yticks { width: 4.5em; }
-  .vzd-plot-tick { font-size: 0.66em; }
-}
-
-/* Presentation mode */
-.vzd-presentation-wrap .vzd-matrix-grid {
-  min-width: 520px;
-}
-.vzd-presentation-wrap .vzd-matrix-y-label,
-.vzd-presentation-wrap .vzd-matrix-x-label {
-  font-size: 0.9em;
+  .vzd-mx-main { min-width: 320px; }
+  .vzd-mx-area { min-height: 260px; }
+  .vzd-mx-yticks { width: 4.5em; }
+  .vzd-mx-tick { font-size: 0.66em; }
 }
 
 /* ══════════════════════════════════════════════════════════════════
