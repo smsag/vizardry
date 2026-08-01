@@ -162,7 +162,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.roadmap.description": "Jetzt, Demnächst und Später Prioritäten auf einen Blick.",
 
   // ── Pain / Opportunity / Impact Matrix ──────────────────────────────────────
-  "framework.matrix.description": "Schmerzpunkte, Chancen oder Impact vs. Aufwand auf einem 4×4-Raster.",
+  "framework.matrix.description": "Schmerzpunkte, Chancen, Impact vs. Aufwand oder Annahmen auf einem 4×4-Raster.",
+  "framework.scenario.description": "Zwei kritische Unsicherheiten, vier Szenarien — eine GBN/Schwartz-2×2-Matrix.",
 
   "matrix.row.pain.1": "Sehr großer Schmerzpunkt",
   "matrix.row.pain.2": "Großer Schmerzpunkt",
@@ -179,6 +180,11 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.row.impact.3": "Geringer Impact",
   "matrix.row.impact.4": "Sehr geringer Impact",
 
+  "matrix.row.assumption.1": "Sehr wichtig",
+  "matrix.row.assumption.2": "Wichtig",
+  "matrix.row.assumption.3": "Wenig wichtig",
+  "matrix.row.assumption.4": "Sehr wenig wichtig",
+
   "matrix.col.pain.1": "Von allen genannt",
   "matrix.col.pain.2": "Von vielen genannt",
   "matrix.col.pain.3": "Von einigen genannt",
@@ -194,9 +200,15 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.col.impact.3": "Hoher Aufwand",
   "matrix.col.impact.4": "Sehr hoher Aufwand",
 
+  "matrix.col.assumption.1": "Kein Beleg",
+  "matrix.col.assumption.2": "Wenig Belege",
+  "matrix.col.assumption.3": "Einige Belege",
+  "matrix.col.assumption.4": "Starke Belege",
+
   "matrix.subtitle.pain":        "(Ist-Zustand)",
   "matrix.subtitle.opportunity": "(Soll-Zustand)",
   "matrix.subtitle.impact":      "(Priorisierung)",
+  "matrix.subtitle.assumption":  "(Riskantestes zuerst testen)",
 
   "matrix.legend.veryHigh": "Sehr hoch",
   "matrix.legend.high":     "Hoch",

@@ -13,6 +13,7 @@ const BASE_COLORS: Record<MatrixType, string> = {
   pain:        "hsl(0, 70%, 55%)",
   opportunity: "hsl(220, 65%, 55%)",
   impact:      "hsl(145, 55%, 42%)",
+  assumption:  "hsl(265, 55%, 58%)",
 };
 
 function heatLevel(row: number, col: number): "very-high" | "high" | "medium" | "low" {
@@ -42,6 +43,7 @@ export function renderMatrix(
 ): void {
   const defaultTitle = data.type === "pain" ? "Pain Point Matrix"
     : data.type === "opportunity" ? "Opportunity Matrix"
+    : data.type === "assumption" ? "Assumption Map"
     : "Impact / Effort Matrix";
 
   // Set base color on container so legend pills (inside header) inherit it.

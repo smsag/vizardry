@@ -548,6 +548,55 @@ block: very-minor-4
 \`\`\`
 `;
 
+export const MATRIX_ASSUMPTION_TEMPLATE = `\`\`\`vizardry
+type: matrix, assumption
+title: Assumption Map
+
+// Rows = importance (top = most important), columns = evidence (left = none).
+// Top-left is the riskiest: important but unproven — test these first.
+
+block: very-major-1 | card
+  Users will pay a monthly subscription
+  Buyers can self-onboard without sales
+
+block: very-major-2
+  Teams will invite coworkers on their own
+
+block: major-1
+  SMBs prefer usage-based pricing
+
+block: major-3
+  Support load stays flat as we scale
+
+block: minor-2
+  Users want a dark mode
+
+block: very-minor-4
+  Footer changelog link is discoverable
+\`\`\`
+`;
+
+export const SCENARIO_TEMPLATE = `\`\`\`vizardry
+type: scenario
+title: Future of Mobility 2035
+
+x-axis: Energy price | Cheap energy | Expensive energy
+y-axis: Autonomy adoption | Slow adoption | Fast adoption
+
+top-left: Gridlock
+  Cars stay private and cheap to run
+  Cities congest, transit underfunded
+top-right: Robo-taxis everywhere
+  On-demand autonomous fleets dominate
+  Car ownership drops sharply
+bottom-left: Status quo
+  Incremental efficiency gains only
+bottom-right: Shared & electric
+  Micromobility and car-sharing boom
+  Density-friendly street redesign
+\`\`\`
+`;
+
 export const SCQA_TEMPLATE = `\`\`\`vizardry
 type: scqa
 title: SCQA Narrative

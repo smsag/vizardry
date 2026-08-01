@@ -25,6 +25,13 @@ describe("parseMatrix", () => {
     expect(result.data.type).toBe("impact");
   });
 
+  it("parses type: assumption", () => {
+    const result = parseMatrix("type: assumption\nblock: very-major-1\n  X");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.type).toBe("assumption");
+  });
+
   it("returns an error for an unknown scanned type value", () => {
     const result = parseMatrix("type: bogus\nblock: very-major-1\n  X");
     expect(result).toEqual({ ok: false, error: expect.stringContaining('Unknown type "bogus"') });

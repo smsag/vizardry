@@ -3255,6 +3255,90 @@ code:has(.vzd-upvoty-key) {
   overflow-x: auto;
 }
 
+/* ── Scenario Matrix (GBN/Schwartz 2×2) ──────────────────────────────────────
+   Two user-defined axes framing four named scenario quadrants; content renders
+   as cards via the shared two-pass renderer. */
+.vzd-scenario-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 2px;
+}
+
+.vzd-scenario-yname {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.vzd-scenario-plot {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 440px;
+  gap: 4px;
+}
+
+.vzd-scenario-pole {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller, 0.78em);
+  font-style: italic;
+}
+
+.vzd-scenario-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+}
+
+.vzd-scenario-cell {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--background-modifier-border);
+  border-top: 3px solid var(--vzd-scenario-accent, var(--interactive-accent));
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-height: 128px;
+  background: var(--background-primary);
+}
+
+.vzd-scenario-cell[data-quad="top-left"]     { --vzd-scenario-accent: hsl(220, 60%, 55%); }
+.vzd-scenario-cell[data-quad="top-right"]    { --vzd-scenario-accent: hsl(145, 50%, 45%); }
+.vzd-scenario-cell[data-quad="bottom-left"]  { --vzd-scenario-accent: hsl(35, 75%, 50%); }
+.vzd-scenario-cell[data-quad="bottom-right"] { --vzd-scenario-accent: hsl(265, 50%, 58%); }
+
+.vzd-scenario-cell-name {
+  font-weight: 700;
+  color: var(--text-normal);
+  margin-bottom: 4px;
+}
+
+.vzd-scenario-cell .vizardry-block-body { flex: 1; }
+
+.vzd-scenario-xrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.vzd-scenario-xname {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
 /* Type-based base color, also set as inline style on container for legend scope */
 .vzd-matrix-wrap[data-type="pain"]        { --vzd-matrix-base: hsl(0, 70%, 55%); }
 .vzd-matrix-wrap[data-type="opportunity"] { --vzd-matrix-base: hsl(220, 65%, 55%); }
