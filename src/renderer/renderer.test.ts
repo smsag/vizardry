@@ -295,8 +295,8 @@ describe("renderTree", () => {
     const el = container();
     const root = makeNode("Root", 0, [makeNode("Child", 1)]);
     renderTree({ root }, CLASSIC_OPTS, el);
-    expect(el.querySelector(".vzd-ost-lane-divider")).toBeNull();
-    expect(el.querySelector(".vzd-ost-node")).toBeNull();
+    expect(el.querySelector(".vzd-lane-lane-divider")).toBeNull();
+    expect(el.querySelector(".vzd-lane-node")).toBeNull();
     // Labels still live in plain <text>, unchanged from before the OST redesign.
     expect(el.querySelector("text.vzd-tree-text-main")).toBeTruthy();
   });
@@ -348,29 +348,29 @@ describe("renderOST", () => {
     const el = container();
     renderOST(fullTree, el);
     // Four lanes → three dividers between them.
-    expect(el.querySelectorAll(".vzd-ost-lane-divider").length).toBe(3);
-    const labels = Array.from(el.querySelectorAll(".vzd-ost-lane-label")).map(l => l.textContent);
+    expect(el.querySelectorAll(".vzd-lane-lane-divider").length).toBe(3);
+    const labels = Array.from(el.querySelectorAll(".vzd-lane-lane-label")).map(l => l.textContent);
     expect(labels).toEqual(["Outcome space", "Opportunity Space", "Solution Space", "Experimentation Space"]);
   });
 
   it("shows the per-keyword italic caption only on opportunity nodes", () => {
     const el = container();
     renderOST(fullTree, el);
-    const captions = Array.from(el.querySelectorAll(".vzd-ost-caption")).map(c => c.textContent);
+    const captions = Array.from(el.querySelectorAll(".vzd-lane-caption")).map(c => c.textContent);
     expect(captions).toEqual(["Customer need"]); // outcome/solution/experiment carry none
   });
 
   it("renders bullets as a chevron list inside the node", () => {
     const el = container();
     renderOST(fullTree, el);
-    const bullets = Array.from(el.querySelectorAll(".vzd-ost-bullet-text")).map(b => b.textContent);
+    const bullets = Array.from(el.querySelectorAll(".vzd-lane-bullet-text")).map(b => b.textContent);
     expect(bullets).toEqual(["Tenant credit checks", "Background checks"]);
   });
 
   it("renders node labels via foreignObject, not truncated <text>", () => {
     const el = container();
     renderOST(fullTree, el);
-    const labels = Array.from(el.querySelectorAll(".vzd-ost-label")).map(l => l.textContent);
+    const labels = Array.from(el.querySelectorAll(".vzd-lane-label")).map(l => l.textContent);
     expect(labels).toContain("Provide a platform");
   });
 });
