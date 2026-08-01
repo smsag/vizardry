@@ -13,7 +13,8 @@ import type {
   TreeRenderOptions,
 } from "../types";
 import { createSvgEl } from "../shared/svg";
-import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
+import { wireRenameInputKeys, createBlurGuard, activateInlineEdit } from "./inline-edit";
+import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import type { TranslationKey } from "../i18n";
@@ -33,11 +34,11 @@ function renderTreeNodeRect(group: SVGGElement, node: TreeNode, opts: TreeRender
   const style = getTreeStyle(node.level, opts);
   const rectAttrs: Record<string, string> = {
     width: String(opts.nodeW),
-    height: String(opts.nodeH),
+    height: String(node.height || opts.nodeH),
     rx: String(style.borderRadius),
     fill: style.accentBar ? "var(--background-secondary)" : style.fillVar,
-    stroke: "var(--background-modifier-border)",
-    "stroke-width": "1",
+    stroke: style.strokeVar ?? "var(--background-modifier-border)",
+    "stroke-width": style.outline ? "1.5" : "1",
   };
   if (style.dashed) rectAttrs["stroke-dasharray"] = "6 3";
   group.appendChild(createSvgEl("rect", rectAttrs));
@@ -128,16 +129,126 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
   return bounds;
 }
 
+// ── Swim-lane layout (direction: "lanes") ───────────────────────────────────
+// Every level is a horizontal band. Boxes wrap their text (variable height) via
+// foreignObject; a band's height is the tallest box in it. Node → lane is the
+// node's own level, so need/pain/desire (all level 1) share the Opportunity band.
+
+// Box interior metrics — kept in sync with the .vzd-ost-node CSS rules so the
+// measured height matches what the browser actually lays out (no clipping).
+const OST_PAD_X = 12;
+const OST_PAD_TOP = 9;
+const OST_PAD_BOTTOM = 10;
+const OST_LABEL_LINE_H = 18;
+const OST_CAPTION_H = 16;      // italic caption line + gap below it
+const OST_BULLET_LINE_H = 17;
+const OST_BULLETS_TOP_GAP = 5;
+const OST_CHAR_W = 7;
+
+function measureNodeHeight(node: TreeNode, opts: TreeRenderOptions): number {
+  const cpl = estimateCharsPerLine(opts.nodeW - OST_PAD_X * 2, { charW: OST_CHAR_W, min: 8 });
+  let h = OST_PAD_TOP + OST_PAD_BOTTOM;
+  if (opts.captionPosition === "top" && node.sublabel) h += OST_CAPTION_H;
+  h += wrappedLineCount(node.text, cpl) * OST_LABEL_LINE_H;
+  if (node.bullets && node.bullets.length > 0) {
+    h += OST_BULLETS_TOP_GAP;
+    for (const b of node.bullets) h += wrappedLineCount(b, cpl - 3) * OST_BULLET_LINE_H;
+  }
+  return Math.max(opts.nodeH, h);
+}
+
+/** Position siblings along X (depth-independent), keeping children centred
+ *  under their parent. Y is assigned separately from the lane bands. */
+function layoutXOnly(node: TreeNode, opts: TreeRenderOptions, left: number): number {
+  node.width = opts.nodeW;
+  if (node.children.length === 0) {
+    node.x = left;
+    return opts.nodeW;
+  }
+  const childWidths = node.children.map(c => layoutXOnly(c, opts, 0));
+  const childSpan = childWidths.reduce((s, w) => s + w, 0) + opts.siblingGap * (node.children.length - 1);
+  const width = Math.max(opts.nodeW, childSpan);
+  node.x = left + (width - opts.nodeW) / 2;
+  let cursor = left + (width - childSpan) / 2;
+  for (let i = 0; i < node.children.length; i++) {
+    layoutXOnly(node.children[i], opts, cursor);
+    cursor += childWidths[i] + opts.siblingGap;
+  }
+  return width;
+}
+
+interface LaneLayout { bandTop: number[]; laneHeight: number[]; contentBottom: number; }
+
+function layoutTreeNodeLanes(root: TreeNode, opts: TreeRenderOptions): LaneLayout {
+  const gutter = opts.gutterWidth ?? 0;
+
+  // 1. Measure every box; track the tallest per lane.
+  const laneHeight: number[] = [];
+  const measure = (n: TreeNode): void => {
+    n.width = opts.nodeW;
+    n.height = measureNodeHeight(n, opts);
+    laneHeight[n.level] = Math.max(laneHeight[n.level] ?? 0, n.height);
+    n.children.forEach(measure);
+  };
+  measure(root);
+
+  // 2. Stack the bands top-to-bottom.
+  const bandTop: number[] = [];
+  let y = opts.vPadding;
+  for (let i = 0; i < laneHeight.length; i++) {
+    const bh = laneHeight[i] ?? opts.nodeH;
+    bandTop[i] = y;
+    y += bh + opts.levelGap;
+  }
+  const contentBottom = y - opts.levelGap;
+
+  // 3. X spread, then drop each node onto its lane's top edge.
+  layoutXOnly(root, opts, opts.hPadding + gutter);
+  const place = (n: TreeNode): void => { n.y = bandTop[n.level]; n.children.forEach(place); };
+  place(root);
+
+  return { bandTop, laneHeight, contentBottom };
+}
+
+/** Dashed dividers between lanes + left-gutter lane labels. */
+function renderLaneBands(svg: SVGSVGElement, opts: TreeRenderOptions, layout: LaneLayout, svgW: number): void {
+  const lanes = opts.lanes ?? [];
+  for (let i = 0; i < layout.bandTop.length; i++) {
+    const top = layout.bandTop[i];
+    const bh = layout.laneHeight[i] ?? opts.nodeH;
+
+    if (i > 0) {
+      const dy = top - opts.levelGap / 2;
+      svg.appendChild(createSvgEl("line", {
+        x1: "0", y1: String(dy), x2: String(svgW), y2: String(dy),
+        class: "vzd-ost-lane-divider",
+      }));
+    }
+
+    const lane = lanes[i];
+    if (lane) {
+      const label = createSvgEl("text", {
+        x: String(opts.hPadding), y: String(top + bh / 2),
+        "dominant-baseline": "middle", class: "vzd-ost-lane-label",
+      });
+      label.textContent = lane.label;
+      svg.appendChild(label);
+    }
+  }
+}
+
 function renderTreeEdges(
   node: TreeNode,
   svg: SVGSVGElement,
   opts: TreeRenderOptions,
-  direction: "down" | "right" | "left",
+  direction: "down" | "right" | "left" | "lanes",
 ): void {
   for (const child of node.children) {
+    // Connectors flowing into a level take that level's colour, when set.
+    const stroke = getTreeStyle(child.level, opts).strokeVar ?? "var(--background-modifier-border)";
     let d: string;
-    if (direction === "down") {
-      const x1 = node.x + opts.nodeW / 2,  y1 = node.y + opts.nodeH;
+    if (direction === "down" || direction === "lanes") {
+      const x1 = node.x + opts.nodeW / 2,  y1 = node.y + node.height;
       const x2 = child.x + opts.nodeW / 2, y2 = child.y;
       const cy = (y1 + y2) / 2;
       d = `M ${x1} ${y1} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${y2}`;
@@ -155,7 +266,7 @@ function renderTreeEdges(
     svg.appendChild(createSvgEl("path", {
       d,
       fill: "none",
-      stroke: "var(--background-modifier-border)",
+      stroke,
       "stroke-width": "1.5",
     }));
     renderTreeEdges(child, svg, opts, direction);
@@ -163,6 +274,200 @@ function renderTreeEdges(
 }
 
 type RenameState = { fo: SVGForeignObjectElement | null };
+
+type TreeDirection = "down" | "right" | "left" | "lanes";
+
+/** "+" add-child button. Position depends on layout direction; omitted
+ *  at/beyond maxAddLevel. Shared by the classic and wrap node paths. */
+function renderAddButton(
+  group: SVGGElement, node: TreeNode, opts: TreeRenderOptions,
+  direction: TreeDirection, editHandlers: TreeEditHandlers, closeRename: () => void,
+): void {
+  if (!(opts.maxAddLevel === undefined || node.level < opts.maxAddLevel)) return;
+  const h = node.height || opts.nodeH;
+  const addBtnTransform = direction === "right"
+    ? `translate(${opts.nodeW + 10}, ${h / 2})`
+    : direction === "left"
+      ? `translate(-10, ${h / 2})`
+      : `translate(${opts.nodeW / 2}, ${h + 10})`;
+  const addBtn = createSvgEl("g", {
+    class: "vzd-tree-edit-add",
+    transform: addBtnTransform,
+    "aria-label": t("tree.addChild"),
+  }) as SVGGElement;
+  addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "16", class: "vzd-tree-edit-add-hit" }));
+  addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "10", class: "vzd-tree-edit-add-circle" }));
+  const plusText = createSvgEl("text", {
+    x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle",
+    class: "vzd-tree-edit-add-plus",
+  });
+  plusText.textContent = "+";
+  addBtn.appendChild(plusText);
+  group.appendChild(addBtn);
+
+  addBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeRename();
+    editHandlers.onAddChild(node);
+  });
+}
+
+/** "×" delete button — top-right corner, only on leaf nodes. */
+function renderDelButton(
+  group: SVGGElement, node: TreeNode, opts: TreeRenderOptions,
+  editHandlers: TreeEditHandlers, closeRename: () => void,
+): void {
+  if (node.children.length !== 0) return;
+  const delBtn = createSvgEl("g", {
+    class: "vzd-tree-edit-del",
+    transform: `translate(${opts.nodeW - 5}, 5)`,
+    "aria-label": t("tree.deleteNode"),
+  }) as SVGGElement;
+  delBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
+  const delText = createSvgEl("text", {
+    x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle",
+    class: "vzd-tree-edit-del-x",
+  });
+  delText.textContent = "×";
+  delBtn.appendChild(delText);
+  group.appendChild(delBtn);
+
+  delBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeRename();
+    editHandlers.onDelete(node);
+  });
+}
+
+/** One rendered bullet <li>: text span + (in edit mode) dblclick-to-edit and
+ *  an "×" remove button. */
+function buildBulletLi(
+  text: string, node: TreeNode,
+  editHandlers: TreeEditHandlers | undefined, closeRename: () => void,
+): HTMLLIElement {
+  const li = document.createElement("li");
+  li.className = "vzd-ost-bullet";
+  const span = document.createElement("span");
+  span.className = "vzd-ost-bullet-text";
+  span.textContent = text;
+  li.appendChild(span);
+
+  if (editHandlers?.onEditBullet) {
+    span.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      closeRename();
+      activateInlineEdit(span, text, (nv) => {
+        if (nv && nv !== text) editHandlers.onEditBullet!(node, text, nv);
+      });
+    });
+  }
+  if (editHandlers?.onDeleteBullet) {
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "vzd-ost-bullet-del";
+    del.textContent = "×";
+    del.setAttribute("aria-label", t("tree.deleteNode"));
+    del.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeRename();
+      editHandlers.onDeleteBullet!(node, text);
+    });
+    li.appendChild(del);
+  }
+  return li;
+}
+
+/** The trailing "+ Add detail" affordance that appends a new bullet. */
+function buildAddBulletLi(
+  node: TreeNode, editHandlers: TreeEditHandlers, closeRename: () => void,
+): HTMLLIElement {
+  const li = document.createElement("li");
+  li.className = "vzd-ost-bullet-add";
+  const renderBtn = (): void => {
+    li.textContent = "";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "vzd-ost-bullet-add-btn";
+    btn.textContent = `+ ${t("ost.addBullet")}`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeRename();
+      activateInlineEdit(li, "", (nv) => { if (nv) editHandlers.onAddBullet!(node, nv); }, {
+        shouldCommit: (v) => !!v,
+        renderDisplay: () => renderBtn(),
+      });
+    });
+    li.appendChild(btn);
+  };
+  renderBtn();
+  return li;
+}
+
+/** OST swim-lane node: outlined box with a foreignObject body (italic caption,
+ *  wrapped label, chevron bullet list) plus HTML/SVG edit affordances. */
+function renderWrapNode(
+  group: SVGGElement, node: TreeNode, opts: TreeRenderOptions, style: TreeNodeStyle,
+  resolver: LinkResolver | undefined, navigateTo: ((h: string) => void) | undefined,
+  editHandlers: TreeEditHandlers | undefined, closeRename: () => void, direction: TreeDirection,
+): void {
+  const h = node.height || opts.nodeH;
+  const rectAttrs: Record<string, string> = {
+    width: String(opts.nodeW), height: String(h), rx: String(style.borderRadius),
+    fill: style.fillVar, stroke: style.strokeVar ?? "var(--background-modifier-border)",
+    "stroke-width": "1.5", class: "vzd-ost-node-rect",
+  };
+  if (style.dashed) rectAttrs["stroke-dasharray"] = "6 3";
+  group.appendChild(createSvgEl("rect", rectAttrs));
+
+  const fo = createSvgEl("foreignObject", {
+    x: "0", y: "0", width: String(opts.nodeW), height: String(h), class: "vzd-ost-fo",
+  }) as SVGForeignObjectElement;
+  const host = document.createElement("div");
+  host.className = "vzd-ost-node";
+  if (style.strokeVar) host.style.setProperty("--vzd-ost-accent", style.strokeVar);
+
+  if (opts.captionPosition === "top" && node.sublabel) {
+    const cap = document.createElement("div");
+    cap.className = "vzd-ost-caption";
+    cap.textContent = node.sublabel;
+    host.appendChild(cap);
+  }
+
+  const labelEl = document.createElement("div");
+  labelEl.className = "vzd-ost-label";
+  labelEl.textContent = node.text;
+  host.appendChild(labelEl);
+
+  const heading = resolver?.resolve(node.text);
+  if (heading && navigateTo) {
+    host.classList.add("vzd-ost-node--linked");
+    labelEl.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+  }
+
+  if ((node.bullets && node.bullets.length > 0) || editHandlers?.onAddBullet) {
+    const ul = document.createElement("ul");
+    ul.className = "vzd-ost-bullets";
+    for (const b of node.bullets ?? []) ul.appendChild(buildBulletLi(b, node, editHandlers, closeRename));
+    if (editHandlers?.onAddBullet) ul.appendChild(buildAddBulletLi(node, editHandlers, closeRename));
+    host.appendChild(ul);
+  }
+
+  fo.appendChild(host);
+  group.appendChild(fo);
+
+  if (editHandlers) {
+    group.classList.add("vzd-tree-node--editable");
+    labelEl.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      closeRename();
+      activateInlineEdit(labelEl, node.text, (nv) => {
+        if (nv && nv !== node.text) editHandlers.onRename(node, nv);
+      });
+    });
+    renderAddButton(group, node, opts, direction, editHandlers, closeRename);
+    renderDelButton(group, node, opts, editHandlers, closeRename);
+  }
+}
 
 function renderTreeNodes(
   node: TreeNode,
@@ -173,10 +478,20 @@ function renderTreeNodes(
   editHandlers: TreeEditHandlers | undefined,
   renameState: RenameState,
   closeRename: () => void,
-  direction: "down" | "right" | "left" = "down",
+  direction: TreeDirection = "down",
 ): void {
   const group = createSvgEl("g", { transform: `translate(${node.x}, ${node.y})` }) as SVGGElement;
   const style = getTreeStyle(node.level, opts);
+
+  if (opts.wrap) {
+    renderWrapNode(group, node, opts, style, resolver, navigateTo, editHandlers, closeRename, direction);
+    svg.appendChild(group);
+    for (const child of node.children) {
+      renderTreeNodes(child, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename, direction);
+    }
+    return;
+  }
+
   renderTreeNodeRect(group, node, opts);
 
   const label = node.text.length > opts.maxLabelChars
@@ -243,62 +558,8 @@ function renderTreeNodes(
   // ── Edit interactions ────────────────────────────────────────────────────────
   if (editHandlers) {
     group.classList.add("vzd-tree-node--editable");
-
-    // "+" button: position depends on layout direction; omitted at/beyond maxAddLevel
-    if (opts.maxAddLevel === undefined || node.level < opts.maxAddLevel) {
-      const addBtnTransform = direction === "right"
-        ? `translate(${opts.nodeW + 10}, ${opts.nodeH / 2})`
-        : direction === "left"
-          ? `translate(-10, ${opts.nodeH / 2})`
-          : `translate(${opts.nodeW / 2}, ${opts.nodeH + 10})`;
-      const addBtn = createSvgEl("g", {
-        class: "vzd-tree-edit-add",
-        transform: addBtnTransform,
-        "aria-label": t("tree.addChild"),
-      }) as SVGGElement;
-      addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "16", class: "vzd-tree-edit-add-hit" }));
-      addBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "10", class: "vzd-tree-edit-add-circle" }));
-      const plusText = createSvgEl("text", {
-        x: "0", y: "0",
-        "dominant-baseline": "middle",
-        "text-anchor": "middle",
-        class: "vzd-tree-edit-add-plus",
-      });
-      plusText.textContent = "+";
-      addBtn.appendChild(plusText);
-      group.appendChild(addBtn);
-
-      addBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        closeRename();
-        editHandlers.onAddChild(node);
-      });
-    }
-
-    // "×" button: top-right corner, only on leaf nodes — deletes the node
-    if (node.children.length === 0) {
-      const delBtn = createSvgEl("g", {
-        class: "vzd-tree-edit-del",
-        transform: `translate(${opts.nodeW - 5}, 5)`,
-        "aria-label": t("tree.deleteNode"),
-      }) as SVGGElement;
-      delBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
-      const delText = createSvgEl("text", {
-        x: "0", y: "0",
-        "dominant-baseline": "middle",
-        "text-anchor": "middle",
-        class: "vzd-tree-edit-del-x",
-      });
-      delText.textContent = "×";
-      delBtn.appendChild(delText);
-      group.appendChild(delBtn);
-
-      delBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        closeRename();
-        editHandlers.onDelete(node);
-      });
-    }
+    renderAddButton(group, node, opts, direction, editHandlers, closeRename);
+    renderDelButton(group, node, opts, editHandlers, closeRename);
 
     // Double-click to rename: show inline foreignObject input over the node
     group.addEventListener("dblclick", (e) => {
@@ -366,9 +627,13 @@ export function renderTree(
 ): void {
   const direction = opts.direction ?? "down";
   const isHorizontal = direction === "right" || direction === "left";
+  const isLanes = direction === "lanes";
 
   // ── Layout ────────────────────────────────────────────────────────────────
-  if (isHorizontal) {
+  let laneLayout: LaneLayout | undefined;
+  if (isLanes) {
+    laneLayout = layoutTreeNodeLanes(tree.root, opts);
+  } else if (isHorizontal) {
     layoutTreeNodeH(tree.root, opts);
     if (direction === "left") {
       const preMirror = collectTreeBounds(tree.root);
@@ -387,6 +652,9 @@ export function renderTree(
     // Extra right padding for "right" direction (room for "+" buttons on leaf nodes)
     svgW = bounds.maxX + opts.hPadding + (direction === "right" && editHandlers ? 32 : 0);
     svgH = bounds.maxY + opts.vPadding;
+  } else if (isLanes && laneLayout) {
+    svgW = bounds.maxX + opts.hPadding;
+    svgH = laneLayout.contentBottom + opts.vPadding + (editHandlers ? 24 : 0);
   } else {
     svgW = bounds.maxX + opts.hPadding;
     // Extra bottom padding for "+" buttons below leaf nodes
@@ -407,6 +675,7 @@ export function renderTree(
   // Clicking the SVG background dismisses any open inline rename
   svg.addEventListener("click", closeRename);
 
+  if (isLanes && laneLayout) renderLaneBands(svg, opts, laneLayout, svgW);
   renderTreeEdges(tree.root, svg, opts, direction);
   renderTreeNodes(tree.root, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename, direction);
   wrapper.appendChild(svg);
@@ -414,28 +683,49 @@ export function renderTree(
 
 // -- Level-style configs -----------------------------------------------------
 //
-// OST and Impact Map share the same visual language:
+// Impact Map / Mind Map / Fishbone / SCQA share one visual language:
 //   Level 0 -- accent fill (root / goal / outcome)
 //   Level 1 -- hover-bg + left accent bar (main branches)
 //   Level 2 -- secondary-bg, solid, r=6 (sub-branches)
 //   Level 3 -- secondary-bg, dashed pill, muted text (leaves / hypotheses)
 //
-// Dimensions are unified at 190x46 so both diagrams feel like one system.
+// The OST breaks away into the swim-lane style (see ostTreeOptions): outlined
+// boxes coloured per lane, wrapped text, italic captions, chevron bullets.
 
-export const OST_TREE_OPTIONS: TreeRenderOptions = {
-  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
-  hPadding: 24, vPadding: 24, maxLabelChars: 22,
-  maxAddLevel: 4,
-  canvasClass: "vizardry-ost",
-  wrapperClass: "vizardry-ost-wrapper",
-  levelStyles: [
-    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
-    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 6, dashed: true },
-  ],
-};
+/**
+ * OST render options, rebuilt per call so lane labels track the current UI
+ * language. Each level is a lane; the Opportunity lane (level 1) accents the
+ * whole band, and connectors flowing into a lane inherit its colour.
+ */
+export function ostTreeOptions(): TreeRenderOptions {
+  const laneStyle = (strokeVar: string): TreeNodeStyle => ({
+    fillVar: "var(--background-primary)", textVar: "var(--text-normal)",
+    strokeVar, outline: true, borderRadius: 8, dashed: false,
+  });
+  return {
+    nodeW: 230, nodeH: 54, levelGap: 58, siblingGap: 24,
+    hPadding: 24, vPadding: 28, maxLabelChars: 1000,
+    maxAddLevel: 3,
+    direction: "lanes",
+    wrap: true,
+    captionPosition: "top",
+    gutterWidth: 150,
+    canvasClass: "vizardry-ost",
+    wrapperClass: "vizardry-ost-wrapper",
+    lanes: [
+      { label: t("ost.lane.outcome") },
+      { label: t("ost.lane.opportunity") },
+      { label: t("ost.lane.solution") },
+      { label: t("ost.lane.experiment") },
+    ],
+    levelStyles: [
+      laneStyle("var(--vzd-ost-outcome)"),
+      laneStyle("var(--vzd-ost-opportunity)"),
+      laneStyle("var(--vzd-ost-solution)"),
+      laneStyle("var(--vzd-ost-experiment)"),
+    ],
+  };
+}
 
 export const MINDMAP_OPTS: TreeRenderOptions = {
   nodeW: 180, nodeH: 40, levelGap: 70, siblingGap: 16,
@@ -482,22 +772,27 @@ export const FISHBONE_OPTS: TreeRenderOptions = {
 
 // -- Domain -> TreeNode adapters ---------------------------------------------
 
-const OST_LEVEL_KEYS: TranslationKey[] = [
-  "ost.level.outcome",
-  "ost.level.opportunity",
-  "ost.level.solution",
-  "ost.level.experiment",
-  "ost.level.assumption",
-];
+// Only the Opportunity lane carries a caption; each of its keywords maps to a
+// distinct one. Outcome/solution/experiment nodes show no italic caption.
+const OST_CAPTION_KEYS: Record<string, TranslationKey> = {
+  need: "ost.caption.need",
+  pain: "ost.caption.pain",
+  desire: "ost.caption.desire",
+};
 
 export function adaptOSTToTree(tree: OSTTree): { root: TreeNode } {
-  const convert = (node: OSTNode): TreeNode => ({
-    text: node.text,
-    level: node.level,
-    sublabel: t(OST_LEVEL_KEYS[Math.min(node.level, OST_LEVEL_KEYS.length - 1)]),
-    children: node.children.map(convert),
-    x: 0, y: 0, width: 0, height: 0,
-  });
+  const convert = (node: OSTNode): TreeNode => {
+    const captionKey = OST_CAPTION_KEYS[node.key];
+    return {
+      text: node.text,
+      level: node.level,
+      key: node.key,
+      sublabel: captionKey ? t(captionKey) : undefined,
+      bullets: node.bullets,
+      children: node.children.map(convert),
+      x: 0, y: 0, width: 0, height: 0,
+    };
+  };
   return { root: convert(tree.root) };
 }
 

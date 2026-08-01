@@ -29,13 +29,33 @@ import {
 import type { Editor } from "obsidian";
 
 export interface KeywordTreeConfig {
-  /** Keyword for each level, 0-indexed (e.g. {0: "effect", 1: "category", ...}). */
+  /** Canonical keyword for each level, 0-indexed (e.g. {0: "effect", 1:
+   *  "category", ...}). Used when INSERTING a new child. */
   levelKeyword: Record<number, string>;
+  /** Extra accepted keywords per level (e.g. OST's { 1: ["pain", "desire"] }).
+   *  Only affects uniqueness scanning — a node's own keyword is passed in
+   *  explicitly by callers that use aliases. */
+  levelAliases?: Record<number, string[]>;
   /** When true, EVERY level nests one indent unit under its parent, including
    *  level 1 (OST's outcome→opportunity, SCQA's situation→complication). When
    *  false/omitted, level 1 sits at root indent alongside level 0 (Impact
    *  Map's goal+actor, Fishbone's effect+category). */
   strictNesting?: boolean;
+}
+
+/** Every keyword the config recognises (canonical + aliases), lowercased. */
+function allKeywords(config: KeywordTreeConfig): string[] {
+  const kws = [...Object.values(config.levelKeyword)];
+  for (const list of Object.values(config.levelAliases ?? {})) kws.push(...list);
+  return kws.map(k => k.toLowerCase());
+}
+
+/** A line inside a node's subtree that is not itself a keyword node — i.e. a
+ *  bullet. Blank/comment/fence lines are handled by the callers. */
+function isBulletLine(trimmed: string, config: KeywordTreeConfig): boolean {
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("title:")) return false;
+  return !allKeywords(config).some(kw => lower.startsWith(`${kw}:`));
 }
 
 function childKeywordOf(config: KeywordTreeConfig, parentLevel: number): string | undefined {
@@ -91,10 +111,11 @@ export function renameKeywordTreeNode(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
   config: KeywordTreeConfig,
   level: number, oldText: string, newText: string,
+  keywordOverride?: string,
 ): boolean {
   if (!newText.trim() || newText === oldText) return false;
 
-  const keyword = config.levelKeyword[level];
+  const keyword = keywordOverride || config.levelKeyword[level];
   if (!keyword) return false;
 
   const access = getEditorAccess(app, ctx, el, "renameKeywordTreeNode");
@@ -119,8 +140,9 @@ export function addKeywordTreeChild(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
   config: KeywordTreeConfig,
   parentLevel: number, parentText: string, newChildText: string,
+  parentKeywordOverride?: string,
 ): boolean {
-  const parentKeyword = config.levelKeyword[parentLevel];
+  const parentKeyword = parentKeywordOverride || config.levelKeyword[parentLevel];
   const childKeyword = parentKeyword !== undefined ? childKeywordOf(config, parentLevel) : undefined;
   if (!parentKeyword || !childKeyword) {
     console.warn("Vizardry: addKeywordTreeChild — this level cannot have children");
@@ -156,10 +178,10 @@ export function addKeywordTreeChild(
 
   // Collect all existing node values across every level for uniqueness.
   const existingTexts = new Set<string>();
-  const allKeywords = [...Object.values(config.levelKeyword), "title"];
+  const uniquenessKeywords = [...allKeywords(config), "title"];
   for (let i = lineStart; i <= lineEnd; i++) {
     const t = editor.getLine(i).trim();
-    for (const kw of allKeywords) {
+    for (const kw of uniquenessKeywords) {
       if (t.toLowerCase().startsWith(`${kw}:`)) {
         existingTexts.add(t.slice(kw.length + 1).trim().toLowerCase());
         break;
@@ -186,13 +208,14 @@ export function deleteKeywordTreeNode(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
   config: KeywordTreeConfig,
   level: number, nodeText: string,
+  keywordOverride?: string,
 ): boolean {
   if (level === 0) {
     console.warn("Vizardry: deleteKeywordTreeNode — cannot delete the root node");
     return false;
   }
 
-  const keyword = config.levelKeyword[level];
+  const keyword = keywordOverride || config.levelKeyword[level];
   if (!keyword) return false;
 
   const access = getEditorAccess(app, ctx, el, "deleteKeywordTreeNode");
@@ -204,5 +227,111 @@ export function deleteKeywordTreeNode(
 
   const last = subtreeEnd(editor, match.line, match.indent, lineEnd);
   deleteLines(editor, match.line, last, el);
+  return true;
+}
+
+// ── Bullets ────────────────────────────────────────────────────────────────
+// A bullet is a bare (keyword-less) line indented one unit under a node. Bullet
+// ops locate the owning node by `keyword: text`, then act on its direct bullet
+// lines (exact child indent) — never a descendant's bullets.
+
+/** Every direct-bullet line of the node at `nodeLine`, matched by exact indent
+ *  and (optionally) exact text. */
+function findBulletLines(
+  editor: Editor, nodeLine: number, nodeIndent: number, bulletIndent: number,
+  lineEnd: number, config: KeywordTreeConfig, text?: string,
+): number[] {
+  const hits: number[] = [];
+  for (let ln = nodeLine + 1; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    const trimmed = raw.trim();
+    if (trimmed === "" || trimmed.startsWith("//")) continue;
+    if (trimmed.startsWith("```")) break;
+    const indent = raw.search(/\S/);
+    if (indent <= nodeIndent) break; // left the node's subtree
+    if (indent !== bulletIndent) continue; // deeper — a descendant's content
+    if (!isBulletLine(trimmed, config)) continue; // a child keyword node
+    if (text === undefined || trimmed === text) hits.push(ln);
+  }
+  return hits;
+}
+
+export function addKeywordTreeBullet(
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  config: KeywordTreeConfig,
+  nodeKeyword: string, nodeText: string, bulletText: string,
+): boolean {
+  if (!bulletText.trim()) return false;
+  const access = getEditorAccess(app, ctx, el, "addKeywordTreeBullet");
+  if (!access) return false;
+  const { editor, lineStart, lineEnd } = access;
+
+  const node = locateOne(editor, lineStart, lineEnd, nodeKeyword, nodeText, "addKeywordTreeBullet");
+  if (!node) return false;
+
+  const indentUnit = detectIndentUnit(editor, lineStart, lineEnd);
+  const bulletIndent = node.indent + indentUnit;
+  const existing = findBulletLines(editor, node.line, node.indent, bulletIndent, lineEnd, config);
+  // Append after the node's last existing bullet, else right after the node.
+  const insertAfter = existing.length > 0 ? existing[existing.length - 1] : node.line;
+
+  editorWrite(() => editor.replaceRange(
+    `${" ".repeat(bulletIndent)}${bulletText.trim()}\n`,
+    { line: insertAfter + 1, ch: 0 },
+  ), el);
+  return true;
+}
+
+export function editKeywordTreeBullet(
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  config: KeywordTreeConfig,
+  nodeKeyword: string, nodeText: string, oldBullet: string, newBullet: string,
+): boolean {
+  if (!newBullet.trim() || newBullet === oldBullet) return false;
+  const access = getEditorAccess(app, ctx, el, "editKeywordTreeBullet");
+  if (!access) return false;
+  const { editor, lineStart, lineEnd } = access;
+
+  const node = locateOne(editor, lineStart, lineEnd, nodeKeyword, nodeText, "editKeywordTreeBullet");
+  if (!node) return false;
+
+  const indentUnit = detectIndentUnit(editor, lineStart, lineEnd);
+  const bulletIndent = node.indent + indentUnit;
+  const hits = findBulletLines(editor, node.line, node.indent, bulletIndent, lineEnd, config, oldBullet);
+  if (hits.length !== 1) {
+    console.warn(`Vizardry: editKeywordTreeBullet — ${hits.length} bullets match "${oldBullet}" under ${nodeKeyword}: "${nodeText}"`);
+    return false;
+  }
+
+  const ln = hits[0];
+  const raw = editor.getLine(ln);
+  editorWrite(() => editor.replaceRange(
+    `${" ".repeat(bulletIndent)}${newBullet.trim()}`,
+    { line: ln, ch: 0 }, { line: ln, ch: raw.length },
+  ), el);
+  return true;
+}
+
+export function deleteKeywordTreeBullet(
+  app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
+  config: KeywordTreeConfig,
+  nodeKeyword: string, nodeText: string, bulletText: string,
+): boolean {
+  const access = getEditorAccess(app, ctx, el, "deleteKeywordTreeBullet");
+  if (!access) return false;
+  const { editor, lineStart, lineEnd } = access;
+
+  const node = locateOne(editor, lineStart, lineEnd, nodeKeyword, nodeText, "deleteKeywordTreeBullet");
+  if (!node) return false;
+
+  const indentUnit = detectIndentUnit(editor, lineStart, lineEnd);
+  const bulletIndent = node.indent + indentUnit;
+  const hits = findBulletLines(editor, node.line, node.indent, bulletIndent, lineEnd, config, bulletText);
+  if (hits.length !== 1) {
+    console.warn(`Vizardry: deleteKeywordTreeBullet — ${hits.length} bullets match "${bulletText}" under ${nodeKeyword}: "${nodeText}"`);
+    return false;
+  }
+
+  deleteLines(editor, hits[0], hits[0], el);
   return true;
 }

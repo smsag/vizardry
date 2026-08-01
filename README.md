@@ -451,29 +451,45 @@ block: Factors for Success
 
 ### Opportunity Solution Tree
 
+Renders as labelled horizontal swim-lanes — Outcome, Opportunity, Solution,
+Experimentation — with a distinct colour per lane, outlined boxes that wrap their
+text, and per-node captions.
+
 ~~~
 ```vizardry
 type: ost
 outcome: Increase weekly active users by 20% in Q3.
 
-  opportunity: New users do not discover the first high-value workflow.
+  need: New users do not discover the first high-value workflow.
     solution: Guided quick-start path for first session.
+      Highlight the primary action on first load
+      Skippable, resumable steps
       experiment: A/B test quick-start entry point on onboarding screen.
-        assumption: A guided path lifts first-session completion.
+
+  pain: Returning users struggle to continue unfinished work.
     solution: Resume banner for incomplete workflows.
 
-  opportunity: Returning users struggle to continue unfinished work.
-    solution: Resume banner for incomplete workflows.
-      experiment: Measure completion uplift from resume banner placement.
+  desire: Users want to see progress at a glance.
 ```
 ~~~
 
 **Syntax:**
-- Each node names its level; the strict chain is `outcome → opportunity → solution → experiment → assumption`
+- The strict chain is `outcome → opportunity → solution → experiment`
 - `outcome:` — root node, no indent, required, one only
-- `opportunity:` / `solution:` / `experiment:` / `assumption:` — indented one level under their required parent; several siblings are allowed at every level
+- The Opportunity lane accepts three keywords — `need:`, `pain:`, `desire:` — all
+  at the same level; they differ only in the italic caption shown (*Customer
+  need* / *Customer pain point* / *Customer desire*)
+- `solution:` / `experiment:` — indented one level under their required parent;
+  several siblings are allowed at every level
+- A **bare (keyword-less) indented line** becomes a chevron bullet on the node
+  above it — any node may carry bullets (e.g. the solution features above)
 - Blank lines and `// comment` lines are ignored
-- Legacy bare-indent trees (root keyword only, children by indentation) still render
+
+> **Breaking change (from the pre–swim-lane OST):** the `opportunity:` and
+> `assumption:` keywords, and the legacy bare-indent form, were removed. Rename
+> `opportunity:` lines to `need:`/`pain:`/`desire:`; former `assumption:` detail
+> is best expressed as bullets under a solution. A leftover `opportunity:` line
+> now renders as a bullet rather than a node.
 
 ---
 
@@ -1276,17 +1292,18 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ### Opportunity Solution Tree (type: ost)
 
-Keyword-per-level, strict chain `outcome → opportunity → solution → experiment → assumption`. Several children are allowed at every level.
+Keyword-per-level, strict chain `outcome → opportunity → solution → experiment`, rendered as labelled swim-lanes. Several children are allowed at every level.
 
 | Syntax | Meaning |
 |---|---|
 | `outcome: <text>` | Root — no indent, required, one only |
-| `opportunity: <text>` | Indented under the outcome |
+| `need:` / `pain:` / `desire: <text>` | Opportunity lane (level 1); the keyword sets the italic caption |
 | `solution: <text>` | Indented under an opportunity |
 | `experiment: <text>` | Indented under a solution |
-| `assumption: <text>` | Indented under an experiment |
-| Bare indented lines | Legacy form (root keyword only, level by indentation) — still rendered |
+| Bare indented line | A chevron bullet on the node above it (any node may have bullets) |
 | Blank lines / `// comment` | Ignored |
+
+Breaking change: `opportunity:` / `assumption:` and the legacy bare-indent form were removed — see the [Opportunity Solution Tree](#opportunity-solution-tree) section above for migration.
 
 ### SCQA / SCR Narrative (type: scqa, scr)
 
