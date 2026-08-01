@@ -1379,8 +1379,19 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   user-select: none;
 }
 
-/* foreignObject wrapper — let content define height without clipping */
-.vzd-ost-fo { overflow: visible; }
+/* foreignObject wrapper — clip to the box. The box height is measured from the
+   real DOM (see makeNodeMeasurer) so content fits; `hidden` (never `visible`)
+   is deliberate — overflow:visible makes Blink paint spill at the SVG origin. */
+.vzd-ost-fo { overflow: hidden; }
+
+/* Offscreen sizer used to measure real wrapped node height before layout */
+.vzd-ost-sizer {
+  position: absolute;
+  visibility: hidden;
+  left: -99999px;
+  top: 0;
+  pointer-events: none;
+}
 
 /* Node box body: caption + wrapped label + bullets, left-aligned */
 .vzd-ost-node {
