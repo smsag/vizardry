@@ -268,6 +268,29 @@ describe("renderMatrix", () => {
     expect(el.querySelector(".vzd-matrix-y-label")?.textContent).toBe("Very High Importance");
   });
 
+  it("concentrates assumption heat in the top-left (gated), not along the diagonal", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "assumption" }, el);
+    // Cells render row-major: index = rowIdx*4 + (col-1).
+    const cells = Array.from(el.querySelectorAll<HTMLElement>(".vzd-matrix-cell"));
+    const cls = (i: number) => cells[i].className;
+    // top-left = important + no evidence = leap-of-faith → hottest.
+    expect(cls(0)).toContain("vzd-matrix-cell--very-high");
+    // top-right = important but validated → cold (nothing left to test).
+    expect(cls(3)).toContain("vzd-matrix-cell--low");
+    // bottom-left = unproven but unimportant → cold (not worth testing).
+    expect(cls(12)).toContain("vzd-matrix-cell--low");
+  });
+
+  it("keeps the additive diagonal for impact/effort — off-diagonal corners are not cold", () => {
+    const el = container();
+    renderMatrix({ ...matrixData, type: "impact" }, el);
+    const cells = Array.from(el.querySelectorAll<HTMLElement>(".vzd-matrix-cell"));
+    // top-right (big bet) and bottom-left (fill-in) stay mid-priority, not low.
+    expect(cells[3].className).not.toContain("vzd-matrix-cell--low");
+    expect(cells[12].className).not.toContain("vzd-matrix-cell--low");
+  });
+
   it("does not apply the editable hover affordance to a cell body in Read Mode", () => {
     // Read Mode still provides app/ctx (the post-processor runs there too);
     // the edit affordance must be gated on the actual view mode, not just

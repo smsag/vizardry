@@ -1,4 +1,3 @@
-## 0.42.0
+## 0.42.1
 
-- **New: Assumption Map (`type: matrix, assumption`).** An importance × evidence variant of the priority matrix. Rows are importance (very high → very low), columns are evidence (none → strong); the top-left cell (important but unproven) is the riskiest — the leap-of-faith assumptions to test first.
-- **New: Scenario Matrix (`type: scenario`).** A GBN/Schwartz 2×2: define two critical uncertainties as axes (`x-axis: name | low | high`, `y-axis: …`) and name the four scenario quadrants (`top-left:` … with indented detail). Quadrant detail renders as cards that can link to headings and be dragged between scenarios.
+- **Fix: Assumption Map heat model.** The Assumption Map previously reused the Impact/Effort matrix's additive diagonal heat, which wrongly warmed the top-right (important but already validated) and bottom-left (unproven but unimportant) corners. Assumption priority is a gate, not a sum — an assumption matters only when it is *both* important *and* unproven — so heat is now the product of importance × lack-of-evidence, concentrating it in the top-left leap-of-faith corner and cooling both off-diagonal corners. Impact/Effort keeps its additive diagonal.
