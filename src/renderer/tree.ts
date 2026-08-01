@@ -171,7 +171,14 @@ interface NodeMeasurer { measure(node: TreeNode): number; dispose(): void; }
 function makeNodeMeasurer(
   el: HTMLElement, opts: TreeRenderOptions, editHandlers: TreeEditHandlers | undefined,
 ): NodeMeasurer {
-  const sizer = el.createEl("div", { cls: "vzd-lane-sizer" });
+  // Mount the sizer on document.body, NOT on `el`. Obsidian frequently renders a
+  // block into a detached / not-yet-laid-out container (Live Preview widgets,
+  // background panes), where offsetHeight on an element under `el` would be 0 —
+  // forcing the under-counting estimate and clipping wrapped boxes. document.body
+  // is always laid out, so measurement is reliable. Node width is fixed, so the
+  // parent context doesn't change wrapping.
+  const doc = el.ownerDocument ?? document;
+  const sizer = (doc.body ?? el).createEl("div", { cls: "vzd-lane-sizer" });
   sizer.style.width = `${opts.nodeW}px`;
   const noop = (): void => {};
   return {

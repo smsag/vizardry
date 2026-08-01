@@ -344,6 +344,18 @@ describe("renderOST", () => {
     expect(el.querySelector("svg.vizardry-ost")).toBeTruthy();
   });
 
+  it("renders into a detached container and leaves no sizer behind", () => {
+    // Obsidian often renders a block before its container is in the document
+    // (Live Preview widgets, background panes). The height measurer must mount
+    // its sizer on document.body — not the detached el — and clean it up.
+    const el = document.createElement("div"); // deliberately NOT attached
+    expect(() => renderOST(fullTree, el)).not.toThrow();
+    expect(el.querySelector("svg.vizardry-ost")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-lane-bullet-text").length).toBe(2);
+    // The offscreen sizer is disposed after layout — none linger on the body.
+    expect(document.body.querySelector(".vzd-lane-sizer")).toBeNull();
+  });
+
   it("draws labelled swim-lane bands with dashed dividers", () => {
     const el = container();
     renderOST(fullTree, el);
