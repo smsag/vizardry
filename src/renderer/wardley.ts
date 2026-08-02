@@ -8,7 +8,7 @@ import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { WARDLEY_CHAR_W_PX, WARDLEY_LABEL_MIN_GAP_PX, WARDLEY_LABEL_OVERLAP_X_PX, WARDLEY_LABEL_MAX_NUDGE_PX } from "../shared/constants";
-import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, removeWardleyLink } from "../shared/wardley-edit";
+import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, removeWardleyLink, writeWardleyEvolve } from "../shared/wardley-edit";
 
 // Canvas dimensions
 const W = 800;
@@ -127,6 +127,9 @@ function nudgeLabels(slots: LabelSlot[]): void {
 // ── Shared types for interactive behaviors ─────────────────────────────────
 
 type NodeRef = { circle: SVGCircleElement; textEl: SVGTextElement; comp: WardleyComponent };
+/** The draggable "to-be" marker of an evolution arrow. `fromX` is the current
+ *  node's svg-x (the arrow tail); `y` is the fixed visibility row. */
+type EvolveRef = { circle: SVGCircleElement; line: SVGLineElement; comp: WardleyComponent; fromX: number; y: number };
 type DragState = { ref: NodeRef };
 type LinkDrawState = {
   sourceRef: NodeRef;
@@ -304,7 +307,8 @@ function renderLinks(
  * ending in a hollow red "to-be" marker — the core Wardley Map notion of a
  * component commoditising over time.
  */
-function renderEvolutions(svg: SVGSVGElement, data: WardleyMap): void {
+function renderEvolutions(svg: SVGSVGElement, data: WardleyMap): EvolveRef[] {
+  const refs: EvolveRef[] = [];
   for (const comp of data.components) {
     if (comp.evolveTo === undefined) continue;
     const y = toSvgY(comp.visibility);
@@ -313,17 +317,22 @@ function renderEvolutions(svg: SVGSVGElement, data: WardleyMap): void {
     const dir = Math.sign(x2 - x1) || 1;
 
     const g = createSvgEl("g", { class: "vzd-wardley-evolve-g" });
-    g.appendChild(createSvgEl("line", {
+    const line = createSvgEl("line", {
       x1: String(x1 + dir * (NODE_R + 2)), y1: String(y),
       x2: String(x2 - dir * (NODE_R + 2)), y2: String(y),
       class: "vzd-wardley-evolve-line", "marker-end": "url(#vzd-wardley-evolve-arrow)",
-    }));
-    g.appendChild(createSvgEl("circle", {
+    }) as SVGLineElement;
+    g.appendChild(line);
+    const circle = createSvgEl("circle", {
       cx: String(x2), cy: String(y), r: String(NODE_R),
       class: "vzd-wardley-evolve-node",
-    }));
+    }) as SVGCircleElement;
+    g.appendChild(circle);
     svg.appendChild(g);
+
+    refs.push({ circle, line, comp, fromX: x1, y });
   }
+  return refs;
 }
 
 function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
@@ -506,6 +515,67 @@ function attachDragBehavior(
 
     ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(e.clientX, e.clientY); });
     ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  }
+}
+
+// ── Interaction: drag the evolution "to-be" marker (horizontal only) ───────
+
+function attachEvolveDragBehavior(
+  svg: SVGSVGElement,
+  evolveRefs: EvolveRef[],
+  ix: WardleyIxState,
+  app: App,
+  mppCtx: MarkdownPostProcessorContext,
+  wrap: HTMLElement,
+): void {
+  const doc = svg.ownerDocument;
+  let active: EvolveRef | null = null;
+
+  const moveTo = (ref: EvolveRef, clientX: number): void => {
+    const { x } = clientToSvg(svg, clientX, 0);
+    const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, x));
+    const dir = Math.sign(cx - ref.fromX) || 1;
+    ref.circle.setAttribute("cx", String(cx));
+    // Re-trim both ends so the arrow flips cleanly if dragged past the source.
+    ref.line.setAttribute("x1", String(ref.fromX + dir * (NODE_R + 2)));
+    ref.line.setAttribute("x2", String(cx - dir * (NODE_R + 2)));
+  };
+
+  const onMove = (e: MouseEvent): void => { if (active) moveTo(active, e.clientX); };
+  const onUp = (): void => {
+    if (!active) return;
+    const ref = active;
+    active = null;
+    ref.circle.classList.remove("vzd-wardley-evolve-node--dragging");
+    svg.classList.remove("vzd-wardley-svg--dragging");
+    doc.removeEventListener("mousemove", onMove);
+    doc.removeEventListener("mouseup", onUp);
+    const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
+    const evolveTo = Math.max(0, Math.min(1, (cx - PLOT_X) / PLOT_W));
+    writeWardleyEvolve(app, mppCtx, wrap, ref.comp.name, evolveTo);
+  };
+
+  onDisconnected(wrap, () => {
+    doc.removeEventListener("mousemove", onMove);
+    doc.removeEventListener("mouseup", onUp);
+    active = null;
+  });
+
+  for (const ref of evolveRefs) {
+    ref.circle.classList.add("vzd-wardley-evolve-node--draggable");
+    const start = (clientX: number): void => {
+      if (ix.activeRename || ix.drag || ix.linkDraw) return;
+      active = ref;
+      ref.circle.classList.add("vzd-wardley-evolve-node--dragging");
+      svg.classList.add("vzd-wardley-svg--dragging");
+      moveTo(ref, clientX);
+      doc.addEventListener("mousemove", onMove);
+      doc.addEventListener("mouseup", onUp);
+    };
+    ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); start(e.clientX); });
+    ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); start(e.touches[0].clientX); }, { passive: false });
+    ref.circle.addEventListener("touchmove", (e) => { if (active) { e.preventDefault(); moveTo(active, e.touches[0].clientX); } }, { passive: false });
+    ref.circle.addEventListener("touchend", () => onUp());
   }
 }
 
@@ -770,7 +840,7 @@ export function renderWardleyMap(
   renderStageBands(svg, data);
   renderAxes(svg);
   renderLinks(svg, data, app, ctx, wrap);
-  renderEvolutions(svg, data);
+  const evolveRefs = renderEvolutions(svg, data);
   const nodeRefs = renderNodes(svg, data);
 
   wrap.appendChild(svg);
@@ -787,5 +857,6 @@ export function renderWardleyMap(
     attachDragBehavior(svg, nodeRefs, ix, data, app!, ctx!, wrap);
     attachLinkDrawBehavior(svg, nodeRefs, ix, data, app!, ctx!, wrap);
     attachRenameBehavior(svg, nodeRefs, ix, data, app!, ctx!, wrap);
+    attachEvolveDragBehavior(svg, evolveRefs, ix, app!, ctx!, wrap);
   }
 }
