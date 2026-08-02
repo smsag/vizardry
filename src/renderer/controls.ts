@@ -66,6 +66,39 @@ export function resetInteractiveIdCounter(): void {
   nextId = 0;
 }
 
+/**
+ * Renders a small, non-blocking warning chip in the canvas header for
+ * recoverable parse issues (empty labels, skipped mis-nested lines). Clicking
+ * it toggles a detail list. No-op when there are no warnings. Reusable across
+ * frameworks that surface `warnings` from their parser.
+ */
+export function renderCanvasWarnings(container: HTMLElement, warnings?: string[]): void {
+  if (!warnings || warnings.length === 0) return;
+  const header = container.querySelector<HTMLElement>(".vizardry-header");
+  if (!header) return;
+
+  const chip = header.createEl("button", { cls: "vzd-canvas-warning-chip vzd-btn" });
+  chip.setAttribute("aria-label", `${warnings.length} rendering ${warnings.length === 1 ? "warning" : "warnings"} — click for details`);
+  chip.setAttribute("title", warnings.join("\n"));
+  chip.createEl("span", { cls: "vzd-canvas-warning-icon", text: "⚠" });
+  chip.createEl("span", { cls: "vzd-canvas-warning-count", text: String(warnings.length) });
+
+  // Sit the chip just before the action buttons (i.e. after the title).
+  const actions = header.querySelector(".vizardry-header-actions");
+  if (actions) header.insertBefore(chip, actions);
+
+  let detail: HTMLElement | null = null;
+  chip.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (detail) { detail.remove(); detail = null; chip.classList.remove("is-open"); return; }
+    detail = container.createEl("div", { cls: "vzd-canvas-warning-detail" });
+    header.insertAdjacentElement("afterend", detail);
+    const list = detail.createEl("ul");
+    for (const w of warnings) list.createEl("li", { text: w });
+    chip.classList.add("is-open");
+  });
+}
+
 export function initCanvas(
   container: HTMLElement,
   frameworkId: string,

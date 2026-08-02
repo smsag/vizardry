@@ -56,5 +56,5 @@ export function parseSCQA(source: string, fenceVariant: SCQAVariant): SCQAResult
   const result = parseKeywordTree(kept.join("\n"), levels, { allowBullets: true });
   if (!result.ok) return result;
 
-  return { ok: true, data: { variant, view, root: result.root } };
+  return { ok: true, data: { variant, view, root: result.root, warnings: result.warnings } };
 }

@@ -459,6 +459,29 @@ describe("renderSCQA", () => {
     expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(4);
   });
 
+  it("degrades gracefully: warning chip + placeholder for an empty node, canvas still renders", () => {
+    const el = container();
+    const withEmpty = {
+      variant: "scqa" as const,
+      view: "grid" as const,
+      warnings: ['Line 2: "complication:" has no text — showing an empty node'],
+      root: {
+        text: "Situation", level: 0,
+        children: [{ text: "", level: 1, children: [] }],
+      },
+    };
+    renderSCQA(withEmpty, el);
+    // Non-blocking warning chip in the header (not an error banner).
+    const chip = el.querySelector(".vzd-canvas-warning-chip");
+    expect(chip).toBeTruthy();
+    expect(chip!.querySelector(".vzd-canvas-warning-count")?.textContent).toBe("1");
+    // The empty node renders a faint placeholder rather than a blank card.
+    const empty = el.querySelector(".vzd-scqa-card-text--empty");
+    expect(empty?.textContent).toBe("(empty)");
+    // The whole canvas still rendered: situation + placeholder complication.
+    expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(2);
+  });
+
   it("renders the tree view as labelled swim-lanes with role captions", () => {
     const el = container();
     expect(() => renderSCQA({ ...data, view: "tree" }, el)).not.toThrow();

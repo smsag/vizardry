@@ -156,6 +156,44 @@ button.vzd-btn {
   flex-shrink: 0;
 }
 
+/* Non-blocking parse-warning chip (recoverable issues; the canvas still renders) */
+.vzd-canvas-warning-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  margin-left: auto;
+  margin-right: 0.4rem;
+  padding: 0 0.4em;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-warning, var(--color-orange, #d98a00));
+  background: color-mix(in srgb, var(--color-orange, #d98a00) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-orange, #d98a00) 40%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.vzd-canvas-warning-chip.is-open,
+.vzd-canvas-warning-chip:hover {
+  background: color-mix(in srgb, var(--color-orange, #d98a00) 28%, transparent);
+}
+.vzd-canvas-warning-count { font-variant-numeric: tabular-nums; }
+
+.vzd-canvas-warning-detail {
+  margin: 0 0.6rem 0.4rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-left: 3px solid var(--color-orange, #d98a00);
+  border-radius: 4px;
+}
+.vzd-canvas-warning-detail ul { margin: 0; padding-left: 1.1rem; }
+.vzd-canvas-warning-detail li { margin: 0.1rem 0; }
+
+/* Faint placeholder shown in place of an empty node label */
+.vzd-lane-label--placeholder { fill: var(--text-faint); font-style: italic; }
+.vzd-scqa-card-text--empty { color: var(--text-faint); font-style: italic; }
+
 /* Pipe separator before the minimize button */
 .vzd-btn-separator {
   display: inline-block;

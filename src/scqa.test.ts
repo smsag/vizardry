@@ -51,11 +51,12 @@ situation: Status quo
     expect(res.error).toMatch(/situation/i);
   });
 
-  it("rejects a duplicate situation", () => {
+  it("ignores a duplicate situation with a warning (first wins)", () => {
     const res = parseSCQA("situation: A\nsituation: B", "scqa");
-    expect(res.ok).toBe(false);
-    if (res.ok) return;
-    expect(res.error).toMatch(/duplicate/i);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.root.text).toBe("A");
+    expect(res.data.warnings?.some(w => /duplicate/i.test(w))).toBe(true);
   });
 
   it("rejects nesting deeper than answer (level 4)", () => {
@@ -148,11 +149,23 @@ describe("parseSCQA — keyword form", () => {
     expect(comp.children.every(r => r.level === 2)).toBe(true);
   });
 
-  it("rejects a question that is not nested under a complication", () => {
+  it("skips a question not nested under a complication, with a warning", () => {
     const res = parseSCQA("situation: S\n  question: Orphan", "scqa");
-    expect(res.ok).toBe(false);
-    if (res.ok) return;
-    expect(res.error).toMatch(/must be nested under a "complication:"/);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.root.children).toHaveLength(0);
+    expect(res.data.warnings?.some(w => /"complication:"/.test(w) && /skipped/.test(w))).toBe(true);
+  });
+
+  it("renders an empty complication as a placeholder and keeps its subtree", () => {
+    const res = parseSCQA("situation: S\n  complication:\n    question: Q\n      answer: A", "scqa");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const comp = res.data.root.children[0];
+    expect(comp.text).toBe("");
+    expect(comp.children[0].text).toBe("Q");
+    expect(comp.children[0].children[0].text).toBe("A");
+    expect(res.data.warnings?.some(w => /no text/i.test(w))).toBe(true);
   });
 
   it("treats an out-of-vocabulary keyword as a bullet (answer in the scr variant)", () => {
