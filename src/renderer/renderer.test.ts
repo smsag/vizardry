@@ -688,6 +688,7 @@ describe("renderWardleyMap", () => {
       { from: "User", to: "Auth" },
       { from: "Auth", to: "Database" },
     ],
+    pipelines: [],
   };
   const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
   const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
@@ -724,6 +725,29 @@ describe("renderWardleyMap", () => {
     const editEl = container();
     renderWardleyMap(evolveMap, editEl, editModeApp, {} as any, "type: wardley");
     expect(editEl.querySelector(".vzd-wardley-evolve-node--draggable")).toBeTruthy();
+  });
+
+  it("draws a pipeline box with one square per sub-component", () => {
+    const el = container();
+    const pipeMap: WardleyMap = {
+      ...map,
+      pipelines: [
+        {
+          component: "Database",
+          x1: 0.2,
+          x2: 0.8,
+          items: [
+            { name: "Self-hosted", evolution: 0.35 },
+            { name: "Managed DB", evolution: 0.7 },
+          ],
+        },
+      ],
+    };
+    renderWardleyMap(pipeMap, el);
+    expect(el.querySelector(".vzd-wardley-pipeline-box")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-wardley-pipeline-node")).toHaveLength(2);
+    const labels = Array.from(el.querySelectorAll(".vzd-wardley-pipeline-label")).map(l => l.textContent);
+    expect(labels).toEqual(["Self-hosted", "Managed DB"]);
   });
 
   it("does not wire dragging, rename, link-drawing, the add handle, or title editing when the note is in Reading View", () => {
@@ -849,6 +873,7 @@ describe("renderWardleyMap", () => {
       anchor: null, explicitComponents: new Set(["A"]),
       components: [{ name: "A", visibility: 0.5, evolution: 0.5 }],
       links: [{ from: "A", to: "Ghost" }],
+      pipelines: [],
     };
     expect(() => renderWardleyMap(brokenMap, el)).not.toThrow();
   });
@@ -863,6 +888,7 @@ describe("renderWardleyMap", () => {
         evolution: 0.5,
       })),
       links: [],
+      pipelines: [],
     };
     expect(() => renderWardleyMap(clustered, el)).not.toThrow();
     const svg = el.querySelector("svg");
@@ -889,6 +915,7 @@ describe("renderWardleyMap", () => {
         { name: "C", visibility: 0.58, evolution: 0.22 },
       ],
       links: [],
+      pipelines: [],
     };
     renderWardleyMap(adjacent, el);
     const svg = el.querySelector("svg")!;

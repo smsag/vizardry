@@ -2014,6 +2014,21 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-wardley-evolve-node--draggable:hover { fill: color-mix(in srgb, var(--color-red, #e5484d) 15%, var(--background-primary)); }
 .vzd-wardley-evolve-node--dragging { cursor: grabbing; }
 
+.vzd-wardley-pipeline-box {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+.vzd-wardley-pipeline-node {
+  fill: var(--background-primary);
+  stroke: var(--text-normal);
+  stroke-width: 2;
+}
+.vzd-wardley-pipeline-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
 .vzd-wardley-node--anchor {
   fill: var(--interactive-accent);
   fill-opacity: 0.7;

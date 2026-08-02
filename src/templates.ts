@@ -276,6 +276,10 @@ link: Web App -> Database
 link: Database -> Cloud Host
 
 evolve: Auth Service 0.85
+
+pipeline: Database [0.35, 0.75]
+  Self-hosted [0.45]
+  Managed DB  [0.70]
 \`\`\`
 `;
 

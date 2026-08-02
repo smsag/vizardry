@@ -301,6 +301,57 @@ function renderLinks(
   }
 }
 
+/** Pipeline box height (px) and sub-component square half-size (px). */
+const PIPELINE_BOX_H = 14;
+const PIPELINE_ITEM_R = 5;
+
+/**
+ * Draws pipelines: a component rendered as a box spanning an evolution range
+ * at its own visibility, holding sub-components as small squares along the
+ * box's centre line — the Wardley Map notion of a component that is itself a
+ * set of choices at differing evolutionary maturities.
+ */
+function renderPipelines(svg: SVGSVGElement, data: WardleyMap): void {
+  const compMap = new Map<string, WardleyComponent>();
+  for (const c of data.components) compMap.set(c.name, c);
+
+  for (const pipe of data.pipelines) {
+    const comp = compMap.get(pipe.component);
+    if (!comp) continue;
+    const y = toSvgY(comp.visibility);
+    const xLeft = toSvgX(pipe.x1);
+    const xRight = toSvgX(pipe.x2);
+
+    const g = createSvgEl("g", { class: "vzd-wardley-pipeline-g" });
+
+    // The enclosing box (rounded rectangle spanning the evolution range).
+    g.appendChild(createSvgEl("rect", {
+      x: String(xLeft), y: String(y - PIPELINE_BOX_H / 2),
+      width: String(xRight - xLeft), height: String(PIPELINE_BOX_H),
+      rx: String(PIPELINE_BOX_H / 2),
+      class: "vzd-wardley-pipeline-box",
+    }));
+
+    // Sub-components as small squares on the box's centre line, with labels below.
+    for (const item of pipe.items) {
+      const ix = toSvgX(item.evolution);
+      g.appendChild(createSvgEl("rect", {
+        x: String(ix - PIPELINE_ITEM_R), y: String(y - PIPELINE_ITEM_R),
+        width: String(PIPELINE_ITEM_R * 2), height: String(PIPELINE_ITEM_R * 2),
+        class: "vzd-wardley-pipeline-node",
+      }));
+      const label = createSvgEl("text", {
+        x: String(ix), y: String(y + PIPELINE_BOX_H / 2 + 12),
+        class: "vzd-wardley-pipeline-label", "text-anchor": "middle",
+      });
+      label.textContent = item.name;
+      g.appendChild(label);
+    }
+
+    svg.appendChild(g);
+  }
+}
+
 /**
  * Draws evolution (movement) arrows: a dashed red line from a component's
  * current position to its future `evolveTo` position at the same visibility,
@@ -840,6 +891,7 @@ export function renderWardleyMap(
   renderStageBands(svg, data);
   renderAxes(svg);
   renderLinks(svg, data, app, ctx, wrap);
+  renderPipelines(svg, data);
   const evolveRefs = renderEvolutions(svg, data);
   const nodeRefs = renderNodes(svg, data);
 
