@@ -1,25 +1,12 @@
-## 0.45.0
+## 0.45.1
 
-Wardley Maps get evolution, pipelines, and a batch of parser/editor fixes.
+Two fixes for the Wardley Map and image export.
 
-- **Evolution (movement) arrows.** `evolve: <Component> <evolution>` draws a red
-  dashed arrow from a component's current position to a future evolution stage
-  (visibility unchanged). In Live Preview the red "to-be" marker drags
-  horizontally to retarget it.
-- **Pipelines.** `pipeline: <Component> [x1, x2]` with indented
-  `<Sub Component> [evolution]` lines draws the component as a box spanning an
-  evolution range, holding sub-components at their own maturities. Each
-  sub-component must fall within the range; unknown, duplicate, and
-  out-of-range pipelines are rejected with a clear error.
-- **Rename keeps the map intact.** Double-click-renaming a component now also
-  updates its `evolve:` and `pipeline:` directives (previously they were
-  orphaned and broke the map on the next parse), and renaming onto an existing
-  component name is refused instead of creating a duplicate.
-- **Parser & editor fixes.** Case-insensitive link resolution, self-link and
-  duplicate-link rejection, boundary-safe component matching (so "Auth" no
-  longer matches "Auth Service"), and trailing `// comment` support on every
-  directive.
-- **Rendering polish.** An evolution arrow rides above a pipeline box when a
-  component is both, a degenerate zero-length arrow no longer draws backwards
-  (at render and mid-drag), and a top/bottom pipeline box stays inside the plot
-  frame.
+- **Pipeline box padding.** The pipeline box now extends a little past its
+  evolution range, so the end sub-components and their labels sit inside the
+  rounded caps instead of flush against — or overflowing — them.
+- **Image download works on mobile.** Exports now render to a PNG blob; on
+  mobile the image is handed to the system share sheet (Save to Photos/Files)
+  via the Web Share API, and on desktop it downloads via an in-document object
+  URL. Fixes the download silently doing nothing in iOS/Android WebViews, and
+  failures on very large canvases.
