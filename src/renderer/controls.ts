@@ -1,4 +1,4 @@
-import { setIcon, MarkdownView } from "obsidian";
+import { setIcon, MarkdownView, Platform } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { applyFullWidth } from "./full-width";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
@@ -230,21 +230,61 @@ export function addHeaderControls(
       // Lazy-load html-to-image so its initialisation cost is deferred to the
       // first click rather than paid at plugin startup. esbuild's CJS __commonJS
       // factory means the module code runs on first require(), not at bundle eval.
-      const { toPng } = await import("html-to-image");
+      const { toBlob } = await import("html-to-image");
       // Derive doc/window from the container itself — it may live in a
       // pop-out Obsidian window, which has its own theme styles and DPI.
       const doc = container.ownerDocument;
       const win = doc.defaultView ?? window;
       const bg = win.getComputedStyle(doc.body).getPropertyValue("--background-primary").trim() || "#ffffff";
-      const dataUrl = await toPng(container, {
-        pixelRatio: win.devicePixelRatio * 2,
+      // Cap the pixel ratio: unchanged on desktop, but bounded on high-DPI
+      // phones where devicePixelRatio*2 (≈6) makes oversized PNGs that can OOM.
+      const pixelRatio = Math.min((win.devicePixelRatio || 1) * 2, 4);
+      // Render to a Blob rather than a data: URL — base64 data URLs can exceed
+      // the WebView's URL-length cap and fail silently on large canvases.
+      const blob = await toBlob(container, {
+        pixelRatio,
         backgroundColor: bg,
         filter: (node) => !(node as HTMLElement).classList?.contains("vizardry-header-actions"),
       });
+      if (!blob) throw new Error("html-to-image returned an empty blob");
+
+      const filename = `${title}.png`;
+
+      // Mobile WebViews (iOS/Android) ignore the <a download> attribute, so
+      // hand the PNG to the system share sheet (Save to Photos/Files) via the
+      // Web Share API instead.
+      const nav = win.navigator as Navigator & {
+        share?: (data: { files?: File[]; title?: string }) => Promise<void>;
+        canShare?: (data: { files?: File[] }) => boolean;
+      };
+      if (Platform.isMobile && typeof nav.share === "function") {
+        const file = new File([blob], filename, { type: "image/png" });
+        if (!nav.canShare || nav.canShare({ files: [file] })) {
+          try {
+            await nav.share({ files: [file], title });
+            return;
+          } catch (err) {
+            // The user dismissing the share sheet is not a failure.
+            if ((err as Error)?.name === "AbortError") return;
+            throw err;
+          }
+        }
+      }
+
+      // Desktop (and any platform without file sharing): object URL + a real,
+      // in-document anchor. A blob URL sidesteps the data: length limit, and
+      // attaching the anchor before clicking makes the synthetic click fire
+      // reliably (a detached anchor is ignored by some engines).
+      const url = URL.createObjectURL(blob);
       const a = doc.createElement("a");
-      a.href = dataUrl;
-      a.download = `${title}.png`;
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      doc.body.appendChild(a);
       a.click();
+      a.remove();
+      // Revoke on a later tick so the download has grabbed the URL first.
+      win.setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (err) {
       console.error(`Vizardry v${getPluginVersion()}: PNG export failed`, err);
     } finally {
