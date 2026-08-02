@@ -971,6 +971,8 @@ link: User -> Web App
 link: Web App -> Auth Service
 link: Web App -> Database
 link: Database -> Cloud Host
+
+evolve: Auth Service 0.85
 ```
 ~~~
 
@@ -980,6 +982,7 @@ link: Database -> Cloud Host
 - `anchor: <name>` — declares the user-facing anchor node (rendered filled); auto-creates a component at `[1.0, 0.0]` unless overridden by a `component:` line
 - `component: <name> [visibility, evolution]` — places a node on the canvas; both coordinates are 0–1
 - `link: A -> B` — dependency arrow from A to B (endpoint names are matched case-insensitively; a component cannot link to itself, and duplicate links are ignored)
+- `evolve: <name> <evolution>` — draws a red movement arrow from the component's current position to a future evolution stage (0–1), at the same visibility — the core Wardley notion of a component commoditising over time
 - `// comments` are ignored, whether on their own line or trailing a directive
 
 **Axes:**
@@ -1572,6 +1575,7 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `stages:` + indented `0..1: Label` | Optional positioned x-axis labels; each position must be strictly between 0 and 1; positions define interval boundaries and labels are centered within each interval |
 | `anchor: <name>` | User-facing anchor node (rendered filled) |
 | `component: <name> [visibility, evolution]` | Node at normalised 0–1 coordinates |
+| `evolve: <name> <evolution>` | Movement arrow to a future evolution stage (0–1); visibility unchanged |
 | `link: A -> B` | Dependency arrow |
 | `// comment` | Ignored |
 

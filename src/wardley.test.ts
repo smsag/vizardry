@@ -186,4 +186,33 @@ link: User -> Feature
     if (!result.ok) return;
     expect(result.data.links).toEqual([{ from: "A", to: "B" }]);
   });
+
+  // ── evolve (movement) ───────────────────────────────────────────────────────
+
+  it("parses an evolve directive onto its component (case-insensitive, spaced name)", () => {
+    const result = parseWardleyMap("component: Web App [0.8, 0.4]\nevolve: web app 0.9");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components[0].evolveTo).toBe(0.9);
+  });
+
+  it("errors when evolve references an unknown component", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: Ghost 0.8");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("unknown component") });
+  });
+
+  it("errors on a duplicate evolve for the same component", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A 0.6\nevolve: a 0.7");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Duplicate evolve") });
+  });
+
+  it("errors when evolve target is out of range", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A 1.4");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("between 0 and 1") });
+  });
+
+  it("errors when evolve has no target value", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("evolve requires") });
+  });
 });
