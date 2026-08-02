@@ -979,8 +979,8 @@ link: Database -> Cloud Host
 - `stages:` with indented `0..1: Label` entries — optional positioned x-axis labels (strictly increasing; each position must be strictly between 0 and 1; positions define interval boundaries and labels are centered within each interval)
 - `anchor: <name>` — declares the user-facing anchor node (rendered filled); auto-creates a component at `[1.0, 0.0]` unless overridden by a `component:` line
 - `component: <name> [visibility, evolution]` — places a node on the canvas; both coordinates are 0–1
-- `link: A -> B` — dependency arrow from A to B
-- Full-line `// comments` are ignored
+- `link: A -> B` — dependency arrow from A to B (endpoint names are matched case-insensitively; a component cannot link to itself, and duplicate links are ignored)
+- `// comments` are ignored, whether on their own line or trailing a directive
 
 **Axes:**
 - Y = Visibility (0 = invisible infrastructure, 1 = direct user need at top)
@@ -993,8 +993,9 @@ Wardley Maps are fully editable without touching the source block:
 | Action | Gesture |
 |---|---|
 | **Reposition** | Drag a component dot to a new position — coordinates update on release |
-| **Add without link** | Hover a node → `+` handle appears → drag to new position → release to insert a new unlinked component |
-| **Add + link** | Same gesture, but hold Shift while releasing to insert a new component and a link from the source |
+| **Add + link** | Hover a node → `+` handle appears → drag to a new position → release to insert a new component **and** a link from the source |
+| **Add without link** | Same gesture, but hold **Shift** while releasing to insert the component with no link |
+| **Cancel the add** | Press **Escape** while dragging — nothing is inserted |
 | **Rename** | Double-click any component's circle or label → type new name → Enter |
 
 All changes write back to the source block surgically — only the affected lines are patched.
@@ -1407,7 +1408,7 @@ In Live Preview, Wardley Maps support a full visual editing workflow:
 
 **Drag to reposition** — grab any component dot and drag it across the map. A live coordinate tooltip shows `vis / evo` values while dragging. The source block updates on release.
 
-**Add a component** — hover any node to reveal a `+` handle at its right edge. Drag from the handle to place a new connected component. The new component (`New Component`) and a link to the source are inserted into the source block automatically. Press Escape before releasing to create the component without a link.
+**Add a component** — hover any node to reveal a `+` handle at its right edge. Drag from the handle to place a new connected component. The new component (`New Component`) and a link to the source are inserted into the source block automatically. Hold **Shift** while releasing to add the component without a link, or press **Escape** while dragging to cancel (nothing is inserted).
 
 **Rename** — double-click any component's circle or label. An inline input opens directly on that label. Type the new name and press Enter (or click away). The rename propagates to all references — the `component:` line, any `anchor:` line, and all `link:` lines in both positions.
 

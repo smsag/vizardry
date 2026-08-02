@@ -552,7 +552,7 @@ function attachLinkDrawBehavior(
     }
   };
 
-  const endLinkDraw = (withLink: boolean): void => {
+  const endLinkDraw = (withLink: boolean, cancel = false): void => {
     if (!ix.linkDraw) return;
     const { sourceRef, ghostLine, ghostDot, hasMoved } = ix.linkDraw;
     ix.linkDraw = null;
@@ -563,15 +563,17 @@ function attachLinkDrawBehavior(
     doc.removeEventListener("mousemove", onLinkMove);
     doc.removeEventListener("mouseup", onLinkUp);
     doc.removeEventListener("keydown", onLinkKey);
-    if (!hasMoved) return;
+    if (cancel || !hasMoved) return; // Escape (or a non-drag) adds nothing
     const cx = parseFloat(ghostDot.getAttribute("cx") ?? "0");
     const cy = parseFloat(ghostDot.getAttribute("cy") ?? "0");
     const { visibility, evolution } = svgToData(cx, cy);
     addWardleyComponent(app, mppCtx, wrap, sourceRef.comp.name, "New Component", visibility, evolution, withLink);
   };
 
+  // Plain release adds the component + a link (the natural result of dragging a
+  // link out); hold Shift to add the component without a link; Escape cancels.
   const onLinkUp = (e: MouseEvent): void => endLinkDraw(!e.shiftKey);
-  const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false); };
+  const onLinkKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endLinkDraw(false, true); };
 
   // Same rationale as attachDragBehavior: don't rely on endLinkDraw's own
   // `!ix.linkDraw` guard to clean up, since nulling the state first would

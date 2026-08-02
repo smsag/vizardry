@@ -9,7 +9,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { addWardleyComponent, removeWardleyLink } from "./wardley-edit";
+import { addWardleyComponent, removeWardleyLink, writeWardleyComponent } from "./wardley-edit";
 import { MarkdownView } from "obsidian";
 
 function makeMockEditor(lines: string[]) {
@@ -84,6 +84,40 @@ describe("addWardleyComponent", () => {
     expect(editor.replaceRange).toHaveBeenCalledTimes(2);
     expect(editor.replaceRange.mock.calls[0][0]).toBe("link: User -> New Component 3\n");
     expect(editor.replaceRange.mock.calls[1][0]).toContain("component: New Component 3 [0.20, 0.30]");
+  });
+});
+
+describe("writeWardleyComponent", () => {
+  it("targets the exact component, not a longer name it prefixes", () => {
+    // "Auth Service" comes first; dragging "Auth" must not rewrite its coords.
+    const lines = [
+      "```wardley",
+      "component: Auth Service [0.60, 0.55]",
+      "component: Auth [0.40, 0.30]",
+      "```",
+    ];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 3) as any;
+    const el = document.createElement("div");
+
+    const ok = writeWardleyComponent(app, ctx, el, "Auth", 0.9, 0.1);
+
+    expect(ok).toBe(true);
+    // Must patch line 2 (Auth), not line 1 (Auth Service).
+    expect(editor.replaceRange.mock.calls[0][1]).toEqual({ line: 2, ch: 0 });
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("component: Auth [0.90, 0.10]");
+  });
+
+  it("preserves a trailing // comment when rewriting coordinates", () => {
+    const lines = ["```wardley", "component: Web [0.5, 0.5] // the app", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 2) as any;
+    const el = document.createElement("div");
+
+    writeWardleyComponent(app, ctx, el, "Web", 0.8, 0.2);
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("component: Web [0.80, 0.20] // the app");
   });
 });
 

@@ -130,4 +130,60 @@ link: User -> Feature
     const result = parseWardleyMap("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No components") });
   });
+
+  // ── Inline comment stripping ────────────────────────────────────────────────
+
+  it("strips a trailing // comment on a component line", () => {
+    const result = parseWardleyMap("component: Web [0.5, 0.5] // the app");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components[0]).toEqual({ name: "Web", visibility: 0.5, evolution: 0.5 });
+  });
+
+  it("strips a trailing // comment on a link line", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\ncomponent: B [0.3,0.3]\nlink: A -> B // dependency");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toEqual([{ from: "A", to: "B" }]);
+  });
+
+  it("strips a trailing // comment on inline and positioned stages", () => {
+    const inline = parseWardleyMap("stages: Genesis | Custom // note\ncomponent: A [0.5,0.5]");
+    expect(inline.ok && inline.data.stages).toEqual(["Genesis", "Custom"]);
+    const positioned = parseWardleyMap("stages:\n  0.3: Genesis // a\n  0.7: Custom\ncomponent: A [0.5,0.5]");
+    expect(positioned.ok && positioned.data.stages).toEqual(["Genesis", "Custom"]);
+  });
+
+  // ── Duplicate components ────────────────────────────────────────────────────
+
+  it("errors on a duplicate component name", () => {
+    const result = parseWardleyMap("component: Auth [0.5,0.5]\ncomponent: Auth [0.2,0.2]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("duplicate component") });
+  });
+
+  it("errors on a case-insensitive duplicate component name", () => {
+    const result = parseWardleyMap("component: Auth [0.5,0.5]\ncomponent: auth [0.2,0.2]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("duplicate component") });
+  });
+
+  // ── Links: case-insensitive resolution, self-links, duplicates ──────────────
+
+  it("resolves link endpoints case-insensitively to the declared name", () => {
+    const result = parseWardleyMap("component: Web App [0.8,0.4]\ncomponent: DB [0.3,0.6]\nlink: web app -> db");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toEqual([{ from: "Web App", to: "DB" }]);
+  });
+
+  it("errors on a self-link", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\nlink: A -> a");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("itself") });
+  });
+
+  it("drops exact-duplicate links", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\ncomponent: B [0.3,0.3]\nlink: A -> B\nlink: a -> b");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toEqual([{ from: "A", to: "B" }]);
+  });
 });
