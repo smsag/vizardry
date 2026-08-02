@@ -301,9 +301,12 @@ function renderLinks(
   }
 }
 
-/** Pipeline box height (px) and sub-component square half-size (px). */
+/** Pipeline box height (px), sub-component square half-size (px), and the
+ *  horizontal breathing room the box extends past the evolution range so the
+ *  end squares don't sit flush against its rounded caps. */
 const PIPELINE_BOX_H = 14;
 const PIPELINE_ITEM_R = 5;
+const PIPELINE_BOX_PAD_X = 12;
 /** Vertical lift for an evolution arrow when its component is also a pipeline,
  *  so the dashed arrow rides clear of the box instead of overlapping it. */
 const PIPELINE_EVOLVE_OFFSET = PIPELINE_BOX_H / 2 + NODE_R + 2;
@@ -335,8 +338,10 @@ function renderPipelines(svg: SVGSVGElement, data: WardleyMap): void {
     const comp = compMap.get(pipe.component);
     if (!comp) continue;
     const y = toSvgY(comp.visibility);
-    const xLeft = toSvgX(pipe.x1);
-    const xRight = toSvgX(pipe.x2);
+    // Pad the box outward from the evolution range (clamped to the plot) so the
+    // end squares and their labels have breathing room inside the rounded caps.
+    const xLeft = Math.max(PLOT_X, toSvgX(pipe.x1) - PIPELINE_BOX_PAD_X);
+    const xRight = Math.min(PLOT_X + PLOT_W, toSvgX(pipe.x2) + PIPELINE_BOX_PAD_X);
 
     const g = createSvgEl("g", { class: "vzd-wardley-pipeline-g" });
 
