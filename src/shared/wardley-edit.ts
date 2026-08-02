@@ -47,11 +47,12 @@ export function writeWardleyComponent(
   const resolved = resolveEditor(app, ctx, el, "writeWardleyComponent");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
-  const targetPrefix = `component: ${componentName.toLowerCase()}`;
+  // Require the `[` boundary so "Auth" doesn't match "component: Auth Service [...]".
+  const targetRe = new RegExp(`^component:\\s*${escRe(componentName)}\\s*\\[`, "i");
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
-    if (raw.trim().toLowerCase().startsWith(targetPrefix)) {
+    if (targetRe.test(raw.trim())) {
       // Replace the [vis, evo] bracket pair in-place, preserving inline comments
       const newLine = raw.replace(
         /\[[^\]]+\]/,
@@ -92,12 +93,13 @@ export function addWardleyComponent(
   const resolved = resolveEditor(app, ctx, el, "addWardleyComponent");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
-  const sourcePrefix = `component: ${sourceComponentName.toLowerCase()}`;
+  // Require the `[` boundary so a prefix name can't match a longer component.
+  const sourceRe = new RegExp(`^component:\\s*${escRe(sourceComponentName)}\\s*\\[`, "i");
   const resolvedName = resolveUniqueComponentName(editor, lineStart, lineEnd, newName);
   let sourceCompLine = -1;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
-    if (editor.getLine(ln).trim().toLowerCase().startsWith(sourcePrefix)) {
+    if (sourceRe.test(editor.getLine(ln).trim())) {
       sourceCompLine = ln;
       break;
     }
@@ -160,7 +162,7 @@ export function renameWardleyComponent(
   const reComp   = new RegExp(`^(\\s*component:\\s*)${old}(\\s*\\[)`, "i");
   const reAnchor = new RegExp(`^(\\s*anchor:\\s*)${old}\\s*$`, "i");
   const reLinkFrom = new RegExp(`^(\\s*link:\\s*)${old}(\\s*->)`, "i");
-  const reLinkTo   = new RegExp(`(->[\\s]*)${old}(\\s*(?:#.*)?$)`, "i");
+  const reLinkTo   = new RegExp(`(->[\\s]*)${old}(\\s*(?://.*)?$)`, "i");
 
   let found = false;
 
