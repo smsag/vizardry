@@ -999,6 +999,7 @@ Wardley Maps are fully editable without touching the source block:
 | **Add + link** | Hover a node → `+` handle appears → drag to a new position → release to insert a new component **and** a link from the source |
 | **Add without link** | Same gesture, but hold **Shift** while releasing to insert the component with no link |
 | **Cancel the add** | Press **Escape** while dragging — nothing is inserted |
+| **Adjust evolution** | Drag the red **to-be** marker of an `evolve:` arrow left/right to change its target evolution (visibility stays fixed) |
 | **Rename** | Double-click any component's circle or label → type new name → Enter |
 
 All changes write back to the source block surgically — only the affected lines are patched.

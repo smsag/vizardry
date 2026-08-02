@@ -136,6 +136,40 @@ function escRe(s: string): string {
 }
 
 /**
+ * Updates the target evolution value on an `evolve: <name> <value>` line after
+ * the to-be marker is dragged. The name is matched with a `\s+<number>`
+ * boundary (so "Auth" doesn't match "Auth Service …"), and only the trailing
+ * number is rewritten — any trailing `//` comment is preserved.
+ *
+ * Returns false if the editor is unavailable or the evolve line is not found.
+ */
+export function writeWardleyEvolve(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  componentName: string,
+  evolveTo: number,
+): boolean {
+  const resolved = resolveEditor(app, ctx, el, "writeWardleyEvolve");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+  const findRe = new RegExp(`^evolve:\\s*${escRe(componentName)}\\s+[0-9]*\\.?[0-9]+`, "i");
+
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    if (findRe.test(raw.trim())) {
+      // Replace the trailing number, keeping any `// comment` after it.
+      const newLine = raw.replace(/([0-9]*\.?[0-9]+)(\s*(?:\/\/.*)?)$/, `${evolveTo.toFixed(2)}$2`);
+      editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+      return true;
+    }
+  }
+
+  console.warn(`Vizardry: writeWardleyEvolve — evolve for "${componentName}" not found`);
+  return false;
+}
+
+/**
  * Renames a Wardley Map component throughout its source block — updating the
  * `component:` line, any `anchor:` line, and all `link:` references.
  *

@@ -9,7 +9,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { addWardleyComponent, removeWardleyLink, writeWardleyComponent } from "./wardley-edit";
+import { addWardleyComponent, removeWardleyLink, writeWardleyComponent, writeWardleyEvolve } from "./wardley-edit";
 import { MarkdownView } from "obsidian";
 
 function makeMockEditor(lines: string[]) {
@@ -118,6 +118,33 @@ describe("writeWardleyComponent", () => {
 
     writeWardleyComponent(app, ctx, el, "Web", 0.8, 0.2);
     expect(editor.replaceRange.mock.calls[0][0]).toBe("component: Web [0.80, 0.20] // the app");
+  });
+});
+
+describe("writeWardleyEvolve", () => {
+  it("rewrites only the trailing evolution value, preserving name and comment", () => {
+    const lines = ["```wardley", "component: Auth Service [0.6, 0.5]", "evolve: Auth Service 0.80 // to commodity", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 3) as any;
+    const el = document.createElement("div");
+
+    const ok = writeWardleyEvolve(app, ctx, el, "Auth Service", 0.92);
+    expect(ok).toBe(true);
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("evolve: Auth Service 0.92 // to commodity");
+    expect(editor.replaceRange.mock.calls[0][1]).toEqual({ line: 2, ch: 0 });
+  });
+
+  it("does not match a prefix name (Auth vs Auth Service)", () => {
+    const lines = ["```wardley", "evolve: Auth Service 0.80", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 2) as any;
+    const el = document.createElement("div");
+
+    const ok = writeWardleyEvolve(app, ctx, el, "Auth", 0.5);
+    expect(ok).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
   });
 });
 

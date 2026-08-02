@@ -2010,6 +2010,9 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   stroke: var(--color-red, #e5484d);
   stroke-width: 2;
 }
+.vzd-wardley-evolve-node--draggable { cursor: grab; }
+.vzd-wardley-evolve-node--draggable:hover { fill: color-mix(in srgb, var(--color-red, #e5484d) 15%, var(--background-primary)); }
+.vzd-wardley-evolve-node--dragging { cursor: grabbing; }
 
 .vzd-wardley-node--anchor {
   fill: var(--interactive-accent);

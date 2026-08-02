@@ -709,6 +709,23 @@ describe("renderWardleyMap", () => {
     expect(el.querySelectorAll(".vzd-wardley-evolve-line")).toHaveLength(1);
   });
 
+  it("makes the to-be marker draggable only in edit mode", () => {
+    const evolveMap: WardleyMap = {
+      ...map,
+      components: [
+        { name: "User", visibility: 1.0, evolution: 0.8 },
+        { name: "Auth", visibility: 0.6, evolution: 0.4, evolveTo: 0.85 },
+      ],
+    };
+    const readEl = container();
+    renderWardleyMap(evolveMap, readEl, previewApp, {} as any, "type: wardley");
+    expect(readEl.querySelector(".vzd-wardley-evolve-node--draggable")).toBeNull();
+
+    const editEl = container();
+    renderWardleyMap(evolveMap, editEl, editModeApp, {} as any, "type: wardley");
+    expect(editEl.querySelector(".vzd-wardley-evolve-node--draggable")).toBeTruthy();
+  });
+
   it("does not wire dragging, rename, link-drawing, the add handle, or title editing when the note is in Reading View", () => {
     const el = container();
     renderWardleyMap(map, el, previewApp, {} as any, "type: wardley");
