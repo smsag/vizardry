@@ -215,4 +215,72 @@ link: User -> Feature
     const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("evolve requires") });
   });
+
+  // ── pipeline ─────────────────────────────────────────────────────────────────
+
+  it("parses a pipeline with sub-components onto its component (case-insensitive)", () => {
+    const result = parseWardleyMap(
+      "component: Database [0.4, 0.6]\npipeline: database [0.35, 0.75]\n  Self-hosted [0.45]\n  Managed DB [0.70]",
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines).toHaveLength(1);
+    expect(result.data.pipelines[0]).toMatchObject({
+      component: "Database", // resolved to the declared casing
+      x1: 0.35,
+      x2: 0.75,
+    });
+    expect(result.data.pipelines[0].items).toEqual([
+      { name: "Self-hosted", evolution: 0.45 },
+      { name: "Managed DB", evolution: 0.70 },
+    ]);
+  });
+
+  it("defaults pipelines to an empty array when none are declared", () => {
+    const result = parseWardleyMap("component: A [0.5, 0.5]");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines).toEqual([]);
+  });
+
+  it("strips a trailing // comment on pipeline header and item lines", () => {
+    const result = parseWardleyMap(
+      "component: DB [0.4, 0.6]\npipeline: DB [0.3, 0.8] // range\n  Managed [0.7] // buy",
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines[0].items).toEqual([{ name: "Managed", evolution: 0.7 }]);
+  });
+
+  it("errors when a pipeline references an unknown component", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: Ghost [0.2, 0.8]\n  Sub [0.5]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("unknown component") });
+  });
+
+  it("errors on a duplicate pipeline for the same component", () => {
+    const result = parseWardleyMap(
+      "component: A [0.5,0.5]\npipeline: A [0.2, 0.8]\n  Sub [0.5]\npipeline: a [0.3, 0.7]\n  Sub2 [0.4]",
+    );
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Duplicate pipeline") });
+  });
+
+  it("errors when a pipeline has no sub-components", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.2, 0.8]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("at least one sub-component") });
+  });
+
+  it("errors when the pipeline range start is not less than the end", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.8, 0.3]\n  Sub [0.5]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("start must be less than end") });
+  });
+
+  it("errors when a sub-component evolution falls outside the pipeline range", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.3, 0.6]\n  Sub [0.9]");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("must fall within the pipeline range") });
+  });
+
+  it("errors when a pipeline item is missing its evolution bracket", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.3, 0.6]\n  Sub");
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("<name> [evolution]") });
+  });
 });

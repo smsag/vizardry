@@ -973,6 +973,10 @@ link: Web App -> Database
 link: Database -> Cloud Host
 
 evolve: Auth Service 0.85
+
+pipeline: Database [0.35, 0.75]
+  Self-hosted [0.45]
+  Managed DB  [0.70]
 ```
 ~~~
 
@@ -983,6 +987,7 @@ evolve: Auth Service 0.85
 - `component: <name> [visibility, evolution]` — places a node on the canvas; both coordinates are 0–1
 - `link: A -> B` — dependency arrow from A to B (endpoint names are matched case-insensitively; a component cannot link to itself, and duplicate links are ignored)
 - `evolve: <name> <evolution>` — draws a red movement arrow from the component's current position to a future evolution stage (0–1), at the same visibility — the core Wardley notion of a component commoditising over time
+- `pipeline: <name> [x1, x2]` with indented `<sub-component> [evolution]` lines — draws the named component as a **pipeline box** spanning the evolution range `x1…x2` at its visibility, with each sub-component as a small square along the box; every sub-component's evolution must fall within `[x1, x2]`
 - `// comments` are ignored, whether on their own line or trailing a directive
 
 **Axes:**
@@ -1577,6 +1582,7 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `anchor: <name>` | User-facing anchor node (rendered filled) |
 | `component: <name> [visibility, evolution]` | Node at normalised 0–1 coordinates |
 | `evolve: <name> <evolution>` | Movement arrow to a future evolution stage (0–1); visibility unchanged |
+| `pipeline: <name> [x1, x2]` + indented `<sub> [evolution]` | Pipeline box over the evolution range with sub-components; each sub-component's evolution must fall within `[x1, x2]` |
 | `link: A -> B` | Dependency arrow |
 | `// comment` | Ignored |
 

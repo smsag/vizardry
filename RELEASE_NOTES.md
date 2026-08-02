@@ -1,30 +1,25 @@
-## 0.44.0
+## 0.45.0
 
-**Breaking: the matrix DSL is now one unified grammar.** All matrix charts —
-priority grids, scenario 2×2s, and free scatter plots — collapse into a single
-model: two tick-labelled axes forming a cell grid, plus items placed on the
-plane. Old matrix/scenario blocks must be rewritten (there is no back-compat).
+Wardley Maps get evolution, pipelines, and a batch of parser/editor fixes.
 
-- **`type: matrix[, preset]`** — one type. Preset ∈ `pain`, `opportunity`,
-  `impact`, `assumption`, `scenario`, or omit for a blank chart. A preset fills
-  the axes, per-cell heat, and colour, and adapts its heat to whatever grid the
-  ticks define. `type: scenario` is gone — it's `type: matrix, scenario`.
-- **`x:` / `y:`** — `Title | tick | tick | …`. Ticks are equal bands, so N×M
-  ticks define an N×M cell grid (a 4×4 is just four ticks per axis).
-- **`tN: Name | heat`** — name and/or tint a cell. Cells are auto-ided
-  `t1…t(N·M)` in reading order (t1 = top-left). Heat ∈ `very-high`, `high`,
-  `medium`, `low`, tinted from the chart's single base colour.
-- **`item: Label [x, y]`** or **`item: Label at: tN`** — one content keyword.
-  A card (indented lines = body) placed at a free coordinate (`[x,y]` in 0…1,
-  origin bottom-left) or snapped to a cell centre. In edit mode items drag to
-  reposition (writing `[x, y]` back) and click to edit their body.
-- **Item linking.** An item label links to a heading or a Linear/Upvoty ticket:
-  auto-detected when the label matches a heading name, or via an explicit
-  `[[#Heading]]` / `[text](TICKET)` annotation placed before the position token
-  (e.g. `item: Fix login [Fix login](CORE-1234) at: t1`). Item bodies keep full
-  link support, and the global Linear/Upvoty key enrichment still scans all
-  rendered text.
-
-Gone entirely: `layout:`, `block:` + cell-key labels, `zone:`, `cards:` /
-`| card`, the `top-left:` quadrant keywords, and the three different `x-axis:`
-grammars. One type, one axis grammar, one content keyword, one heat concept.
+- **Evolution (movement) arrows.** `evolve: <Component> <evolution>` draws a red
+  dashed arrow from a component's current position to a future evolution stage
+  (visibility unchanged). In Live Preview the red "to-be" marker drags
+  horizontally to retarget it.
+- **Pipelines.** `pipeline: <Component> [x1, x2]` with indented
+  `<Sub Component> [evolution]` lines draws the component as a box spanning an
+  evolution range, holding sub-components at their own maturities. Each
+  sub-component must fall within the range; unknown, duplicate, and
+  out-of-range pipelines are rejected with a clear error.
+- **Rename keeps the map intact.** Double-click-renaming a component now also
+  updates its `evolve:` and `pipeline:` directives (previously they were
+  orphaned and broke the map on the next parse), and renaming onto an existing
+  component name is refused instead of creating a duplicate.
+- **Parser & editor fixes.** Case-insensitive link resolution, self-link and
+  duplicate-link rejection, boundary-safe component matching (so "Auth" no
+  longer matches "Auth Service"), and trailing `// comment` support on every
+  directive.
+- **Rendering polish.** An evolution arrow rides above a pipeline box when a
+  component is both, a degenerate zero-length arrow no longer draws backwards
+  (at render and mid-drag), and a top/bottom pipeline box stays inside the plot
+  frame.

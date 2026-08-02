@@ -9,7 +9,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { addWardleyComponent, removeWardleyLink, writeWardleyComponent, writeWardleyEvolve } from "./wardley-edit";
+import { addWardleyComponent, removeWardleyLink, renameWardleyComponent, writeWardleyComponent, writeWardleyEvolve } from "./wardley-edit";
 import { MarkdownView } from "obsidian";
 
 function makeMockEditor(lines: string[]) {
@@ -143,6 +143,89 @@ describe("writeWardleyEvolve", () => {
     const el = document.createElement("div");
 
     const ok = writeWardleyEvolve(app, ctx, el, "Auth", 0.5);
+    expect(ok).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+});
+
+describe("renameWardleyComponent", () => {
+  it("renames the component, anchor, links, evolve, and pipeline lines together", () => {
+    const lines = [
+      "```wardley",
+      "anchor: Auth Service",
+      "component: Auth Service [0.6, 0.5]",
+      "component: Web [0.8, 0.3]",
+      "link: Web -> Auth Service",
+      "evolve: Auth Service 0.85",
+      "pipeline: Auth Service [0.4, 0.8]",
+      "  OAuth [0.6]",
+      "```",
+    ];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 8) as any;
+    const el = document.createElement("div");
+
+    const ok = renameWardleyComponent(app, ctx, el, "Auth Service", "Identity");
+
+    expect(ok).toBe(true);
+    const written = editor.replaceRange.mock.calls.map((c: any[]) => c[0]);
+    expect(written).toContain("anchor: Identity");
+    expect(written).toContain("component: Identity [0.6, 0.5]");
+    expect(written).toContain("link: Web -> Identity");
+    expect(written).toContain("evolve: Identity 0.85");
+    expect(written).toContain("pipeline: Identity [0.4, 0.8]");
+    // The sub-component line is untouched (it is not a component reference).
+    expect(written).not.toContain("  OAuth [0.6]");
+  });
+
+  it("preserves a leading-dot evolve value when renaming", () => {
+    const lines = ["```wardley", "component: Auth Service [0.6, 0.5]", "evolve: Auth Service .85", "```"];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 3) as any;
+    const el = document.createElement("div");
+
+    renameWardleyComponent(app, ctx, el, "Auth Service", "Identity");
+    const written = editor.replaceRange.mock.calls.map((c: any[]) => c[0]);
+    expect(written).toContain("evolve: Identity .85");
+  });
+
+  it("does not rename an evolve/pipeline for a prefix name (Auth vs Auth Service)", () => {
+    const lines = [
+      "```wardley",
+      "component: Auth [0.5, 0.5]",
+      "evolve: Auth Service 0.85",
+      "pipeline: Auth Service [0.4, 0.8]",
+      "  OAuth [0.6]",
+      "```",
+    ];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 5) as any;
+    const el = document.createElement("div");
+
+    renameWardleyComponent(app, ctx, el, "Auth", "Gate");
+    const written = editor.replaceRange.mock.calls.map((c: any[]) => c[0]);
+    expect(written).toContain("component: Gate [0.5, 0.5]");
+    // "Auth Service" directives must be left alone.
+    expect(written).not.toContain("evolve: Gate 0.85");
+    expect(written).not.toContain("pipeline: Gate [0.4, 0.8]");
+  });
+
+  it("aborts (touching nothing) when the new name collides with a different component", () => {
+    const lines = [
+      "```wardley",
+      "component: Auth [0.5, 0.5]",
+      "component: Database [0.4, 0.6]",
+      "```",
+    ];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 3) as any;
+    const el = document.createElement("div");
+
+    const ok = renameWardleyComponent(app, ctx, el, "Auth", "Database");
     expect(ok).toBe(false);
     expect(editor.replaceRange).not.toHaveBeenCalled();
   });

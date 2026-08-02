@@ -1,4 +1,4 @@
-import type { WardleyComponent, WardleyLink, WardleyMap, WardleyResult } from "./types";
+import type { WardleyComponent, WardleyLink, WardleyMap, WardleyPipeline, WardleyResult } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
 
 /** Strips a trailing `//` inline comment (matching the pacelayers convention). */
@@ -28,6 +28,12 @@ export function parseWardleyMap(source: string): WardleyResult {
   const explicitLower = new Set<string>();       // lower-cased, for duplicate detection
   const links: WardleyLink[] = [];
   const evolves: { name: string; evolveTo: number }[] = [];
+  const rawPipelines: {
+    name: string;
+    x1: number;
+    x2: number;
+    items: { name: string; evolution: number }[];
+  }[] = [];
   let stages: string[] | undefined;
   let stagePositions: number[] | undefined;
   let anchor: string | null = null;
@@ -161,6 +167,60 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
+    if (trimmed.startsWith("pipeline:")) {
+      const rest = trimmed.slice("pipeline:".length).trim();
+      const bracketMatch = rest.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+      if (!bracketMatch) {
+        return { ok: false, error: `Line ${i + 1}: pipeline requires a range, e.g. pipeline: Name [0.3, 0.7]` };
+      }
+      const name = bracketMatch[1].trim();
+      if (!name) return { ok: false, error: `Line ${i + 1}: pipeline requires a component name` };
+
+      const bounds = bracketMatch[2].split(",").map(s => parseFloat(s.trim()));
+      if (bounds.length !== 2 || bounds.some(isNaN)) {
+        return { ok: false, error: `Line ${i + 1}: pipeline range must be two numbers, e.g. [0.3, 0.7]` };
+      }
+      const [x1, x2] = bounds;
+      if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) {
+        return { ok: false, error: `Line ${i + 1}: pipeline range must be between 0 and 1` };
+      }
+      if (x1 >= x2) {
+        return { ok: false, error: `Line ${i + 1}: pipeline range start must be less than end` };
+      }
+
+      // Indented sub-component lines: "<name> [evolution]"
+      const items: { name: string; evolution: number }[] = [];
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const entryRaw = stripInlineComment(lines[j]);
+        const entryTrimmed = entryRaw.trim();
+        if (entryTrimmed === "") continue;
+        if (!/^\s/.test(entryRaw)) break;
+
+        const m = entryTrimmed.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+        if (!m) {
+          return { ok: false, error: `Line ${j + 1}: pipeline item must be in the form "<name> [evolution]"` };
+        }
+        const itemName = m[1].trim();
+        if (!itemName) return { ok: false, error: `Line ${j + 1}: pipeline item requires a name` };
+        const evo = parseFloat(m[2].trim());
+        if (isNaN(evo) || evo < 0 || evo > 1) {
+          return { ok: false, error: `Line ${j + 1}: pipeline item evolution must be between 0 and 1` };
+        }
+        if (evo < x1 || evo > x2) {
+          return { ok: false, error: `Line ${j + 1}: pipeline item evolution ${evo} must fall within the pipeline range [${x1}, ${x2}]` };
+        }
+        items.push({ name: itemName, evolution: evo });
+      }
+      if (items.length === 0) {
+        return { ok: false, error: `Line ${i + 1}: pipeline requires at least one sub-component` };
+      }
+
+      rawPipelines.push({ name, x1, x2, items });
+      i = j - 1;
+      continue;
+    }
+
     if (trimmed.startsWith("link:")) {
       const rest = trimmed.slice("link:".length).trim();
       const arrowIdx = rest.indexOf("->");
@@ -174,7 +234,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
-    return { ok: false, error: `Line ${i + 1}: unrecognised keyword — expected anchor, stages, component, or link` };
+    return { ok: false, error: `Line ${i + 1}: unrecognised keyword — expected anchor, stages, component, pipeline, evolve, or link` };
   }
 
   if (components.size === 0) {
@@ -210,10 +270,22 @@ export function parseWardleyMap(source: string): WardleyResult {
     components.get(canon)!.evolveTo = e.evolveTo;
   }
 
+  // Resolve pipeline components case-insensitively; reject unknowns & duplicates.
+  const pipelines: WardleyPipeline[] = [];
+  const pipelinedComponents = new Set<string>();
+  for (const p of rawPipelines) {
+    const canon = canonical.get(p.name.toLowerCase());
+    if (!canon) return { ok: false, error: `pipeline references unknown component "${p.name}"` };
+    if (pipelinedComponents.has(canon)) return { ok: false, error: `Duplicate pipeline for component "${canon}"` };
+    pipelinedComponents.add(canon);
+    pipelines.push({ component: canon, x1: p.x1, x2: p.x2, items: p.items });
+  }
+
   const data: WardleyMap = {
     anchor: anchor ?? null,
     components: [...components.values()],
     links: resolvedLinks,
+    pipelines,
     stages,
     stagePositions,
     explicitComponents,
