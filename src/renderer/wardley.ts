@@ -298,6 +298,34 @@ function renderLinks(
   }
 }
 
+/**
+ * Draws evolution (movement) arrows: a dashed red line from a component's
+ * current position to its future `evolveTo` position at the same visibility,
+ * ending in a hollow red "to-be" marker — the core Wardley Map notion of a
+ * component commoditising over time.
+ */
+function renderEvolutions(svg: SVGSVGElement, data: WardleyMap): void {
+  for (const comp of data.components) {
+    if (comp.evolveTo === undefined) continue;
+    const y = toSvgY(comp.visibility);
+    const x1 = toSvgX(comp.evolution);
+    const x2 = toSvgX(comp.evolveTo);
+    const dir = Math.sign(x2 - x1) || 1;
+
+    const g = createSvgEl("g", { class: "vzd-wardley-evolve-g" });
+    g.appendChild(createSvgEl("line", {
+      x1: String(x1 + dir * (NODE_R + 2)), y1: String(y),
+      x2: String(x2 - dir * (NODE_R + 2)), y2: String(y),
+      class: "vzd-wardley-evolve-line", "marker-end": "url(#vzd-wardley-evolve-arrow)",
+    }));
+    g.appendChild(createSvgEl("circle", {
+      cx: String(x2), cy: String(y), r: String(NODE_R),
+      class: "vzd-wardley-evolve-node",
+    }));
+    svg.appendChild(g);
+  }
+}
+
 function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
   const labelSlots: LabelSlot[] = data.components.map((comp, componentIndex) => {
     const cx = toSvgX(comp.evolution), cy = toSvgY(comp.visibility);
@@ -729,11 +757,20 @@ export function renderWardleyMap(
   });
   marker.appendChild(createSvgEl("path", { d: "M0,0 L0,6 L8,3 z", class: "vzd-wardley-arrowhead" }));
   defs.appendChild(marker);
+
+  // Red arrowhead for evolution (movement) arrows.
+  const evolveMarker = createSvgEl("marker", {
+    id: "vzd-wardley-evolve-arrow", markerWidth: "8", markerHeight: "8",
+    refX: "6", refY: "3", orient: "auto",
+  });
+  evolveMarker.appendChild(createSvgEl("path", { d: "M0,0 L0,6 L8,3 z", class: "vzd-wardley-evolve-arrowhead" }));
+  defs.appendChild(evolveMarker);
   svg.appendChild(defs);
 
   renderStageBands(svg, data);
   renderAxes(svg);
   renderLinks(svg, data, app, ctx, wrap);
+  renderEvolutions(svg, data);
   const nodeRefs = renderNodes(svg, data);
 
   wrap.appendChild(svg);

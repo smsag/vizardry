@@ -1995,6 +1995,22 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   fill-opacity: 0.15;
 }
 
+/* Evolution (movement) arrow: dashed red line to a hollow "to-be" marker */
+.vzd-wardley-evolve-line {
+  stroke: var(--color-red, #e5484d);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+}
+.vzd-wardley-evolve-arrowhead {
+  fill: var(--color-red, #e5484d);
+}
+.vzd-wardley-evolve-node {
+  fill: var(--background-primary);
+  stroke: var(--color-red, #e5484d);
+  stroke-width: 2;
+}
+
 .vzd-wardley-node--anchor {
   fill: var(--interactive-accent);
   fill-opacity: 0.7;

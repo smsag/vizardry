@@ -692,6 +692,23 @@ describe("renderWardleyMap", () => {
   const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
   const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
 
+  it("draws an evolution movement arrow and to-be marker for a component with evolveTo", () => {
+    const el = container();
+    const evolveMap: WardleyMap = {
+      ...map,
+      components: [
+        { name: "User", visibility: 1.0, evolution: 0.8 },
+        { name: "Auth", visibility: 0.6, evolution: 0.4, evolveTo: 0.85 },
+        { name: "Database", visibility: 0.2, evolution: 0.3 },
+      ],
+    };
+    renderWardleyMap(evolveMap, el);
+    expect(el.querySelector(".vzd-wardley-evolve-line")).toBeTruthy();
+    expect(el.querySelector(".vzd-wardley-evolve-node")).toBeTruthy();
+    // Only the one evolving component gets a movement arrow.
+    expect(el.querySelectorAll(".vzd-wardley-evolve-line")).toHaveLength(1);
+  });
+
   it("does not wire dragging, rename, link-drawing, the add handle, or title editing when the note is in Reading View", () => {
     const el = container();
     renderWardleyMap(map, el, previewApp, {} as any, "type: wardley");

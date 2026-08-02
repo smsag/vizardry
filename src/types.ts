@@ -384,6 +384,9 @@ export interface WardleyComponent {
   name: string;
   visibility: number; // 0–1, 1 = visible to user (top of Y axis)
   evolution: number;  // 0–1, 1 = commodity (right of X axis)
+  /** Future evolution position from an `evolve:` directive (0–1). When set, a
+   *  movement arrow is drawn from `evolution` to `evolveTo` (visibility fixed). */
+  evolveTo?: number;
 }
 
 export interface WardleyLink {
