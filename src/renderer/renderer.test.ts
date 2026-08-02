@@ -26,7 +26,7 @@ vi.mock("obsidian", () => ({
 
 // ── Mock html-to-image (lazy-imported inside controls.ts) ─────────────────────
 vi.mock("html-to-image", () => ({
-  toPng: vi.fn().mockResolvedValue("data:image/png;base64,abc"),
+  toBlob: vi.fn().mockResolvedValue(new Blob(["png"], { type: "image/png" })),
 }));
 
 // ── Renderer imports (after mocks are declared) ───────────────────────────────

@@ -2,12 +2,15 @@
 import "../test-setup";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const mockPlatform = vi.hoisted(() => ({ isMobile: false, isDesktop: true }));
 vi.mock("obsidian", () => ({
   setIcon: vi.fn(),
   moment: { locale: () => "en" },
+  Platform: mockPlatform,
 }));
+const mockToBlob = vi.hoisted(() => vi.fn());
 vi.mock("html-to-image", () => ({
-  toPng: vi.fn().mockResolvedValue("data:image/png;base64,abc"),
+  toBlob: mockToBlob,
 }));
 
 const { mockGetLinearService, mockGetUpvotyService } = vi.hoisted(() => ({
@@ -29,6 +32,10 @@ beforeEach(() => {
   document.body.innerHTML = "";
   mockGetLinearService.mockReset();
   mockGetUpvotyService.mockReset();
+  mockToBlob.mockReset();
+  mockToBlob.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
+  mockPlatform.isMobile = false;
+  mockPlatform.isDesktop = true;
 });
 
 describe("editable title — keydown listener lifecycle", () => {
@@ -137,5 +144,87 @@ describe("renderHeadingLink — ticket fallback", () => {
     renderHeadingLink(el, "Untracked item", resolver, undefined);
 
     expect(el.children.length).toBe(0);
+  });
+});
+
+describe("download / export", () => {
+  function clickDownload(el: HTMLElement): void {
+    const btn = el.querySelector<HTMLButtonElement>(".vizardry-download-btn")!;
+    btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
+  it("desktop: renders to a blob and downloads via an in-document anchor", async () => {
+    (URL as any).createObjectURL = vi.fn(() => "blob:mock-url");
+    (URL as any).revokeObjectURL = vi.fn();
+
+    let clicked: { download: string; href: string; inDoc: boolean } | null = null;
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        clicked = { download: this.download, href: this.href, inDoc: document.body.contains(this) };
+      });
+
+    const el = container();
+    initCanvas(el, "wardley", "My Map", undefined, "source", undefined, undefined);
+    clickDownload(el);
+
+    await vi.waitFor(() => expect(clickSpy).toHaveBeenCalled());
+    expect(mockToBlob).toHaveBeenCalledTimes(1);
+    expect((URL as any).createObjectURL).toHaveBeenCalledTimes(1);
+    // The anchor carried the filename and was attached to the DOM when clicked.
+    expect(clicked!.download).toBe("My Map.png");
+    expect(clicked!.href).toBe("blob:mock-url");
+    expect(clicked!.inDoc).toBe(true);
+    // It is removed again after the click.
+    expect(document.querySelector("a[download]")).toBeNull();
+
+    clickSpy.mockRestore();
+  });
+
+  it("mobile: shares the PNG file via the system share sheet, not a download anchor", async () => {
+    mockPlatform.isMobile = true;
+    mockPlatform.isDesktop = false;
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    (window.navigator as any).share = shareMock;
+    (window.navigator as any).canShare = vi.fn(() => true);
+    (URL as any).createObjectURL = vi.fn(() => "blob:mock-url");
+
+    const el = container();
+    initCanvas(el, "wardley", "My Map", undefined, "source", undefined, undefined);
+    clickDownload(el);
+
+    await vi.waitFor(() => expect(shareMock).toHaveBeenCalled());
+    const arg = shareMock.mock.calls[0][0];
+    expect(arg.files).toHaveLength(1);
+    expect(arg.files[0].name).toBe("My Map.png");
+    expect(arg.files[0].type).toBe("image/png");
+    // Share path returns early — no anchor download fallback runs.
+    expect((URL as any).createObjectURL).not.toHaveBeenCalled();
+
+    delete (window.navigator as any).share;
+    delete (window.navigator as any).canShare;
+  });
+
+  it("mobile: falls back to the anchor download when the WebView cannot share files", async () => {
+    mockPlatform.isMobile = true;
+    mockPlatform.isDesktop = false;
+    // share exists but canShare rejects files (common in locked-down WebViews).
+    (window.navigator as any).share = vi.fn();
+    (window.navigator as any).canShare = vi.fn(() => false);
+    (URL as any).createObjectURL = vi.fn(() => "blob:mock-url");
+    (URL as any).revokeObjectURL = vi.fn();
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    const el = container();
+    initCanvas(el, "wardley", "My Map", undefined, "source", undefined, undefined);
+    clickDownload(el);
+
+    await vi.waitFor(() => expect(clickSpy).toHaveBeenCalled());
+    expect((window.navigator as any).share).not.toHaveBeenCalled();
+    expect((URL as any).createObjectURL).toHaveBeenCalledTimes(1);
+
+    clickSpy.mockRestore();
+    delete (window.navigator as any).share;
+    delete (window.navigator as any).canShare;
   });
 });
