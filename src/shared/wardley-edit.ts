@@ -171,10 +171,15 @@ export function writeWardleyEvolve(
 
 /**
  * Renames a Wardley Map component throughout its source block — updating the
- * `component:` line, any `anchor:` line, and all `link:` references.
+ * `component:` line, any `anchor:` line, all `link:` references, and any
+ * `evolve:` / `pipeline:` directive that targets it.
  *
  * All replacements are in-place (same line, different text) so line numbers
  * do not shift and order does not matter.
+ *
+ * Aborts (returns false, touching nothing) if `newName` would collide with a
+ * different existing component — renaming onto an existing name would create a
+ * duplicate `component:` line and break the map on the next parse.
  *
  * Returns false if the editor is unavailable or the component is not found.
  */
@@ -192,11 +197,29 @@ export function renameWardleyComponent(
   const { editor, lineStart, lineEnd } = resolved;
   const old = escRe(oldName);
 
-  // Patterns (case-insensitive so they work regardless of how the user typed the name)
+  // Guard against renaming onto a different existing component — that would
+  // leave two `component:` lines with the same name and break parsing.
+  const newLower = newName.trim().toLowerCase();
+  const oldLower = oldName.trim().toLowerCase();
+  if (newLower !== oldLower) {
+    for (let ln = lineStart; ln <= lineEnd; ln++) {
+      const m = editor.getLine(ln).trim().match(/^component:\s*(.*?)\s*\[/i);
+      if (m && m[1].trim().toLowerCase() === newLower) {
+        console.warn(`Vizardry: renameWardleyComponent — "${newName}" already exists; rename aborted`);
+        return false;
+      }
+    }
+  }
+
+  // Patterns (case-insensitive so they work regardless of how the user typed the name).
+  // evolve/pipeline use a value-start boundary (a number begins with a digit or
+  // a dot) so a prefix name can't match a longer component's directive.
   const reComp   = new RegExp(`^(\\s*component:\\s*)${old}(\\s*\\[)`, "i");
   const reAnchor = new RegExp(`^(\\s*anchor:\\s*)${old}\\s*$`, "i");
   const reLinkFrom = new RegExp(`^(\\s*link:\\s*)${old}(\\s*->)`, "i");
   const reLinkTo   = new RegExp(`(->[\\s]*)${old}(\\s*(?://.*)?$)`, "i");
+  const reEvolve   = new RegExp(`^(\\s*evolve:\\s*)${old}(\\s+[.0-9])`, "i");
+  const rePipeline = new RegExp(`^(\\s*pipeline:\\s*)${old}(\\s*\\[)`, "i");
 
   let found = false;
 
@@ -208,6 +231,8 @@ export function renameWardleyComponent(
     else if (reAnchor.test(raw)) updated = raw.replace(reAnchor, `$1${newName}`);
     else if (reLinkFrom.test(raw)) updated = raw.replace(reLinkFrom, `$1${newName}$2`);
     else if (reLinkTo.test(raw))   updated = raw.replace(reLinkTo,   `$1${newName}$2`);
+    else if (reEvolve.test(raw))   updated = raw.replace(reEvolve,   `$1${newName}$2`);
+    else if (rePipeline.test(raw)) updated = raw.replace(rePipeline, `$1${newName}$2`);
 
     if (updated !== null) {
       editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });

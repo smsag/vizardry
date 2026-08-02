@@ -750,6 +750,53 @@ describe("renderWardleyMap", () => {
     expect(labels).toEqual(["Self-hosted", "Managed DB"]);
   });
 
+  it("keeps a top-edge pipeline box inside the plot frame (no overshoot)", () => {
+    const el = container();
+    const topPipe: WardleyMap = {
+      ...map,
+      components: [{ name: "Edge", visibility: 1.0, evolution: 0.5 }],
+      explicitComponents: new Set(["Edge"]),
+      links: [],
+      pipelines: [{ component: "Edge", x1: 0.2, x2: 0.8, items: [{ name: "A", evolution: 0.5 }] }],
+    };
+    renderWardleyMap(topPipe, el);
+    const box = el.querySelector(".vzd-wardley-pipeline-box") as SVGRectElement;
+    // PLOT_Y = PAD.top = 20 — the box top must not poke above the axis frame.
+    expect(parseFloat(box.getAttribute("y")!)).toBeGreaterThanOrEqual(20);
+  });
+
+  it("lifts the evolution arrow above the box when a component is also a pipeline", () => {
+    const el = container();
+    const both: WardleyMap = {
+      ...map,
+      components: [{ name: "DB", visibility: 0.5, evolution: 0.4, evolveTo: 0.9 }],
+      explicitComponents: new Set(["DB"]),
+      links: [],
+      pipelines: [{ component: "DB", x1: 0.3, x2: 0.8, items: [{ name: "A", evolution: 0.5 }] }],
+    };
+    renderWardleyMap(both, el);
+    const marker = el.querySelector(".vzd-wardley-evolve-node") as SVGCircleElement;
+    const box = el.querySelector(".vzd-wardley-pipeline-box") as SVGRectElement;
+    // The to-be marker rides above the box's top edge.
+    const boxTop = parseFloat(box.getAttribute("y")!);
+    expect(parseFloat(marker.getAttribute("cy")!)).toBeLessThan(boxTop);
+  });
+
+  it("collapses (does not invert) a zero-length evolution arrow", () => {
+    const el = container();
+    const noMove: WardleyMap = {
+      ...map,
+      components: [{ name: "Still", visibility: 0.5, evolution: 0.5, evolveTo: 0.5 }],
+      explicitComponents: new Set(["Still"]),
+      links: [],
+      pipelines: [],
+    };
+    renderWardleyMap(noMove, el);
+    const line = el.querySelector(".vzd-wardley-evolve-line") as SVGLineElement;
+    // Endpoints collapse to the marker position rather than trimming backwards.
+    expect(line.getAttribute("x1")).toBe(line.getAttribute("x2"));
+  });
+
   it("does not wire dragging, rename, link-drawing, the add handle, or title editing when the note is in Reading View", () => {
     const el = container();
     renderWardleyMap(map, el, previewApp, {} as any, "type: wardley");

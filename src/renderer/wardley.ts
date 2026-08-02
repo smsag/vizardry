@@ -304,6 +304,22 @@ function renderLinks(
 /** Pipeline box height (px) and sub-component square half-size (px). */
 const PIPELINE_BOX_H = 14;
 const PIPELINE_ITEM_R = 5;
+/** Vertical lift for an evolution arrow when its component is also a pipeline,
+ *  so the dashed arrow rides clear of the box instead of overlapping it. */
+const PIPELINE_EVOLVE_OFFSET = PIPELINE_BOX_H / 2 + NODE_R + 2;
+
+/**
+ * Trimmed endpoints for an evolution arrow so it stops short of both the source
+ * node and the to-be marker. When the two are closer than both trims combined,
+ * trimming would flip the segment backwards (a degenerate reversed arrow), so
+ * the line is collapsed to a point at the marker instead.
+ */
+function evolveLineEndpoints(fromX: number, toX: number): { x1: number; x2: number } {
+  const trim = NODE_R + 2;
+  if (Math.abs(toX - fromX) <= trim * 2) return { x1: toX, x2: toX };
+  const dir = Math.sign(toX - fromX);
+  return { x1: fromX + dir * trim, x2: toX - dir * trim };
+}
 
 /**
  * Draws pipelines: a component rendered as a box spanning an evolution range
@@ -325,9 +341,13 @@ function renderPipelines(svg: SVGSVGElement, data: WardleyMap): void {
     const g = createSvgEl("g", { class: "vzd-wardley-pipeline-g" });
 
     // The enclosing box (rounded rectangle spanning the evolution range).
+    // Clamp its vertical extent to the plot frame so a top/bottom pipeline
+    // hugs the axis rather than poking a wide bar past it.
+    const boxTop = Math.max(PLOT_Y, y - PIPELINE_BOX_H / 2);
+    const boxBottom = Math.min(PLOT_Y + PLOT_H, y + PIPELINE_BOX_H / 2);
     g.appendChild(createSvgEl("rect", {
-      x: String(xLeft), y: String(y - PIPELINE_BOX_H / 2),
-      width: String(xRight - xLeft), height: String(PIPELINE_BOX_H),
+      x: String(xLeft), y: String(boxTop),
+      width: String(xRight - xLeft), height: String(boxBottom - boxTop),
       rx: String(PIPELINE_BOX_H / 2),
       class: "vzd-wardley-pipeline-box",
     }));
@@ -359,18 +379,21 @@ function renderPipelines(svg: SVGSVGElement, data: WardleyMap): void {
  * component commoditising over time.
  */
 function renderEvolutions(svg: SVGSVGElement, data: WardleyMap): EvolveRef[] {
+  const pipelined = new Set(data.pipelines.map((p) => p.component));
   const refs: EvolveRef[] = [];
   for (const comp of data.components) {
     if (comp.evolveTo === undefined) continue;
-    const y = toSvgY(comp.visibility);
+    // A pipelined component's box sits on its visibility line; lift the arrow
+    // above it so the two don't overlap.
+    const y = toSvgY(comp.visibility) - (pipelined.has(comp.name) ? PIPELINE_EVOLVE_OFFSET : 0);
     const x1 = toSvgX(comp.evolution);
     const x2 = toSvgX(comp.evolveTo);
-    const dir = Math.sign(x2 - x1) || 1;
+    const { x1: lineX1, x2: lineX2 } = evolveLineEndpoints(x1, x2);
 
     const g = createSvgEl("g", { class: "vzd-wardley-evolve-g" });
     const line = createSvgEl("line", {
-      x1: String(x1 + dir * (NODE_R + 2)), y1: String(y),
-      x2: String(x2 - dir * (NODE_R + 2)), y2: String(y),
+      x1: String(lineX1), y1: String(y),
+      x2: String(lineX2), y2: String(y),
       class: "vzd-wardley-evolve-line", "marker-end": "url(#vzd-wardley-evolve-arrow)",
     }) as SVGLineElement;
     g.appendChild(line);
@@ -585,11 +608,12 @@ function attachEvolveDragBehavior(
   const moveTo = (ref: EvolveRef, clientX: number): void => {
     const { x } = clientToSvg(svg, clientX, 0);
     const cx = Math.max(PLOT_X, Math.min(PLOT_X + PLOT_W, x));
-    const dir = Math.sign(cx - ref.fromX) || 1;
     ref.circle.setAttribute("cx", String(cx));
-    // Re-trim both ends so the arrow flips cleanly if dragged past the source.
-    ref.line.setAttribute("x1", String(ref.fromX + dir * (NODE_R + 2)));
-    ref.line.setAttribute("x2", String(cx - dir * (NODE_R + 2)));
+    // Re-trim both ends so the arrow flips cleanly if dragged past the source,
+    // and collapses (rather than inverting) when dragged onto it.
+    const { x1, x2 } = evolveLineEndpoints(ref.fromX, cx);
+    ref.line.setAttribute("x1", String(x1));
+    ref.line.setAttribute("x2", String(x2));
   };
 
   const onMove = (e: MouseEvent): void => { if (active) moveTo(active, e.clientX); };
