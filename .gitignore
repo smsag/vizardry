@@ -18,7 +18,9 @@ tmp/
 
 # Internal documentation (not for public repo)
 AGENTS.md
-docs/
+docs/*
+# …except the public canvas syntax reference, which ships with the plugin.
+!docs/vizardry-canvas-syntax-reference.md
 
 # Environment & secrets
 .env

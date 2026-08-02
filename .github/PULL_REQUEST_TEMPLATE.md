@@ -13,5 +13,5 @@
 - [ ] `docs/ARCHITECTURE.md` — if modules, data flow, parsers, or renderers changed
 - [ ] `docs/DESIGN.md` — if CSS conventions, visual decisions, or layout model changed
 - [ ] `docs/DECISIONS.md` — if a significant architectural or product decision was made
-- [ ] `docs/vizardry-llm-reference.md` — if a framework was added or its syntax changed
+- [ ] `docs/vizardry-canvas-syntax-reference.md` — public canvas syntax reference: update whenever a framework is added or a `type:`/keyword changes (CI's docs-check enforces framework coverage)
 - [ ] `README.md` — if user-facing behaviour changed

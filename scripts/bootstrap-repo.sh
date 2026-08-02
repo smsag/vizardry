@@ -142,6 +142,9 @@ else
 #   1. manifest.json version matches package.json version
 #   2. manifest.json version has an entry in versions.json
 #   3. README.md mentions every key file/module (customise the list below)
+#   4. (recommended) any public reference doc under docs/ that ships with the
+#      product covers every framework/feature it documents — so a release can't
+#      go out with an undocumented one. This runs inside the release gate.
 set -euo pipefail
 
 ERRORS=0
@@ -416,6 +419,7 @@ These local files are the context store for new sessions. Update the relevant on
 | \`docs/DESIGN.md\` | New CSS classes/prefixes, visual decisions |
 | \`docs/DECISIONS.md\` | Any significant architectural, product, or design decision |
 | \`docs/ENGINEERING-REVIEW.md\` | Any bug found, improvement made, or review item resolved |
+| \`docs/vizardry-canvas-syntax-reference.md\` | **Public, committed** — a framework is added or a \`type:\`/keyword changes (CI's docs-check enforces framework coverage; a release cannot ship without it) |
 | \`README.md\` | Any user-facing behaviour change |
 
 ### Engineering review rules (mandatory)
@@ -430,13 +434,13 @@ These three rules apply to every session that touches the codebase:
 
 ### What to update for common tasks
 
-**New feature** → \`README.md\`, \`docs/SPEC.md\`, \`docs/ARCHITECTURE.md\` (if new module)
+**New framework / syntax change** → \`docs/vizardry-canvas-syntax-reference.md\` (add the framework's \`type:\`, keywords, and a copy-paste example), \`README.md\`, \`docs/SPEC.md\`, \`docs/ARCHITECTURE.md\` (if new module). docs-check fails CI until the reference covers it.
 
 **Bug fix** → \`docs/ENGINEERING-REVIEW.md\` (mark resolved or add new item)
 
 **Architectural decision** → \`docs/DECISIONS.md\` (always, even small ones)
 
-**Release** → \`docs/SPEC.md\` (version history), bump \`manifest.json\` + \`package.json\` + \`versions.json\`
+**Release** → confirm \`docs/vizardry-canvas-syntax-reference.md\` is current, update \`docs/SPEC.md\` (version history) + \`RELEASE_NOTES.md\`, bump \`manifest.json\` + \`package.json\` + \`versions.json\`
 
 ---
 
@@ -471,11 +475,11 @@ src/
 
 ## Release process
 
-1. Bump version in \`manifest.json\`, \`package.json\`, \`versions.json\`
-2. \`npm run build && npm test\`
-3. Commit + push → PR → merge
-4. \`git tag vX.Y.Z && git push origin vX.Y.Z\`
-5. \`gh release create vX.Y.Z main.js manifest.json\` (attach release assets)
+1. Confirm \`docs/vizardry-canvas-syntax-reference.md\` is current for any framework/syntax change (docs-check gates this in CI).
+2. Bump version: \`npm version <patch|minor|major> --no-git-tag-version\` (syncs \`manifest.json\` + \`versions.json\` via \`version-bump.mjs\`).
+3. Update \`RELEASE_NOTES.md\` (the body the release workflow publishes).
+4. Commit + push → PR → merge to \`main\` (CI runs verify.yml: tsc, lint, test, docs-check, build).
+5. Dispatch the release workflow on \`main\` with the new version (\`.github/workflows/release.yml\` re-runs verify, checks the tag matches \`manifest.json\`, builds, and creates the GitHub release with \`main.js\` + \`manifest.json\` + \`styles.css\`). Client-side tag pushes are blocked by org policy — always release via the workflow dispatch.
 AGENTSMD
   ok "AGENTS.md created"
   info "⚠  Fill in the project description, structure, and invariants"

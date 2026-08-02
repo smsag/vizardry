@@ -5,9 +5,13 @@
 #   1. manifest.json version matches package.json version
 #   2. manifest.json version has an entry in versions.json
 #   3. README.md mentions every framework (by ID)
+#   4. docs/vizardry-canvas-syntax-reference.md documents every framework type:
 #
-# Local docs (docs/, AGENTS.md) are gitignored and cannot be checked here.
-# The Claude Code Stop/PreCompact hooks cover those.
+# The syntax reference is the ONE public doc under docs/ (the rest of docs/ and
+# AGENTS.md are gitignored internal docs, covered by the Claude Code hooks).
+# It ships with the plugin and is used to generate canvases (incl. via LLMs),
+# so a new framework must not merge/release without being documented there —
+# this runs inside verify.yml, which both CI and release.yml use as a gate.
 set -euo pipefail
 
 ERRORS=0
@@ -53,6 +57,38 @@ if [ ${#MISSING[@]} -eq 0 ]; then
   ok "README.md mentions all framework IDs"
 else
   fail "README.md is missing mention of: ${MISSING[*]}"
+fi
+
+# ── 4. Syntax reference covers all frameworks ────────────────────────────────
+
+REF="docs/vizardry-canvas-syntax-reference.md"
+
+if [ ! -f "$REF" ]; then
+  fail "$REF is missing — the public canvas syntax reference must be committed"
+else
+  REF_MISSING=()
+
+  # Grid framework IDs (each src/frameworks/*.ts filename is a type: value)
+  for f in src/frameworks/*.ts; do
+    id=$(basename "$f" .ts)
+    grep -qi "\b${id}\b" "$REF" || REF_MISSING+=("$id")
+  done
+
+  # Custom-renderer type: IDs from processors.ts. Hyphenated IDs
+  # (opportunity-matrix, sipoc-flow, service-blueprint, …) are insert-command /
+  # template aliases, not type: values — they surface in the reference as
+  # "matrix, opportunity" etc., so skip them here.
+  while IFS= read -r id; do
+    [ -z "$id" ] && continue
+    case "$id" in *-*) continue ;; esac
+    grep -qi "\b${id}\b" "$REF" || REF_MISSING+=("$id")
+  done < <(grep -E '^\s+id: "[a-z-]+"' src/processors.ts | grep -oE '"[a-z-]+"' | tr -d '"')
+
+  if [ ${#REF_MISSING[@]} -eq 0 ]; then
+    ok "$REF documents all framework type: IDs"
+  else
+    fail "$REF is missing mention of: ${REF_MISSING[*]} — update the syntax reference"
+  fi
 fi
 
 # ── Result ───────────────────────────────────────────────────────────────────
