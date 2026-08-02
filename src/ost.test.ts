@@ -85,16 +85,20 @@ outcome: Grow revenue
     expect(result.data.root.children.map(c => c.key)).toEqual(["need"]);
   });
 
-  it("rejects a solution that is not nested under an opportunity", () => {
+  it("skips a mis-nested solution (with a warning) instead of failing the whole canvas", () => {
     const result = parseOST("outcome: O\n  solution: Straight to a solution");
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error).toMatch(/must be nested under a "need:"/);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.children).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /"need:"/.test(w) && /skipped/.test(w))).toBe(true);
   });
 
-  it("rejects a keyword node that is not indented under its parent", () => {
+  it("skips a keyword node that isn't indented under its parent, with a warning", () => {
     const result = parseOST("outcome: O\nneed: Not indented");
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.children).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /skipped/.test(w))).toBe(true);
   });
 
   it("treats a dropped legacy keyword as plain bullet text (breaking change)", () => {
@@ -127,15 +131,20 @@ outcome: Grow revenue
     expect(result).toEqual({ ok: false, error: expect.stringContaining("first line must be") });
   });
 
-  it("returns error for duplicate outcome:", () => {
-    const src = "outcome: A\noutcome: B";
-    const result = parseOST(src);
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("duplicate") });
+  it("ignores a duplicate outcome: with a warning (first wins)", () => {
+    const result = parseOST("outcome: A\noutcome: B");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.text).toBe("A");
+    expect(result.data.warnings?.some(w => /duplicate/i.test(w))).toBe(true);
   });
 
-  it("returns error for outcome: with empty label", () => {
+  it("renders an empty outcome: label as a placeholder node with a warning", () => {
     const result = parseOST("outcome:");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("non-empty label") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.text).toBe("");
+    expect(result.data.warnings?.some(w => /no text/i.test(w))).toBe(true);
   });
 
   it("ignores blank lines and comments", () => {

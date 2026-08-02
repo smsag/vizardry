@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
-import { initCanvas, markInteractive, renderHeadingLink } from "./controls";
+import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings } from "./controls";
+import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import {
   renderTree, adaptSCQAToTree, scqaTreeOptions,
 } from "./tree";
@@ -42,6 +43,7 @@ export function renderSCQA(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, el, newTitle, defaultTitle)
     : undefined;
   initCanvas(el, data.variant, title, undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(el, data.warnings);
 
   if (data.view === "tree") {
     const editHandlers = isEditMode ? makeHandlers(app!, ctx!, el) : undefined;
@@ -136,7 +138,12 @@ function renderGrid(
     card.dataset.scqaLevel = String(node.level);
 
     const textEl = card.createEl("div", { cls: "vzd-scqa-card-text" });
-    renderInline(textEl, node.text);
+    if (node.text.trim() === "") {
+      textEl.classList.add("vzd-scqa-card-text--empty");
+      textEl.setText(EMPTY_LABEL_PLACEHOLDER);
+    } else {
+      renderInline(textEl, node.text);
+    }
     renderHeadingLink(card, node.text, resolver, navigateTo, app, ctx?.sourcePath);
 
     if (!editable) continue;

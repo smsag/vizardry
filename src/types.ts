@@ -113,6 +113,9 @@ export interface OSTNode {
 
 export interface OSTTree {
   root: OSTNode;
+  /** Non-fatal parse warnings (e.g. an empty label rendered as a placeholder,
+   *  a skipped mis-nested line). Surfaced as a small canvas warning chip. */
+  warnings?: string[];
 }
 
 export type OSTResult = Result<OSTTree>;
@@ -142,6 +145,8 @@ export interface SCQAData {
   variant: SCQAVariant;
   view: SCQAView;
   root: SCQANode;
+  /** Non-fatal parse warnings (see OSTTree.warnings). */
+  warnings?: string[];
 }
 
 export type SCQAResult = Result<SCQAData>;

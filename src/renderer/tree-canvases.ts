@@ -1,6 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FishboneDiagram, ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
-import { initCanvas } from "./controls";
+import { initCanvas, renderCanvasWarnings } from "./controls";
 import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions, renderTree } from "./tree";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
@@ -128,6 +128,7 @@ export function renderOST(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, el, newTitle, defaultTitle)
     : undefined;
   initCanvas(el, "ost", title, undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(el, tree.warnings);
 
   const editHandlers = isEditMode ? makeOSTHandlers(app!, ctx!, el) : undefined;
   renderTree(adaptOSTToTree(tree), ostTreeOptions(), el, resolver, navigateTo, editHandlers);

@@ -60,8 +60,11 @@ export interface KwTreeOptions {
 }
 
 export type KwTreeResult =
-  | { ok: true; root: KwTreeNode }
+  | { ok: true; root: KwTreeNode; warnings?: string[] }
   | { ok: false; error: string };
+
+/** Shown in place of an empty node label so the node still renders visibly. */
+export const EMPTY_LABEL_PLACEHOLDER = "(empty)";
 
 interface KwEntry { kw: string; level: number; }
 
@@ -102,7 +105,9 @@ export function parseKeywordTree(source: string, levels: string[], opts: KwTreeO
   const rootKw = levels[0];
   const entries = keywordEntries(levels, opts.aliases);
   const meaningful = extractMeaningfulLines(source);
+  const warnings: string[] = [];
 
+  // Fatal: there is genuinely nothing to anchor a tree on.
   if (meaningful.length === 0) {
     return { ok: false, error: `Missing required "${rootKw}:" field` };
   }
@@ -115,25 +120,35 @@ export function parseKeywordTree(source: string, levels: string[], opts: KwTreeO
     return { ok: false, error: `Line ${first.lineNum}: "${rootKw}:" must be at indent level 0` };
   }
 
-  const rootText = first.text.slice(rootKw.length + 1).trim();
+  // Recoverable: an empty root label renders as a placeholder node rather than
+  // blanking the whole canvas.
+  let rootText = first.text.slice(rootKw.length + 1).trim();
   if (!rootText) {
-    return { ok: false, error: `Line ${first.lineNum}: "${rootKw}:" must have a non-empty label` };
+    warnings.push(`Line ${first.lineNum}: "${rootKw}:" has no text — showing an empty node`);
+    rootText = "";
   }
 
+  // Recoverable: extra root lines are ignored (first one wins) rather than fatal.
+  const rest: IndentLine[] = [];
   for (let i = 1; i < meaningful.length; i++) {
-    if (meaningful[i].indent === 0 && meaningful[i].text.toLowerCase().startsWith(`${rootKw}:`)) {
-      return { ok: false, error: `Line ${meaningful[i].lineNum}: duplicate "${rootKw}:" — only one is allowed` };
+    const m = meaningful[i];
+    if (m.indent === 0 && m.text.toLowerCase().startsWith(`${rootKw}:`)) {
+      warnings.push(`Line ${m.lineNum}: duplicate "${rootKw}:" ignored — only the first is used`);
+      continue;
     }
+    rest.push(m);
   }
 
   // Detect the format: keyword-per-level (canonical) vs. legacy bare-indent.
   // forceStrict pins the keyword form (OST); otherwise a keyword-less block is
   // treated as legacy, so SCQA's bare-indent notes keep parsing structurally.
-  const hasKeywords = meaningful.slice(1).some(l => recognise(l.text, entries) !== null);
+  const hasKeywords = rest.some(l => recognise(l.text, entries) !== null);
 
-  return (hasKeywords || opts.forceStrict)
-    ? parseStrict(meaningful, entries, rootKw, rootText, opts)
-    : parseLegacy(meaningful, levels, rootText);
+  const res = (hasKeywords || opts.forceStrict)
+    ? parseStrict([first, ...rest], entries, rootKw, rootText, opts)
+    : parseLegacy([first, ...rest], levels, rootText);
+  if (!res.ok) return res;
+  return { ok: true, root: res.root, warnings: [...warnings, ...(res.warnings ?? [])] };
 }
 
 /** Canonical form: each line's keyword sets its level; the chain is validated. */
@@ -144,6 +159,7 @@ function parseStrict(
   rootText: string,
   opts: KwTreeOptions,
 ): KwTreeResult {
+  const warnings: string[] = [];
   const root: KwTreeNode = { text: rootText, level: 0, key: rootKw, bullets: [], children: [] };
   const stack: Array<{ level: number; indent: number; node: KwTreeNode }> = [
     { level: 0, indent: 0, node: root },
@@ -167,27 +183,28 @@ function parseStrict(
     }
 
     const { kw, level } = entry;
-    const label = text.slice(kw.length + 1).trim();
+    // Recoverable: an empty label renders as a placeholder node.
+    let label = text.slice(kw.length + 1).trim();
     if (!label) {
-      return { ok: false, error: `Line ${lineNum}: "${kw}:" must have a non-empty label` };
+      warnings.push(`Line ${lineNum}: "${kw}:" has no text — showing an empty node`);
+      label = "";
     }
 
     while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
     const parent = stack[stack.length - 1];
 
+    // Recoverable: a mis-nested or mis-indented node is skipped (with a
+    // warning) instead of aborting the whole render. Its descendants then
+    // reattach to a valid ancestor or are skipped too.
     if (parent.level !== level - 1) {
       const parentKw = level - 1 === 0 ? rootKw : parentKeyword(entries, level - 1);
-      return {
-        ok: false,
-        error: `Line ${lineNum}: "${kw}:" must be nested under a "${parentKw}:"`,
-      };
+      warnings.push(`Line ${lineNum}: "${kw}:" isn't nested under a "${parentKw}:" — skipped`);
+      continue;
     }
     if (indent <= parent.indent) {
       const parentKw = level - 1 === 0 ? rootKw : parentKeyword(entries, level - 1);
-      return {
-        ok: false,
-        error: `Line ${lineNum}: "${kw}:" must be indented under its "${parentKw}:"`,
-      };
+      warnings.push(`Line ${lineNum}: "${kw}:" isn't indented under its "${parentKw}:" — skipped`);
+      continue;
     }
 
     const node: KwTreeNode = { text: label, level, key: kw, bullets: [], children: [] };
@@ -195,7 +212,7 @@ function parseStrict(
     stack.push({ level, indent, node });
   }
 
-  return { ok: true, root };
+  return { ok: true, root, warnings };
 }
 
 /** The canonical (first-declared) keyword for a level, for error messages. */

@@ -14,6 +14,7 @@ import type {
 } from "../types";
 import { Platform } from "obsidian";
 import { createSvgEl } from "../shared/svg";
+import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { createTextMeasurer, wrapText, type TextMeasurer } from "../shared/text-wrap";
 import { t } from "../i18n";
@@ -161,6 +162,8 @@ const LANE_ADD_BULLET_H = 18;   // "+ Add detail" row height (edit mode)
 interface LaneNodeModel {
   captionLines: string[];      // 0 or 1 line
   labelLines: string[];
+  /** True when the node's label is empty and rendered as a faint placeholder. */
+  isPlaceholder: boolean;
   bulletLines: string[][];     // per bullet, its wrapped lines
   showAddBullet: boolean;
   height: number;
@@ -172,7 +175,10 @@ function buildLaneModel(
 ): LaneNodeModel {
   const innerW = opts.nodeW - LANE_PAD_X * 2;
   const captionLines = (opts.captionPosition === "top" && node.sublabel) ? [node.sublabel] : [];
-  const labelLines = wrapText(node.text, innerW, s => measurer.width(s, LANE_LABEL_SIZE));
+  const isPlaceholder = node.text.trim() === "";
+  const labelLines = wrapText(
+    isPlaceholder ? EMPTY_LABEL_PLACEHOLDER : node.text, innerW, s => measurer.width(s, LANE_LABEL_SIZE),
+  );
   const bulletInnerW = innerW - LANE_CHEVRON_INDENT;
   const bulletLines = (node.bullets ?? []).map(
     b => wrapText(b, bulletInnerW, s => measurer.width(s, LANE_BULLET_SIZE)),
@@ -188,7 +194,7 @@ function buildLaneModel(
   }
 
   const model: LaneNodeModel = {
-    captionLines, labelLines, bulletLines, showAddBullet,
+    captionLines, labelLines, isPlaceholder, bulletLines, showAddBullet,
     height: Math.max(opts.nodeH, h),
   };
   laneModels.set(node, model);
@@ -476,6 +482,7 @@ function renderLaneNode(
   const labelText = svgTextLines(
     model.labelLines, LANE_PAD_X, top, LANE_LABEL_BASE, LANE_LABEL_LH, "vzd-lane-label-text", textFill,
   );
+  if (model.isPlaceholder) labelText.classList.add("vzd-lane-label--placeholder");
   group.appendChild(labelText);
   top += model.labelLines.length * LANE_LABEL_LH;
 
