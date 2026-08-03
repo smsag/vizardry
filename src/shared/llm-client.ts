@@ -5,6 +5,63 @@ import { LLM_REQUEST_TIMEOUT_MS } from "./constants";
 
 export type LlmProvider = "anthropic" | "openai";
 
+const MAX_TOKENS = 128;
+
+/**
+ * Per-provider differences: the endpoint, the auth/content headers, how the
+ * system+user messages are shaped into the request body, and where the reply
+ * text lives in the response JSON. Everything else — retry, timeout, status
+ * handling, and error wording — is shared in `callLlm` so the two providers
+ * can never drift apart in those respects.
+ */
+interface ProviderAdapter {
+  /** Human-readable name used verbatim in every error message. */
+  label: string;
+  url: string;
+  headers(apiKey: string): Record<string, string>;
+  body(model: string, systemPrompt: string, userMessage: string): string;
+  extractText(json: unknown): string | undefined;
+}
+
+const ADAPTERS: Record<LlmProvider, ProviderAdapter> = {
+  anthropic: {
+    label: "Anthropic",
+    url: "https://api.anthropic.com/v1/messages",
+    headers: (apiKey) => ({
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    }),
+    body: (model, systemPrompt, userMessage) => JSON.stringify({
+      model,
+      max_tokens: MAX_TOKENS,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+    extractText: (json) =>
+      (json as { content?: { type: string; text: string }[] }).content
+        ?.find(c => c.type === "text")?.text,
+  },
+  openai: {
+    label: "OpenAI",
+    url: "https://api.openai.com/v1/chat/completions",
+    headers: (apiKey) => ({
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    }),
+    body: (model, systemPrompt, userMessage) => JSON.stringify({
+      model,
+      max_tokens: MAX_TOKENS,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+    }),
+    extractText: (json) =>
+      (json as { choices?: { message: { content: string } }[] }).choices?.[0]?.message?.content,
+  },
+};
+
 /**
  * Calls the given LLM provider with a system + user message and returns the
  * raw response text (untruncated). Shared by every Vizardry feature that
@@ -17,83 +74,27 @@ export async function callLlm(
   systemPrompt: string,
   userMessage: string,
 ): Promise<string> {
-  return provider === "anthropic"
-    ? callAnthropic(apiKey, model, systemPrompt, userMessage)
-    : callOpenAI(apiKey, model, systemPrompt, userMessage);
-}
+  const adapter = ADAPTERS[provider];
+  const { label } = adapter;
 
-async function callAnthropic(
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userMessage: string,
-): Promise<string> {
   let resp;
   try {
     resp = await withRetry429(() => withTimeout(requestUrl({
-      url: "https://api.anthropic.com/v1/messages",
+      url: adapter.url,
       method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 128,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
-      }),
+      headers: adapter.headers(apiKey),
+      body: adapter.body(model, systemPrompt, userMessage),
       throw: false,
-    }), LLM_REQUEST_TIMEOUT_MS, "Anthropic"));
+    }), LLM_REQUEST_TIMEOUT_MS, label));
   } catch (err) {
-    throw new Error(`Anthropic: network error — ${(err as Error).message}`);
+    throw new Error(`${label}: network error — ${(err as Error).message}`);
   }
 
-  if (resp.status === 401) throw new Error("Anthropic: invalid API key");
-  if (resp.status !== 200) throw new Error(`Anthropic: unexpected response ${resp.status}`);
+  if (resp.status === 401) throw new Error(`${label}: invalid API key`);
+  if (resp.status !== 200) throw new Error(`${label}: unexpected response ${resp.status}`);
 
-  const json = resp.json as { content?: { type: string; text: string }[] };
-  const text = json.content?.find(c => c.type === "text")?.text;
-  if (!text) throw new Error("Anthropic: empty response");
-  return text.trim();
-}
-
-async function callOpenAI(
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userMessage: string,
-): Promise<string> {
-  let resp;
-  try {
-    resp = await withRetry429(() => withTimeout(requestUrl({
-      url: "https://api.openai.com/v1/chat/completions",
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 128,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-      }),
-      throw: false,
-    }), LLM_REQUEST_TIMEOUT_MS, "OpenAI"));
-  } catch (err) {
-    throw new Error(`OpenAI: network error — ${(err as Error).message}`);
-  }
-
-  if (resp.status === 401) throw new Error("OpenAI: invalid API key");
-  if (resp.status !== 200) throw new Error(`OpenAI: unexpected response ${resp.status}`);
-
-  const json = resp.json as { choices?: { message: { content: string } }[] };
-  const text = json.choices?.[0]?.message?.content;
-  if (!text) throw new Error("OpenAI: empty response");
+  const text = adapter.extractText(resp.json);
+  if (!text) throw new Error(`${label}: empty response`);
   return text.trim();
 }
 

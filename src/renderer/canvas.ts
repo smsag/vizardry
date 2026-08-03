@@ -56,6 +56,8 @@ export function relinkCanvas(
   framework: FrameworkDefinition,
   resolver: LinkResolver,
   navigateTo: (heading: string) => void,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
 ): void {
   for (const blockDef of framework.blocks) {
     const block = container.querySelector<HTMLElement>(`[data-area="${blockDef.area}"]`);
@@ -79,6 +81,11 @@ export function relinkCanvas(
       linkBtn.dataset.heading = heading;
       markInteractive(linkBtn);
       linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+      // Mirror renderCanvas's clipped-section preview. Attached to the freshly
+      // created button (not the persistent block) so a later relink — which
+      // removes and recreates this button — can't stack duplicate listeners:
+      // the old button's listeners die with it when it leaves the DOM.
+      if (app && ctx) attachSectionPreview(app, linkBtn, heading, ctx.sourcePath);
     } else {
       const ticket = resolver.resolveTicket?.(labelKey);
       if (ticket) {
