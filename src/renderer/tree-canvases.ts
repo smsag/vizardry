@@ -4,6 +4,7 @@ import { initCanvas, renderCanvasWarnings } from "./controls";
 import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions, renderTree } from "./tree";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
+import type { RenderContext } from "./render-context";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
@@ -17,12 +18,10 @@ import { renameFishboneNode, addFishboneChild, deleteFishboneNode } from "../sha
 export function renderMindMap(
   map: MindMap,
   container: HTMLElement,
-  resolver: LinkResolver = NULL_RESOLVER,
-  navigateTo?: (heading: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { navigateTo, source, app, ctx } = rc;
+  const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Mind Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
@@ -68,12 +67,10 @@ function makeMindMapHandlers(
 export function renderImpactMap(
   map: ImpactMap,
   container: HTMLElement,
-  resolver: LinkResolver = NULL_RESOLVER,
-  navigateTo?: (heading: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { navigateTo, source, app, ctx } = rc;
+  const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Impact Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
@@ -115,12 +112,10 @@ function makeImpactHandlers(
 export function renderOST(
   tree: OSTTree,
   el: HTMLElement,
-  resolver: LinkResolver = NULL_RESOLVER,
-  navigateTo?: (heading: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { navigateTo, source, app, ctx } = rc;
+  const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Opportunity Solution Tree";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
@@ -178,12 +173,10 @@ function makeOSTHandlers(
 export function renderFishbone(
   diagram: FishboneDiagram,
   container: HTMLElement,
-  resolver: LinkResolver = NULL_RESOLVER,
-  navigateTo?: (heading: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { navigateTo, source, app, ctx } = rc;
+  const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Fishbone Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;

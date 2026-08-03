@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { ConceptMap } from "../types";
+import type { RenderContext } from "./render-context";
 import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
@@ -149,10 +150,9 @@ function resolveOverlaps(positions: Vec2[], widths: number[]): void {
 export function renderConceptMap(
   data: ConceptMap,
   container: HTMLElement,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  source?: string,
+  rc: RenderContext = {},
 ): void {
+  const { app, ctx, source } = rc;
   const defaultTitle = "Concept Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))

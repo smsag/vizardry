@@ -1,4 +1,5 @@
 import type { VennDiagram, VennItem } from "../types";
+import type { RenderContext } from "./render-context";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { initCanvas, markInteractive } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -88,11 +89,10 @@ function circleStyle(h: number, s: number, l: number): { fill: string; stroke: s
 export function renderVennDiagram(
   venn: VennDiagram,
   container: HTMLElement,
-  openLink: (target: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx } = rc;
+  const openLink = rc.openLink ?? ((): void => {});
   const defaultTitle = "Venn Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))

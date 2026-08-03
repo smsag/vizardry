@@ -12,6 +12,7 @@ import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
+import type { RenderContext } from "./render-context";
 import {
   renameSCQANode, addSCQAChild, deleteSCQANode, reorderSCQANode,
   addSCQABullet, editSCQABullet, deleteSCQABullet,
@@ -30,12 +31,10 @@ function childDefault(variant: SCQAData["variant"], parentLevel: number): string
 export function renderSCQA(
   data: SCQAData,
   el: HTMLElement,
-  resolver: LinkResolver = NULL_RESOLVER,
-  navigateTo?: (heading: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { navigateTo, source, app, ctx } = rc;
+  const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = data.variant === "scqa" ? "SCQA Narrative" : "SCR Narrative";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;

@@ -7,6 +7,7 @@ import { writeRACICell } from "../shared/raci-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import type { LinkResolver } from "../shared/links";
+import type { RenderContext } from "./render-context";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
 
@@ -58,12 +59,9 @@ function activateItemEdit(
 export function renderRACIMatrix(
   data: RACIData,
   container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "RACI Matrix";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;

@@ -12,14 +12,14 @@ import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
 import { bestTextColor } from "../shared/color-utils";
+import type { RenderContext } from "./render-context";
 
 export function renderSIPOC(
   data: SIPOCData,
   container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx } = rc;
   if (data.variant === "flow") {
     renderSIPOCFlowView(data, container, source, app, ctx);
   } else {

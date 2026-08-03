@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { WardleyMap, WardleyComponent } from "../types";
+import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
 import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -880,10 +881,9 @@ function attachRenameBehavior(
 export function renderWardleyMap(
   data: WardleyMap,
   container: HTMLElement,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  source?: string,
+  rc: RenderContext = {},
 ): void {
+  const { app, ctx, source } = rc;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Wardley Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;

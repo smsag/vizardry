@@ -12,6 +12,7 @@ import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
 import { type LinkResolver, NULL_RESOLVER } from "../shared/links";
+import type { RenderContext } from "./render-context";
 import { bestTextColor } from "../shared/color-utils";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
@@ -25,12 +26,10 @@ const COL_LABELS: Record<string, string> = {
 export function renderRoadmap(
   data: RoadmapData,
   container: HTMLElement,
-  resolver: LinkResolver = NULL_RESOLVER,
-  navigateTo?: (heading: string) => void,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
+  rc: RenderContext = {},
 ): void {
+  const { navigateTo, source, app, ctx } = rc;
+  const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && source !== undefined)
     && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = "Now/Next/Later Roadmap";

@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { NodeMapBox, NodeMapData, NodeMapColor } from "../types";
+import type { RenderContext } from "./render-context";
 import { initCanvas } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
@@ -538,10 +539,9 @@ function attachAddBoxOnEmptySpace(
 export function renderNodeMap(
   data: NodeMapData,
   container: HTMLElement,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  source?: string,
+  rc: RenderContext = {},
 ): void {
+  const { app, ctx, source } = rc;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "Node Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;

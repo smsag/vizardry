@@ -9,6 +9,7 @@ import { presetColor } from "../matrix-presets";
 import { writeItemPosition, writeItemContent } from "../shared/matrix-edit";
 import { isEditModeActive } from "../shared/editor";
 import { classifyTicketTarget, type LinkResolver } from "../shared/links";
+import type { RenderContext } from "./render-context";
 
 const DRAG_THRESHOLD = 4;
 const pct = (n: number): string => `${(n * 100).toFixed(3)}%`;
@@ -30,12 +31,9 @@ const TITLES: Record<MatrixPreset, string> = {
 export function renderMatrix(
   data: MatrixData,
   container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx, resolver, navigateTo } = rc;
   container.style.setProperty("--vzd-matrix-base", presetColor(data.preset));
 
   const cols = data.xAxis.ticks.length;
