@@ -2,7 +2,7 @@ import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 import type { JourneyCard, JourneyData, JourneyLaneKey } from "../types";
-import { initCanvas, renderHeadingLink } from "./controls";
+import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import type { LinkResolver } from "../shared/links";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
@@ -49,6 +49,7 @@ export function renderJourneyMap(
       renderMetaBadge(meta, "scenario", t("journey.label.scenario"), data.scenario, isEditMode, app, ctx, container);
     }
   }, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(container, data.warnings);
 
   const phases = data.phases;
   const totalCols = phases.length;

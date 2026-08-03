@@ -366,6 +366,9 @@ export interface JourneyData {
   persona: string;
   scenario: string;
   phases: JourneyPhase[];
+  /** Non-fatal parse warnings (skipped lines, merged duplicate phases).
+   *  Surfaced as a small canvas warning chip. */
+  warnings?: string[];
 }
 
 export type JourneyResult = Result<JourneyData>;
