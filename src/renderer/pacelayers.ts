@@ -9,17 +9,15 @@ import { setupSlideCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { writePaceLayerCell } from "../shared/pacelayers-edit";
 import type { LinkResolver } from "../shared/links";
+import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
 
 export function renderPaceLayers(
   data: ParsedPaceLayers,
   container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && source !== undefined)
     && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = 'Pace Layer Analysis';

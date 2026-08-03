@@ -8,10 +8,16 @@
  * the logic itself lives here so it can be read and tested without the
  * Plugin class or the dispatcher.
  *
+ * Most renderers share one of two pipelines — `linked` (strip inline links,
+ * parse, render with a heading-link resolver) and `plain` (parse raw, no
+ * resolver) — so an entry is usually a single declarative row. Only Venn and
+ * the image carousel, which need bespoke link/asset handling, spell their
+ * processor out in full.
+ *
  * Adding a new non-grid renderer:
  *   1. Add types to types.ts
  *   2. Create src/<framework>.ts (parser) and src/renderer/<framework>.ts (renderer)
- *   3. Add an entry here
+ *   3. Add an entry here (usually `linked(parseX, renderX)`)
  *   4. Export the renderer from src/renderer.ts
  *   5. Add template to src/templates.ts
  *   6. Add canvas wrapper class to the presentation selector in renderer/controls.ts
@@ -45,12 +51,13 @@ import {
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
+import type { RenderContext } from "./renderer/render-context";
 import {
   FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
-  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
+  MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
   MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
@@ -63,8 +70,8 @@ import {
  * fingerprint, and copy-to-clipboard reconstruction — see the doc comment on
  * `dispatchVizardry` in src/vizardry-dispatch.ts for why these must differ).
  * `variant` is the value after the first comma in a compound `type:` line
- * (e.g. "pain" from "type: matrix, pain"), or undefined — only matrix and
- * pacelayers use it; every other handler ignores it.
+ * (e.g. "pain" from "type: matrix, pain"), or undefined — forwarded to the
+ * parser by `linked`; parsers that don't take one ignore it.
  */
 export type ProcessorFn = (
   parseSource: string,
@@ -79,6 +86,41 @@ export interface CustomRenderer {
   label: string;
   template: string;
   createProcessor: (app: App) => ProcessorFn;
+}
+
+// ── Shared pipelines ──────────────────────────────────────────────────────────
+
+type ParseFn<T> = (src: string, variant?: string) => { ok: true; data: T } | { ok: false; error: string };
+type RenderFn<T> = (data: T, el: HTMLElement, rc: RenderContext) => void;
+
+/**
+ * Standard pipeline for a link-aware renderer: strip inline link/ticket
+ * annotations, parse the cleaned source, then render with a RenderContext
+ * carrying the editor plumbing plus a heading-link resolver. Renderers that
+ * ignore the resolver (e.g. Wardley, SIPOC) simply don't read it off the
+ * context — passing it is harmless.
+ */
+function linked<T>(parse: ParseFn<T>, render: RenderFn<T>): (app: App) => ProcessorFn {
+  return (app) => (parseSource, fullSource, variant, el, ctx) => {
+    const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
+    const result = parse(strippedSource, variant);
+    if (!result.ok) { renderError(result.error, el); return; }
+    const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+    render(result.data, el, { source: fullSource, app, ctx, resolver, navigateTo });
+  };
+}
+
+/**
+ * Pipeline for renderers that parse the raw source verbatim — their DSL uses
+ * bracket syntax the inline-link stripper would mangle — and need no
+ * heading-link resolver, just the editor plumbing.
+ */
+function plain<T>(parse: ParseFn<T>, render: RenderFn<T>): (app: App) => ProcessorFn {
+  return (app) => (parseSource, fullSource, _variant, el, ctx) => {
+    const result = parse(parseSource);
+    if (!result.ok) { renderError(result.error, el); return; }
+    render(result.data, el, { source: fullSource, app, ctx });
+  };
 }
 
 /** Modal-only entries: shown in the insert modal and get insert commands,
@@ -100,54 +142,13 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [
-  {
-    id: "fishbone",
-    label: "Fishbone Diagram",
-    template: FISHBONE_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseFishbone(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderFishbone(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "impact",
-    label: "Impact Map",
-    template: IMPACT_MAP_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseImpactMap(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderImpactMap(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "story",
-    label: "User Story Map",
-    template: STORY_MAP_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseStoryMap(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderStoryMap(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-    },
-  },
-  {
-    id: "mindmap",
-    label: "Mind Map",
-    template: MIND_MAP_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseMindMap(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderMindMap(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
+  { id: "fishbone", label: "Fishbone Diagram",          template: FISHBONE_TEMPLATE,   createProcessor: linked(parseFishbone, renderFishbone) },
+  { id: "impact",   label: "Impact Map",                template: IMPACT_MAP_TEMPLATE, createProcessor: linked(parseImpactMap, renderImpactMap) },
+  { id: "story",    label: "User Story Map",            template: STORY_MAP_TEMPLATE,  createProcessor: linked(parseStoryMap, renderStoryMap) },
+  { id: "mindmap",  label: "Mind Map",                  template: MIND_MAP_TEMPLATE,   createProcessor: linked(parseMindMap, renderMindMap) },
+
+  // Venn opens arbitrary link targets (not headings), so it needs a bespoke
+  // `openLink` rather than the standard heading resolver.
   {
     id: "venn",
     label: "Venn Diagram",
@@ -156,23 +157,18 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       const { strippedSource } = extractInlineLinks(parseSource);
       const result = parseVennDiagram(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      renderVennDiagram(result.data, el, (target) => {
-        void app.workspace.openLinkText(target, ctx.sourcePath, false);
-      }, fullSource, app, ctx);
+      renderVennDiagram(result.data, el, {
+        source: fullSource,
+        app,
+        ctx,
+        openLink: (target) => { void app.workspace.openLinkText(target, ctx.sourcePath, false); },
+      });
     },
   },
-  {
-    id: "ost",
-    label: "Opportunity Solution Tree",
-    template: OST_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseOST(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderOST(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
+
+  { id: "ost", label: "Opportunity Solution Tree", template: OST_TEMPLATE, createProcessor: linked(parseOST, renderOST) },
+
+  // Carousel resolves image paths to vault resource URLs — its own render shape.
   {
     id: "carousel",
     label: "Image Carousel",
@@ -193,130 +189,20 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
       });
     },
   },
-  {
-    id: "sipoc",
-    label: "SIPOC Diagram",
-    template: SIPOC_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const { strippedSource: src } = extractInlineLinks(parseSource);
-      const result = parseSIPOC(src, variant);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderSIPOC(result.data, el, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "wardley",
-    label: "Wardley Map",
-    template: WARDLEY_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource } = extractInlineLinks(parseSource);
-      const result = parseWardleyMap(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderWardleyMap(result.data, el, app, ctx, fullSource);
-    },
-  },
-  {
-    id: "raci",
-    label: "RACI Matrix",
-    template: RACI_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseRACIMatrix(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderRACIMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-    },
-  },
-  {
-    id: "roadmap",
-    label: "Now/Next/Later Roadmap",
-    template: ROADMAP_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseRoadmap(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderRoadmap(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "pacelayers",
-    label: "Pace Layer Analysis",
-    template: PACE_LAYERS_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parsePaceLayers(strippedSource, variant);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderPaceLayers(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-    },
-  },
-  {
-    id: "conceptmap",
-    label: "Concept Map",
-    template: CONCEPT_MAP_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const result = parseConceptMap(parseSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderConceptMap(result.data, el, app, ctx, fullSource);
-    },
-  },
-  {
-    id: "nodemap",
-    label: "Node Map",
-    template: NODE_MAP_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const result = parseNodeMap(parseSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderNodeMap(result.data, el, app, ctx, fullSource);
-    },
-  },
-  {
-    id: "matrix",
-    label: "Matrix",
-    template: MATRIX_IMPACT_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      const result = parseMatrix(strippedSource, variant);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderMatrix(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-    },
-  },
-  {
-    id: "scqa",
-    label: "SCQA Narrative",
-    template: SCQA_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseSCQA(strippedSource, "scqa");
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderSCQA(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "scr",
-    label: "SCR Narrative",
-    template: SCR_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseSCQA(strippedSource, "scr");
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderSCQA(result.data, el, resolver, navigateTo, fullSource, app, ctx);
-    },
-  },
-  {
-    id: "journey",
-    label: "Customer Journey Map",
-    template: JOURNEY_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, variant, el, ctx) => {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
-      const result = parseJourney(strippedSource, variant);
-      if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
-      renderJourneyMap(result.data, el, fullSource, app, ctx, resolver, navigateTo);
-    },
-  },
+
+  { id: "sipoc",      label: "SIPOC Diagram",          template: SIPOC_TEMPLATE,       createProcessor: linked(parseSIPOC, renderSIPOC) },
+  { id: "wardley",    label: "Wardley Map",            template: WARDLEY_TEMPLATE,     createProcessor: linked(parseWardleyMap, renderWardleyMap) },
+  { id: "raci",       label: "RACI Matrix",            template: RACI_TEMPLATE,        createProcessor: linked(parseRACIMatrix, renderRACIMatrix) },
+  { id: "roadmap",    label: "Now/Next/Later Roadmap", template: ROADMAP_TEMPLATE,     createProcessor: linked(parseRoadmap, renderRoadmap) },
+  { id: "pacelayers", label: "Pace Layer Analysis",    template: PACE_LAYERS_TEMPLATE, createProcessor: linked(parsePaceLayers, renderPaceLayers) },
+
+  // Concept/Node maps parse the raw source (bracket syntax the link stripper
+  // would mangle) and have no heading-link resolver.
+  { id: "conceptmap", label: "Concept Map", template: CONCEPT_MAP_TEMPLATE, createProcessor: plain(parseConceptMap, renderConceptMap) },
+  { id: "nodemap",    label: "Node Map",    template: NODE_MAP_TEMPLATE,    createProcessor: plain(parseNodeMap, renderNodeMap) },
+
+  { id: "matrix",  label: "Matrix",              template: MATRIX_IMPACT_TEMPLATE, createProcessor: linked(parseMatrix, renderMatrix) },
+  { id: "scqa",    label: "SCQA Narrative",      template: SCQA_TEMPLATE,          createProcessor: linked((src) => parseSCQA(src, "scqa"), renderSCQA) },
+  { id: "scr",     label: "SCR Narrative",       template: SCR_TEMPLATE,           createProcessor: linked((src) => parseSCQA(src, "scr"), renderSCQA) },
+  { id: "journey", label: "Customer Journey Map", template: JOURNEY_TEMPLATE,      createProcessor: linked(parseJourney, renderJourneyMap) },
 ];

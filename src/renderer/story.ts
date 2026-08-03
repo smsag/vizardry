@@ -4,6 +4,7 @@ import { MarkdownView } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas, renderHeadingLink } from "./controls";
 import type { LinkResolver } from "../shared/links";
+import type { RenderContext } from "./render-context";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
@@ -27,12 +28,9 @@ const BACKLOG_SLICE = "__backlog__";
 export function renderStoryMap(
   map: StoryMap,
   container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && source !== undefined)
     && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = "User Story Map";

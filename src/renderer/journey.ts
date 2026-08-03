@@ -4,6 +4,7 @@ import { MarkdownView } from "obsidian";
 import type { JourneyCard, JourneyData, JourneyLaneKey } from "../types";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import type { LinkResolver } from "../shared/links";
+import type { RenderContext } from "./render-context";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
@@ -24,12 +25,9 @@ import {
 export function renderJourneyMap(
   data: JourneyData,
   container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
+  rc: RenderContext = {},
 ): void {
+  const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && source !== undefined)
     && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
   const defaultTitle = data.variant === "blueprint" ? "Service Blueprint" : "Customer Journey Map";
