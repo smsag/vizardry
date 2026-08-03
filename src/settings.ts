@@ -4,6 +4,7 @@ import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
 import { getLinearService } from "./linear";
 import { getUpvotyService } from "./upvoty";
+import { t } from "./i18n";
 
 export interface PluginSettings {
   // Linear
@@ -80,12 +81,12 @@ class SecretPickerModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("vzd-secret-picker");
-    contentEl.createEl("h2", { text: "Select secret" });
+    contentEl.createEl("h2", { text: t("settings.secretPicker.title") });
 
     // Search
     const search = contentEl.createEl("input", {
       cls: "vzd-secret-search",
-      attr: { type: "text", placeholder: "Search secrets…" },
+      attr: { type: "text", placeholder: t("settings.secretPicker.searchPlaceholder") },
     });
 
     // List
@@ -100,7 +101,7 @@ class SecretPickerModal extends Modal {
         : allNames;
 
       if (names.length === 0) {
-        listEl.createEl("div", { cls: "vzd-secret-empty", text: "No secrets stored yet." });
+        listEl.createEl("div", { cls: "vzd-secret-empty", text: t("settings.secretPicker.empty") });
         return;
       }
 
@@ -115,7 +116,7 @@ class SecretPickerModal extends Modal {
         row.createEl("span", { cls: "vzd-secret-dots", text: "••••••••" });
 
         if (name === this.selected) {
-          row.createEl("span", { cls: "vzd-secret-badge", text: "Selected" });
+          row.createEl("span", { cls: "vzd-secret-badge", text: t("settings.secretPicker.selected") });
         }
 
         radio.addEventListener("change", () => {
@@ -123,7 +124,7 @@ class SecretPickerModal extends Modal {
           listEl.querySelectorAll(".vzd-secret-row").forEach(r => r.removeClass("vzd-secret-row--selected"));
           listEl.querySelectorAll(".vzd-secret-badge").forEach(b => b.remove());
           row.addClass("vzd-secret-row--selected");
-          row.createEl("span", { cls: "vzd-secret-badge", text: "Selected" });
+          row.createEl("span", { cls: "vzd-secret-badge", text: t("settings.secretPicker.selected") });
         });
       }
     };
@@ -134,13 +135,13 @@ class SecretPickerModal extends Modal {
     // Footer
     const footer = contentEl.createEl("div", { cls: "vzd-secret-footer" });
 
-    const saveBtn = footer.createEl("button", { cls: "mod-cta", text: "Save" });
+    const saveBtn = footer.createEl("button", { cls: "mod-cta", text: t("settings.secretPicker.save") });
     saveBtn.addEventListener("click", () => {
       this.onSelect(this.selected);
       this.close();
     });
 
-    const cancelBtn = footer.createEl("button", { text: "Cancel" });
+    const cancelBtn = footer.createEl("button", { text: t("settings.secretPicker.cancel") });
     cancelBtn.addEventListener("click", () => this.close());
   }
 
@@ -170,7 +171,7 @@ function addSecretRow(
   const refreshRow = (): void => {
     setting.clear();
     setting.nameEl.empty();
-    setting.setDesc(`Secret name: ${currentName}`);
+    setting.setDesc(t("settings.secret.nameDesc", { name: currentName }));
 
     // Badge starts neutral; updated async below
     const badge = setting.nameEl.createEl("span", { cls: "vzd-secret-status vzd-secret-missing", text: "…" });
@@ -179,7 +180,7 @@ function addSecretRow(
 
     // Link button
     setting.addButton(btn => {
-      btn.setButtonText("Link…").onClick(() => {
+      btn.setButtonText(t("settings.secret.link")).onClick(() => {
         new SecretPickerModal(app, currentName, (name) => {
           currentName = name;
           setName(name);
@@ -195,7 +196,7 @@ function addSecretRow(
 
       // Async: probe storage, set initial badge + mask
       void loadSecret(app, currentName).then(existing => {
-        badge.textContent = existing ? "Key found ✓" : "Not set";
+        badge.textContent = existing ? t("settings.secret.found") : t("settings.secret.notSet");
         badge.className = "vzd-secret-status " + (existing ? "vzd-secret-found" : "vzd-secret-missing");
         text.setValue(existing ? "••••••••" : "");
       });
@@ -212,14 +213,14 @@ function addSecretRow(
           void saveSecret(app, currentName, v).then(() =>
             loadSecret(app, currentName).then(stored => {
               text.setValue(stored ? "••••••••" : "");
-              badge.textContent = stored ? "Key found ✓" : "Not set";
+              badge.textContent = stored ? t("settings.secret.found") : t("settings.secret.notSet");
               badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
             })
           );
         } else {
           void loadSecret(app, currentName).then(stored => {
             text.setValue(stored ? "••••••••" : "");
-            badge.textContent = stored ? "Key found ✓" : "Not set";
+            badge.textContent = stored ? t("settings.secret.found") : t("settings.secret.notSet");
             badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
           });
         }
@@ -257,11 +258,11 @@ export class VizardrySettingTab extends PluginSettingTab {
     containerEl.empty();
 
     // ── Linear ─────────────────────────────────────────────────────────────────
-    containerEl.createEl("h2", { text: "Linear" });
+    containerEl.createEl("h2", { text: t("settings.section.linear") });
 
     new Setting(containerEl)
-      .setName("Enable Linear integration")
-      .setDesc("Show issue status on roadmap cards and generate AI summaries on hover.")
+      .setName(t("settings.linear.enable.name"))
+      .setDesc(t("settings.linear.enable.desc"))
       .addToggle(toggle =>
         toggle
           .setValue(this.plugin.settings.linearEnabled)
@@ -274,7 +275,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     addSecretRow(
       containerEl,
       this.app,
-      "Linear API key",
+      t("settings.linear.apiKey.label"),
       "lin_api_…",
       () => this.plugin.settings.linearSecretName,
       (n) => {
@@ -287,8 +288,8 @@ export class VizardrySettingTab extends PluginSettingTab {
     );
 
     new Setting(containerEl)
-      .setName("Linear GraphQL URL")
-      .setDesc("Change only if you are using a self-hosted Linear instance.")
+      .setName(t("settings.linear.url.name"))
+      .setDesc(t("settings.linear.url.desc"))
       .addText(text =>
         text
           .setPlaceholder("https://api.linear.app/graphql")
@@ -301,7 +302,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     // ── AI Summaries ───────────────────────────────────────────────────────────
-    containerEl.createEl("h2", { text: "AI summaries" });
+    containerEl.createEl("h2", { text: t("settings.section.ai") });
 
     let modelDropdown: DropdownComponent;
 
@@ -320,8 +321,8 @@ export class VizardrySettingTab extends PluginSettingTab {
     };
 
     new Setting(containerEl)
-      .setName("Provider")
-      .setDesc("Which AI service to use for generating roadmap card summaries.")
+      .setName(t("settings.ai.provider.name"))
+      .setDesc(t("settings.ai.provider.desc"))
       .addDropdown(drop => {
         drop
           .addOption("anthropic", "Anthropic (Claude)")
@@ -335,8 +336,8 @@ export class VizardrySettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Model")
-      .setDesc("Model used for summarisation. Haiku / GPT-4o mini are fastest and cheapest.")
+      .setName(t("settings.ai.model.name"))
+      .setDesc(t("settings.ai.model.desc"))
       .addDropdown(drop => {
         modelDropdown = drop;
         updateModelOptions(this.plugin.settings.llmProvider);
@@ -349,15 +350,15 @@ export class VizardrySettingTab extends PluginSettingTab {
     addSecretRow(
       containerEl,
       this.app,
-      "AI API key",
+      t("settings.ai.apiKey.label"),
       "sk-… or sk-ant-…",
       () => this.plugin.settings.llmSecretName,
       (n) => { this.plugin.settings.llmSecretName = n; void this.plugin.saveSettings(); },
     );
 
     new Setting(containerEl)
-      .setName("Summary cache (hours)")
-      .setDesc("How long to cache an LLM summary before regenerating it. Summaries are also invalidated when the Linear issue is updated.")
+      .setName(t("settings.ai.summaryCache.name"))
+      .setDesc(t("settings.ai.summaryCache.desc"))
       .addSlider(slider =>
         slider
           .setLimits(1, 168, 1)
@@ -370,8 +371,8 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Status refresh (minutes)")
-      .setDesc("How often to re-fetch the issue status from Linear. Status is kept in memory only and never written to disk.")
+      .setName(t("settings.ai.statusRefresh.name"))
+      .setDesc(t("settings.ai.statusRefresh.desc"))
       .addSlider(slider =>
         slider
           .setLimits(1, 60, 1)
@@ -384,23 +385,23 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Clear cached summaries")
-      .setDesc("Discard all persisted Linear summaries so they are regenerated on next hover. Frees space in the plugin's data file.")
+      .setName(t("settings.clearCache.name"))
+      .setDesc(t("settings.clearCache.linear.desc"))
       .addButton(btn =>
         btn
-          .setButtonText("Clear")
+          .setButtonText(t("settings.clearCache.button"))
           .onClick(async () => {
             await getLinearService()?.cache.clearAndPersist();
-            new Notice("Vizardry: Linear summary cache cleared.");
+            new Notice(t("settings.clearCache.linear.done"));
           }),
       );
 
     // ── Upvoty ─────────────────────────────────────────────────────────────────
-    containerEl.createEl("h2", { text: "Upvoty" });
+    containerEl.createEl("h2", { text: t("settings.section.upvoty") });
 
     new Setting(containerEl)
-      .setName("Enable Upvoty integration")
-      .setDesc("Show feature request details and AI summaries on hover for UPV-1234 keys.")
+      .setName(t("settings.upvoty.enable.name"))
+      .setDesc(t("settings.upvoty.enable.desc"))
       .addToggle(toggle =>
         toggle
           .setValue(this.plugin.settings.upvotyEnabled)
@@ -413,7 +414,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     addSecretRow(
       containerEl,
       this.app,
-      "Upvoty API key",
+      t("settings.upvoty.apiKey.label"),
       "upvoty_sk_…",
       () => this.plugin.settings.upvotySecretName,
       (n) => {
@@ -426,8 +427,8 @@ export class VizardrySettingTab extends PluginSettingTab {
     );
 
     new Setting(containerEl)
-      .setName("Key prefix")
-      .setDesc("The prefix used to identify Upvoty posts inline, e.g. UPV matches UPV-1234.")
+      .setName(t("settings.upvoty.keyPrefix.name"))
+      .setDesc(t("settings.upvoty.keyPrefix.desc"))
       .addText(text =>
         text
           .setPlaceholder("UPV")
@@ -439,8 +440,8 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Upvoty API base URL")
-      .setDesc("Change only if you are on a self-hosted or white-labelled Upvoty instance.")
+      .setName(t("settings.upvoty.baseUrl.name"))
+      .setDesc(t("settings.upvoty.baseUrl.desc"))
       .addText(text =>
         text
           .setPlaceholder("https://api.upvotyfeedback.com/v1")
@@ -453,8 +454,8 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Upvoty dashboard URL")
-      .setDesc("Used to build \"Open in Upvoty\" links. Change only if you are on a self-hosted or white-labelled Upvoty instance — this is usually a different domain than the API base URL above.")
+      .setName(t("settings.upvoty.appUrl.name"))
+      .setDesc(t("settings.upvoty.appUrl.desc"))
       .addText(text =>
         text
           .setPlaceholder("https://app.upvoty.com/feedback")
@@ -466,8 +467,8 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Post cache (minutes)")
-      .setDesc("How long to cache a fetched Upvoty post before re-fetching.")
+      .setName(t("settings.upvoty.postCache.name"))
+      .setDesc(t("settings.upvoty.postCache.desc"))
       .addSlider(slider =>
         slider
           .setLimits(1, 60, 1)
@@ -480,14 +481,14 @@ export class VizardrySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Clear cached summaries")
-      .setDesc("Discard all persisted Upvoty summaries so they are regenerated on next hover. Frees space in the plugin's data file.")
+      .setName(t("settings.clearCache.name"))
+      .setDesc(t("settings.clearCache.upvoty.desc"))
       .addButton(btn =>
         btn
-          .setButtonText("Clear")
+          .setButtonText(t("settings.clearCache.button"))
           .onClick(async () => {
             await getUpvotyService()?.cache.clearAndPersist();
-            new Notice("Vizardry: Upvoty summary cache cleared.");
+            new Notice(t("settings.clearCache.upvoty.done"));
           }),
       );
   }

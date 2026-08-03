@@ -72,8 +72,11 @@ describe("LinearService.getStatus", () => {
   it("does not touch the summary cache when the issue is unchanged (status-only refresh)", async () => {
     initLinearService(fakePlugin());
     const svc = getLinearService()!;
+    // Recent timestamp so the entry survives init()'s aged-out pruning; the
+    // test cares that getStatus leaves it untouched, not about the exact value.
+    const summarizedAt = Date.now();
     svc.cache.init({
-      "ENG-1": { state: makeIssue().state as any, summary: "Existing summary", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 42 },
+      "ENG-1": { state: makeIssue().state as any, summary: "Existing summary", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt },
     });
 
     mockedFetch.mockResolvedValue(makeIssue({ updatedAt: "2026-01-01T00:00:00Z" }) as any);
@@ -81,6 +84,6 @@ describe("LinearService.getStatus", () => {
 
     const entry = svc.cache.getEntry("ENG-1");
     expect(entry?.summary).toBe("Existing summary");
-    expect(entry?.summarizedAt).toBe(42);
+    expect(entry?.summarizedAt).toBe(summarizedAt);
   });
 });

@@ -6,6 +6,7 @@ import { fetchUpvotyPost, fetchUpvotyComments } from "./client";
 import { summarizePost } from "./summarizer";
 import { UpvotyCache } from "./cache";
 import type { UpvotyPost } from "./types";
+import { t } from "../i18n";
 
 // ── Module-level singleton ───────────────────────────────────────────────────
 
@@ -67,14 +68,14 @@ class UpvotyService {
     try {
       [upvotyApiKey, llmApiKey] = await Promise.all([this.getUpvotyApiKey(), this.getLlmApiKey()]);
     } catch (err) {
-      return { error: `Key lookup failed: ${(err as Error).message ?? String(err)}` };
+      return { error: t("service.error.keyLookupFailed", { message: (err as Error).message ?? String(err) }) };
     }
 
     if (!upvotyApiKey) {
-      return { error: `No Upvoty API key — check Settings → Vizardry (secret: "${this.plugin.settings.upvotySecretName}")` };
+      return { error: t("service.error.noUpvotyKey", { secret: this.plugin.settings.upvotySecretName }) };
     }
     if (!llmApiKey) {
-      return { error: `No AI API key — check Settings → Vizardry (secret: "${this.plugin.settings.llmSecretName}")` };
+      return { error: t("service.error.noAiKey", { secret: this.plugin.settings.llmSecretName }) };
     }
 
     const { upvotyStatusTtlMinutes, upvotyBaseUrl, summaryTtlHours, llmProvider, llmModel } = this.plugin.settings;
@@ -103,7 +104,7 @@ class UpvotyService {
       console.warn(`Vizardry: UpvotyService.getSummary("${postId}")`, err);
       if (!_authNoticeShown && msg.toLowerCase().includes("invalid or missing api key")) {
         _authNoticeShown = true;
-        new Notice("Vizardry: Upvoty API key is invalid or missing — check Settings → Vizardry.", 8000);
+        new Notice(t("service.notice.upvotyAuth"), 8000);
       }
       return { error: msg };
     }
@@ -111,7 +112,7 @@ class UpvotyService {
 
   /** Quick status-only fetch (used by roadmap cards). Returns cached post or fetches fresh. */
   async getPost(postId: string): Promise<UpvotyPost | { error: string }> {
-    if (!this.isEnabled()) return { error: "Upvoty integration disabled." };
+    if (!this.isEnabled()) return { error: t("service.error.upvotyDisabled") };
 
     let apiKey: string | null;
     try {
@@ -121,7 +122,7 @@ class UpvotyService {
     }
 
     if (!apiKey) {
-      return { error: `No Upvoty API key — check Settings → Vizardry` };
+      return { error: t("service.error.noUpvotyKeyShort") };
     }
 
     const cached = this.cache.getPost(postId, this.plugin.settings.upvotyStatusTtlMinutes);

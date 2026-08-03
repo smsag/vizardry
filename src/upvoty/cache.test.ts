@@ -35,7 +35,7 @@ describe("UpvotyCache", () => {
 
   it("toJSON() round-trips through init()", () => {
     const source = new UpvotyCache(fakePlugin() as any);
-    source.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 123 } });
+    source.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
 
     const restored = new UpvotyCache(fakePlugin() as any);
     restored.init(source.toJSON());
@@ -46,7 +46,7 @@ describe("UpvotyCache", () => {
   it("clear() drops in-memory entries without touching persisted data.json", async () => {
     const plugin = fakePlugin();
     const cache = new UpvotyCache(plugin as any);
-    cache.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 123 } });
+    cache.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
 
     cache.clear();
 
@@ -54,10 +54,27 @@ describe("UpvotyCache", () => {
     expect(plugin.saveData).not.toHaveBeenCalled();
   });
 
+  it("init() prunes an aged-out entry and persists the trimmed cache", async () => {
+    const plugin = fakePlugin();
+    const cache = new UpvotyCache(plugin as any);
+    const ancient = { summary: "old", postUpdatedAt: "2020-01-01T00:00:00Z", summarizedAt: 1 };
+    const fresh = { summary: "new", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() };
+
+    cache.init({ "old-1": ancient, "new-1": fresh });
+
+    expect(cache.getEntry("old-1")).toBeUndefined();
+    expect(cache.getEntry("new-1")).toEqual(fresh);
+    // Persist is fire-and-forget through the async queue — flush it first.
+    await new Promise((r) => setTimeout(r));
+    expect(plugin.saveData).toHaveBeenCalledWith(
+      expect.objectContaining({ upvotyCache: { "new-1": fresh } }),
+    );
+  });
+
   it("clearAndPersist() drops in-memory entries and persists the now-empty cache", async () => {
     const plugin = fakePlugin();
     const cache = new UpvotyCache(plugin as any);
-    cache.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 123 } });
+    cache.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
     cache.setPost("post-1", { id: "post-1" } as any);
 
     await cache.clearAndPersist();

@@ -6,6 +6,7 @@ import { fetchLinearIssue } from "./client";
 import { summarizeIssue } from "./summarizer";
 import { LinearCache } from "./cache";
 import type { LinearState } from "./types";
+import { t } from "../i18n";
 
 // ── Module-level singleton ──────────────────────────────────────────────────
 
@@ -89,11 +90,11 @@ class LinearService {
       [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
     } catch (err) {
       console.warn("Vizardry: getSummary — key loading threw", err);
-      return { error: `Key lookup failed: ${(err as Error).message ?? String(err)}` };
+      return { error: t("service.error.keyLookupFailed", { message: (err as Error).message ?? String(err) }) };
     }
 
-    if (!linearApiKey) return { error: `No Linear API key — check Settings → Vizardry (secret: "${this.plugin.settings.linearSecretName}")` };
-    if (!llmApiKey) return { error: `No AI API key — check Settings → Vizardry (secret: "${this.plugin.settings.llmSecretName}")` };
+    if (!linearApiKey) return { error: t("service.error.noLinearKey", { secret: this.plugin.settings.linearSecretName }) };
+    if (!llmApiKey) return { error: t("service.error.noAiKey", { secret: this.plugin.settings.llmSecretName }) };
 
     const { summaryTtlHours, linearBaseUrl, llmProvider, llmModel } = this.plugin.settings;
 
@@ -120,7 +121,7 @@ class LinearService {
       console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);
       if (!_authNoticeShown && msg.toLowerCase().includes("invalid or missing api key")) {
         _authNoticeShown = true;
-        new Notice("Vizardry: Linear API key is invalid or missing — check Settings → Vizardry.", 8000);
+        new Notice(t("service.notice.linearAuth"), 8000);
       }
       return { error: msg };
     }

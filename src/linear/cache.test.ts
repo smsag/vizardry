@@ -37,7 +37,7 @@ describe("LinearCache", () => {
 
   it("toJSON() round-trips through init()", () => {
     const source = new LinearCache(fakePlugin() as any);
-    source.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 123 } });
+    source.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
 
     const restored = new LinearCache(fakePlugin() as any);
     restored.init(source.toJSON());
@@ -48,7 +48,7 @@ describe("LinearCache", () => {
   it("clear() drops in-memory entries without touching persisted data.json", () => {
     const plugin = fakePlugin();
     const cache = new LinearCache(plugin as any);
-    cache.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 123 } });
+    cache.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
 
     cache.clear();
 
@@ -59,7 +59,7 @@ describe("LinearCache", () => {
   it("clearAndPersist() drops in-memory entries and persists the now-empty cache", async () => {
     const plugin = fakePlugin();
     const cache = new LinearCache(plugin as any);
-    cache.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: 123 } });
+    cache.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
     cache.setStatus("ENG-1", STATE);
 
     await cache.clearAndPersist();
@@ -67,6 +67,24 @@ describe("LinearCache", () => {
     expect(cache.getEntry("ENG-1")).toBeUndefined();
     expect(cache.getStatus("ENG-1", 60)).toBeNull();
     expect(plugin.saveData).toHaveBeenCalledWith(expect.objectContaining({ linearCache: {} }));
+  });
+
+  it("init() prunes an aged-out entry and persists the trimmed cache", async () => {
+    const plugin = fakePlugin();
+    const cache = new LinearCache(plugin as any);
+    const ancient = { state: STATE, summary: "old", issueUpdatedAt: "2020-01-01T00:00:00Z", summarizedAt: 1 };
+    const fresh = { state: STATE, summary: "new", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() };
+
+    cache.init({ "OLD-1": ancient, "NEW-1": fresh });
+
+    expect(cache.getEntry("OLD-1")).toBeUndefined();
+    expect(cache.getEntry("NEW-1")).toEqual(fresh);
+    // Trimmed cache was written back so data.json actually shrinks. The persist
+    // is fire-and-forget through the async queue, so flush the task queue first.
+    await new Promise((r) => setTimeout(r));
+    expect(plugin.saveData).toHaveBeenCalledWith(
+      expect.objectContaining({ linearCache: { "NEW-1": fresh } }),
+    );
   });
 
   it("prevents a stale cross-workspace summary from surviving a settings switch", async () => {
