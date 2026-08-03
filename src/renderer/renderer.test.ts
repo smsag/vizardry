@@ -33,7 +33,8 @@ vi.mock("html-to-image", () => ({
 import { renderError, renderCanvas } from "./canvas";
 import { renderMatrix } from "./matrix";
 import { parseMatrix } from "../matrix";
-import { renderTree, MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree";
+import { renderTree } from "./tree";
+import { MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree-adapters";
 import type { TreeRenderOptions } from "../types";
 
 // A plain top-down classic (non-wrap) tree config for exercising renderTree's

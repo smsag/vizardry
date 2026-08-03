@@ -2,9 +2,8 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
-import {
-  renderTree, adaptSCQAToTree, scqaTreeOptions,
-} from "./tree";
+import { renderTree } from "./tree";
+import { adaptSCQAToTree, scqaTreeOptions } from "./tree-adapters";
 import { renderInline } from "../shared/inline-markdown";
 import { activateInlineEdit } from "./inline-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
