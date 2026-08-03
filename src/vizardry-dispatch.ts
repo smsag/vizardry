@@ -107,7 +107,7 @@ export function dispatchVizardry(
       // matching heading is added outside the code block after first render).
       registerCanvasRelink(ctx.sourcePath, () => {
         const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(app, ctx), inlineTicketLinks);
-        relinkCanvas(el, definition, freshResolver, navigateTo);
+        relinkCanvas(el, definition, freshResolver, navigateTo, app, ctx);
       }, el);
     } else if (custom) {
       custom.createProcessor(app)(parseSource, source, variant, el, ctx);

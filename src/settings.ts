@@ -1,5 +1,5 @@
 import type { App , DropdownComponent} from "obsidian";
-import { Modal, PluginSettingTab, Setting } from "obsidian";
+import { Modal, Notice, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
 import { getLinearService } from "./linear";
@@ -383,6 +383,18 @@ export class VizardrySettingTab extends PluginSettingTab {
           }),
       );
 
+    new Setting(containerEl)
+      .setName("Clear cached summaries")
+      .setDesc("Discard all persisted Linear summaries so they are regenerated on next hover. Frees space in the plugin's data file.")
+      .addButton(btn =>
+        btn
+          .setButtonText("Clear")
+          .onClick(async () => {
+            await getLinearService()?.cache.clearAndPersist();
+            new Notice("Vizardry: Linear summary cache cleared.");
+          }),
+      );
+
     // ── Upvoty ─────────────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: "Upvoty" });
 
@@ -464,6 +476,18 @@ export class VizardrySettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.upvotyStatusTtlMinutes = value;
             await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Clear cached summaries")
+      .setDesc("Discard all persisted Upvoty summaries so they are regenerated on next hover. Frees space in the plugin's data file.")
+      .addButton(btn =>
+        btn
+          .setButtonText("Clear")
+          .onClick(async () => {
+            await getUpvotyService()?.cache.clearAndPersist();
+            new Notice("Vizardry: Upvoty summary cache cleared.");
           }),
       );
   }

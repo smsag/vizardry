@@ -43,7 +43,11 @@ export function t(key: TranslationKey, vars?: Record<string, string | number>): 
   let str = ((locale[key] ?? en[key]) as string | undefined) ?? key;
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
-      str = str.replace(`{{${k}}}`, String(v));
+      // split/join replaces every occurrence — a plain String.replace(str, ...)
+      // would substitute only the first `{{k}}`, silently leaving later repeats
+      // of the same placeholder untouched (using split avoids escaping the `{}`
+      // regex metacharacters that a global RegExp would require).
+      str = str.split(`{{${k}}}`).join(String(v));
     }
   }
   return str;
