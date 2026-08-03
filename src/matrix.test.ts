@@ -37,8 +37,12 @@ describe("parseMatrix", () => {
     expect(r.data.cells.every(c => c.heat === undefined)).toBe(true);
   });
 
-  it("errors on an unknown preset", () => {
-    expect(parseMatrix("", "bogus")).toEqual({ ok: false, error: expect.stringContaining("Unknown preset") });
+  it("falls back to a blank matrix for an unknown preset, with a warning", () => {
+    const r = parseMatrix("x: X | a | b\ny: Y | a | b", "bogus");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.preset).toBeNull();
+    expect(r.data.warnings?.some(w => /Unknown preset/.test(w))).toBe(true);
   });
 
   // ── Axes & cells ─────────────────────────────────────────────────────────────
@@ -64,9 +68,12 @@ describe("parseMatrix", () => {
     expect(t1?.heat).toBe("very-high");
   });
 
-  it("errors when a cell override targets a cell outside the grid", () => {
+  it("drops a cell override outside the grid, with a warning", () => {
     const r = parseMatrix("x: E | Lo | Hi\ny: R | Lo | Hi\nt9: Ghost");
-    expect(r).toEqual({ ok: false, error: expect.stringContaining("t1…t4") });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.cells.find(c => c.name === "Ghost")).toBeUndefined();
+    expect(r.data.warnings?.some(w => /t1…t4/.test(w))).toBe(true);
   });
 
   // ── Items ────────────────────────────────────────────────────────────────────
@@ -93,17 +100,29 @@ describe("parseMatrix", () => {
     expect(r.data.items[0].x).toBeUndefined();
   });
 
-  it("errors when an item has no position", () => {
-    expect(parseMatrix("item: Nowhere", "impact")).toEqual({ ok: false, error: expect.stringContaining("position") });
+  it("places an item with no position at the plane centre, with a warning", () => {
+    const r = parseMatrix("item: Nowhere", "impact");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.items[0]).toMatchObject({ label: "Nowhere", x: 0.5, y: 0.5 });
+    expect(r.data.warnings?.some(w => /no position/.test(w))).toBe(true);
   });
 
-  it("errors when an item snaps to a cell outside the grid", () => {
-    expect(parseMatrix("item: X at: t99", "scenario")).toEqual({ ok: false, error: expect.stringContaining("unknown cell") });
+  it("places an item snapped to an unknown cell at the centre, with a warning", () => {
+    const r = parseMatrix("item: X at: t99", "scenario");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.items[0]).toMatchObject({ label: "X", x: 0.5, y: 0.5 });
+    expect(r.data.items[0].at).toBeUndefined();
+    expect(r.data.warnings?.some(w => /unknown cell/.test(w))).toBe(true);
   });
 
-  it("errors on a duplicate item label", () => {
+  it("skips a duplicate item label (first wins), with a warning", () => {
     const r = parseMatrix("item: A [0.1,0.1]\nitem: a [0.2,0.2]", "impact");
-    expect(r).toEqual({ ok: false, error: expect.stringContaining("duplicate") });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.items).toHaveLength(1);
+    expect(r.data.warnings?.some(w => /duplicate/.test(w))).toBe(true);
   });
 
   it("ignores title/comment lines", () => {

@@ -50,7 +50,8 @@ const MD_LINK_RE = /\[[^\]]*\]\(([^)]+)\)/;
  *  A `[[#Heading]]` or `[text](target)` link annotation may precede the position
  *  token (placed before the coordinate so the shared inline-link stripper, which
  *  only fires at end-of-line, leaves it for us). */
-function parseItem(lines: string[], headerIdx: number): { item: MatrixItem; nextIdx: number } | { error: string } {
+function parseItem(lines: string[], headerIdx: number): { item: MatrixItem | null; nextIdx: number; warnings: string[] } {
+  const warnings: string[] = [];
   let value = lines[headerIdx].trim().slice("item:".length).trim();
 
   let linkHeading: string | undefined;
@@ -90,9 +91,11 @@ function parseItem(lines: string[], headerIdx: number): { item: MatrixItem; next
     at = atMatch[1].toLowerCase();
     label = value.slice(0, atMatch.index).trim();
   } else {
-    return { error: `Line ${headerIdx + 1}: item needs a position — "[x, y]" or "at: tN"` };
+    // Recoverable: an item with no position is dropped at the plane centre.
+    warnings.push(`Line ${headerIdx + 1}: item "${label || "(unnamed)"}" has no position — placed at the centre`);
+    x = 0.5;
+    y = 0.5;
   }
-  if (!label) return { error: `Line ${headerIdx + 1}: item requires a label` };
 
   // Consume indented body lines.
   const body: string[] = [];
@@ -112,7 +115,13 @@ function parseItem(lines: string[], headerIdx: number): { item: MatrixItem; next
   }
   while (body.length > 0 && body[body.length - 1].trim() === "") body.pop();
 
-  return { item: { label, content: body.join("\n"), x, y, at, linkHeading, linkTicket }, nextIdx: i };
+  // Recoverable: an item with no label can't be identified/edited — skip it.
+  if (!label) {
+    warnings.push(`Line ${headerIdx + 1}: item has no label — skipped`);
+    return { item: null, nextIdx: i, warnings };
+  }
+
+  return { item: { label, content: body.join("\n"), x, y, at, linkHeading, linkTicket }, nextIdx: i, warnings };
 }
 
 /**
@@ -125,9 +134,17 @@ function parseItem(lines: string[], headerIdx: number): { item: MatrixItem; next
  * `[x, y]` coordinate or snapped to a cell with `at: tN`.
  */
 export function parseMatrix(source: string, presetOverride?: string): MatrixResult {
+  const warnings: string[] = [];
   const presetRes = resolvePreset(presetOverride);
-  if (presetRes && typeof presetRes === "object") return { ok: false, error: presetRes.error };
-  const preset = presetRes;
+  // Recoverable: an unknown preset falls back to a blank matrix (which still
+  // needs its own x:/y: axes — that stays fatal below).
+  let preset: MatrixPreset | null;
+  if (presetRes && typeof presetRes === "object") {
+    warnings.push(presetRes.error);
+    preset = null;
+  } else {
+    preset = presetRes;
+  }
 
   const lines = source.split("\n");
   let xAxis: MatrixAxis | null = null;
@@ -146,7 +163,8 @@ export function parseMatrix(source: string, presetOverride?: string): MatrixResu
     if (lower.startsWith("title:") || lower.startsWith("collapsed:") || lower.startsWith("type:") || lower.startsWith("layout:")) { i++; continue; }
 
     if (raw.search(/\S/) > 0) {
-      return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
+      warnings.push(`Line ${i + 1}: unexpected indentation — skipped`);
+      i++; continue;
     }
 
     if (lower.startsWith("x:")) { xAxis = parseAxis(trimmed.slice(2)); i++; continue; }
@@ -161,21 +179,25 @@ export function parseMatrix(source: string, presetOverride?: string): MatrixResu
 
     if (lower.startsWith("item:")) {
       const res = parseItem(lines, i);
-      if ("error" in res) return { ok: false, error: res.error };
+      warnings.push(...res.warnings);
+      i = res.nextIdx;
+      if (!res.item) continue;
       const key = res.item.label.toLowerCase();
       if (seenLabels.has(key)) {
-        return { ok: false, error: `Line ${i + 1}: duplicate "item: ${res.item.label}" — labels must be unique so edits target the right one` };
+        warnings.push(`Line ${i + 1}: duplicate "item: ${res.item.label}" — later one skipped`);
+        continue;
       }
       seenLabels.add(key);
       items.push(res.item);
-      i = res.nextIdx;
       continue;
     }
 
-    return { ok: false, error: `Line ${i + 1}: unexpected syntax — "${trimmed}". Use "x:", "y:", "tN:", or "item:"` };
+    warnings.push(`Line ${i + 1}: unexpected line "${trimmed}" — skipped`);
+    i++;
   }
 
-  // Fall back to preset axes when the author didn't override them.
+  // Fall back to preset axes when the author didn't override them. A matrix with
+  // no grid at all is genuinely unrenderable, so a missing axis stays fatal.
   const def = preset ? PRESETS[preset] : null;
   if (!xAxis) {
     if (!def) return { ok: false, error: `A matrix needs an "x:" axis (or a preset that supplies one)` };
@@ -190,20 +212,27 @@ export function parseMatrix(source: string, presetOverride?: string): MatrixResu
   const rows = yAxis.ticks.length;
   const cellCount = cols * rows;
 
-  // Validate cell references (overrides + item `at:`) against the grid.
+  // Validate cell references. An out-of-range override is dropped; an item
+  // pinned to an unknown cell falls back to the plane centre — both warn.
   const validId = (id: string): boolean => {
     const n = Number(id.slice(1));
     return Number.isInteger(n) && n >= 1 && n <= cellCount;
   };
-  for (const id of overrides.keys()) {
-    if (!validId(id)) return { ok: false, error: `Unknown cell "${id}" — this grid has cells t1…t${cellCount}` };
+  for (const id of [...overrides.keys()]) {
+    if (!validId(id)) {
+      warnings.push(`Unknown cell "${id}" — this grid has cells t1…t${cellCount} — ignored`);
+      overrides.delete(id);
+    }
   }
   for (const item of items) {
     if (item.at && !validId(item.at)) {
-      return { ok: false, error: `Item "${item.label}" targets unknown cell "${item.at}" — this grid has cells t1…t${cellCount}` };
+      warnings.push(`Item "${item.label}" targets unknown cell "${item.at}" — placed at the centre`);
+      item.at = undefined;
+      item.x = 0.5;
+      item.y = 0.5;
     }
   }
 
   const cells = resolveCells(preset, cols, rows, overrides);
-  return { ok: true, data: { preset, xAxis, yAxis, cells, items } };
+  return { ok: true, data: { preset, xAxis, yAxis, cells, items, warnings: warnings.length ? warnings : undefined } };
 }
