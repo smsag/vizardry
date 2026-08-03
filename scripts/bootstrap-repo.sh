@@ -478,7 +478,7 @@ src/
 1. Confirm \`docs/vizardry-canvas-syntax-reference.md\` is current for any framework/syntax change (docs-check gates this in CI).
 2. Bump version: \`npm version <patch|minor|major> --no-git-tag-version\` (syncs \`manifest.json\` + \`versions.json\` via \`version-bump.mjs\`).
 3. Update \`RELEASE_NOTES.md\` (the body the release workflow publishes).
-4. Commit + push → PR → merge to \`main\` (CI runs verify.yml: tsc, lint, test, docs-check, build).
+4. Commit + push → PR → merge to \`main\` (CI runs the shared verify action: tsc, lint, test, docs-check, build).
 5. Dispatch the release workflow on \`main\` with the new version (\`.github/workflows/release.yml\` re-runs verify, checks the tag matches \`manifest.json\`, builds, and creates the GitHub release with \`main.js\` + \`manifest.json\` + \`styles.css\`). Client-side tag pushes are blocked by org policy — always release via the workflow dispatch.
 AGENTSMD
   ok "AGENTS.md created"

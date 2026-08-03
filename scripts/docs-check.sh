@@ -11,7 +11,8 @@
 # AGENTS.md are gitignored internal docs, covered by the Claude Code hooks).
 # It ships with the plugin and is used to generate canvases (incl. via LLMs),
 # so a new framework must not merge/release without being documented there —
-# this runs inside verify.yml, which both CI and release.yml use as a gate.
+# this runs inside the shared verify composite action (.github/actions/verify),
+# which both CI and release.yml use as a gate.
 set -euo pipefail
 
 ERRORS=0

@@ -1,0 +1,38 @@
+name: Verify
+description: >-
+  Single source of truth for the verification pipeline — install, type-check,
+  lint, test, docs-check, build. Used by ci.yml (PR/push) and release.yml (as a
+  gate) so the two can never drift. The caller must check out the repo first
+  (composite actions do not check out); job names stay owned by the caller, so
+  ci.yml's required `ci` status check is unaffected.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+
+    - run: npm ci
+      shell: bash
+
+    - name: Type-check
+      run: npx tsc --noEmit
+      shell: bash
+
+    - name: Lint
+      run: npm run lint
+      shell: bash
+
+    - name: Test
+      run: npm test
+      shell: bash
+
+    - name: Docs check
+      run: bash scripts/docs-check.sh
+      shell: bash
+
+    - name: Build
+      run: npm run build
+      shell: bash
