@@ -18,6 +18,46 @@ export function markInteractive(el: HTMLElement): void {
 }
 
 /**
+ * html-to-image captures the container at its current on-screen size — which
+ * on a narrow viewport (mobile especially) is only the *scrolled slice* of a
+ * canvas wider or taller than the screen, so the export would drop everything
+ * past the visible edge. Before capturing, expand the container and every
+ * scrollable descendant to their full scroll size and drop the clipping
+ * overflow; the returned callback restores the exact prior inline styles once
+ * the capture is done.
+ *
+ * Elements are processed deepest-first (reverse document order, container
+ * last) so a nested scroller is expanded before its ancestor is measured —
+ * otherwise the ancestor, re-measured after a child grows, would still clip.
+ * Only `auto`/`scroll` overflow is touched, never `hidden` (which is used for
+ * decorative rounded-corner clipping). On desktop, where nothing overflows,
+ * this finds no elements to change and is a no-op — so the export path is
+ * unchanged there.
+ */
+export function expandForCapture(root: HTMLElement, win: Window): () => void {
+  const saved: Array<{ el: HTMLElement; style: string | null }> = [];
+  const expand = (el: HTMLElement): void => {
+    const cs = win.getComputedStyle(el);
+    const clipsX = (cs.overflowX === "auto" || cs.overflowX === "scroll") && el.scrollWidth > el.clientWidth + 1;
+    const clipsY = (cs.overflowY === "auto" || cs.overflowY === "scroll") && el.scrollHeight > el.clientHeight + 1;
+    if (!clipsX && !clipsY) return;
+    saved.push({ el, style: el.getAttribute("style") });
+    el.style.overflow = "visible";
+    if (clipsX) { el.style.width = `${el.scrollWidth}px`; el.style.maxWidth = "none"; }
+    if (clipsY) { el.style.height = `${el.scrollHeight}px`; el.style.maxHeight = "none"; }
+  };
+  const ordered = Array.from(root.querySelectorAll<HTMLElement>("*")).reverse();
+  ordered.push(root);
+  for (const el of ordered) expand(el);
+  return () => {
+    for (const { el, style } of saved) {
+      if (style === null) el.removeAttribute("style");
+      else el.setAttribute("style", style);
+    }
+  };
+}
+
+/**
  * If `label` resolves to a heading in the current note, appends a chain-link
  * button to `parent` that jumps to it. Shared by the card canvases (card
  * blocks, Story, SCQA grid) so a linked card gets the same affordance the grid
@@ -272,13 +312,26 @@ export function addHeaderControls(
       // Cap the pixel ratio: unchanged on desktop, but bounded on high-DPI
       // phones where devicePixelRatio*2 (≈6) makes oversized PNGs that can OOM.
       const pixelRatio = Math.min((win.devicePixelRatio || 1) * 2, 4);
-      // Render to a Blob rather than a data: URL — base64 data URLs can exceed
-      // the WebView's URL-length cap and fail silently on large canvases.
-      const blob = await toBlob(container, {
-        pixelRatio,
-        backgroundColor: bg,
-        filter: (node) => !(node as HTMLElement).classList?.contains("vizardry-header-actions"),
-      });
+      // Expand any scroll wrappers so the *whole* canvas is captured, not just
+      // the on-screen slice (the mobile "only the visible part is saved" bug),
+      // then size the capture to the full scroll extent. Restored in finally.
+      const restoreLayout = expandForCapture(container, win);
+      let blob: Blob | null;
+      try {
+        // Render to a Blob rather than a data: URL — base64 data URLs can exceed
+        // the WebView's URL-length cap and fail silently on large canvases.
+        blob = await toBlob(container, {
+          pixelRatio,
+          backgroundColor: bg,
+          // Full expanded size; `|| undefined` lets html-to-image fall back to
+          // the element's own size when layout isn't measurable (e.g. jsdom).
+          width: container.scrollWidth || undefined,
+          height: container.scrollHeight || undefined,
+          filter: (node) => !(node as HTMLElement).classList?.contains("vizardry-header-actions"),
+        });
+      } finally {
+        restoreLayout();
+      }
       if (!blob) throw new Error("html-to-image returned an empty blob");
 
       const filename = `${title}.png`;

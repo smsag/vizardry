@@ -20,7 +20,7 @@ const { mockGetLinearService, mockGetUpvotyService } = vi.hoisted(() => ({
 vi.mock("../linear", () => ({ getLinearService: mockGetLinearService }));
 vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
 
-import { initCanvas, renderHeadingLink } from "./controls";
+import { initCanvas, renderHeadingLink, expandForCapture } from "./controls";
 
 function container(): HTMLElement {
   const el = document.createElement("div");
@@ -147,6 +147,49 @@ describe("renderHeadingLink — ticket fallback", () => {
   });
 });
 
+describe("expandForCapture", () => {
+  it("neutralises a horizontal scroller to its full width, then restores it exactly", () => {
+    const el = document.createElement("div");
+    el.style.overflowX = "auto";
+    el.style.width = "400px";
+    document.body.appendChild(el);
+    Object.defineProperty(el, "scrollWidth", { configurable: true, value: 1200 });
+    Object.defineProperty(el, "clientWidth", { configurable: true, value: 400 });
+    const before = el.getAttribute("style");
+
+    const restore = expandForCapture(el, window);
+    expect(el.style.overflow).toBe("visible");
+    expect(el.style.width).toBe("1200px");
+
+    restore();
+    expect(el.getAttribute("style")).toBe(before);
+  });
+
+  it("is a no-op for a non-overflowing element (desktop path unchanged)", () => {
+    const el = document.createElement("div");
+    el.style.overflowX = "auto";
+    document.body.appendChild(el);
+    Object.defineProperty(el, "scrollWidth", { configurable: true, value: 300 });
+    Object.defineProperty(el, "clientWidth", { configurable: true, value: 300 });
+    const before = el.getAttribute("style");
+
+    expandForCapture(el, window)();
+    expect(el.getAttribute("style")).toBe(before);
+  });
+
+  it("only touches auto/scroll overflow, never hidden (decorative clips)", () => {
+    const el = document.createElement("div");
+    el.style.overflow = "hidden";
+    document.body.appendChild(el);
+    Object.defineProperty(el, "scrollWidth", { configurable: true, value: 1200 });
+    Object.defineProperty(el, "clientWidth", { configurable: true, value: 400 });
+    const before = el.getAttribute("style");
+
+    expandForCapture(el, window)();
+    expect(el.getAttribute("style")).toBe(before);
+  });
+});
+
 describe("download / export", () => {
   function clickDownload(el: HTMLElement): void {
     const btn = el.querySelector<HTMLButtonElement>(".vizardry-download-btn")!;
@@ -200,6 +243,35 @@ describe("download / export", () => {
     expect(arg.files[0].type).toBe("image/png");
     // Share path returns early — no anchor download fallback runs.
     expect((URL as any).createObjectURL).not.toHaveBeenCalled();
+
+    delete (window.navigator as any).share;
+    delete (window.navigator as any).canShare;
+  });
+
+  it("mobile: exports the full canvas, not just the visible slice, when it overflows the viewport", async () => {
+    // Repro: a canvas wider (and taller) than a phone viewport. Before the fix
+    // the export captured only the on-screen slice.
+    mockPlatform.isMobile = true;
+    mockPlatform.isDesktop = false;
+    (window.navigator as any).share = vi.fn().mockResolvedValue(undefined);
+    (window.navigator as any).canShare = vi.fn(() => true);
+
+    const el = container();
+    initCanvas(el, "scqa", "Wide", undefined, "source", undefined, undefined);
+    el.style.overflowX = "auto";
+    Object.defineProperty(el, "scrollWidth", { configurable: true, value: 1600 });
+    Object.defineProperty(el, "clientWidth", { configurable: true, value: 390 });
+    Object.defineProperty(el, "scrollHeight", { configurable: true, value: 900 });
+    Object.defineProperty(el, "clientHeight", { configurable: true, value: 900 });
+
+    clickDownload(el);
+    await vi.waitFor(() => expect(mockToBlob).toHaveBeenCalled());
+
+    const opts = mockToBlob.mock.calls[0][1];
+    expect(opts.width).toBe(1600);   // full width, not the 390px viewport slice
+    expect(opts.height).toBe(900);
+    // Layout restored after capture — no leftover expansion left on the canvas.
+    expect(el.style.overflow).toBe("");
 
     delete (window.navigator as any).share;
     delete (window.navigator as any).canShare;

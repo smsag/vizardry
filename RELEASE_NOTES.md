@@ -1,9 +1,8 @@
-## 0.46.3
+## 0.46.4
 
-Internal refactor — no functional changes.
+Bug fix.
 
-- Unified how the plugin's diagram renderers receive their editor/link
-  context behind a single `RenderContext` argument, and simplified the
-  renderer registry that dispatches each canvas type. No change to any
-  canvas's syntax, rendering, or behaviour; the full test suite is unchanged
-  and passing.
+- **Mobile image download now saves the whole canvas.** Downloading a canvas
+  that was wider (or taller) than the screen previously exported only the
+  on-screen portion — the rest was cut off. The export now expands the canvas
+  to its full size before capturing, so the entire diagram is saved.
