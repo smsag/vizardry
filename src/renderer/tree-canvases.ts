@@ -1,7 +1,8 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { FishboneDiagram, ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas, renderCanvasWarnings } from "./controls";
-import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions, renderTree } from "./tree";
+import { renderTree } from "./tree";
+import { adaptFishboneToTree, adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, FISHBONE_OPTS, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions } from "./tree-adapters";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import type { RenderContext } from "./render-context";
