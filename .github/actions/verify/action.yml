@@ -16,6 +16,10 @@ runs:
 
     - run: npm ci
       shell: bash
+      env:
+        # No browsers needed for the unit pipeline; the visual workflow runs in
+        # a Playwright container that already has them.
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
     - name: Type-check
       run: npx tsc --noEmit
