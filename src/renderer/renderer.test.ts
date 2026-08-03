@@ -716,6 +716,16 @@ describe("renderWardleyMap", () => {
   const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
   const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
 
+  it("shows a non-blocking warning chip when the parser reported warnings", () => {
+    const el = container();
+    renderWardleyMap({ ...map, warnings: ['Line 3: link references unknown component "Ghost" — skipped'] }, el);
+    const chip = el.querySelector(".vzd-canvas-warning-chip");
+    expect(chip).toBeTruthy();
+    expect(chip!.querySelector(".vzd-canvas-warning-count")?.textContent).toBe("1");
+    // The map still rendered.
+    expect(el.querySelectorAll(".vzd-wardley-node").length).toBe(3);
+  });
+
   it("draws an evolution movement arrow and to-be marker for a component with evolveTo", () => {
     const el = container();
     const evolveMap: WardleyMap = {

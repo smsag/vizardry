@@ -7,6 +7,10 @@ function stripInlineComment(s: string): string {
   return idx === -1 ? s : s.slice(0, idx);
 }
 
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, n));
+}
+
 /**
  * Parses Wardley Map syntax:
  *
@@ -26,14 +30,16 @@ export function parseWardleyMap(source: string): WardleyResult {
   const components = new Map<string, WardleyComponent>();
   const explicitComponents = new Set<string>(); // has an explicit component: line
   const explicitLower = new Set<string>();       // lower-cased, for duplicate detection
-  const links: WardleyLink[] = [];
-  const evolves: { name: string; evolveTo: number }[] = [];
+  const links: { from: string; to: string; line: number }[] = [];
+  const evolves: { name: string; evolveTo: number; line: number }[] = [];
   const rawPipelines: {
     name: string;
     x1: number;
     x2: number;
     items: { name: string; evolution: number }[];
+    line: number;
   }[] = [];
+  const warnings: string[] = [];
   let stages: string[] | undefined;
   let stagePositions: number[] | undefined;
   let anchor: string | null = null;
@@ -45,7 +51,7 @@ export function parseWardleyMap(source: string): WardleyResult {
 
     if (trimmed.startsWith("anchor:")) {
       const name = trimmed.slice("anchor:".length).trim();
-      if (!name) return { ok: false, error: `Line ${i + 1}: anchor requires a name` };
+      if (!name) { warnings.push(`Line ${i + 1}: anchor has no name — ignored`); continue; }
       anchor = name;
       if (!components.has(name)) {
         components.set(name, { name, visibility: 1, evolution: 0 });
@@ -56,12 +62,11 @@ export function parseWardleyMap(source: string): WardleyResult {
     if (trimmed.startsWith("stages:")) {
       const rest = trimmed.slice("stages:".length).trim();
       if (rest) {
-        const parsed = rest.split("|").map((part) => part.trim());
-        if (parsed.some((label) => !label)) {
-          return { ok: false, error: `Line ${i + 1}: stages contains an empty label` };
-        }
+        // Empty labels between pipes are dropped rather than fatal.
+        const parsed = rest.split("|").map((part) => part.trim()).filter((p) => p !== "");
         if (parsed.length < 2) {
-          return { ok: false, error: `Line ${i + 1}: stages requires at least two labels` };
+          warnings.push(`Line ${i + 1}: stages needs at least two labels — using defaults`);
+          continue;
         }
         stages = parsed;
         stagePositions = undefined;
@@ -85,32 +90,34 @@ export function parseWardleyMap(source: string): WardleyResult {
 
         const match = entryTrimmed.match(/^([0-9]*\.?[0-9]+)\s*:\s*(.+)$/);
         if (!match) {
-          return { ok: false, error: `Line ${j + 1}: stages entry must be in the form \"<position>: <label>\"` };
+          warnings.push(`Line ${j + 1}: stages entry must be "<position>: <label>" — skipped`);
+          continue;
         }
         const position = parseFloat(match[1]);
         const label = match[2].trim();
         if (isNaN(position) || position <= 0 || position >= 1) {
-          return { ok: false, error: `Line ${j + 1}: stages position must be between 0 and 1 (exclusive)` };
+          warnings.push(`Line ${j + 1}: stages position must be between 0 and 1 — skipped`);
+          continue;
         }
-        if (!label) {
-          return { ok: false, error: `Line ${j + 1}: stages label must not be empty` };
-        }
+        if (!label) { warnings.push(`Line ${j + 1}: stages label is empty — skipped`); continue; }
         if (seenPositions.has(position)) {
-          return { ok: false, error: `Line ${j + 1}: duplicate stages position ${position}` };
+          warnings.push(`Line ${j + 1}: duplicate stages position ${position} — skipped`);
+          continue;
         }
         if (parsedPositions.length > 0 && position <= parsedPositions[parsedPositions.length - 1]) {
-          return { ok: false, error: `Line ${j + 1}: stages positions must be strictly increasing` };
+          warnings.push(`Line ${j + 1}: stages positions must increase — skipped`);
+          continue;
         }
         seenPositions.add(position);
         parsedPositions.push(position);
         parsedStages.push(label);
       }
-      if (parsedStages.length < 2) {
-        return { ok: false, error: `Line ${i + 1}: stages requires at least two positioned labels` };
+      if (parsedStages.length >= 2) {
+        stages = parsedStages;
+        stagePositions = parsedPositions;
+      } else {
+        warnings.push(`Line ${i + 1}: stages needs at least two positioned labels — using defaults`);
       }
-
-      stages = parsedStages;
-      stagePositions = parsedPositions;
       i = j - 1;
       continue;
     }
@@ -119,22 +126,27 @@ export function parseWardleyMap(source: string): WardleyResult {
       const rest = trimmed.slice("component:".length).trim();
       const bracketMatch = rest.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
       if (!bracketMatch) {
-        return { ok: false, error: `Line ${i + 1}: component requires coordinates, e.g. component: Name [0.8, 0.4]` };
+        warnings.push(`Line ${i + 1}: component needs coordinates like [0.8, 0.4] — skipped`);
+        continue;
       }
       const name = bracketMatch[1].trim();
-      if (!name) return { ok: false, error: `Line ${i + 1}: component requires a name` };
+      if (!name) { warnings.push(`Line ${i + 1}: component has no name — skipped`); continue; }
 
       if (explicitLower.has(name.toLowerCase())) {
-        return { ok: false, error: `Line ${i + 1}: duplicate component "${name}"` };
+        warnings.push(`Line ${i + 1}: duplicate component "${name}" — ignored`);
+        continue;
       }
 
       const coords = bracketMatch[2].split(",").map(s => parseFloat(s.trim()));
       if (coords.length !== 2 || coords.some(isNaN)) {
-        return { ok: false, error: `Line ${i + 1}: coordinates must be two numbers between 0 and 1, e.g. [0.8, 0.4]` };
+        warnings.push(`Line ${i + 1}: component "${name}" has invalid coordinates — skipped`);
+        continue;
       }
-      const [visibility, evolution] = coords;
+      let [visibility, evolution] = coords;
       if (visibility < 0 || visibility > 1 || evolution < 0 || evolution > 1) {
-        return { ok: false, error: `Line ${i + 1}: coordinates must be between 0 and 1` };
+        warnings.push(`Line ${i + 1}: component "${name}" coordinates clamped to 0–1`);
+        visibility = clamp01(visibility);
+        evolution = clamp01(evolution);
       }
 
       if (components.has(name)) {
@@ -155,69 +167,80 @@ export function parseWardleyMap(source: string): WardleyResult {
       // Trailing number is the target evolution; the rest (may contain spaces) is the name.
       const match = rest.match(/^(.*?)\s+([0-9]*\.?[0-9]+)$/);
       if (!match) {
-        return { ok: false, error: `Line ${i + 1}: evolve requires a component and a target, e.g. evolve: Web App 0.8` };
+        warnings.push(`Line ${i + 1}: evolve needs a component and a target like "evolve: Web App 0.8" — skipped`);
+        continue;
       }
       const name = match[1].trim();
       const evolveTo = parseFloat(match[2]);
-      if (!name) return { ok: false, error: `Line ${i + 1}: evolve requires a component name` };
+      if (!name) { warnings.push(`Line ${i + 1}: evolve has no component name — skipped`); continue; }
       if (isNaN(evolveTo) || evolveTo < 0 || evolveTo > 1) {
-        return { ok: false, error: `Line ${i + 1}: evolve target must be between 0 and 1` };
+        warnings.push(`Line ${i + 1}: evolve target must be between 0 and 1 — skipped`);
+        continue;
       }
-      evolves.push({ name, evolveTo });
+      evolves.push({ name, evolveTo, line: i + 1 });
       continue;
     }
 
     if (trimmed.startsWith("pipeline:")) {
-      const rest = trimmed.slice("pipeline:".length).trim();
-      const bracketMatch = rest.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
-      if (!bracketMatch) {
-        return { ok: false, error: `Line ${i + 1}: pipeline requires a range, e.g. pipeline: Name [0.3, 0.7]` };
-      }
-      const name = bracketMatch[1].trim();
-      if (!name) return { ok: false, error: `Line ${i + 1}: pipeline requires a component name` };
-
-      const bounds = bracketMatch[2].split(",").map(s => parseFloat(s.trim()));
-      if (bounds.length !== 2 || bounds.some(isNaN)) {
-        return { ok: false, error: `Line ${i + 1}: pipeline range must be two numbers, e.g. [0.3, 0.7]` };
-      }
-      const [x1, x2] = bounds;
-      if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) {
-        return { ok: false, error: `Line ${i + 1}: pipeline range must be between 0 and 1` };
-      }
-      if (x1 >= x2) {
-        return { ok: false, error: `Line ${i + 1}: pipeline range start must be less than end` };
-      }
-
-      // Indented sub-component lines: "<name> [evolution]"
-      const items: { name: string; evolution: number }[] = [];
+      // Consume the indented block first so a bad header never leaks its items
+      // as unrecognised top-level lines.
       let j = i + 1;
+      const rawItems: { text: string; line: number }[] = [];
       for (; j < lines.length; j++) {
         const entryRaw = stripInlineComment(lines[j]);
         const entryTrimmed = entryRaw.trim();
         if (entryTrimmed === "") continue;
         if (!/^\s/.test(entryRaw)) break;
+        rawItems.push({ text: entryTrimmed, line: j + 1 });
+      }
+      const skipBlock = (): void => { i = j - 1; };
 
-        const m = entryTrimmed.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
-        if (!m) {
-          return { ok: false, error: `Line ${j + 1}: pipeline item must be in the form "<name> [evolution]"` };
-        }
+      const rest = trimmed.slice("pipeline:".length).trim();
+      const bracketMatch = rest.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+      if (!bracketMatch) {
+        warnings.push(`Line ${i + 1}: pipeline needs a range like [0.3, 0.7] — skipped`);
+        skipBlock(); continue;
+      }
+      const name = bracketMatch[1].trim();
+      if (!name) { warnings.push(`Line ${i + 1}: pipeline has no component name — skipped`); skipBlock(); continue; }
+
+      const bounds = bracketMatch[2].split(",").map(s => parseFloat(s.trim()));
+      if (bounds.length !== 2 || bounds.some(isNaN)) {
+        warnings.push(`Line ${i + 1}: pipeline range must be two numbers — skipped`);
+        skipBlock(); continue;
+      }
+      let [x1, x2] = bounds;
+      if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) {
+        warnings.push(`Line ${i + 1}: pipeline range clamped to 0–1`);
+        x1 = clamp01(x1); x2 = clamp01(x2);
+      }
+      if (x1 >= x2) {
+        warnings.push(`Line ${i + 1}: pipeline range start must be less than end — skipped`);
+        skipBlock(); continue;
+      }
+
+      const items: { name: string; evolution: number }[] = [];
+      for (const it of rawItems) {
+        const m = it.text.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+        if (!m) { warnings.push(`Line ${it.line}: pipeline item must be "<name> [evolution]" — skipped`); continue; }
         const itemName = m[1].trim();
-        if (!itemName) return { ok: false, error: `Line ${j + 1}: pipeline item requires a name` };
+        if (!itemName) { warnings.push(`Line ${it.line}: pipeline item has no name — skipped`); continue; }
         const evo = parseFloat(m[2].trim());
         if (isNaN(evo) || evo < 0 || evo > 1) {
-          return { ok: false, error: `Line ${j + 1}: pipeline item evolution must be between 0 and 1` };
+          warnings.push(`Line ${it.line}: pipeline item evolution must be between 0 and 1 — skipped`); continue;
         }
         if (evo < x1 || evo > x2) {
-          return { ok: false, error: `Line ${j + 1}: pipeline item evolution ${evo} must fall within the pipeline range [${x1}, ${x2}]` };
+          warnings.push(`Line ${it.line}: pipeline item evolution ${evo} is outside the range [${x1}, ${x2}] — skipped`); continue;
         }
         items.push({ name: itemName, evolution: evo });
       }
       if (items.length === 0) {
-        return { ok: false, error: `Line ${i + 1}: pipeline requires at least one sub-component` };
+        warnings.push(`Line ${i + 1}: pipeline "${name}" has no valid sub-components — skipped`);
+        skipBlock(); continue;
       }
 
-      rawPipelines.push({ name, x1, x2, items });
-      i = j - 1;
+      rawPipelines.push({ name, x1, x2, items, line: i + 1 });
+      skipBlock();
       continue;
     }
 
@@ -225,16 +248,17 @@ export function parseWardleyMap(source: string): WardleyResult {
       const rest = trimmed.slice("link:".length).trim();
       const arrowIdx = rest.indexOf("->");
       if (arrowIdx === -1) {
-        return { ok: false, error: `Line ${i + 1}: link requires "->" separator, e.g. link: A -> B` };
+        warnings.push(`Line ${i + 1}: link needs "->" like "link: A -> B" — skipped`);
+        continue;
       }
       const from = rest.slice(0, arrowIdx).trim();
       const to = rest.slice(arrowIdx + 2).trim();
-      if (!from || !to) return { ok: false, error: `Line ${i + 1}: link requires two component names` };
-      links.push({ from, to });
+      if (!from || !to) { warnings.push(`Line ${i + 1}: link needs two component names — skipped`); continue; }
+      links.push({ from, to, line: i + 1 });
       continue;
     }
 
-    return { ok: false, error: `Line ${i + 1}: unrecognised keyword — expected anchor, stages, component, pipeline, evolve, or link` };
+    warnings.push(`Line ${i + 1}: unrecognised line "${trimmed}" — skipped`);
   }
 
   if (components.size === 0) {
@@ -251,9 +275,9 @@ export function parseWardleyMap(source: string): WardleyResult {
   for (const link of links) {
     const from = canonical.get(link.from.toLowerCase());
     const to = canonical.get(link.to.toLowerCase());
-    if (!from) return { ok: false, error: `Link references unknown component "${link.from}"` };
-    if (!to) return { ok: false, error: `Link references unknown component "${link.to}"` };
-    if (from === to) return { ok: false, error: `Link cannot connect a component to itself ("${from}")` };
+    if (!from) { warnings.push(`Line ${link.line}: link references unknown component "${link.from}" — skipped`); continue; }
+    if (!to) { warnings.push(`Line ${link.line}: link references unknown component "${link.to}" — skipped`); continue; }
+    if (from === to) { warnings.push(`Line ${link.line}: a component can't link to itself ("${from}") — skipped`); continue; }
     const key = `${from} ${to}`;
     if (seenLinks.has(key)) continue; // drop duplicate
     seenLinks.add(key);
@@ -264,8 +288,8 @@ export function parseWardleyMap(source: string): WardleyResult {
   const evolved = new Set<string>();
   for (const e of evolves) {
     const canon = canonical.get(e.name.toLowerCase());
-    if (!canon) return { ok: false, error: `evolve references unknown component "${e.name}"` };
-    if (evolved.has(canon)) return { ok: false, error: `Duplicate evolve for component "${canon}"` };
+    if (!canon) { warnings.push(`Line ${e.line}: evolve references unknown component "${e.name}" — skipped`); continue; }
+    if (evolved.has(canon)) { warnings.push(`Line ${e.line}: duplicate evolve for "${canon}" — ignored`); continue; }
     evolved.add(canon);
     components.get(canon)!.evolveTo = e.evolveTo;
   }
@@ -275,8 +299,8 @@ export function parseWardleyMap(source: string): WardleyResult {
   const pipelinedComponents = new Set<string>();
   for (const p of rawPipelines) {
     const canon = canonical.get(p.name.toLowerCase());
-    if (!canon) return { ok: false, error: `pipeline references unknown component "${p.name}"` };
-    if (pipelinedComponents.has(canon)) return { ok: false, error: `Duplicate pipeline for component "${canon}"` };
+    if (!canon) { warnings.push(`Line ${p.line}: pipeline references unknown component "${p.name}" — skipped`); continue; }
+    if (pipelinedComponents.has(canon)) { warnings.push(`Line ${p.line}: duplicate pipeline for "${canon}" — ignored`); continue; }
     pipelinedComponents.add(canon);
     pipelines.push({ component: canon, x1: p.x1, x2: p.x2, items: p.items });
   }
@@ -289,6 +313,7 @@ export function parseWardleyMap(source: string): WardleyResult {
     stages,
     stagePositions,
     explicitComponents,
+    warnings: warnings.length ? warnings : undefined,
   };
 
   return { ok: true, data };

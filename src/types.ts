@@ -429,6 +429,9 @@ export interface WardleyMap {
    *  Anchor-only components (no component: line) are excluded — they have
    *  no source line to write back to, so they cannot be dragged. */
   explicitComponents: Set<string>;
+  /** Non-fatal parse warnings (skipped lines, clamped coords, dropped links).
+   *  Surfaced as a small canvas warning chip. */
+  warnings?: string[];
 }
 
 export type WardleyResult = Result<WardleyMap>;

@@ -61,72 +61,91 @@ link: User -> Feature
     expect(result.data.stagePositions).toEqual([0.05, 0.28, 0.62, 0.95]);
   });
 
-  it("returns error when positioned stages are not strictly increasing", () => {
+  // ── Graceful degradation: recoverable issues warn, the map still renders ────
+
+  function warnings(src: string): string[] {
+    const r = parseWardleyMap(src);
+    expect(r.ok).toBe(true);
+    return r.ok ? (r.data.warnings ?? []) : [];
+  }
+
+  it("drops non-increasing positioned stages and falls back to defaults, with a warning", () => {
     const src = `stages:\n  0.4: Product\n  0.2: Custom\ncomponent: API [0.5, 0.5]`;
     const result = parseWardleyMap(src);
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("strictly increasing") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.stages).toBeUndefined();
+    expect(result.data.warnings?.some(w => /increase/.test(w))).toBe(true);
   });
 
-  it("returns error when positioned stages include duplicates", () => {
-    const src = `stages:\n  0.4: Product\n  0.4: Commodity\ncomponent: API [0.5, 0.5]`;
-    const result = parseWardleyMap(src);
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("duplicate stages position") });
+  it("drops duplicate positioned stages with a warning", () => {
+    expect(warnings(`stages:\n  0.4: Product\n  0.4: Commodity\ncomponent: API [0.5, 0.5]`)
+      .some(w => /duplicate stages position/.test(w))).toBe(true);
   });
 
-  it("returns error when positioned stages use out-of-range values", () => {
-    const src = `stages:\n  1.2: Commodity\n  0.8: Product\ncomponent: API [0.5, 0.5]`;
-    const result = parseWardleyMap(src);
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("between 0 and 1") });
+  it("drops out-of-range positioned stages with a warning", () => {
+    expect(warnings(`stages:\n  1.2: Commodity\n  0.8: Product\ncomponent: API [0.5, 0.5]`)
+      .some(w => /between 0 and 1/.test(w))).toBe(true);
   });
 
-  it("returns error when positioned stages include 0 endpoint", () => {
-    const src = `stages:\n  0: Driver\n  0.5: Contributor\ncomponent: API [0.5, 0.5]`;
-    const result = parseWardleyMap(src);
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("exclusive") });
+  it("drops a 0 positioned-stage endpoint with a warning", () => {
+    expect(warnings(`stages:\n  0: Driver\n  0.5: Contributor\ncomponent: API [0.5, 0.5]`)
+      .some(w => /between 0 and 1/.test(w))).toBe(true);
   });
 
-  it("returns error when positioned stages include 1 endpoint", () => {
-    const src = `stages:\n  0.4: Product\n  1: Commodity\ncomponent: API [0.5, 0.5]`;
-    const result = parseWardleyMap(src);
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("exclusive") });
-  });
-
-  it("returns error when stages has empty labels", () => {
+  it("drops empty inline stage labels rather than failing", () => {
     const result = parseWardleyMap("stages: Driver |  | Informed\ncomponent: API [0.5, 0.5]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("empty label") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.stages).toEqual(["Driver", "Informed"]);
   });
 
-  it("returns error when stages has fewer than two labels", () => {
+  it("falls back to default stages (with a warning) when fewer than two labels", () => {
     const result = parseWardleyMap("stages: Driver\ncomponent: API [0.5, 0.5]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("at least two labels") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.stages).toBeUndefined();
+    expect(result.data.warnings?.some(w => /at least two labels/.test(w))).toBe(true);
   });
 
-  it("returns error for component missing coordinates", () => {
-    const result = parseWardleyMap("component: NoBrackets");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("coordinates") });
+  it("skips a component missing coordinates (with a warning) instead of failing", () => {
+    const result = parseWardleyMap("component: A [0.5, 0.5]\ncomponent: NoBrackets");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components).toHaveLength(1);
+    expect(result.data.warnings?.some(w => /coordinates/.test(w))).toBe(true);
   });
 
-  it("returns error for coordinates out of range", () => {
+  it("clamps out-of-range component coordinates to 0–1 with a warning", () => {
     const result = parseWardleyMap("component: X [1.5, 0.5]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("between 0 and 1") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components[0].visibility).toBe(1);
+    expect(result.data.warnings?.some(w => /clamped/.test(w))).toBe(true);
   });
 
-  it("returns error for link with missing arrow", () => {
+  it("skips a link with a missing arrow, with a warning", () => {
     const result = parseWardleyMap("component: A [0.5, 0.5]\nlink: A to B");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("->") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /->/.test(w))).toBe(true);
   });
 
-  it("returns error for link referencing unknown component", () => {
+  it("skips a link to an unknown component, with a warning", () => {
     const result = parseWardleyMap("component: A [0.5, 0.5]\nlink: A -> Ghost");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Ghost") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /Ghost/.test(w))).toBe(true);
   });
 
-  it("returns error for unknown keyword", () => {
-    const result = parseWardleyMap("movement: A -> B");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("unrecognised keyword") });
+  it("skips an unrecognised line, with a warning", () => {
+    expect(warnings("component: A [0.5, 0.5]\nmovement: X")
+      .some(w => /unrecognised line/.test(w))).toBe(true);
   });
 
-  it("returns error when no components defined", () => {
+  it("still errors (fatal) when no components are defined", () => {
     const result = parseWardleyMap("// just a comment");
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("No components") });
   });
@@ -156,14 +175,21 @@ link: User -> Feature
 
   // ── Duplicate components ────────────────────────────────────────────────────
 
-  it("errors on a duplicate component name", () => {
+  it("ignores a duplicate component (first wins) with a warning", () => {
     const result = parseWardleyMap("component: Auth [0.5,0.5]\ncomponent: Auth [0.2,0.2]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("duplicate component") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components).toHaveLength(1);
+    expect(result.data.components[0].visibility).toBe(0.5);
+    expect(result.data.warnings?.some(w => /duplicate component/.test(w))).toBe(true);
   });
 
-  it("errors on a case-insensitive duplicate component name", () => {
+  it("ignores a case-insensitive duplicate component with a warning", () => {
     const result = parseWardleyMap("component: Auth [0.5,0.5]\ncomponent: auth [0.2,0.2]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("duplicate component") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components).toHaveLength(1);
+    expect(result.data.warnings?.some(w => /duplicate component/.test(w))).toBe(true);
   });
 
   // ── Links: case-insensitive resolution, self-links, duplicates ──────────────
@@ -175,9 +201,12 @@ link: User -> Feature
     expect(result.data.links).toEqual([{ from: "Web App", to: "DB" }]);
   });
 
-  it("errors on a self-link", () => {
+  it("skips a self-link with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\nlink: A -> a");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("itself") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /itself/.test(w))).toBe(true);
   });
 
   it("drops exact-duplicate links", () => {
@@ -196,24 +225,35 @@ link: User -> Feature
     expect(result.data.components[0].evolveTo).toBe(0.9);
   });
 
-  it("errors when evolve references an unknown component", () => {
+  it("skips an evolve to an unknown component with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: Ghost 0.8");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("unknown component") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components[0].evolveTo).toBeUndefined();
+    expect(result.data.warnings?.some(w => /unknown component/.test(w))).toBe(true);
   });
 
-  it("errors on a duplicate evolve for the same component", () => {
+  it("keeps the first of duplicate evolves for a component, with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A 0.6\nevolve: a 0.7");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Duplicate evolve") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components[0].evolveTo).toBe(0.6);
+    expect(result.data.warnings?.some(w => /duplicate evolve/.test(w))).toBe(true);
   });
 
-  it("errors when evolve target is out of range", () => {
+  it("skips an out-of-range evolve target with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A 1.4");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("between 0 and 1") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components[0].evolveTo).toBeUndefined();
+    expect(result.data.warnings?.some(w => /between 0 and 1/.test(w))).toBe(true);
   });
 
-  it("errors when evolve has no target value", () => {
+  it("skips an evolve with no target value, with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\nevolve: A");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("evolve requires") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.warnings?.some(w => /evolve needs/.test(w))).toBe(true);
   });
 
   // ── pipeline ─────────────────────────────────────────────────────────────────
@@ -252,35 +292,53 @@ link: User -> Feature
     expect(result.data.pipelines[0].items).toEqual([{ name: "Managed", evolution: 0.7 }]);
   });
 
-  it("errors when a pipeline references an unknown component", () => {
+  it("skips a pipeline to an unknown component with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: Ghost [0.2, 0.8]\n  Sub [0.5]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("unknown component") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /unknown component/.test(w))).toBe(true);
   });
 
-  it("errors on a duplicate pipeline for the same component", () => {
+  it("keeps the first of duplicate pipelines for a component, with a warning", () => {
     const result = parseWardleyMap(
       "component: A [0.5,0.5]\npipeline: A [0.2, 0.8]\n  Sub [0.5]\npipeline: a [0.3, 0.7]\n  Sub2 [0.4]",
     );
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Duplicate pipeline") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines).toHaveLength(1);
+    expect(result.data.warnings?.some(w => /duplicate pipeline/.test(w))).toBe(true);
   });
 
-  it("errors when a pipeline has no sub-components", () => {
+  it("skips a pipeline with no valid sub-components, with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.2, 0.8]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("at least one sub-component") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /no valid sub-components/.test(w))).toBe(true);
   });
 
-  it("errors when the pipeline range start is not less than the end", () => {
+  it("skips a pipeline whose range start is not less than the end, with a warning", () => {
     const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.8, 0.3]\n  Sub [0.5]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("start must be less than end") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines).toHaveLength(0);
+    expect(result.data.warnings?.some(w => /start must be less than end/.test(w))).toBe(true);
   });
 
-  it("errors when a sub-component evolution falls outside the pipeline range", () => {
-    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.3, 0.6]\n  Sub [0.9]");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("must fall within the pipeline range") });
+  it("skips a sub-component outside the pipeline range, keeping the rest", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.3, 0.6]\n  Good [0.5]\n  Bad [0.9]");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines[0].items).toEqual([{ name: "Good", evolution: 0.5 }]);
+    expect(result.data.warnings?.some(w => /outside the range/.test(w))).toBe(true);
   });
 
-  it("errors when a pipeline item is missing its evolution bracket", () => {
-    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.3, 0.6]\n  Sub");
-    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("<name> [evolution]") });
+  it("skips a pipeline item missing its evolution bracket, with a warning", () => {
+    const result = parseWardleyMap("component: A [0.5,0.5]\npipeline: A [0.3, 0.6]\n  Good [0.5]\n  Sub");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.pipelines[0].items).toEqual([{ name: "Good", evolution: 0.5 }]);
+    expect(result.data.warnings?.some(w => /\[evolution\]/.test(w))).toBe(true);
   });
 });

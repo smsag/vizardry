@@ -1,7 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { WardleyMap, WardleyComponent } from "../types";
 import { t } from "../i18n";
-import { initCanvas } from "./controls";
+import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
@@ -891,6 +891,7 @@ export function renderWardleyMap(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "wardley", title, undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(container, data.warnings);
 
   const wrap = container.createEl("div", { cls: "vzd-wardley-wrap" });
 
