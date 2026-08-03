@@ -131,7 +131,10 @@ export function renderCanvas(
   for (const blockDef of framework.blocks) {
     const labelKey = blockDef.label.toLowerCase();
     const block = grid.createEl("div", { cls: "vizardry-block" });
-    block.style.gridArea = blockDef.area;
+    // Drive grid placement from a custom property (not an inline grid-area) so
+    // the mobile carousel and presentation stylesheet rules can override it by
+    // specificity rather than fighting an inline style with !important.
+    block.style.setProperty("--vzd-area", blockDef.area);
     block.setAttribute("data-area", blockDef.area);
 
     const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });

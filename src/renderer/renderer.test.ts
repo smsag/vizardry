@@ -125,6 +125,16 @@ describe("renderCanvas", () => {
     expect(blocks).toHaveLength(4);
   });
 
+  it("drives block grid placement via the --vzd-area custom property (not an inline grid-area)", () => {
+    const el = container();
+    renderCanvas(swot, { strengths: "Fast team" }, new Set(), el, NULL_RESOLVER, vi.fn());
+    const block = el.querySelector<HTMLElement>(".vizardry-block")!;
+    // The mobile carousel + presentation stylesheet rules override placement by
+    // specificity, which only works if the area isn't pinned as an inline grid-area.
+    expect(block.style.getPropertyValue("--vzd-area")).toBe(swot.blocks[0].area);
+    expect(block.style.gridArea).toBe("");
+  });
+
   it("renders block content as lines", () => {
     const el = container();
     renderCanvas(swot, { strengths: "Line one\nLine two" }, new Set(), el, NULL_RESOLVER, vi.fn());
