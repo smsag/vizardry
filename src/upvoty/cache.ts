@@ -1,6 +1,7 @@
 import type { Plugin } from "obsidian";
 import type { UpvotyPost, UpvotyCacheEntry } from "./types";
 import { updatePersistedData } from "../shared/persisted-data";
+import { evictSummaryEntries, touchSummaryEntry } from "../shared/summary-cache";
 
 interface StatusEntry {
   post: UpvotyPost;
@@ -23,11 +24,16 @@ export class UpvotyCache {
     this.plugin = plugin;
   }
 
-  /** Populate in-memory summary cache from data already loaded by the plugin. */
+  /** Populate in-memory summary cache from data already loaded by the plugin.
+   *  Aged-out / over-cap entries are pruned on load and the trimmed result is
+   *  written back so data.json actually shrinks (not just the in-memory copy). */
   init(persisted: Record<string, UpvotyCacheEntry>): void {
     for (const [key, entry] of Object.entries(persisted)) {
       this.summaryCache.set(key, entry);
     }
+    const before = this.summaryCache.size;
+    evictSummaryEntries(this.summaryCache);
+    if (this.summaryCache.size !== before) void this.persist();
   }
 
   // ── Status ───────────────────────────────────────────────────────────────────
@@ -50,11 +56,16 @@ export class UpvotyCache {
     if (!entry) return null;
     if (entry.postUpdatedAt !== currentUpdatedAt) return null;
     const age = (Date.now() - entry.summarizedAt) / 3_600_000;
-    return age < ttlHours ? entry.summary : null;
+    if (age >= ttlHours) return null;
+    touchSummaryEntry(this.summaryCache, postId); // mark most-recently-used
+    return entry.summary;
   }
 
   async setSummary(postId: string, entry: UpvotyCacheEntry): Promise<void> {
+    // delete-then-set moves an updated key to the most-recently-used position.
+    this.summaryCache.delete(postId);
     this.summaryCache.set(postId, entry);
+    evictSummaryEntries(this.summaryCache);
     await this.persist();
   }
 

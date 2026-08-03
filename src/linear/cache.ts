@@ -1,6 +1,7 @@
 import type { Plugin } from "obsidian";
 import type { CacheEntry, LinearState } from "./types";
 import { updatePersistedData } from "../shared/persisted-data";
+import { evictSummaryEntries, touchSummaryEntry } from "../shared/summary-cache";
 
 interface StatusEntry {
   state: LinearState;
@@ -23,11 +24,16 @@ export class LinearCache {
     this.plugin = plugin;
   }
 
-  /** Populate in-memory summary cache from data already loaded by the plugin. */
+  /** Populate in-memory summary cache from data already loaded by the plugin.
+   *  Aged-out / over-cap entries are pruned on load and the trimmed result is
+   *  written back so data.json actually shrinks (not just the in-memory copy). */
   init(persisted: Record<string, CacheEntry>): void {
     for (const [key, entry] of Object.entries(persisted)) {
       this.summaryCache.set(key, entry);
     }
+    const before = this.summaryCache.size;
+    evictSummaryEntries(this.summaryCache);
+    if (this.summaryCache.size !== before) void this.persist();
   }
 
   // ── Status ──────────────────────────────────────────────────────────────────
@@ -54,11 +60,16 @@ export class LinearCache {
     if (!entry) return null;
     if (entry.issueUpdatedAt !== currentUpdatedAt) return null; // issue changed
     const age = (Date.now() - entry.summarizedAt) / 3_600_000;
-    return age < ttlHours ? entry.summary : null;
+    if (age >= ttlHours) return null;
+    touchSummaryEntry(this.summaryCache, issueKey); // mark most-recently-used
+    return entry.summary;
   }
 
   async setSummary(issueKey: string, entry: CacheEntry): Promise<void> {
+    // delete-then-set moves an updated key to the most-recently-used position.
+    this.summaryCache.delete(issueKey);
     this.summaryCache.set(issueKey, entry);
+    evictSummaryEntries(this.summaryCache);
     await this.persist();
   }
 

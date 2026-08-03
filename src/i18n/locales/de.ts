@@ -31,6 +31,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.conceptmap.description": "Konzepte durch benannte Beziehungen als gerichteter Graph verbunden.",
   "framework.scqa.description":       "Situation, Komplikation, Frage, Antwort als narrative Hierarchie.",
   "framework.scr.description":        "Situation, Komplikation, Lösung — eine kompaktere narrative Hierarchie.",
+  "framework.journey.description":    "Phasen abgebildet auf Aktionen, Gefühle und Schmerzpunkte — erweiterbar zu einer vollständigen Service Blueprint.",
+  "framework.service-blueprint.description": "Customer Journey plus Frontstage-, Backstage- und Support-Prozess-Bahnen.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",
@@ -239,4 +241,68 @@ export const de: Partial<Record<TranslationKey, string>> = {
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
+
+  // ── Settings: secret picker + secret row ────────────────────────────────────
+  "settings.secretPicker.title":         "Geheimnis auswählen",
+  "settings.secretPicker.searchPlaceholder": "Geheimnisse durchsuchen…",
+  "settings.secretPicker.empty":         "Noch keine Geheimnisse gespeichert.",
+  "settings.secretPicker.selected":      "Ausgewählt",
+  "settings.secretPicker.save":          "Speichern",
+  "settings.secretPicker.cancel":        "Abbrechen",
+  "settings.secret.nameDesc":            "Geheimnisname: {{name}}",
+  "settings.secret.found":               "Schlüssel gefunden ✓",
+  "settings.secret.notSet":              "Nicht gesetzt",
+  "settings.secret.link":                "Verknüpfen…",
+
+  // ── Settings: Linear section ────────────────────────────────────────────────
+  "settings.section.linear":             "Linear",
+  "settings.linear.enable.name":         "Linear-Integration aktivieren",
+  "settings.linear.enable.desc":         "Zeigt den Issue-Status auf Roadmap-Karten und erzeugt beim Überfahren KI-Zusammenfassungen.",
+  "settings.linear.apiKey.label":        "Linear-API-Schlüssel",
+  "settings.linear.url.name":            "Linear-GraphQL-URL",
+  "settings.linear.url.desc":            "Nur ändern, wenn du eine selbst gehostete Linear-Instanz verwendest.",
+
+  // ── Settings: AI summaries section ──────────────────────────────────────────
+  "settings.section.ai":                 "KI-Zusammenfassungen",
+  "settings.ai.provider.name":           "Anbieter",
+  "settings.ai.provider.desc":           "Welcher KI-Dienst zum Erzeugen der Roadmap-Karten-Zusammenfassungen verwendet wird.",
+  "settings.ai.model.name":              "Modell",
+  "settings.ai.model.desc":              "Modell für die Zusammenfassung. Haiku / GPT-4o mini sind am schnellsten und günstigsten.",
+  "settings.ai.apiKey.label":            "KI-API-Schlüssel",
+  "settings.ai.summaryCache.name":       "Zusammenfassungs-Cache (Stunden)",
+  "settings.ai.summaryCache.desc":       "Wie lange eine KI-Zusammenfassung zwischengespeichert wird, bevor sie neu erzeugt wird. Zusammenfassungen werden außerdem ungültig, wenn das Linear-Issue aktualisiert wird.",
+  "settings.ai.statusRefresh.name":      "Status-Aktualisierung (Minuten)",
+  "settings.ai.statusRefresh.desc":      "Wie oft der Issue-Status von Linear neu abgerufen wird. Der Status wird nur im Arbeitsspeicher gehalten und nie auf die Festplatte geschrieben.",
+
+  // ── Settings: Upvoty section ────────────────────────────────────────────────
+  "settings.section.upvoty":             "Upvoty",
+  "settings.upvoty.enable.name":         "Upvoty-Integration aktivieren",
+  "settings.upvoty.enable.desc":         "Zeigt beim Überfahren Details zu Feature-Requests und KI-Zusammenfassungen für UPV-1234-Schlüssel.",
+  "settings.upvoty.apiKey.label":        "Upvoty-API-Schlüssel",
+  "settings.upvoty.keyPrefix.name":      "Schlüssel-Präfix",
+  "settings.upvoty.keyPrefix.desc":      "Das Präfix zur Erkennung von Upvoty-Beiträgen im Text, z. B. UPV passt auf UPV-1234.",
+  "settings.upvoty.baseUrl.name":        "Upvoty-API-Basis-URL",
+  "settings.upvoty.baseUrl.desc":        "Nur ändern, wenn du eine selbst gehostete oder white-labeled Upvoty-Instanz nutzt.",
+  "settings.upvoty.appUrl.name":         "Upvoty-Dashboard-URL",
+  "settings.upvoty.appUrl.desc":         "Wird zum Erstellen von \"In Upvoty öffnen\"-Links verwendet. Nur ändern, wenn du eine selbst gehostete oder white-labeled Upvoty-Instanz nutzt — dies ist üblicherweise eine andere Domain als die API-Basis-URL oben.",
+  "settings.upvoty.postCache.name":      "Beitrags-Cache (Minuten)",
+  "settings.upvoty.postCache.desc":      "Wie lange ein abgerufener Upvoty-Beitrag zwischengespeichert wird, bevor er neu abgerufen wird.",
+
+  // ── Settings: clear-cache rows ──────────────────────────────────────────────
+  "settings.clearCache.name":            "Zwischengespeicherte Zusammenfassungen löschen",
+  "settings.clearCache.button":          "Löschen",
+  "settings.clearCache.linear.desc":     "Verwirft alle gespeicherten Linear-Zusammenfassungen, sodass sie beim nächsten Überfahren neu erzeugt werden. Gibt Platz in der Datendatei des Plugins frei.",
+  "settings.clearCache.linear.done":     "Vizardry: Linear-Zusammenfassungs-Cache geleert.",
+  "settings.clearCache.upvoty.desc":     "Verwirft alle gespeicherten Upvoty-Zusammenfassungen, sodass sie beim nächsten Überfahren neu erzeugt werden. Gibt Platz in der Datendatei des Plugins frei.",
+  "settings.clearCache.upvoty.done":     "Vizardry: Upvoty-Zusammenfassungs-Cache geleert.",
+
+  // ── Service (Linear/Upvoty) user-facing error + notice strings ──────────────
+  "service.error.keyLookupFailed":       "Schlüsselabruf fehlgeschlagen: {{message}}",
+  "service.error.noLinearKey":           "Kein Linear-API-Schlüssel — prüfe Einstellungen → Vizardry (Geheimnis: \"{{secret}}\")",
+  "service.error.noUpvotyKey":           "Kein Upvoty-API-Schlüssel — prüfe Einstellungen → Vizardry (Geheimnis: \"{{secret}}\")",
+  "service.error.noUpvotyKeyShort":      "Kein Upvoty-API-Schlüssel — prüfe Einstellungen → Vizardry",
+  "service.error.noAiKey":               "Kein KI-API-Schlüssel — prüfe Einstellungen → Vizardry (Geheimnis: \"{{secret}}\")",
+  "service.error.upvotyDisabled":        "Upvoty-Integration deaktiviert.",
+  "service.notice.linearAuth":           "Vizardry: Linear-API-Schlüssel ist ungültig oder fehlt — prüfe Einstellungen → Vizardry.",
+  "service.notice.upvotyAuth":           "Vizardry: Upvoty-API-Schlüssel ist ungültig oder fehlt — prüfe Einstellungen → Vizardry.",
 };

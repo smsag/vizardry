@@ -251,6 +251,70 @@ export const en = {
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",
+
+  // ── Settings: secret picker + secret row ────────────────────────────────────
+  "settings.secretPicker.title":         "Select secret",
+  "settings.secretPicker.searchPlaceholder": "Search secrets…",
+  "settings.secretPicker.empty":         "No secrets stored yet.",
+  "settings.secretPicker.selected":      "Selected",
+  "settings.secretPicker.save":          "Save",
+  "settings.secretPicker.cancel":        "Cancel",
+  "settings.secret.nameDesc":            "Secret name: {{name}}",
+  "settings.secret.found":               "Key found ✓",
+  "settings.secret.notSet":              "Not set",
+  "settings.secret.link":                "Link…",
+
+  // ── Settings: Linear section ────────────────────────────────────────────────
+  "settings.section.linear":             "Linear",
+  "settings.linear.enable.name":         "Enable Linear integration",
+  "settings.linear.enable.desc":         "Show issue status on roadmap cards and generate AI summaries on hover.",
+  "settings.linear.apiKey.label":        "Linear API key",
+  "settings.linear.url.name":            "Linear GraphQL URL",
+  "settings.linear.url.desc":            "Change only if you are using a self-hosted Linear instance.",
+
+  // ── Settings: AI summaries section ──────────────────────────────────────────
+  "settings.section.ai":                 "AI summaries",
+  "settings.ai.provider.name":           "Provider",
+  "settings.ai.provider.desc":           "Which AI service to use for generating roadmap card summaries.",
+  "settings.ai.model.name":              "Model",
+  "settings.ai.model.desc":              "Model used for summarisation. Haiku / GPT-4o mini are fastest and cheapest.",
+  "settings.ai.apiKey.label":            "AI API key",
+  "settings.ai.summaryCache.name":       "Summary cache (hours)",
+  "settings.ai.summaryCache.desc":       "How long to cache an LLM summary before regenerating it. Summaries are also invalidated when the Linear issue is updated.",
+  "settings.ai.statusRefresh.name":      "Status refresh (minutes)",
+  "settings.ai.statusRefresh.desc":      "How often to re-fetch the issue status from Linear. Status is kept in memory only and never written to disk.",
+
+  // ── Settings: Upvoty section ────────────────────────────────────────────────
+  "settings.section.upvoty":             "Upvoty",
+  "settings.upvoty.enable.name":         "Enable Upvoty integration",
+  "settings.upvoty.enable.desc":         "Show feature request details and AI summaries on hover for UPV-1234 keys.",
+  "settings.upvoty.apiKey.label":        "Upvoty API key",
+  "settings.upvoty.keyPrefix.name":      "Key prefix",
+  "settings.upvoty.keyPrefix.desc":      "The prefix used to identify Upvoty posts inline, e.g. UPV matches UPV-1234.",
+  "settings.upvoty.baseUrl.name":        "Upvoty API base URL",
+  "settings.upvoty.baseUrl.desc":        "Change only if you are on a self-hosted or white-labelled Upvoty instance.",
+  "settings.upvoty.appUrl.name":         "Upvoty dashboard URL",
+  "settings.upvoty.appUrl.desc":         "Used to build \"Open in Upvoty\" links. Change only if you are on a self-hosted or white-labelled Upvoty instance — this is usually a different domain than the API base URL above.",
+  "settings.upvoty.postCache.name":      "Post cache (minutes)",
+  "settings.upvoty.postCache.desc":      "How long to cache a fetched Upvoty post before re-fetching.",
+
+  // ── Settings: clear-cache rows ──────────────────────────────────────────────
+  "settings.clearCache.name":            "Clear cached summaries",
+  "settings.clearCache.button":          "Clear",
+  "settings.clearCache.linear.desc":     "Discard all persisted Linear summaries so they are regenerated on next hover. Frees space in the plugin's data file.",
+  "settings.clearCache.linear.done":     "Vizardry: Linear summary cache cleared.",
+  "settings.clearCache.upvoty.desc":     "Discard all persisted Upvoty summaries so they are regenerated on next hover. Frees space in the plugin's data file.",
+  "settings.clearCache.upvoty.done":     "Vizardry: Upvoty summary cache cleared.",
+
+  // ── Service (Linear/Upvoty) user-facing error + notice strings ──────────────
+  "service.error.keyLookupFailed":       "Key lookup failed: {{message}}",
+  "service.error.noLinearKey":           "No Linear API key — check Settings → Vizardry (secret: \"{{secret}}\")",
+  "service.error.noUpvotyKey":           "No Upvoty API key — check Settings → Vizardry (secret: \"{{secret}}\")",
+  "service.error.noUpvotyKeyShort":      "No Upvoty API key — check Settings → Vizardry",
+  "service.error.noAiKey":               "No AI API key — check Settings → Vizardry (secret: \"{{secret}}\")",
+  "service.error.upvotyDisabled":        "Upvoty integration disabled.",
+  "service.notice.linearAuth":           "Vizardry: Linear API key is invalid or missing — check Settings → Vizardry.",
+  "service.notice.upvotyAuth":           "Vizardry: Upvoty API key is invalid or missing — check Settings → Vizardry.",
 } as const;
 
 export type TranslationKey = keyof typeof en;
