@@ -1,7 +1,8 @@
-## 0.46.5
+## 0.46.6
 
-Maintenance — no functional or visible changes.
+Internal refactor — no functional changes.
 
-- Internal CI cleanup: the build/test pipeline is now defined once (a shared
-  composite action) instead of being duplicated across workflow files. No
-  effect on the plugin itself.
+- Split the three largest source files (two diagram renderers and the shared
+  type definitions) into smaller, focused modules for maintainability. No
+  change to any canvas's syntax, rendering, or behaviour; the full unit suite
+  and a pixel-level visual-regression pass confirm identical output.
