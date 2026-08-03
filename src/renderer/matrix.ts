@@ -3,7 +3,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { MatrixData, MatrixItem, MatrixPreset } from "../types";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n/locales/en";
-import { initCanvas, renderHeadingLink } from "./controls";
+import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import { renderBlockBody } from "./block-editor";
 import { presetColor } from "../matrix-presets";
 import { writeItemPosition, writeItemContent } from "../shared/matrix-edit";
@@ -52,6 +52,7 @@ export function renderMatrix(
     app,
     ctx,
   );
+  renderCanvasWarnings(container, data.warnings);
 
   const editMode = !!(app && ctx && isEditModeActive(app));
 

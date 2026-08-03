@@ -596,6 +596,9 @@ export interface MatrixData {
   yAxis: MatrixAxis;
   cells: MatrixCell[]; // only cells the author named/heated (or the preset heated)
   items: MatrixItem[];
+  /** Non-fatal parse warnings (skipped items, dropped cell refs, defaulted
+   *  positions). Surfaced as a small canvas warning chip. */
+  warnings?: string[];
 }
 
 export type MatrixResult = Result<MatrixData>;
