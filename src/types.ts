@@ -29,7 +29,7 @@ export type Result<T> =
 // variant, which doesn't fit the single-data Result<T> pattern, so it is
 // kept as a standalone definition.
 export type ParseResult =
-  | { ok: true; data: Record<string, string>; links: Record<string, string>; cardBlocks: Set<string>; allCards: boolean }
+  | { ok: true; data: Record<string, string>; links: Record<string, string>; cardBlocks: Set<string>; allCards: boolean; warnings?: string[] }
   | { ok: false; error: string };
 
 // ── Impact Map ──────────────────────────────────────────────────────────────

@@ -136,6 +136,15 @@ describe("dispatchVizardry", () => {
     expect(el.classList.contains("vizardry-error")).toBe(false);
   });
 
+  it("renders a grid with a warning chip for a recoverable issue instead of erroring", () => {
+    const el = container();
+    // A stray unknown root line degrades to a warning; the grid still renders.
+    dispatchVizardry("type: swot\nblock: Strengths\n  Fast team\noops: bad", el, fakeCtx(), fakeApp());
+    expect(el.classList.contains("vizardry-error")).toBe(false);
+    expect(el.querySelector(".vizardry-grid")).toBeTruthy();
+    expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
+  });
+
   it("dispatches a matrix preset variant and renders the unified engine", () => {
     const el = container();
     dispatchVizardry("type: matrix, opportunity\nitem: Idea at: t1", el, fakeCtx(), fakeApp());

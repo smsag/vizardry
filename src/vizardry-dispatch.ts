@@ -22,6 +22,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolver } from "./shared/links";
 import { parseFrameworkSource } from "./parser";
 import { renderCanvas, renderError } from "./renderer";
+import { renderCanvasWarnings } from "./renderer/controls";
 import { registerCanvasRelink, relinkCanvas } from "./renderer/canvas";
 import { FRAMEWORKS } from "./frameworks-registry";
 import { CUSTOM_RENDERERS } from "./processors";
@@ -101,6 +102,7 @@ export function dispatchVizardry(
       if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
       renderCanvas(definition, result.data, result.cardBlocks, el, resolver, navigateTo, app, ctx, source, result.allCards);
+      renderCanvasWarnings(el, result.warnings);
       // Re-evaluate link buttons whenever the note's headings change (e.g. a
       // matching heading is added outside the code block after first render).
       registerCanvasRelink(ctx.sourcePath, () => {
