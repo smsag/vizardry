@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
+    "test:visual": "node visual/build.mjs && playwright test",
+    "test:visual:update": "node visual/build.mjs && playwright test --update-snapshots",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [
@@ -33,6 +35,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.0",
     "@types/node": "^26.1.2",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.60.0",
