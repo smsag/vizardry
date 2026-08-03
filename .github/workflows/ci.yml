@@ -14,10 +14,10 @@ permissions:
   contents: read
 
 jobs:
-  # Kept as an inline job named `ci` (not a reusable-workflow call) so the
-  # required status check stays `ci` — matching branch protection on main.
-  # These steps mirror verify.yml, which release.yml uses for its gate; keep
-  # the two in sync when changing the pipeline.
+  # Inline job named `ci` so the required status check stays `ci` — matching
+  # branch protection on main. The pipeline itself lives in the composite
+  # action .github/actions/verify, shared with release.yml's gate so the two
+  # can't drift.
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -26,24 +26,4 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-
-      - name: Type-check
-        run: npx tsc --noEmit
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
-      - name: Docs check
-        run: bash scripts/docs-check.sh
-
-      - name: Build
-        run: npm run build
+      - uses: ./.github/actions/verify

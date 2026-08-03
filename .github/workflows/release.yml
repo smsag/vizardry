@@ -23,9 +23,17 @@ permissions:
   contents: read
 
 jobs:
-  # Gate: run the full CI verification before publishing anything.
+  # Gate: run the full CI verification before publishing anything, via the same
+  # composite action ci.yml uses — no separate pipeline to keep in sync.
   verify:
-    uses: ./.github/workflows/verify.yml
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/verify
 
   release:
     needs: verify
@@ -51,7 +59,7 @@ jobs:
           tag="${{ github.event.inputs.version }}"
           if [ -z "$tag" ]; then tag="${GITHUB_REF#refs/tags/}"; fi
           mv=$(jq -r '.version' manifest.json)
-          # verify.yml/docs-check already assert manifest==package and versions.json
+          # the verify gate/docs-check already assert manifest==package and versions.json
           # coverage; this adds the check docs-check can't: the release tag itself.
           if [ "$tag" != "$mv" ]; then
             echo "::error::release tag '$tag' does not match manifest.json version '$mv'"
