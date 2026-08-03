@@ -36,15 +36,20 @@ describe("parseFrameworkSource", () => {
     expect(result.ok && result.data["goal"]).toBe("Value");
   });
 
-  it("rejects a block label declared twice instead of silently discarding the first one's content", () => {
+  it("keeps the first of a block declared twice (later skipped) with a warning", () => {
     const result = parseFrameworkSource("block: Goal\n  First\n\nblock: Goal\n  Second");
-    expect(result.ok).toBe(false);
-    expect(!result.ok && result.error).toMatch(/duplicate.*block: Goal/i);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.goal).toBe("First");
+    expect(result.warnings?.some(w => /duplicate.*block: Goal/i.test(w))).toBe(true);
   });
 
-  it("treats duplicate block labels as case-insensitive", () => {
+  it("treats duplicate block labels as case-insensitive (first wins, warns)", () => {
     const result = parseFrameworkSource("block: Goal\n  First\n\nblock: GOAL\n  Second");
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.goal).toBe("First");
+    expect(result.warnings?.some(w => /duplicate/i.test(w))).toBe(true);
   });
 
   it("allows empty block content", () => {
@@ -91,24 +96,36 @@ describe("parseFrameworkSource", () => {
     expect(result.ok && result.allCards).toBe(false);
   });
 
-  it("returns error for an unknown cards: value", () => {
+  it("ignores an unknown cards: value with a warning (allCards stays false)", () => {
     const result = parseFrameworkSource("cards: sometimes\nblock: Goal\n  value");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining('Unknown value "sometimes" for "cards:"') });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.allCards).toBe(false);
+    expect(result.data.goal).toBe("value");
+    expect(result.warnings?.some(w => /cards:/.test(w))).toBe(true);
   });
 
-  it("returns error for unexpected indentation at root", () => {
+  it("skips an unexpectedly-indented root line with a warning", () => {
     const result = parseFrameworkSource("  block: Goal");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("unexpected indentation") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.warnings?.some(w => /unexpected indentation/.test(w))).toBe(true);
   });
 
-  it("returns error for block without a label", () => {
-    const result = parseFrameworkSource("block:\n  value");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining('"block:" requires a label') });
+  it("skips a block without a label (dropping its content) with a warning", () => {
+    const result = parseFrameworkSource("block:\n  value\nblock: Goal\n  real");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data).toEqual({ goal: "real" });
+    expect(result.warnings?.some(w => /has no label/.test(w))).toBe(true);
   });
 
-  it("returns error for unknown root-level syntax", () => {
-    const result = parseFrameworkSource("unknown: foo");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("unexpected syntax") });
+  it("skips an unknown root-level line with a warning", () => {
+    const result = parseFrameworkSource("unknown: foo\nblock: Goal\n  real");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data).toEqual({ goal: "real" });
+    expect(result.warnings?.some(w => /unexpected line/.test(w))).toBe(true);
   });
 
 });

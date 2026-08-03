@@ -30,6 +30,7 @@ import type { ParseResult } from "./types";
 export function parseFrameworkSource(source: string): ParseResult {
   const data: Record<string, string> = {};
   const cardBlocks = new Set<string>();
+  const warnings: string[] = [];
   let allCards = false;
   const lines = source.split("\n");
   let i = 0;
@@ -46,7 +47,9 @@ export function parseFrameworkSource(source: string): ParseResult {
     const indent = raw.search(/\S/);
 
     if (indent > 0) {
-      return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
+      warnings.push(`Line ${i + 1}: unexpected indentation — skipped`);
+      i++;
+      continue;
     }
 
     if (trimmed.toLowerCase().startsWith("title:") || trimmed.toLowerCase().startsWith("collapsed:")) {
@@ -57,31 +60,26 @@ export function parseFrameworkSource(source: string): ParseResult {
     if (trimmed.toLowerCase().startsWith("cards:")) {
       const value = trimmed.slice("cards:".length).trim().toLowerCase();
       if (value !== "all") {
-        return { ok: false, error: `Line ${i + 1}: Unknown value "${value}" for "cards:" — expected "all"` };
+        warnings.push(`Line ${i + 1}: unknown value "${value}" for "cards:" (expected "all") — ignored`);
+      } else {
+        allCards = true;
       }
-      allCards = true;
       i++;
       continue;
     }
 
     if (trimmed.startsWith("block:")) {
+      const headerLine = i + 1;
       const rawLabel = trimmed.slice("block:".length).trim();
-      if (!rawLabel) {
-        return { ok: false, error: `Line ${i + 1}: "block:" requires a label` };
-      }
 
       // Strip optional | card modifier (any other modifier is ignored)
       const pipeIdx = rawLabel.indexOf("|");
       const label = pipeIdx !== -1 ? rawLabel.slice(0, pipeIdx).trim() : rawLabel;
-      if (pipeIdx !== -1) {
-        const modifier = rawLabel.slice(pipeIdx + 1).trim().toLowerCase();
-        if (modifier === "card") cardBlocks.add(label.toLowerCase());
-      }
-
+      const isCard = pipeIdx !== -1 && rawLabel.slice(pipeIdx + 1).trim().toLowerCase() === "card";
       const key = label.toLowerCase();
-      if (key in data) {
-        return { ok: false, error: `Line ${i + 1}: duplicate "block: ${label}" — a block with this label was already declared` };
-      }
+
+      // Consume the block's indented content first, so a bad/duplicate header
+      // can be dropped without its content leaking as top-level lines.
       const contentLines: string[] = [];
       i++;
       let blockIndent = -1;
@@ -109,12 +107,24 @@ export function parseFrameworkSource(source: string): ParseResult {
         contentLines.pop();
       }
 
+      // Recoverable: a label-less or duplicate block is dropped with a warning.
+      if (!label) {
+        warnings.push(`Line ${headerLine}: "block:" has no label — skipped`);
+        continue;
+      }
+      if (key in data) {
+        warnings.push(`Line ${headerLine}: duplicate "block: ${label}" — later one skipped`);
+        continue;
+      }
+
+      if (isCard) cardBlocks.add(key);
       data[key] = contentLines.join("\n");
 
     } else {
-      return { ok: false, error: `Line ${i + 1}: unexpected syntax — "${trimmed}". Use "block: Label"` };
+      warnings.push(`Line ${i + 1}: unexpected line "${trimmed}" (use "block: Label") — skipped`);
+      i++;
     }
   }
 
-  return { ok: true, data, links: {}, cardBlocks, allCards };
+  return { ok: true, data, links: {}, cardBlocks, allCards, warnings: warnings.length ? warnings : undefined };
 }
