@@ -1,15 +1,16 @@
-## 0.46.1
+## 0.46.2
 
-Small fixes and a bit of cache housekeeping.
+Localisation and cache housekeeping.
 
-- **Section preview now works on links that appear after render.** When a
-  heading is added (or renamed) outside a canvas block, the matching link
-  button is refreshed in place — and now carries the same Cmd/Ctrl-hover
-  (long-press on mobile) clipped-section preview as links that were present
-  when the canvas first rendered.
-- **Clear cached summaries on demand.** Settings → Vizardry now has a "Clear
-  cached summaries" button for both the Linear and Upvoty integrations, so the
-  persisted AI-summary caches can be emptied without repointing credentials —
-  handy for reclaiming space in the plugin's data file.
-- **Under the hood:** unified the Anthropic/OpenAI request handling and
-  hardened translation-string interpolation. No behaviour change.
+- **Settings are now localised.** The whole Vizardry settings tab — every
+  option, description, the secret picker, and the Linear/Upvoty error messages
+  shown on hover — now follows the app language, alongside the canvas UI that
+  was already translated. German is complete; other languages fall back to
+  English.
+- **German framework descriptions completed.** The Customer Journey Map and
+  Service Blueprint entries in the insert dialog now show German text instead
+  of falling back to English.
+- **Summary caches stay small.** The persisted Linear/Upvoty AI-summary caches
+  no longer grow without bound: entries older than 30 days are pruned and the
+  cache is capped, trimming the plugin's data file automatically on load. No
+  visible change — summaries are regenerated on demand exactly as before.
