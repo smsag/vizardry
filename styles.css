@@ -267,6 +267,7 @@ button.vzd-btn {
 
 /* ── Individual block ── */
 .vizardry-block {
+  grid-area: var(--vzd-area);
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
@@ -448,18 +449,25 @@ button.vzd-btn {
 
 /* ── Responsive: single-column carousel ── */
 @media (max-width: 600px) {
+  /* Carousel: stack every block in a single grid cell so the frame is always
+     as tall as the tallest block. Swiping then never changes the canvas
+     height, so content below it no longer jumps. Inactive blocks stay laid out
+     (holding the height) but hidden; only the active one is shown. */
   .vizardry-grid {
-    display: block;
+    display: grid;
+    grid-template: none;
+    grid-template-columns: 1fr;
     position: relative;
   }
 
   .vizardry-block {
-    display: none;
+    grid-area: 1 / 1; /* stack every block in the same cell */
+    visibility: hidden;
     min-height: 160px;
   }
 
   .vizardry-block.vizardry-block-active {
-    display: flex;
+    visibility: visible;
   }
 
   .vizardry-nav {
@@ -1150,16 +1158,22 @@ button.vzd-btn {
   --vzd-base: calc(var(--font-ui-small) / 0.85);
 }
 
-/* Force grid layout regardless of viewport width (overrides mobile @media) */
+/* Force the real grid layout regardless of viewport width (overrides the
+   mobile carousel @media, which stacks blocks in one cell). */
 .vzd-presentation-wrap .vizardry-grid {
   display: grid !important;
+  grid-template-areas: var(--vzd-template) !important;
+  grid-template-columns: var(--vzd-columns) !important;
+  grid-template-rows: var(--vzd-rows) !important;
   flex: 1;
   min-height: 0;
 }
 
-/* All blocks visible — carousel state does not apply in presentation */
+/* All blocks visible in their real positions — carousel state does not apply. */
 .vzd-presentation-wrap .vizardry-block {
   display: flex !important;
+  visibility: visible !important;
+  grid-area: var(--vzd-area) !important;
 }
 
 /* Hide carousel nav — not needed in presentation */
@@ -2349,15 +2363,16 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 /* ── Mobile carousel ── */
 @media (max-width: 600px) {
+  /* Carousel: stack columns in one grid cell for a stable, non-jumping frame. */
   .vzd-roadmap-grid {
-    display: block;
+    grid-template-columns: 1fr;
   }
   .vzd-roadmap-col {
-    display: none;
+    grid-area: 1 / 1;
+    visibility: hidden;
   }
   .vzd-roadmap-col.vzd-roadmap-col--active {
-    display: flex;
-    flex-direction: column;
+    visibility: visible;
   }
 }
 
@@ -2523,15 +2538,18 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 
 /* ── Mobile carousel ── */
 @media (max-width: 600px) {
+  /* Carousel: stack rows in one grid cell for a stable, non-jumping frame. */
   .vzd-pl-stack {
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr;
   }
   .vzd-pl-row {
-    display: none;
+    grid-area: 1 / 1;
+    visibility: hidden;
     flex-direction: column;
   }
   .vzd-pl-row.vzd-pl-row--active {
-    display: flex;
+    visibility: visible;
   }
   .vzd-pl-label-col {
     width: 100%;
