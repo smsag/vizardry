@@ -56,9 +56,12 @@ describe("parseJourney", () => {
     expect(result.ok && result.data.variant).toBe("blueprint");
   });
 
-  it("returns an error for an unknown typeOverride", () => {
+  it("falls back to the journey variant for an unknown typeOverride, with a warning", () => {
     const result = parseJourney(MINIMAL, "flow");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("Unknown type") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.variant).toBe("journey");
+    expect(result.data.warnings?.some(w => /Unknown variant/.test(w))).toBe(true);
   });
 
   it("parses frontstage/backstage/support lines regardless of variant (round-trip safety)", () => {
@@ -82,15 +85,23 @@ describe("parseJourney", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("returns error for phase with no name", () => {
+  it("keeps a nameless phase as an empty column with a warning", () => {
     const result = parseJourney("phase:\n  action: Do thing");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("name") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.phases).toHaveLength(1);
+    expect(result.data.phases[0].name).toBe("");
+    expect(result.data.warnings?.some(w => /no name/.test(w))).toBe(true);
   });
 
-  it("returns error for duplicate phase names", () => {
+  it("merges duplicate phase names with a warning", () => {
     const src = "phase: Dup\n  action: A\nphase: Dup\n  action: B";
     const result = parseJourney(src);
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("more than once") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.phases).toHaveLength(1);
+    expect(result.data.phases[0].lanes.action?.map(c => c.name)).toEqual(["A", "B"]);
+    expect(result.data.warnings?.some(w => /more than once/.test(w))).toBe(true);
   });
 
   it("returns error when no phases are defined", () => {
@@ -104,18 +115,34 @@ describe("parseJourney", () => {
     expect(result.ok && result.data.phases[0].lanes).toEqual({});
   });
 
-  it("returns error for unexpected syntax at root level", () => {
+  it("skips an unexpected root-level line with a warning", () => {
     const result = parseJourney("phase: A\n  action: X\nbadkey: Y");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("unexpected syntax") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.phases).toHaveLength(1);
+    expect(result.data.warnings?.some(w => /unexpected line/.test(w))).toBe(true);
   });
 
-  it("returns error for an unknown lane keyword", () => {
+  it("skips an unknown lane keyword with a warning", () => {
     const result = parseJourney("phase: A\n  bogus: X");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("unknown lane keyword") });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.warnings?.some(w => /unknown lane keyword/.test(w))).toBe(true);
   });
 
-  it("returns error for indented content outside a phase", () => {
-    const result = parseJourney("  action: X");
-    expect(result).toEqual({ ok: false, error: expect.stringContaining("outside a phase") });
+  it("skips indented content before any phase, keeping later phases, with a warning", () => {
+    const result = parseJourney("  action: Orphan\nphase: A\n  action: Real");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.phases[0].lanes.action?.map(c => c.name)).toEqual(["Real"]);
+    expect(result.data.warnings?.some(w => /outside a phase/.test(w))).toBe(true);
+  });
+
+  it("skips a lane line with no text, keeping valid siblings, with a warning", () => {
+    const result = parseJourney("phase: A\n  action:\n  action: Real");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.phases[0].lanes.action?.map(c => c.name)).toEqual(["Real"]);
+    expect(result.data.warnings?.some(w => /no text/.test(w))).toBe(true);
   });
 });

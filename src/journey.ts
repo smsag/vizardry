@@ -68,13 +68,16 @@ function resolveJourneyVariant(value: string): JourneyVariant | null {
  * to "journey" — so a plain "type: journey" behaves exactly as it always has.
  */
 export function parseJourney(source: string, typeOverride?: string): JourneyResult {
+  const warnings: string[] = [];
   let variant: JourneyVariant = "journey";
   if (typeOverride !== undefined) {
     const resolved = resolveJourneyVariant(typeOverride);
-    if (!resolved) {
-      return { ok: false, error: `Unknown type "${typeOverride.trim().toLowerCase()}" — expected "journey" or "blueprint"` };
+    if (resolved) {
+      variant = resolved;
+    } else {
+      // Recoverable: an unknown variant falls back to the base journey view.
+      warnings.push(`Unknown variant "${typeOverride.trim().toLowerCase()}" — using "journey"`);
     }
-    variant = resolved;
   }
 
   const lines = source.split("\n");
@@ -82,7 +85,7 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
   let persona = "";
   let scenario = "";
   const phases: JourneyPhase[] = [];
-  const phaseRegistry = new Set<string>();
+  const phaseRegistry = new Map<string, JourneyPhase>();
 
   let currentPhase: JourneyPhase | null = null;
   let laneIndent = -1;
@@ -104,44 +107,54 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
         scenario = trimmed.slice("scenario:".length).trim();
       } else if (trimmed.startsWith("phase:")) {
         const name = trimmed.slice("phase:".length).trim();
-        if (!name) return { ok: false, error: `Line ${i + 1}: phase requires a name` };
-        const key = name.toLowerCase().trim();
-        if (phaseRegistry.has(key)) {
-          return { ok: false, error: `Line ${i + 1}: phase "${name}" is defined more than once — phase names must be unique` };
+        if (!name) {
+          // Recoverable: keep the column with a placeholder name.
+          warnings.push(`Line ${i + 1}: phase has no name — showing an empty phase`);
         }
-        currentPhase = { name, lanes: {} };
-        phaseRegistry.add(key);
-        phases.push(currentPhase);
+        const key = name.toLowerCase().trim();
+        if (name && phaseRegistry.has(key)) {
+          // Recoverable: merge subsequent lanes into the first phase of this name.
+          warnings.push(`Line ${i + 1}: phase "${name}" is defined more than once — merged`);
+          currentPhase = phaseRegistry.get(key)!;
+        } else {
+          currentPhase = { name, lanes: {} };
+          if (key) phaseRegistry.set(key, currentPhase);
+          phases.push(currentPhase);
+        }
       } else {
-        return { ok: false, error: `Line ${i + 1}: unexpected syntax — "${trimmed}"` };
+        warnings.push(`Line ${i + 1}: unexpected line "${trimmed}" — skipped`);
       }
       continue;
     }
 
     // Indented line — must be inside a phase
     if (!currentPhase) {
-      return { ok: false, error: `Line ${i + 1}: indented content outside a phase` };
+      warnings.push(`Line ${i + 1}: indented content outside a phase — skipped`);
+      continue;
     }
 
     if (laneIndent === -1) laneIndent = indent;
     if (indent !== laneIndent) {
-      return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
+      warnings.push(`Line ${i + 1}: unexpected indentation — skipped`);
+      continue;
     }
 
     const colonIdx = trimmed.indexOf(":");
     if (colonIdx === -1) {
-      return { ok: false, error: `Line ${i + 1}: expected "key: value", got "${trimmed}"` };
+      warnings.push(`Line ${i + 1}: expected "key: value", got "${trimmed}" — skipped`);
+      continue;
     }
 
     const key = trimmed.slice(0, colonIdx).trim().toLowerCase() as JourneyLaneKey;
     if (!LANE_KEYS.includes(key)) {
-      return { ok: false, error: `Line ${i + 1}: unknown lane keyword "${key}" — expected one of: ${LANE_KEYS.join(", ")}` };
+      warnings.push(`Line ${i + 1}: unknown lane keyword "${key}" — skipped`);
+      continue;
     }
 
     const rest = trimmed.slice(colonIdx + 1).trim();
     const pipeIdx = rest.indexOf("|");
     const name = pipeIdx === -1 ? rest : rest.slice(0, pipeIdx).trim();
-    if (!name) return { ok: false, error: `Line ${i + 1}: ${key} requires a name` };
+    if (!name) { warnings.push(`Line ${i + 1}: ${key} has no text — skipped`); continue; }
     const subtitle = pipeIdx === -1 ? "" : rest.slice(pipeIdx + 1).trim();
 
     const card: JourneyCard = { name, subtitle };
@@ -152,5 +165,5 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
     return { ok: false, error: 'At least one "phase:" is required' };
   }
 
-  return { ok: true, data: { variant, persona, scenario, phases } };
+  return { ok: true, data: { variant, persona, scenario, phases, warnings: warnings.length ? warnings : undefined } };
 }
