@@ -55,6 +55,7 @@ import { renderSIPOC } from "./sipoc";
 import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
+import { renderWheelOfLife } from "./wheeloflife";
 import { renderSCQA } from "./scqa";
 import { renderRACIMatrix } from "./raci";
 import { NULL_RESOLVER } from "../shared/links";
@@ -74,6 +75,7 @@ import type {
   VennDiagram,
   CarouselBlock,
   ConceptMap,
+  WheelOfLifeData,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1532,6 +1534,75 @@ describe("renderConceptMap", () => {
     const el = container();
     renderConceptMap(map, el);
     expect(el.querySelector("#vzd-cmap-arrow")).toBeTruthy();
+  });
+});
+
+// ── renderWheelOfLife ─────────────────────────────────────────────────────────
+
+describe("renderWheelOfLife", () => {
+  const data: WheelOfLifeData = {
+    areas: [
+      { name: "Career", score: 7, note: "Growing" },
+      { name: "Health", score: 4 },
+      { name: "Family", score: 8 },
+      { name: "Fun", score: 3 },
+    ],
+  };
+
+  it("renders an SVG without throwing", () => {
+    const el = container();
+    expect(() => renderWheelOfLife(data, el)).not.toThrow();
+    expect(el.querySelector("svg")).toBeTruthy();
+  });
+
+  it("renders one filled wedge per non-zero area", () => {
+    const el = container();
+    renderWheelOfLife(data, el);
+    expect(el.querySelectorAll(".vzd-wol-fill")).toHaveLength(data.areas.length);
+  });
+
+  it("omits the fill for a zero-score area but keeps its label", () => {
+    const el = container();
+    renderWheelOfLife({ areas: [{ name: "Career", score: 0 }, { name: "Health", score: 5 }] }, el);
+    expect(el.querySelectorAll(".vzd-wol-fill")).toHaveLength(1);
+    const labels = Array.from(el.querySelectorAll(".vzd-wol-label")).map(t => t.textContent);
+    expect(labels).toEqual(["Career", "Health"]);
+  });
+
+  it("renders each area's name and score", () => {
+    const el = container();
+    renderWheelOfLife(data, el);
+    const labels = Array.from(el.querySelectorAll(".vzd-wol-label")).map(t => t.textContent);
+    expect(labels).toEqual(["Career", "Health", "Family", "Fun"]);
+    const scores = Array.from(el.querySelectorAll(".vzd-wol-score")).map(t => t.textContent);
+    expect(scores).toEqual(["7", "4", "8", "3"]);
+  });
+
+  it("renders a note as a wedge tooltip", () => {
+    const el = container();
+    renderWheelOfLife(data, el);
+    const titles = Array.from(el.querySelectorAll("title")).map(t => t.textContent);
+    expect(titles).toContain("Career: 7/10 — Growing");
+  });
+
+  it("renders the rim, reference rings and one spoke per area", () => {
+    const el = container();
+    renderWheelOfLife(data, el);
+    expect(el.querySelector(".vzd-wol-rim")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-wol-ring")).toHaveLength(4);
+    expect(el.querySelectorAll(".vzd-wol-spoke")).toHaveLength(data.areas.length);
+  });
+
+  it("surfaces parser warnings as a header chip", () => {
+    const el = container();
+    renderWheelOfLife({ areas: data.areas, warnings: ["Line 2: something"] }, el);
+    expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
+  });
+
+  it("sets the canvas framework attribute", () => {
+    const el = container();
+    renderWheelOfLife(data, el);
+    expect(el.getAttribute("data-framework")).toBe("wheeloflife");
   });
 });
 

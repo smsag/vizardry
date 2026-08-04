@@ -6,7 +6,7 @@ import path from "path";
 const ALL = [
   "bmc", "swot", "fishbone", "impact", "story", "mindmap", "ost", "venn",
   "sipoc", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
-  "matrix", "scqa", "journey",
+  "matrix", "scqa", "journey", "wheeloflife",
 ];
 
 // On mobile we only snapshot the canvases whose layout is width-sensitive

@@ -20,7 +20,7 @@ import {
   FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, SIPOC_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
-  MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE,
+  MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
 } from "../src/templates";
 
 /** Strip the ```vizardry … ``` fence so only the inner block source remains. */
@@ -52,6 +52,7 @@ const FIXTURES: Record<string, string> = {
   matrix: inner(MATRIX_IMPACT_TEMPLATE),
   scqa: inner(SCQA_TEMPLATE),
   journey: inner(JOURNEY_TEMPLATE),
+  wheeloflife: inner(WHEEL_OF_LIFE_TEMPLATE),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
