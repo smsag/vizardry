@@ -14,3 +14,4 @@ export { renderMatrix } from "./renderer/matrix";
 export { renderSCQA } from "./renderer/scqa";
 export { renderJourneyMap } from "./renderer/journey";
 export { renderWheelOfLife } from "./renderer/wheeloflife";
+export { renderOdyssey } from "./renderer/odyssey";

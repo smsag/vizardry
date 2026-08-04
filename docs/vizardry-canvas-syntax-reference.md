@@ -79,6 +79,7 @@ These are the rules that most often get broken. Follow all of them:
 | `venn` | Venn Diagram | SVG overlap |
 | `wardley` | Wardley Map | SVG canvas |
 | `wheeloflife` | Wheel of Life | SVG wheel |
+| `odyssey` | Odyssey of Life | Plan cards |
 
 ---
 
@@ -1338,6 +1339,48 @@ area: Environment | 6
 | `area: <Name> \| <score> \| <note>` | Same, plus a short note shown on hover |
 
 Scores are numbers 0–10 (decimals allowed); out-of-range values are clamped. Recoverable issues — a missing/non-numeric score, a duplicate area, a line that isn't an `area:` — skip that line and show a warning chip instead of failing the canvas. Area names are case-insensitive for duplicate detection.
+
+---
+
+## Odyssey of Life (`odyssey`)
+
+The Odyssey Plan from *Designing Your Life*: **2–4** parallel multi-year life plans laid side by side. Each plan has a headline, a vertical timeline of year milestones, a dashboard of **0–10** gauges, and open questions. Read-only (the plan lives in the source).
+
+~~~
+```vizardry
+type: odyssey
+title: Three Roads Forward
+
+plan: A | The Steady Climb
+  archetype: Current path, leveled up
+  year 1: Ship the platform rewrite
+  year 3: Move into product strategy
+  year 5: Head of Product
+  gauge: Resources | 8
+  gauge: Likability | 6
+  gauge: Confidence | 8
+  gauge: Coherence | 6
+  question: Do I actually want to manage people?
+
+plan: B | Indie Maker
+  archetype: The pivot
+  year 1: Launch a paid side project
+  year 5: Sustainable one-person business
+  gauge: Resources | 4
+  gauge: Confidence | 4
+  question: How long can I fund the runway?
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `plan: <Label> \| <Title>` | Opens a plan. `<Label>` (e.g. `A`) is optional — omit it (`plan: The Steady Climb`) and it auto-letters A/B/C/D by position |
+| `archetype: <text>` | Optional one-line descriptor under the title |
+| `year <N>: <text>` | A milestone at year N; the timeline sorts ascending by year |
+| `gauge: <Name> \| <value>` | A 0–10 dashboard gauge (fuel-gauge dial); names are free-form |
+| `question: <text>` | An open question the plan raises |
+
+The `archetype`/`year`/`gauge`/`question` lines attach to the most recent `plan:` — indentation is cosmetic. Out-of-range gauge values are clamped to 0–10. Recoverable issues (a keyword before any `plan:`, a missing gauge value, a duplicate year, an unparsable line) skip that line with a warning chip; it's only fatal with fewer than two plans.
 
 ---
 
