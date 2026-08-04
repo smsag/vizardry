@@ -41,6 +41,7 @@ export const en = {
   "framework.journey.description":    "Phases mapped against actions, feelings, and pain points — expandable into a full service blueprint.",
   "framework.service-blueprint.description": "Customer journey plus frontstage, backstage, and support-process lanes.",
   "framework.wheeloflife.description": "Life areas scored 0–10 as a segmented wheel — balance at a glance.",
+  "framework.odyssey.description": "Three five-year life plans side by side — timeline, dashboard, and open questions.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
@@ -163,6 +164,9 @@ export const en = {
   "roadmap.col.later": "Later",
   "roadmap.addItem":   "Add item",
   "roadmap.newItem":   "New Item",
+
+  // ── Odyssey labels ───────────────────────────────────────────────────────────
+  "odyssey.questions": "Questions",
 
   // ── Roadmap Linear integration ───────────────────────────────────────────────
   "roadmap.linear.loading":    "Loading summary…",

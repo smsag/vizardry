@@ -65,6 +65,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `ptw` | Playing to Win | Grid |
 | `conceptmap` | Concept Map | SVG graph |
 | `wheeloflife` | Wheel of Life | SVG wheel |
+| `odyssey` | Odyssey of Life | Plan cards |
 
 ---
 
@@ -1176,6 +1177,59 @@ Each area's score number sits at the rim; hover a wedge to see its note. The whe
 - Between 2 and 12 areas — wedges are drawn in source order and sized equally
 - Scores are numbers from 0 to 10; out-of-range values are clamped, decimals are allowed
 - Recoverable problems (a missing score, a duplicate area, an unparsable line) skip that line and surface as a warning chip rather than failing the whole canvas
+
+---
+
+### Odyssey of Life
+
+The Odyssey Plan from *Designing Your Life* (Burnett & Evans): two to four parallel multi-year life plans laid side by side, so you compare divergent futures instead of optimising a single path. Each plan gets a headline, a vertical timeline of year milestones, a dashboard of 0–10 gauges (Resources · Likability · Confidence · Coherence by convention), and the open questions it raises.
+
+~~~
+```vizardry
+type: odyssey
+title: Three Roads Forward
+
+plan: A | The Steady Climb
+  archetype: Current path, leveled up
+  year 1: Ship the platform rewrite
+  year 3: Move into product strategy
+  year 5: Head of Product
+  gauge: Resources | 8
+  gauge: Likability | 6
+  gauge: Confidence | 8
+  gauge: Coherence | 6
+  question: Do I actually want to manage people?
+
+plan: B | Indie Maker
+  archetype: The pivot
+  year 1: Launch a paid side project
+  year 5: Sustainable one-person business
+  gauge: Resources | 4
+  gauge: Likability | 9
+  gauge: Confidence | 4
+  gauge: Coherence | 8
+  question: How long can I fund the runway?
+```
+~~~
+
+Plans render as side-by-side cards (a swipeable carousel on mobile). The canvas is read-only for now — the plan lives in the source.
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `plan: <Label> \| <Title>` | Opens a plan; `<Label>` (e.g. `A`) is optional and auto-letters when omitted |
+| `archetype: <text>` | Optional one-line descriptor under the title |
+| `year <N>: <text>` | A milestone at year N (timeline sorts by year) |
+| `gauge: <Name> \| <0–10>` | A dashboard gauge, drawn as a fuel-gauge dial |
+| `question: <text>` | An open question the plan raises |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- Between 2 and 4 plans; the `archetype`/`year`/`gauge`/`question` lines attach to the most recent `plan:` (indentation is cosmetic)
+- Gauge values are numbers 0–10; out-of-range values are clamped
+- Recoverable problems (a keyword outside any plan, a missing gauge value, a duplicate year, an unparsable line) skip that line and surface as a warning chip rather than failing the whole canvas
 
 ---
 

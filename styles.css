@@ -3397,6 +3397,196 @@ code:has(.vzd-upvoty-key) {
   font-size: 13px;
 }
 
+/* ── Odyssey of Life ─────────────────────────────────────────────────────── */
+
+.vzd-odyssey-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(var(--vzd-odyssey-cols, 3), minmax(180px, 1fr));
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.vzd-odyssey-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.7rem;
+  border: 1px solid var(--background-modifier-border);
+  border-top: 3px solid hsl(var(--vzd-odyssey-hue, 210), 60%, 50%);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+}
+
+.vzd-odyssey-plan-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.vzd-odyssey-plan-label {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: hsl(var(--vzd-odyssey-hue, 210), 60%, 50%);
+  color: #fff;
+  font-weight: 700;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vzd-odyssey-plan-title {
+  font-weight: 700;
+  font-size: calc(var(--vzd-base, var(--font-ui-medium)) * 1);
+  line-height: 1.2;
+}
+
+.vzd-odyssey-plan-archetype {
+  color: var(--text-muted);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  font-style: italic;
+  margin-top: 0.1rem;
+}
+
+/* Vertical milestone timeline with a connecting rail behind the year badges. */
+.vzd-odyssey-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.vzd-odyssey-timeline::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 2px;
+  background: var(--background-modifier-border);
+}
+
+.vzd-odyssey-milestone {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.vzd-odyssey-year-badge {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: hsl(var(--vzd-odyssey-hue, 210), 55%, 50%);
+  color: #fff;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vzd-odyssey-milestone-text {
+  padding-top: 1px;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.92);
+  line-height: 1.25;
+}
+
+/* Gauge dashboard — small fuel-gauge dials, two per row. */
+.vzd-odyssey-gauges {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.3rem 0.4rem;
+  padding: 0.2rem 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.vzd-odyssey-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vzd-odyssey-gauge-svg {
+  width: 100%;
+  max-width: 84px;
+  height: auto;
+}
+
+.vzd-odyssey-gauge-track {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.vzd-odyssey-gauge-value {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.vzd-odyssey-gauge-num {
+  fill: var(--text-normal);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.vzd-odyssey-gauge-name {
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.1;
+  margin-top: -0.15rem;
+}
+
+.vzd-odyssey-questions {
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 0.45rem;
+}
+
+.vzd-odyssey-questions-heading {
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.vzd-odyssey-questions ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.vzd-odyssey-questions li {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
+  line-height: 1.3;
+  margin: 0.1rem 0;
+}
+
+@media (max-width: 600px) {
+  /* Carousel: stack plans in one grid cell for a stable, non-jumping frame. */
+  .vzd-odyssey-grid {
+    grid-template-columns: 1fr;
+  }
+  .vzd-odyssey-plan {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+  .vzd-odyssey-plan.vzd-odyssey-plan--active {
+    visibility: visible;
+  }
+}
+
 /* ══ Matrix (one unified engine) ════════════════════════════════════════════
    Two tick-labelled axes form an N×M cell grid (tinted by heat, optionally
    named); items are cards placed by [x,y] or snapped to a cell. --vzd-matrix-base

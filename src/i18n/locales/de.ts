@@ -34,6 +34,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.journey.description":    "Phasen abgebildet auf Aktionen, Gefühle und Schmerzpunkte — erweiterbar zu einer vollständigen Service Blueprint.",
   "framework.service-blueprint.description": "Customer Journey plus Frontstage-, Backstage- und Support-Prozess-Bahnen.",
   "framework.wheeloflife.description": "Lebensbereiche von 0–10 als segmentiertes Rad — Balance auf einen Blick.",
+  "framework.odyssey.description": "Drei Fünf-Jahres-Lebenspläne nebeneinander — Zeitleiste, Dashboard und offene Fragen.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",
@@ -153,6 +154,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "roadmap.col.next":  "Demnächst",
   "roadmap.col.later": "Später",
   "roadmap.addItem":   "Element hinzufügen",
+  "odyssey.questions": "Fragen",
   "roadmap.newItem":   "Neues Element",
 
   // ── Roadmap Linear integration ───────────────────────────────────────────────

@@ -44,11 +44,12 @@ import { parseMatrix } from "./matrix";
 import { parseSCQA } from "./scqa";
 import { parseJourney } from "./journey";
 import { parseWheelOfLife } from "./wheeloflife";
+import { parseOdyssey } from "./odyssey";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
-  renderJourneyMap, renderWheelOfLife,
+  renderJourneyMap, renderWheelOfLife, renderOdyssey,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -62,7 +63,7 @@ import {
   MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
-  WHEEL_OF_LIFE_TEMPLATE,
+  WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
 } from "./templates";
 
 /**
@@ -211,4 +212,8 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // Wheel of Life parses raw source (its "|"-delimited area lines have no
   // inline-link syntax) and needs no heading-link resolver.
   { id: "wheeloflife", label: "Wheel of Life", template: WHEEL_OF_LIFE_TEMPLATE, createProcessor: plain(parseWheelOfLife, renderWheelOfLife) },
+
+  // Odyssey of Life parses raw source (its "|"-delimited plan/gauge lines have
+  // no inline-link syntax) and needs no heading-link resolver.
+  { id: "odyssey", label: "Odyssey of Life", template: ODYSSEY_TEMPLATE, createProcessor: plain(parseOdyssey, renderOdyssey) },
 ];

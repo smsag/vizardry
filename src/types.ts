@@ -24,3 +24,4 @@ export * from "./types/concept-map";
 export * from "./types/node-map";
 export * from "./types/matrix";
 export * from "./types/wheel-of-life";
+export * from "./types/odyssey";

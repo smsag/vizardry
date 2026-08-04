@@ -369,6 +369,47 @@ area: Environment | 6
 \`\`\`
 `;
 
+export const ODYSSEY_TEMPLATE = `\`\`\`vizardry
+type: odyssey
+title: Three Roads Forward
+
+plan: A | The Steady Climb
+  archetype: Current path, leveled up
+  year 1: Ship the platform rewrite
+  year 2: Lead a small team
+  year 3: Move into product strategy
+  year 5: Head of Product
+  gauge: Resources | 8
+  gauge: Likability | 6
+  gauge: Confidence | 8
+  gauge: Coherence | 6
+  question: Do I actually want to manage people?
+  question: Am I choosing this, or just drifting?
+
+plan: B | Indie Maker
+  archetype: The pivot
+  year 1: Launch a paid side project
+  year 3: Go full-time on my own product
+  year 5: Sustainable one-person business
+  gauge: Resources | 4
+  gauge: Likability | 9
+  gauge: Confidence | 4
+  gauge: Coherence | 8
+  question: How long can I fund the runway?
+
+plan: C | Sail & Teach
+  archetype: If money were no object
+  year 1: Get sailing certified
+  year 2: Buy a boat, learn to teach
+  year 5: Run courses in the Med
+  gauge: Resources | 2
+  gauge: Likability | 10
+  gauge: Confidence | 3
+  gauge: Coherence | 5
+  question: Is this escape, or a genuine calling?
+\`\`\`
+`;
+
 export const PACE_LAYERS_TEMPLATE = `\`\`\`vizardry
 // type: pacelayers, shearing | product | retro
 type: pacelayers, shearing

@@ -56,6 +56,7 @@ import { renderVennDiagram } from "./venn";
 import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
 import { renderWheelOfLife } from "./wheeloflife";
+import { renderOdyssey } from "./odyssey";
 import { renderSCQA } from "./scqa";
 import { renderRACIMatrix } from "./raci";
 import { NULL_RESOLVER } from "../shared/links";
@@ -76,6 +77,7 @@ import type {
   CarouselBlock,
   ConceptMap,
   WheelOfLifeData,
+  OdysseyData,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1603,6 +1605,78 @@ describe("renderWheelOfLife", () => {
     const el = container();
     renderWheelOfLife(data, el);
     expect(el.getAttribute("data-framework")).toBe("wheeloflife");
+  });
+});
+
+// ── renderOdyssey ─────────────────────────────────────────────────────────────
+
+describe("renderOdyssey", () => {
+  const data: OdysseyData = {
+    plans: [
+      {
+        label: "A", title: "The Steady Climb", archetype: "Current path",
+        milestones: [{ year: 1, text: "Ship it" }, { year: 3, text: "Lead a team" }],
+        gauges: [{ name: "Resources", value: 8 }, { name: "Likability", value: 6 }],
+        questions: ["Do I want to manage?"],
+      },
+      {
+        label: "B", title: "Indie Maker",
+        milestones: [{ year: 1, text: "Side project" }],
+        gauges: [{ name: "Resources", value: 4 }],
+        questions: [],
+      },
+    ],
+  };
+
+  it("renders without throwing and sets the framework attribute", () => {
+    const el = container();
+    expect(() => renderOdyssey(data, el)).not.toThrow();
+    expect(el.getAttribute("data-framework")).toBe("odyssey");
+  });
+
+  it("renders one plan column per plan with its label and title", () => {
+    const el = container();
+    renderOdyssey(data, el);
+    expect(el.querySelectorAll(".vzd-odyssey-plan")).toHaveLength(2);
+    const labels = Array.from(el.querySelectorAll(".vzd-odyssey-plan-label")).map(n => n.textContent);
+    expect(labels).toEqual(["A", "B"]);
+    const titles = Array.from(el.querySelectorAll(".vzd-odyssey-plan-title")).map(n => n.textContent);
+    expect(titles).toEqual(["The Steady Climb", "Indie Maker"]);
+  });
+
+  it("renders a year badge per milestone", () => {
+    const el = container();
+    renderOdyssey(data, el);
+    const badges = Array.from(el.querySelectorAll(".vzd-odyssey-year-badge")).map(n => n.textContent);
+    expect(badges).toEqual(["Y1", "Y3", "Y1"]);
+  });
+
+  it("renders a fuel-gauge dial per gauge with its value", () => {
+    const el = container();
+    renderOdyssey(data, el);
+    expect(el.querySelectorAll(".vzd-odyssey-gauge")).toHaveLength(3);
+    const nums = Array.from(el.querySelectorAll(".vzd-odyssey-gauge-num")).map(n => n.textContent);
+    expect(nums).toEqual(["8", "6", "4"]);
+  });
+
+  it("renders the archetype only when present", () => {
+    const el = container();
+    renderOdyssey(data, el);
+    const archetypes = Array.from(el.querySelectorAll(".vzd-odyssey-plan-archetype")).map(n => n.textContent);
+    expect(archetypes).toEqual(["Current path"]);
+  });
+
+  it("renders a questions list only for plans that have questions", () => {
+    const el = container();
+    renderOdyssey(data, el);
+    expect(el.querySelectorAll(".vzd-odyssey-questions")).toHaveLength(1);
+    expect(el.querySelectorAll(".vzd-odyssey-questions li")).toHaveLength(1);
+  });
+
+  it("surfaces parser warnings as a header chip", () => {
+    const el = container();
+    renderOdyssey({ plans: data.plans, warnings: ["Line 3: something"] }, el);
+    expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
   });
 });
 
