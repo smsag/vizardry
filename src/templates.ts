@@ -354,6 +354,21 @@ link: Order Service -> Payment Gateway : charges card [color: green]
 \`\`\`
 `;
 
+export const WHEEL_OF_LIFE_TEMPLATE = `\`\`\`vizardry
+type: wheeloflife
+title: Wheel of Life
+
+area: Career | 7 | Growing, but stretched thin
+area: Finances | 5
+area: Health | 4 | Need to move more
+area: Family | 8
+area: Relationships | 7
+area: Personal Growth | 6
+area: Fun & Recreation | 3
+area: Environment | 6
+\`\`\`
+`;
+
 export const PACE_LAYERS_TEMPLATE = `\`\`\`vizardry
 // type: pacelayers, shearing | product | retro
 type: pacelayers, shearing

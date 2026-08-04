@@ -78,6 +78,7 @@ These are the rules that most often get broken. Follow all of them:
 | `journey, blueprint` | Service Blueprint | Lanes |
 | `venn` | Venn Diagram | SVG overlap |
 | `wardley` | Wardley Map | SVG canvas |
+| `wheeloflife` | Wheel of Life | SVG wheel |
 
 ---
 
@@ -1308,6 +1309,35 @@ anchor: User
 component: User [1.0, 0.1]
 ```
 ~~~
+
+---
+
+## Wheel of Life (`wheeloflife`)
+
+A segmented dartboard for the coaching Wheel of Life: each area is an equal wedge filled from the centre out to its **0–10** score. Between 2 and 12 areas, drawn in source order. Read-only (scores live in the source).
+
+~~~
+```vizardry
+type: wheeloflife
+title: Wheel of Life
+
+area: Career | 7 | Growing, but stretched thin
+area: Finances | 5
+area: Health | 4 | Need to move more
+area: Family | 8
+area: Relationships | 7
+area: Personal Growth | 6
+area: Fun & Recreation | 3
+area: Environment | 6
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `area: <Name> \| <score>` | A life area and its 0–10 score (the wedge fill level) |
+| `area: <Name> \| <score> \| <note>` | Same, plus a short note shown on hover |
+
+Scores are numbers 0–10 (decimals allowed); out-of-range values are clamped. Recoverable issues — a missing/non-numeric score, a duplicate area, a line that isn't an `area:` — skip that line and show a warning chip instead of failing the canvas. Area names are case-insensitive for duplicate detection.
 
 ---
 

@@ -40,6 +40,7 @@ export const en = {
   "framework.scr.description":        "Situation, complication, resolution — a tighter narrative hierarchy.",
   "framework.journey.description":    "Phases mapped against actions, feelings, and pain points — expandable into a full service blueprint.",
   "framework.service-blueprint.description": "Customer journey plus frontstage, backstage, and support-process lanes.",
+  "framework.wheeloflife.description": "Life areas scored 0–10 as a segmented wheel — balance at a glance.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",

@@ -43,11 +43,12 @@ import { parseNodeMap } from "./nodemap";
 import { parseMatrix } from "./matrix";
 import { parseSCQA } from "./scqa";
 import { parseJourney } from "./journey";
+import { parseWheelOfLife } from "./wheeloflife";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
-  renderJourneyMap,
+  renderJourneyMap, renderWheelOfLife,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -61,6 +62,7 @@ import {
   MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
+  WHEEL_OF_LIFE_TEMPLATE,
 } from "./templates";
 
 /**
@@ -205,4 +207,8 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   { id: "scqa",    label: "SCQA Narrative",      template: SCQA_TEMPLATE,          createProcessor: linked((src) => parseSCQA(src, "scqa"), renderSCQA) },
   { id: "scr",     label: "SCR Narrative",       template: SCR_TEMPLATE,           createProcessor: linked((src) => parseSCQA(src, "scr"), renderSCQA) },
   { id: "journey", label: "Customer Journey Map", template: JOURNEY_TEMPLATE,      createProcessor: linked(parseJourney, renderJourneyMap) },
+
+  // Wheel of Life parses raw source (its "|"-delimited area lines have no
+  // inline-link syntax) and needs no heading-link resolver.
+  { id: "wheeloflife", label: "Wheel of Life", template: WHEEL_OF_LIFE_TEMPLATE, createProcessor: plain(parseWheelOfLife, renderWheelOfLife) },
 ];

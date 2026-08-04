@@ -3331,6 +3331,72 @@ code:has(.vzd-upvoty-key) {
   font-size: 12px;
 }
 
+/* ── Wheel of Life ───────────────────────────────────────────────────────── */
+
+.vzd-wol-wrap {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+}
+
+.vzd-wol-svg {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+/* Filled score wedge — hue set inline per wedge; softened so the reference
+   rings and spokes drawn on top stay legible. */
+.vzd-wol-fill {
+  fill-opacity: 0.82;
+  stroke: var(--background-primary);
+  stroke-width: 1;
+}
+
+/* Transparent full-wedge hit slot, carries the note tooltip. */
+.vzd-wol-slot {
+  fill: transparent;
+}
+
+.vzd-wol-ring {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.vzd-wol-spoke {
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+
+.vzd-wol-rim {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+
+/* Sits at a fixed radius near the rim, so a wedge's number can fall either on
+   its colour fill (high scores) or on the empty background (low scores). A
+   background-coloured halo keeps it legible over both. */
+.vzd-wol-score {
+  fill: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.vzd-wol-label {
+  fill: var(--text-normal);
+  font-size: 13px;
+}
+
 /* ══ Matrix (one unified engine) ════════════════════════════════════════════
    Two tick-labelled axes form an N×M cell grid (tinted by heat, optionally
    named); items are cards placed by [x,y] or snapped to a cell. --vzd-matrix-base

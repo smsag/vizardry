@@ -64,6 +64,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `wardley` | Wardley Map | SVG canvas |
 | `ptw` | Playing to Win | Grid |
 | `conceptmap` | Concept Map | SVG graph |
+| `wheeloflife` | Wheel of Life | SVG wheel |
 
 ---
 
@@ -1137,6 +1138,44 @@ Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a b
 - Coordinates are unbounded, non-negative numbers — the canvas grows to fit its content
 - Box names must be unique and cannot contain `:` or brackets
 - Self-links are not allowed, and every link must reference a declared box
+
+---
+
+### Wheel of Life
+
+A coaching classic rendered as a segmented dartboard: each life area is an equal wedge, filled from the centre out to its score on a 0–10 scale. The uneven rim makes imbalance obvious at a glance — a spiky wheel rolls rough.
+
+~~~
+```vizardry
+type: wheeloflife
+title: Wheel of Life
+
+area: Career | 7 | Growing, but stretched thin
+area: Finances | 5
+area: Health | 4 | Need to move more
+area: Family | 8
+area: Relationships | 7
+area: Personal Growth | 6
+area: Fun & Recreation | 3
+area: Environment | 6
+```
+~~~
+
+Each area's score number sits at the rim; hover a wedge to see its note. The wheel is read-only for now (scores are set in the source).
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `area: <name> \| <score>` | A life area and its 0–10 score |
+| `area: <name> \| <score> \| <note>` | Same, with a short note shown on hover |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- Between 2 and 12 areas — wedges are drawn in source order and sized equally
+- Scores are numbers from 0 to 10; out-of-range values are clamped, decimals are allowed
+- Recoverable problems (a missing score, a duplicate area, an unparsable line) skip that line and surface as a warning chip rather than failing the whole canvas
 
 ---
 

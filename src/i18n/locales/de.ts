@@ -33,6 +33,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.scr.description":        "Situation, Komplikation, Lösung — eine kompaktere narrative Hierarchie.",
   "framework.journey.description":    "Phasen abgebildet auf Aktionen, Gefühle und Schmerzpunkte — erweiterbar zu einer vollständigen Service Blueprint.",
   "framework.service-blueprint.description": "Customer Journey plus Frontstage-, Backstage- und Support-Prozess-Bahnen.",
+  "framework.wheeloflife.description": "Lebensbereiche von 0–10 als segmentiertes Rad — Balance auf einen Blick.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",
