@@ -30,6 +30,7 @@ export const en = {
   "framework.sipoc-flow.description": "Same SIPOC rows as a connected flow diagram.",
   "framework.story.description":      "Release scope and priorities clear.",
   "framework.swot.description":       "Strengths, weaknesses, opportunities, and threats at a glance.",
+  "framework.futureself.description": "Where you are, where you want to be, and the actions to get there in a set period.",
   "framework.venn.description":       "Overlaps and gaps clearly identified.",
   "framework.vpc.description":        "Features match real customer needs.",
   "framework.wardley.description":    "Value chain plotted against evolution to reveal strategic moves.",
@@ -169,6 +170,10 @@ export const en = {
 
   // ── Odyssey labels ───────────────────────────────────────────────────────────
   "odyssey.questions": "Questions",
+
+  // ── Period header field ──────────────────────────────────────────────────────
+  "period.label":       "Period",
+  "period.placeholder": "Set period",
 
   // ── Circle of Influence labels ───────────────────────────────────────────────
   "coi.concern":   "Concern",

@@ -134,6 +134,24 @@ describe("renderCanvas", () => {
     expect(blocks).toHaveLength(4);
   });
 
+  it("renders the period field from source when the framework enables it", () => {
+    const futureself: FrameworkDefinition = {
+      id: "futureself", label: "Future Self",
+      gridTemplate: '"a b"\n"c b"', gridColumns: "1fr 1fr", gridRows: "1fr 1fr",
+      periodField: true,
+      blocks: [{ label: "As-Is", area: "a" }, { label: "To-Be", area: "c" }, { label: "Actions", area: "b" }],
+    };
+    const el = container();
+    renderCanvas(futureself, {}, new Set(), el, NULL_RESOLVER, vi.fn(), undefined, undefined, "type: futureself\nperiod: May – Jul 2025\n");
+    expect(el.querySelector(".vizardry-period-value")?.textContent).toBe("May – Jul 2025");
+  });
+
+  it("omits the period field when the framework does not enable it", () => {
+    const el = container();
+    renderCanvas(swot, {}, new Set(), el, NULL_RESOLVER, vi.fn(), undefined, undefined, "period: May – Jul 2025");
+    expect(el.querySelector(".vizardry-period")).toBeFalsy();
+  });
+
   it("drives block grid placement via the --vzd-area custom property (not an inline grid-area)", () => {
     const el = container();
     renderCanvas(swot, { strengths: "Fast team" }, new Set(), el, NULL_RESOLVER, vi.fn());

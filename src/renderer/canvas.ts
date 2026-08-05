@@ -6,9 +6,11 @@ import { setupSlideCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import type { LinkResolver } from "../shared/links";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { parsePeriod, writeCanvasPeriod } from "../shared/period-edit";
 import { onDisconnected } from "../shared/lifecycle";
 import { isEditModeActive } from "../shared/editor";
 import { initCanvas, markInteractive } from "./controls";
+import { activateInlineEdit } from "./inline-edit";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 import type { FrameworkDefinition } from "../types";
@@ -102,6 +104,43 @@ export function renderError(message: string, container: HTMLElement): void {
   container.createEl("span", { cls: "vizardry-error-message", text: message });
 }
 
+/**
+ * Renders the optional `period:` timeframe as a labelled chip in the canvas
+ * header, just before the action buttons. In edit mode the value is
+ * click-to-edit (writing back the `period:` line); read-only when there's a
+ * value but no editor. Renders nothing when empty and not editable.
+ */
+function renderPeriodField(
+  header: HTMLElement,
+  container: HTMLElement,
+  source: string,
+  editable: boolean,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+): void {
+  const value = parsePeriod(source);
+  if (!value && !editable) return;
+
+  const field = header.createEl("div", { cls: "vizardry-period" });
+  field.createEl("span", { cls: "vizardry-period-label", text: t("period.label") });
+  const valueEl = field.createEl("span", { cls: "vizardry-period-value" });
+  if (value) valueEl.setText(value);
+  else valueEl.addClass("vizardry-period-value--empty"), valueEl.setText(t("period.placeholder"));
+
+  if (editable && app && ctx) {
+    valueEl.addClass("vizardry-period-value--editable");
+    valueEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      activateInlineEdit(valueEl, value, (next) => {
+        writeCanvasPeriod(app, ctx, container, next);
+      });
+    });
+  }
+
+  const actions = header.querySelector(".vizardry-header-actions");
+  if (actions) header.insertBefore(field, actions);
+}
+
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
@@ -116,10 +155,14 @@ export function renderCanvas(
 ): void {
   const defaultTitle = framework.label;
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const editable = !!(app && ctx && source !== undefined && isEditModeActive(app));
+  const onTitleEdit = editable
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, framework.id, title, undefined, source, onTitleEdit, app, ctx);
+  const extraHeader = framework.periodField && source !== undefined
+    ? (header: HTMLElement) => renderPeriodField(header, container, source, editable, app, ctx)
+    : undefined;
+  initCanvas(container, framework.id, title, extraHeader, source, onTitleEdit, app, ctx);
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", framework.gridTemplate);

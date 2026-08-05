@@ -52,7 +52,8 @@ export function parseFrameworkSource(source: string): ParseResult {
       continue;
     }
 
-    if (trimmed.toLowerCase().startsWith("title:") || trimmed.toLowerCase().startsWith("collapsed:")) {
+    if (trimmed.toLowerCase().startsWith("title:") || trimmed.toLowerCase().startsWith("collapsed:")
+      || trimmed.toLowerCase().startsWith("period:")) {
       i++;
       continue;
     }

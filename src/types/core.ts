@@ -5,6 +5,8 @@ export interface FrameworkDefinition {
   gridTemplate: string;
   gridColumns: string;
   gridRows: string;
+  /** Show an editable `period:` timeframe field in the canvas header. */
+  periodField?: boolean;
 }
 
 export interface BlockDefinition {

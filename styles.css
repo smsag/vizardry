@@ -222,6 +222,46 @@ button.vzd-btn {
   border-radius: var(--radius-s);
 }
 
+/* Optional timeframe field shown in the header (e.g. Future Self's "Period").
+   Sits between the title and the action buttons. */
+.vizardry-period {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-left: 0.75rem;
+  flex: 0 0 auto;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+}
+
+.vizardry-period-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 0.85em;
+}
+
+.vizardry-period-value {
+  color: var(--text-normal);
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
+}
+
+.vizardry-period-value--empty {
+  color: var(--text-faint);
+  font-weight: 400;
+  font-style: italic;
+  background: transparent;
+}
+
+.vizardry-period-value--editable { cursor: text; }
+
+.vizardry-period-value--editable:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-secondary));
+}
+
 .vizardry-title {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.5);
   font-weight: 600;
