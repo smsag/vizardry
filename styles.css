@@ -3414,7 +3414,7 @@ code:has(.vzd-upvoty-key) {
   gap: 0.7rem;
   padding: 0.7rem;
   border: 1px solid var(--background-modifier-border);
-  border-top: 3px solid hsl(var(--vzd-odyssey-hue, 210), 60%, 50%);
+  border-top: 3px solid hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
   border-radius: var(--radius-m);
   background: var(--background-secondary);
 }
@@ -3430,7 +3430,7 @@ code:has(.vzd-upvoty-key) {
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-odyssey-hue, 210), 60%, 50%);
+  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
   color: #fff;
   font-weight: 700;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
@@ -3485,7 +3485,7 @@ code:has(.vzd-upvoty-key) {
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: hsl(var(--vzd-odyssey-hue, 210), 55%, 50%);
+  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
   color: #fff;
   font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
   font-weight: 700;
@@ -3607,19 +3607,22 @@ code:has(.vzd-upvoty-key) {
   stroke-width: 1.5;
 }
 
+/* Monochrome from the accent: the innermost ring (Control — what matters most)
+   is the most saturated, fading outward. "Focus inward" reads as "toward the
+   accent." */
 .vzd-coi-disc--concern {
-  fill: color-mix(in srgb, #e5484d 12%, var(--background-primary));
-  stroke: color-mix(in srgb, #e5484d 45%, var(--background-modifier-border));
+  fill: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary));
+  stroke: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-modifier-border));
 }
 
 .vzd-coi-disc--influence {
-  fill: color-mix(in srgb, #f5a623 16%, var(--background-primary));
-  stroke: color-mix(in srgb, #f5a623 50%, var(--background-modifier-border));
+  fill: color-mix(in srgb, var(--interactive-accent) 13%, var(--background-primary));
+  stroke: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border));
 }
 
 .vzd-coi-disc--control {
-  fill: color-mix(in srgb, #30a46c 20%, var(--background-primary));
-  stroke: color-mix(in srgb, #30a46c 55%, var(--background-modifier-border));
+  fill: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-primary));
+  stroke: color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border));
 }
 
 .vzd-coi-ring-label {
@@ -3645,9 +3648,9 @@ code:has(.vzd-upvoty-key) {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.vzd-coi-chip--concern { border-color: color-mix(in srgb, #e5484d 55%, var(--background-modifier-border)); }
-.vzd-coi-chip--influence { border-color: color-mix(in srgb, #f5a623 60%, var(--background-modifier-border)); }
-.vzd-coi-chip--control { border-color: color-mix(in srgb, #30a46c 60%, var(--background-modifier-border)); }
+.vzd-coi-chip--concern { border-color: color-mix(in srgb, var(--interactive-accent) 30%, var(--background-modifier-border)); }
+.vzd-coi-chip--influence { border-color: color-mix(in srgb, var(--interactive-accent) 50%, var(--background-modifier-border)); }
+.vzd-coi-chip--control { border-color: color-mix(in srgb, var(--interactive-accent) 78%, var(--background-modifier-border)); }
 
 /* Innermost tier: chips stack vertically in the centre disc rather than
    scattering (the disc is too small to place them around without overlap). */
@@ -3741,7 +3744,7 @@ code:has(.vzd-upvoty-key) {
 
 .vzd-wp-card {
   border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid hsl(var(--vzd-wp-hue, 210), 60%, 50%);
+  border-left: 3px solid hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
   border-radius: var(--radius-m);
   padding: 0.5rem 0.6rem;
   background: var(--background-secondary);
@@ -3757,7 +3760,7 @@ code:has(.vzd-upvoty-key) {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-wp-hue, 210), 60%, 50%);
+  background: hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
   flex: 0 0 auto;
 }
 
