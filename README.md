@@ -66,6 +66,8 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `conceptmap` | Concept Map | SVG graph |
 | `wheeloflife` | Wheel of Life | SVG wheel |
 | `odyssey` | Odyssey of Life | Plan cards |
+| `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
+| `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 
 ---
 
@@ -1230,6 +1232,77 @@ Plans render as side-by-side cards (a swipeable carousel on mobile). The canvas 
 - Between 2 and 4 plans; the `archetype`/`year`/`gauge`/`question` lines attach to the most recent `plan:` (indentation is cosmetic)
 - Gauge values are numbers 0–10; out-of-range values are clamped
 - Recoverable problems (a keyword outside any plan, a missing gauge value, a duplicate year, an unparsable line) skip that line and surface as a warning chip rather than failing the whole canvas
+
+---
+
+### Circle of Influence & Concern
+
+Covey's proactivity model (7 Habits, Habit 1): sort what's on your mind into concentric rings — the **Circle of Concern** (things you care about but can't act on), the **Circle of Influence** (things you can affect), and, innermost, the **Circle of Control** (your own actions and attitudes). Seeing how little sits in the outer ring — and how much is actually yours — is the point.
+
+~~~
+```vizardry
+type: circleofinfluence
+title: What's on my mind
+
+concern: The economy
+concern: What competitors do
+influence: My team's morale
+influence: Key customer relationships
+control: My daily priorities
+control: How I respond to setbacks
+```
+~~~
+
+The `control:` tier is optional — omit it for the classic two-ring Covey diagram.
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `concern: <text>` | An item in the outer ring — you care, but can't act on it |
+| `influence: <text>` | An item you can affect |
+| `control: <text>` | An item entirely within your own doing (innermost ring) |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- At least 2 items total; each ring holds up to 8
+- An empty item or an unrecognised keyword skips that line with a warning chip rather than failing the whole canvas
+
+---
+
+### Whole Person / Four Dimensions
+
+Covey's Whole-Person Paradigm (8th Habit) and "Sharpen the Saw" (Habit 7): a balanced life renews four dimensions — **Body** (physical), **Mind** (mental), **Heart** (social/emotional), and **Spirit** (spiritual). Score each 0–10 on the wheel and note the renewal activities that keep it sharp.
+
+~~~
+```vizardry
+type: wholeperson
+title: Sharpen the Saw
+
+body: 6 | Run 3× a week | Sleep 7 hours
+mind: 7 | Read 20 min daily | Take a course
+heart: 5 | Weekly date night | Call a friend
+spirit: 4 | Morning meditation | Time in nature
+```
+~~~
+
+The four wedges fill to their scores; a card per dimension lists its activities. Any dimension you omit shows at 0.
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `body: <0–10> \| <activity> \| …` | Physical dimension: a score, then optional renewal activities |
+| `mind: <0–10> \| <activity> \| …` | Mental dimension |
+| `heart: <0–10> \| <activity> \| …` | Social / emotional dimension |
+| `spirit: <0–10> \| <activity> \| …` | Spiritual dimension |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- At least one dimension; out-of-range scores are clamped to 0–10, up to 5 activities each
+- A missing/non-numeric score, a duplicate dimension, or an unrecognised keyword skips that line with a warning chip rather than failing the whole canvas
 
 ---
 

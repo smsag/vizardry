@@ -25,3 +25,5 @@ export * from "./types/node-map";
 export * from "./types/matrix";
 export * from "./types/wheel-of-life";
 export * from "./types/odyssey";
+export * from "./types/circle-of-influence";
+export * from "./types/whole-person";

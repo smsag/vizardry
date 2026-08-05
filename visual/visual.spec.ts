@@ -7,11 +7,12 @@ const ALL = [
   "bmc", "swot", "fishbone", "impact", "story", "mindmap", "ost", "venn",
   "sipoc", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
   "matrix", "scqa", "journey", "wheeloflife", "odyssey",
+  "circleofinfluence", "wholeperson",
 ];
 
 // On mobile we only snapshot the canvases whose layout is width-sensitive
 // (horizontal scrollers / carousels) — where mobile regressions actually bite.
-const MOBILE = ["wardley", "matrix", "sipoc", "journey", "roadmap", "bmc", "odyssey"];
+const MOBILE = ["wardley", "matrix", "sipoc", "journey", "roadmap", "bmc", "odyssey", "wholeperson"];
 
 test("canvases render as expected", async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === "mobile";

@@ -57,6 +57,8 @@ import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
 import { renderWheelOfLife } from "./wheeloflife";
 import { renderOdyssey } from "./odyssey";
+import { renderCircleOfInfluence } from "./circleofinfluence";
+import { renderWholePerson } from "./wholeperson";
 import { renderSCQA } from "./scqa";
 import { renderRACIMatrix } from "./raci";
 import { NULL_RESOLVER } from "../shared/links";
@@ -78,6 +80,8 @@ import type {
   ConceptMap,
   WheelOfLifeData,
   OdysseyData,
+  CircleOfInfluenceData,
+  WholePersonData,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1677,6 +1681,110 @@ describe("renderOdyssey", () => {
     const el = container();
     renderOdyssey({ plans: data.plans, warnings: ["Line 3: something"] }, el);
     expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
+  });
+});
+
+// ── renderCircleOfInfluence ───────────────────────────────────────────────────
+
+describe("renderCircleOfInfluence", () => {
+  const data: CircleOfInfluenceData = {
+    items: [
+      { tier: "concern", text: "The economy" },
+      { tier: "concern", text: "Competitors" },
+      { tier: "influence", text: "Team morale" },
+      { tier: "control", text: "My effort" },
+    ],
+  };
+
+  it("renders without throwing and sets the framework attribute", () => {
+    const el = container();
+    expect(() => renderCircleOfInfluence(data, el)).not.toThrow();
+    expect(el.getAttribute("data-framework")).toBe("circleofinfluence");
+  });
+
+  it("renders three concentric discs when control items exist", () => {
+    const el = container();
+    renderCircleOfInfluence(data, el);
+    expect(el.querySelectorAll(".vzd-coi-disc")).toHaveLength(3);
+    expect(el.querySelector(".vzd-coi-disc--control")).toBeTruthy();
+  });
+
+  it("renders only two discs for the classic two-tier diagram", () => {
+    const el = container();
+    renderCircleOfInfluence({ items: [{ tier: "concern", text: "A" }, { tier: "influence", text: "B" }] }, el);
+    expect(el.querySelectorAll(".vzd-coi-disc")).toHaveLength(2);
+    expect(el.querySelector(".vzd-coi-disc--control")).toBeFalsy();
+  });
+
+  it("renders one chip per item with its text and tier class", () => {
+    const el = container();
+    renderCircleOfInfluence(data, el);
+    expect(el.querySelectorAll(".vzd-coi-chip")).toHaveLength(4);
+    expect(el.querySelectorAll(".vzd-coi-chip--concern")).toHaveLength(2);
+    const texts = Array.from(el.querySelectorAll(".vzd-coi-chip")).map(c => c.textContent);
+    expect(texts).toContain("The economy");
+  });
+
+  it("surfaces parser warnings as a header chip", () => {
+    const el = container();
+    renderCircleOfInfluence({ items: data.items, warnings: ["Line 1: x"] }, el);
+    expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
+  });
+});
+
+// ── renderWholePerson ─────────────────────────────────────────────────────────
+
+describe("renderWholePerson", () => {
+  const data: WholePersonData = {
+    entries: [
+      { dimension: "body", score: 6, activities: ["Run", "Sleep"] },
+      { dimension: "mind", score: 7, activities: ["Read"] },
+      { dimension: "heart", score: 5, activities: [] },
+      { dimension: "spirit", score: 4, activities: ["Meditate"] },
+    ],
+  };
+
+  it("renders without throwing and sets the framework attribute", () => {
+    const el = container();
+    expect(() => renderWholePerson(data, el)).not.toThrow();
+    expect(el.getAttribute("data-framework")).toBe("wholeperson");
+  });
+
+  it("renders a four-wedge wheel (one fill per non-zero dimension)", () => {
+    const el = container();
+    renderWholePerson(data, el);
+    expect(el.querySelectorAll(".vzd-wp-fill")).toHaveLength(4);
+    expect(el.querySelector(".vzd-wp-rim")).toBeTruthy();
+  });
+
+  it("renders four dimension cards with names and scores", () => {
+    const el = container();
+    renderWholePerson(data, el);
+    expect(el.querySelectorAll(".vzd-wp-card")).toHaveLength(4);
+    const names = Array.from(el.querySelectorAll(".vzd-wp-card-name")).map(n => n.textContent);
+    expect(names).toEqual(["Body", "Mind", "Heart", "Spirit"]);
+    const scores = Array.from(el.querySelectorAll(".vzd-wp-card-score")).map(n => n.textContent);
+    expect(scores).toEqual(["6/10", "7/10", "5/10", "4/10"]);
+  });
+
+  it("lists activities only for dimensions that have them", () => {
+    const el = container();
+    renderWholePerson(data, el);
+    // body(2) + mind(1) + spirit(1) = 4 activity items; heart has none.
+    expect(el.querySelectorAll(".vzd-wp-card-activities li")).toHaveLength(4);
+  });
+
+  it("omits the fill for a zero-score dimension", () => {
+    const el = container();
+    renderWholePerson({
+      entries: [
+        { dimension: "body", score: 0, activities: [] },
+        { dimension: "mind", score: 5, activities: [] },
+        { dimension: "heart", score: 5, activities: [] },
+        { dimension: "spirit", score: 5, activities: [] },
+      ],
+    }, el);
+    expect(el.querySelectorAll(".vzd-wp-fill")).toHaveLength(3);
   });
 });
 

@@ -42,6 +42,8 @@ export const en = {
   "framework.service-blueprint.description": "Customer journey plus frontstage, backstage, and support-process lanes.",
   "framework.wheeloflife.description": "Life areas scored 0–10 as a segmented wheel — balance at a glance.",
   "framework.odyssey.description": "Three five-year life plans side by side — timeline, dashboard, and open questions.",
+  "framework.circleofinfluence.description": "Sort what you care about into Concern, Influence, and Control — and focus inward.",
+  "framework.wholeperson.description": "Body, Mind, Heart, and Spirit scored on a wheel with renewal activities.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
@@ -167,6 +169,11 @@ export const en = {
 
   // ── Odyssey labels ───────────────────────────────────────────────────────────
   "odyssey.questions": "Questions",
+
+  // ── Circle of Influence labels ───────────────────────────────────────────────
+  "coi.concern":   "Concern",
+  "coi.influence": "Influence",
+  "coi.control":   "Control",
 
   // ── Roadmap Linear integration ───────────────────────────────────────────────
   "roadmap.linear.loading":    "Loading summary…",
