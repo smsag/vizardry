@@ -83,6 +83,7 @@ These are the rules that most often get broken. Follow all of them:
 | `odyssey` | Odyssey of Life | Plan cards |
 | `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
+| `radar` | Radar / Spider Chart | SVG chart |
 
 ---
 
@@ -1466,6 +1467,31 @@ spirit: 4 | Morning meditation
 | `spirit: <0–10> \| <activity> \| …` | Spiritual dimension |
 
 At least one dimension is required; out-of-range scores are clamped to 0–10, up to five activities each. A missing/non-numeric score, a duplicate dimension, or an unrecognised keyword skips that line with a warning chip.
+
+---
+
+## Radar / Spider Chart (`radar`)
+
+A multi-attribute assessment: **3–12** statements each scored **0–10**, plotted on evenly-spaced spokes and connected into a filled polygon. The template ships pre-filled as Petra Wille's Agility Attributes Assessment. Read-only (scores live in the source).
+
+~~~
+```vizardry
+type: radar
+title: Agility Attributes Assessment
+
+axis: We anticipate and plan for changes | 6
+axis: We are fast at decision-making | 4
+axis: We effectively manage and prioritise opportunities and backlogs | 7
+axis: We effectively initiate change efforts | 5
+axis: We have solid risk-management practices | 6
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `axis: <statement> \| <score>` | An attribute and its 0–10 score (the spoke distance from centre) |
+
+Axes are drawn in source order, evenly around the circle, and numbered around the rim. Scores outside 0–10 are clamped. A blank statement, a duplicate, or a missing/non-numeric score skips that line with a warning chip; it's only fatal with fewer than three axes.
 
 ---
 

@@ -59,6 +59,7 @@ import { renderWheelOfLife } from "./wheeloflife";
 import { renderOdyssey } from "./odyssey";
 import { renderCircleOfInfluence } from "./circleofinfluence";
 import { renderWholePerson } from "./wholeperson";
+import { renderRadar } from "./radar";
 import { renderSCQA } from "./scqa";
 import { renderRACIMatrix } from "./raci";
 import { NULL_RESOLVER } from "../shared/links";
@@ -82,6 +83,7 @@ import type {
   OdysseyData,
   CircleOfInfluenceData,
   WholePersonData,
+  RadarData,
 } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1803,6 +1805,59 @@ describe("renderWholePerson", () => {
       ],
     }, el);
     expect(el.querySelectorAll(".vzd-wp-fill")).toHaveLength(3);
+  });
+});
+
+// ── renderRadar ───────────────────────────────────────────────────────────────
+
+describe("renderRadar", () => {
+  const data: RadarData = {
+    axes: [
+      { label: "Plan for change", score: 6 },
+      { label: "Decide fast", score: 4 },
+      { label: "Manage backlog", score: 7 },
+      { label: "Initiate change", score: 5 },
+    ],
+  };
+
+  it("renders an SVG without throwing and sets the framework attribute", () => {
+    const el = container();
+    expect(() => renderRadar(data, el)).not.toThrow();
+    expect(el.querySelector("svg")).toBeTruthy();
+    expect(el.getAttribute("data-framework")).toBe("radar");
+  });
+
+  it("renders one score polygon with a vertex per axis", () => {
+    const el = container();
+    renderRadar(data, el);
+    const poly = el.querySelector<SVGPolygonElement>(".vzd-radar-area");
+    expect(poly).toBeTruthy();
+    expect(poly!.getAttribute("points")!.trim().split(/\s+/)).toHaveLength(data.axes.length);
+    expect(el.querySelectorAll(".vzd-radar-dot")).toHaveLength(data.axes.length);
+  });
+
+  it("renders a spoke and a numbered statement label per axis", () => {
+    const el = container();
+    renderRadar(data, el);
+    expect(el.querySelectorAll(".vzd-radar-spoke")).toHaveLength(data.axes.length);
+    const labels = el.querySelectorAll(".vzd-radar-label");
+    expect(labels).toHaveLength(data.axes.length);
+    const nums = Array.from(el.querySelectorAll(".vzd-radar-num")).map(n => n.textContent);
+    expect(nums).toEqual(["1.", "2.", "3.", "4."]);
+    expect(labels[0].textContent).toContain("Plan for change");
+  });
+
+  it("renders the reference rings and rim", () => {
+    const el = container();
+    renderRadar(data, el);
+    expect(el.querySelectorAll(".vzd-radar-ring")).toHaveLength(4);
+    expect(el.querySelector(".vzd-radar-rim")).toBeTruthy();
+  });
+
+  it("surfaces parser warnings as a header chip", () => {
+    const el = container();
+    renderRadar({ axes: data.axes, warnings: ["Line 2: something"] }, el);
+    expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
   });
 });
 

@@ -27,3 +27,4 @@ export * from "./types/wheel-of-life";
 export * from "./types/odyssey";
 export * from "./types/circle-of-influence";
 export * from "./types/whole-person";
+export * from "./types/radar";

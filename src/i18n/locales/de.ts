@@ -38,6 +38,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.odyssey.description": "Drei Fünf-Jahres-Lebenspläne nebeneinander — Zeitleiste, Dashboard und offene Fragen.",
   "framework.circleofinfluence.description": "Sortiere deine Themen in Sorge, Einfluss und Kontrolle — und richte den Fokus nach innen.",
   "framework.wholeperson.description": "Körper, Verstand, Herz und Geist als Rad bewertet, mit Erneuerungs-Aktivitäten.",
+  "framework.radar.description": "Mehrere Attribute von 0–10 bewerten und als gefülltes Radar-/Spinnendiagramm darstellen.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",

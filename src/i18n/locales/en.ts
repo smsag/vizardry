@@ -45,6 +45,7 @@ export const en = {
   "framework.odyssey.description": "Three five-year life plans side by side — timeline, dashboard, and open questions.",
   "framework.circleofinfluence.description": "Sort what you care about into Concern, Influence, and Control — and focus inward.",
   "framework.wholeperson.description": "Body, Mind, Heart, and Spirit scored on a wheel with renewal activities.",
+  "framework.radar.description": "Rate several attributes 0–10 and plot them as a filled radar/spider chart.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",

@@ -69,6 +69,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `odyssey` | Odyssey of Life | Plan cards |
 | `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
+| `radar` | Radar / Spider Chart | SVG chart |
 
 ---
 
@@ -1333,6 +1334,40 @@ The four wedges fill to their scores; a card per dimension lists its activities.
 **Rules:**
 - At least one dimension; out-of-range scores are clamped to 0–10, up to 5 activities each
 - A missing/non-numeric score, a duplicate dimension, or an unrecognised keyword skips that line with a warning chip rather than failing the whole canvas
+
+---
+
+### Radar / Spider Chart
+
+A multi-attribute self-assessment: rate 3–12 statements on a 0–10 scale and see them plotted on spokes and connected into a filled polygon. Handy for agility/team-health/skills assessments — the template ships pre-filled as Petra Wille's **Agility Attributes Assessment**.
+
+~~~
+```vizardry
+type: radar
+title: Agility Attributes Assessment
+
+axis: We anticipate and plan for changes | 6
+axis: We are fast at decision-making | 4
+axis: We effectively manage and prioritise opportunities and backlogs | 7
+axis: We effectively initiate change efforts | 5
+axis: We have solid risk-management practices | 6
+```
+~~~
+
+Each statement is numbered and labelled around the rim; the shaded area is your profile at a glance. The canvas is read-only for now (scores live in the source).
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `axis: <statement> \| <score>` | One attribute and its 0–10 score |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- Between 3 and 12 axes, drawn evenly around the circle in source order
+- Scores are numbers 0–10; out-of-range values are clamped
+- A blank statement, a duplicate, or a missing/non-numeric score skips that line and surfaces as a warning chip rather than failing the whole canvas
 
 ---
 

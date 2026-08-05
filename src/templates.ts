@@ -427,6 +427,23 @@ control: The effort I put in
 \`\`\`
 `;
 
+export const RADAR_TEMPLATE = `\`\`\`vizardry
+type: radar
+title: Agility Attributes Assessment
+
+axis: We anticipate and plan for changes | 6
+axis: We are fast at decision-making | 4
+axis: We effectively manage and prioritise opportunities and backlogs | 7
+axis: We effectively initiate change efforts | 5
+axis: We have solid risk-management practices | 6
+axis: We have talent and people-development practices supporting agility | 4
+axis: We rapidly develop and deploy new capabilities | 7
+axis: We constantly improve cross-organisational collaboration | 5
+axis: We have reduced silos between departments | 3
+axis: Our people spend time helping us become more agile | 5
+\`\`\`
+`;
+
 export const WHOLE_PERSON_TEMPLATE = `\`\`\`vizardry
 type: wholeperson
 title: Sharpen the Saw
