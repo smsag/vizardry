@@ -4,6 +4,7 @@ import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
+import { accentHueExpr, harmonizedAccentColor } from "../shared/accent-colors";
 
 const MAX_SCORE = 10;
 const VIEW = 320;
@@ -14,13 +15,14 @@ const LABEL_R = R + 22;
 const SCORE_R = R - 15;
 const GRID_LEVELS = [2, 4, 6, 8];
 
-interface DimMeta { label: string; sub: string; hue: number }
+interface DimMeta { label: string; sub: string }
 const DIM_META: Record<WholePersonDimension, DimMeta> = {
-  body:   { label: "Body",   sub: "Physical",           hue: 145 },
-  mind:   { label: "Mind",   sub: "Mental",             hue: 210 },
-  heart:  { label: "Heart",  sub: "Social / Emotional", hue: 350 },
-  spirit: { label: "Spirit", sub: "Spiritual",          hue: 280 },
+  body:   { label: "Body",   sub: "Physical" },
+  mind:   { label: "Mind",   sub: "Mental" },
+  heart:  { label: "Heart",  sub: "Social / Emotional" },
+  spirit: { label: "Spirit", sub: "Spiritual" },
 };
+const DIM_COUNT = 4; // the four fixed dimensions, for accent-hue spacing
 
 function polar(radius: number, angle: number): { x: number; y: number } {
   return { x: CX + radius * Math.cos(angle), y: CY + radius * Math.sin(angle) };
@@ -42,7 +44,7 @@ function renderWedge(svg: SVGSVGElement, entry: WholePersonEntry, index: number)
 
   if (fillR > 0) {
     const fill = createSvgEl("path", { d: sectorPath(fillR, start, start + step), class: "vzd-wp-fill" });
-    fill.style.fill = `hsl(${meta.hue}, 60%, 55%)`;
+    fill.style.fill = harmonizedAccentColor(index, DIM_COUNT);
     svg.appendChild(fill);
   }
 
@@ -87,10 +89,10 @@ function renderWheel(host: HTMLElement, entries: WholePersonEntry[], title: stri
 
 function renderCards(host: HTMLElement, entries: WholePersonEntry[]): void {
   const grid = host.createEl("div", { cls: "vzd-wp-cards" });
-  for (const entry of entries) {
+  entries.forEach((entry, index) => {
     const meta = DIM_META[entry.dimension];
     const card = grid.createEl("div", { cls: "vzd-wp-card" });
-    card.style.setProperty("--vzd-wp-hue", String(meta.hue));
+    card.style.setProperty("--vzd-wp-hue", accentHueExpr(index, DIM_COUNT));
 
     const header = card.createEl("div", { cls: "vzd-wp-card-header" });
     header.createEl("span", { cls: "vzd-wp-card-dot" });
@@ -103,7 +105,7 @@ function renderCards(host: HTMLElement, entries: WholePersonEntry[]): void {
       const list = card.createEl("ul", { cls: "vzd-wp-card-activities" });
       for (const a of entry.activities) list.createEl("li", { text: a });
     }
-  }
+  });
 }
 
 export function renderWholePerson(

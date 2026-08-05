@@ -4,6 +4,7 @@ import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
+import { harmonizedAccentColor } from "../shared/accent-colors";
 
 // Wheel geometry. The wheel is a fixed-size dartboard; the labels ring sits
 // outside the rim, so the viewBox is wider than 2·R to leave room for them.
@@ -33,10 +34,6 @@ function sectorPath(radius: number, a0: number, a1: number): string {
     `A ${radius} ${radius} 0 ${largeArc} 1 ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} Z`;
 }
 
-function wedgeHue(index: number, count: number): string {
-  return `hsl(${Math.round((index * 360) / count)}, 62%, 55%)`;
-}
-
 function renderWedge(
   svg: SVGSVGElement,
   area: WheelOfLifeArea,
@@ -55,7 +52,7 @@ function renderWedge(
   // Filled portion — from centre out to the score radius.
   if (fillR > 0) {
     const fill = createSvgEl("path", { d: sectorPath(fillR, start, end), class: "vzd-wol-fill" });
-    fill.style.fill = wedgeHue(index, count);
+    fill.style.fill = harmonizedAccentColor(index, count);
     g.appendChild(fill);
   }
 

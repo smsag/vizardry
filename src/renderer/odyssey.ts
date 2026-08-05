@@ -5,10 +5,8 @@ import { setupSlideCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
+import { accentHueExpr } from "../shared/accent-colors";
 import { t } from "../i18n";
-
-// Distinct but calm per-plan accent hues (blue · green · purple · amber).
-const PLAN_HUES = [210, 145, 280, 35];
 
 const GAUGE_MAX = 10;
 
@@ -58,11 +56,11 @@ function renderGauge(host: HTMLElement, gauge: OdysseyGauge): void {
   cell.createEl("div", { cls: "vzd-odyssey-gauge-name", text: gauge.name });
 }
 
-function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number): void {
+function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number, count: number): void {
   const col = grid.createEl("div", { cls: "vzd-odyssey-plan" });
   col.dataset.planIndex = String(index);
-  const hue = PLAN_HUES[index % PLAN_HUES.length];
-  col.style.setProperty("--vzd-odyssey-hue", String(hue));
+  // Each plan takes an accent-harmonised hue (plan 1 is the accent itself).
+  col.style.setProperty("--vzd-odyssey-hue", accentHueExpr(index, count));
 
   const header = col.createEl("div", { cls: "vzd-odyssey-plan-header" });
   header.createEl("span", { cls: "vzd-odyssey-plan-label", text: plan.label });
@@ -112,7 +110,7 @@ export function renderOdyssey(
   const grid = container.createEl("div", { cls: "vzd-odyssey-grid" });
   grid.style.setProperty("--vzd-odyssey-cols", String(data.plans.length));
 
-  data.plans.forEach((plan, i) => renderPlan(grid, plan, i));
+  data.plans.forEach((plan, i) => renderPlan(grid, plan, i, data.plans.length));
 
   setupSlideCarousel(container, ".vzd-odyssey-plan", "vzd-odyssey-plan--active", data.plans.length);
 }
