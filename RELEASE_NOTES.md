@@ -1,26 +1,20 @@
-## 0.48.0
+## 0.49.0
 
-Two new canvases, and a palette that follows your accent.
+Accent-derived colours everywhere.
 
-- **Circle of Influence & Concern** (`type: circleofinfluence`) — Covey's
-  proactivity model as concentric rings: **Concern** (things you can't act on),
-  **Influence** (things you can affect), and an optional inner **Control** ring
-  (your own actions). Author it one item per line with `concern:` / `influence:`
-  / `control:`.
+- Following 0.48.0's life-design canvases, the remaining canvases that used
+  fixed decorative palettes now derive their colours from your Obsidian accent
+  too, so the whole plugin re-tints live when you change your accent:
+  - **Opportunity Solution Tree** and **SCQA / SCR narrative** — the four
+    narrative/level lanes are now a harmonised set rotated off the accent
+    (instead of blue/green/orange/yellow), keeping the levels distinct while
+    following your accent.
+  - **Matrix** — every preset tints its heat with the accent rather than a
+    fixed per-preset hue.
+  - Smaller cleanups: the Upvoty key badge and a couple of on-accent labels now
+    use accent / on-accent tokens.
 
-- **Whole Person / Four Dimensions** (`type: wholeperson`) — the Whole-Person
-  Paradigm / "Sharpen the Saw": a four-wedge wheel (**Body · Mind · Heart ·
-  Spirit**) scored 0–10, plus a card per dimension listing renewal activities.
-  Author it as `body: <0–10> | <activity> | …`.
-
-- **Accent-derived colours across all life-design canvases** — the Wheel of
-  Life, Odyssey of Life, Whole Person, and Circle of Influence now derive their
-  palettes from your Obsidian accent colour (harmonised hues rotated off the
-  accent; the Circle fades a single accent monochrome inward), so they re-tint
-  live when you change your accent instead of using fixed colours. Value meters
-  (the Odyssey dashboard gauges) keep their intuitive low→high red→green.
-
-Both new canvases are read-only and degrade gracefully — recoverable problems
-surface as a warning chip instead of failing the whole canvas. Documented in the
-README and the canvas syntax reference, and covered by unit tests plus
-pixel-level visual-regression baselines.
+True signal colours are unchanged by design — the Odyssey dashboard gauges keep
+their low→high red→green, and warning/error states keep their status colours.
+The user-selectable Node Map palette and API-provided Linear badge colours are
+untouched.
