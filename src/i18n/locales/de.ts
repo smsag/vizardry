@@ -267,6 +267,11 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "settings.secret.link":                "Verknüpfen…",
 
   // ── Settings: Linear section ────────────────────────────────────────────────
+  "settings.section.appearance":         "Darstellung",
+  "settings.sketch.name":                "Skizzen-Stil (handgezeichnet)",
+  "settings.sketch.desc":                "Canvases mit Handschrift-Font und monochromer Tinte darstellen, mit leichtem handgezeichnetem Wackeln — wie eine Whiteboard-Skizze.",
+  "settings.sketchFont.name":            "Handschrift-Font (optional)",
+  "settings.sketchFont.desc":            "Schriftfamilie für den Skizzen-Modus. Leer lassen für den eingebauten Handschrift-Font.",
   "settings.section.linear":             "Linear",
   "settings.linear.enable.name":         "Linear-Integration aktivieren",
   "settings.linear.enable.desc":         "Zeigt den Issue-Status auf Roadmap-Karten und erzeugt beim Überfahren KI-Zusammenfassungen.",

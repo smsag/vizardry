@@ -7,6 +7,12 @@ import { getUpvotyService } from "./upvoty";
 import { t } from "./i18n";
 
 export interface PluginSettings {
+  // Appearance
+  /** Render canvases with a handwriting font + monochrome ink (whiteboard look). */
+  sketchMode: boolean;
+  /** Optional font-family override for sketch mode; blank = the bundled font. */
+  sketchFont: string;
+
   // Linear
   linearEnabled: boolean;
   linearBaseUrl: string;
@@ -37,6 +43,8 @@ export interface PluginSettings {
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
+  sketchMode: false,
+  sketchFont: "",
   linearEnabled: false,
   linearBaseUrl: "https://api.linear.app/graphql",
   linearSecretName: "vzd-linear-key",
@@ -256,6 +264,36 @@ export class VizardrySettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
+
+    // ── Appearance ─────────────────────────────────────────────────────────────
+    containerEl.createEl("h2", { text: t("settings.section.appearance") });
+
+    new Setting(containerEl)
+      .setName(t("settings.sketch.name"))
+      .setDesc(t("settings.sketch.desc"))
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.sketchMode)
+          .onChange(async (value) => {
+            this.plugin.settings.sketchMode = value;
+            this.plugin.applySketchMode();
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.sketchFont.name"))
+      .setDesc(t("settings.sketchFont.desc"))
+      .addText(text =>
+        text
+          .setPlaceholder("Caveat, Comic Sans MS, cursive")
+          .setValue(this.plugin.settings.sketchFont)
+          .onChange(async (value) => {
+            this.plugin.settings.sketchFont = value;
+            this.plugin.applySketchMode();
+            await this.plugin.saveSettings();
+          }),
+      );
 
     // ── Linear ─────────────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: t("settings.section.linear") });
