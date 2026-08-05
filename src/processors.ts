@@ -47,12 +47,13 @@ import { parseWheelOfLife } from "./wheeloflife";
 import { parseOdyssey } from "./odyssey";
 import { parseCircleOfInfluence } from "./circleofinfluence";
 import { parseWholePerson } from "./wholeperson";
+import { parseRadar } from "./radar";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap, renderWheelOfLife, renderOdyssey,
-  renderCircleOfInfluence, renderWholePerson,
+  renderCircleOfInfluence, renderWholePerson, renderRadar,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -67,7 +68,7 @@ import {
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
-  CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE,
+  CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
 } from "./templates";
 
 /**
@@ -225,4 +226,8 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // need no heading-link resolver.
   { id: "circleofinfluence", label: "Circle of Influence", template: CIRCLE_OF_INFLUENCE_TEMPLATE, createProcessor: plain(parseCircleOfInfluence, renderCircleOfInfluence) },
   { id: "wholeperson", label: "Whole Person", template: WHOLE_PERSON_TEMPLATE, createProcessor: plain(parseWholePerson, renderWholePerson) },
+
+  // Radar parses raw source (its "|"-delimited axis lines have no inline-link
+  // syntax) and needs no heading-link resolver.
+  { id: "radar", label: "Radar Chart", template: RADAR_TEMPLATE, createProcessor: plain(parseRadar, renderRadar) },
 ];
