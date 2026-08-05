@@ -21,7 +21,7 @@ import {
   OST_TEMPLATE, VENN_TEMPLATE, SIPOC_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
-  ODYSSEY_TEMPLATE,
+  ODYSSEY_TEMPLATE, CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE,
 } from "../src/templates";
 
 /** Strip the ```vizardry … ``` fence so only the inner block source remains. */
@@ -55,6 +55,8 @@ const FIXTURES: Record<string, string> = {
   journey: inner(JOURNEY_TEMPLATE),
   wheeloflife: inner(WHEEL_OF_LIFE_TEMPLATE),
   odyssey: inner(ODYSSEY_TEMPLATE),
+  circleofinfluence: inner(CIRCLE_OF_INFLUENCE_TEMPLATE),
+  wholeperson: inner(WHOLE_PERSON_TEMPLATE),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

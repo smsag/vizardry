@@ -410,6 +410,33 @@ plan: C | Sail & Teach
 \`\`\`
 `;
 
+export const CIRCLE_OF_INFLUENCE_TEMPLATE = `\`\`\`vizardry
+type: circleofinfluence
+title: What's on my mind
+
+concern: The economy
+concern: What competitors do
+concern: Others' opinions of me
+influence: My team's morale
+influence: Key customer relationships
+influence: My manager's trust
+control: My daily priorities
+control: How I respond to setbacks
+control: The effort I put in
+\`\`\`
+`;
+
+export const WHOLE_PERSON_TEMPLATE = `\`\`\`vizardry
+type: wholeperson
+title: Sharpen the Saw
+
+body: 6 | Run 3× a week | Sleep 7 hours
+mind: 7 | Read 20 min daily | Take a course
+heart: 5 | Weekly date night | Call a friend
+spirit: 4 | Morning meditation | Time in nature
+\`\`\`
+`;
+
 export const PACE_LAYERS_TEMPLATE = `\`\`\`vizardry
 // type: pacelayers, shearing | product | retro
 type: pacelayers, shearing

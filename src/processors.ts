@@ -45,11 +45,14 @@ import { parseSCQA } from "./scqa";
 import { parseJourney } from "./journey";
 import { parseWheelOfLife } from "./wheeloflife";
 import { parseOdyssey } from "./odyssey";
+import { parseCircleOfInfluence } from "./circleofinfluence";
+import { parseWholePerson } from "./wholeperson";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap, renderWheelOfLife, renderOdyssey,
+  renderCircleOfInfluence, renderWholePerson,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -64,6 +67,7 @@ import {
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
+  CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE,
 } from "./templates";
 
 /**
@@ -216,4 +220,9 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // Odyssey of Life parses raw source (its "|"-delimited plan/gauge lines have
   // no inline-link syntax) and needs no heading-link resolver.
   { id: "odyssey", label: "Odyssey of Life", template: ODYSSEY_TEMPLATE, createProcessor: plain(parseOdyssey, renderOdyssey) },
+
+  // Covey canvases parse raw source (keyword lines, no inline-link syntax) and
+  // need no heading-link resolver.
+  { id: "circleofinfluence", label: "Circle of Influence", template: CIRCLE_OF_INFLUENCE_TEMPLATE, createProcessor: plain(parseCircleOfInfluence, renderCircleOfInfluence) },
+  { id: "wholeperson", label: "Whole Person", template: WHOLE_PERSON_TEMPLATE, createProcessor: plain(parseWholePerson, renderWholePerson) },
 ];

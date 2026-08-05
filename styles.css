@@ -3587,6 +3587,214 @@ code:has(.vzd-upvoty-key) {
   }
 }
 
+/* ── Circle of Influence & Concern ───────────────────────────────────────── */
+
+.vzd-coi-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  margin: 0.5rem auto;
+  aspect-ratio: 1 / 1;
+}
+
+.vzd-coi-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.vzd-coi-disc {
+  stroke-width: 1.5;
+}
+
+.vzd-coi-disc--concern {
+  fill: color-mix(in srgb, #e5484d 12%, var(--background-primary));
+  stroke: color-mix(in srgb, #e5484d 45%, var(--background-modifier-border));
+}
+
+.vzd-coi-disc--influence {
+  fill: color-mix(in srgb, #f5a623 16%, var(--background-primary));
+  stroke: color-mix(in srgb, #f5a623 50%, var(--background-modifier-border));
+}
+
+.vzd-coi-disc--control {
+  fill: color-mix(in srgb, #30a46c 20%, var(--background-primary));
+  stroke: color-mix(in srgb, #30a46c 55%, var(--background-modifier-border));
+}
+
+.vzd-coi-ring-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  fill: var(--text-muted);
+}
+
+.vzd-coi-chip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  max-width: 27%;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--background-primary);
+  border: 1.5px solid var(--background-modifier-border);
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
+  line-height: 1.15;
+  text-align: center;
+  color: var(--text-normal);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.vzd-coi-chip--concern { border-color: color-mix(in srgb, #e5484d 55%, var(--background-modifier-border)); }
+.vzd-coi-chip--influence { border-color: color-mix(in srgb, #f5a623 60%, var(--background-modifier-border)); }
+.vzd-coi-chip--control { border-color: color-mix(in srgb, #30a46c 60%, var(--background-modifier-border)); }
+
+/* Innermost tier: chips stack vertically in the centre disc rather than
+   scattering (the disc is too small to place them around without overlap). */
+.vzd-coi-control-stack {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 32%;
+}
+
+.vzd-coi-control-stack .vzd-coi-chip {
+  position: static;
+  transform: none;
+  max-width: 100%;
+}
+
+/* ── Whole Person / Four Dimensions ──────────────────────────────────────── */
+
+.vzd-wp-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.vzd-wp-wheel {
+  flex: 0 0 auto;
+}
+
+.vzd-wp-wheel-svg {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+}
+
+.vzd-wp-fill {
+  stroke: var(--background-primary);
+  stroke-width: 1;
+  fill-opacity: 0.85;
+}
+
+.vzd-wp-ring {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.vzd-wp-spoke {
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+
+.vzd-wp-rim {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+
+.vzd-wp-score {
+  fill: var(--text-normal);
+  font-size: 13px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.vzd-wp-wheel-label {
+  fill: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vzd-wp-cards {
+  flex: 1 1 300px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 0.6rem;
+}
+
+.vzd-wp-card {
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid hsl(var(--vzd-wp-hue, 210), 60%, 50%);
+  border-radius: var(--radius-m);
+  padding: 0.5rem 0.6rem;
+  background: var(--background-secondary);
+}
+
+.vzd-wp-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vzd-wp-card-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: hsl(var(--vzd-wp-hue, 210), 60%, 50%);
+  flex: 0 0 auto;
+}
+
+.vzd-wp-card-name {
+  font-weight: 700;
+}
+
+.vzd-wp-card-score {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vzd-wp-card-sub {
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.9);
+  color: var(--text-muted);
+  margin: 0.05rem 0 0.3rem;
+}
+
+.vzd-wp-card-activities {
+  margin: 0;
+  padding-left: 1.05rem;
+}
+
+.vzd-wp-card-activities li {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
+  line-height: 1.3;
+  margin: 0.08rem 0;
+}
+
+@media (max-width: 600px) {
+  .vzd-wp-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ══ Matrix (one unified engine) ════════════════════════════════════════════
    Two tick-labelled axes form an N×M cell grid (tinted by heat, optionally
    named); items are cards placed by [x,y] or snapped to a cell. --vzd-matrix-base

@@ -35,6 +35,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.service-blueprint.description": "Customer Journey plus Frontstage-, Backstage- und Support-Prozess-Bahnen.",
   "framework.wheeloflife.description": "Lebensbereiche von 0–10 als segmentiertes Rad — Balance auf einen Blick.",
   "framework.odyssey.description": "Drei Fünf-Jahres-Lebenspläne nebeneinander — Zeitleiste, Dashboard und offene Fragen.",
+  "framework.circleofinfluence.description": "Sortiere deine Themen in Sorge, Einfluss und Kontrolle — und richte den Fokus nach innen.",
+  "framework.wholeperson.description": "Körper, Verstand, Herz und Geist als Rad bewertet, mit Erneuerungs-Aktivitäten.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",
@@ -155,6 +157,9 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "roadmap.col.later": "Später",
   "roadmap.addItem":   "Element hinzufügen",
   "odyssey.questions": "Fragen",
+  "coi.concern":   "Sorge",
+  "coi.influence": "Einfluss",
+  "coi.control":   "Kontrolle",
   "roadmap.newItem":   "Neues Element",
 
   // ── Roadmap Linear integration ───────────────────────────────────────────────

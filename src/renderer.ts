@@ -15,3 +15,5 @@ export { renderSCQA } from "./renderer/scqa";
 export { renderJourneyMap } from "./renderer/journey";
 export { renderWheelOfLife } from "./renderer/wheeloflife";
 export { renderOdyssey } from "./renderer/odyssey";
+export { renderCircleOfInfluence } from "./renderer/circleofinfluence";
+export { renderWholePerson } from "./renderer/wholeperson";

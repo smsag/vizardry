@@ -80,6 +80,8 @@ These are the rules that most often get broken. Follow all of them:
 | `wardley` | Wardley Map | SVG canvas |
 | `wheeloflife` | Wheel of Life | SVG wheel |
 | `odyssey` | Odyssey of Life | Plan cards |
+| `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
+| `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 
 ---
 
@@ -1381,6 +1383,61 @@ plan: B | Indie Maker
 | `question: <text>` | An open question the plan raises |
 
 The `archetype`/`year`/`gauge`/`question` lines attach to the most recent `plan:` — indentation is cosmetic. Out-of-range gauge values are clamped to 0–10. Recoverable issues (a keyword before any `plan:`, a missing gauge value, a duplicate year, an unparsable line) skip that line with a warning chip; it's only fatal with fewer than two plans.
+
+---
+
+## Circle of Influence & Concern (`circleofinfluence`)
+
+Covey's Habit 1 proactivity model as concentric rings: **Concern** (outer — things you can't act on), **Influence** (middle — things you can affect), **Control** (inner — your own actions). One item per line. The `control:` tier is optional (omit it for the classic two-ring diagram).
+
+~~~
+```vizardry
+type: circleofinfluence
+title: What's on my mind
+
+concern: The economy
+concern: What competitors do
+influence: My team's morale
+influence: Key customer relationships
+control: My daily priorities
+control: How I respond to setbacks
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `concern: <text>` | Outer ring — you care but can't act on it |
+| `influence: <text>` | Middle ring — you can affect it |
+| `control: <text>` | Inner ring — entirely within your own doing |
+
+At least 2 items total; each ring holds up to 8. An empty item or an unrecognised keyword skips that line with a warning chip instead of failing the canvas.
+
+---
+
+## Whole Person / Four Dimensions (`wholeperson`)
+
+Covey's Whole-Person Paradigm / "Sharpen the Saw": four fixed dimensions — **Body** (physical), **Mind** (mental), **Heart** (social/emotional), **Spirit** (spiritual) — each scored **0–10** on a wheel with optional renewal activities. Any dimension omitted renders at 0.
+
+~~~
+```vizardry
+type: wholeperson
+title: Sharpen the Saw
+
+body: 6 | Run 3× a week | Sleep 7 hours
+mind: 7 | Read 20 min daily
+heart: 5 | Weekly date night | Call a friend
+spirit: 4 | Morning meditation
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `body: <0–10> \| <activity> \| …` | Physical dimension: score, then optional activities |
+| `mind: <0–10> \| <activity> \| …` | Mental dimension |
+| `heart: <0–10> \| <activity> \| …` | Social / emotional dimension |
+| `spirit: <0–10> \| <activity> \| …` | Spiritual dimension |
+
+At least one dimension is required; out-of-range scores are clamped to 0–10, up to five activities each. A missing/non-numeric score, a duplicate dimension, or an unrecognised keyword skips that line with a warning chip.
 
 ---
 
