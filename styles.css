@@ -1409,36 +1409,27 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
    set in ostTreeOptions().
    ──────────────────────────────────────────────────────────────────────── */
 
+/* Lane hues are a harmonised set off the accent: the root level is the accent
+   itself, each deeper level rotates the hue by 90° while keeping the accent's
+   saturation and lightness — so the levels stay distinct and legible (a fading
+   monochrome ramp washed the leaves out) while still following the user's
+   accent. All parts are theme-independent, so no dark override is needed. */
 .vizardry-ost {
-  --vzd-ost-outcome: #4c8bf5;      /* blue   */
-  --vzd-ost-opportunity: #37a169;  /* green  */
-  --vzd-ost-solution: #dd7f2e;     /* orange */
-  --vzd-ost-experiment: #d4a72c;   /* yellow */
-}
-
-.theme-dark .vizardry-ost {
-  --vzd-ost-outcome: #6ea8ff;
-  --vzd-ost-opportunity: #56c98a;
-  --vzd-ost-solution: #f0a05a;
-  --vzd-ost-experiment: #e9c14e;
+  --vzd-ost-outcome:     hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --vzd-ost-opportunity: hsl(calc(var(--accent-h) + 90) var(--accent-s) var(--accent-l));
+  --vzd-ost-solution:    hsl(calc(var(--accent-h) + 180) var(--accent-s) var(--accent-l));
+  --vzd-ost-experiment:  hsl(calc(var(--accent-h) + 270) var(--accent-s) var(--accent-l));
 }
 
 /* SCQA / SCR lane hues (situation → complication → question → answer |
-   resolution). SCR reuses situation/complication + resolution. */
+   resolution). SCR reuses situation/complication + resolution (its leaf, at the
+   same depth-2 offset as question). */
 .vizardry-scqa {
-  --vzd-scqa-situation: #4c8bf5;     /* blue   */
-  --vzd-scqa-complication: #d9534f;  /* red    */
-  --vzd-scqa-question: #7a5bd6;      /* purple */
-  --vzd-scqa-answer: #37a169;        /* green  */
-  --vzd-scqa-resolution: #37a169;    /* green  */
-}
-
-.theme-dark .vizardry-scqa {
-  --vzd-scqa-situation: #6ea8ff;
-  --vzd-scqa-complication: #e8807c;
-  --vzd-scqa-question: #a58be6;
-  --vzd-scqa-answer: #56c98a;
-  --vzd-scqa-resolution: #56c98a;
+  --vzd-scqa-situation:    hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --vzd-scqa-complication: hsl(calc(var(--accent-h) + 90) var(--accent-s) var(--accent-l));
+  --vzd-scqa-question:     hsl(calc(var(--accent-h) + 180) var(--accent-s) var(--accent-l));
+  --vzd-scqa-answer:       hsl(calc(var(--accent-h) + 270) var(--accent-s) var(--accent-l));
+  --vzd-scqa-resolution:   hsl(calc(var(--accent-h) + 180) var(--accent-s) var(--accent-l));
 }
 
 /* Dashed band divider spanning the canvas width */
@@ -2839,9 +2830,9 @@ code:has(.vzd-upvoty-key) {
   font-size: 0.7em;
   font-weight: 600;
   letter-spacing: 0.03em;
-  color: hsl(220, 55%, 55%);
+  color: var(--interactive-accent);
   background: none;
-  border: 1.5px solid hsl(220, 55%, 55%);
+  border: 1.5px solid var(--interactive-accent);
   border-radius: 999px;
   padding: 2px 8px;
   white-space: nowrap;
@@ -2918,8 +2909,8 @@ code:has(.vzd-upvoty-key) {
   white-space: nowrap;
   flex-shrink: 0;
   background: none;
-  border: 1.5px solid hsl(220, 55%, 55%);
-  color: hsl(220, 55%, 55%);
+  border: 1.5px solid var(--interactive-accent);
+  color: var(--interactive-accent);
   box-shadow: none;
 }
 .vzd-upvoty-preview-status:empty { display: none; }
@@ -3431,7 +3422,7 @@ code:has(.vzd-upvoty-key) {
   height: 1.6rem;
   border-radius: 50%;
   background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   font-weight: 700;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
   display: flex;
@@ -3486,7 +3477,7 @@ code:has(.vzd-upvoty-key) {
   padding: 0 5px;
   border-radius: 10px;
   background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
   font-weight: 700;
   display: flex;

@@ -17,8 +17,15 @@ export interface PresetDef {
   heat: (col: number, row: number, cols: number, rows: number) => Heat | null;
 }
 
+/**
+ * Every matrix tints its heat with the user's Obsidian accent — only one preset
+ * ever renders at a time, so they share the accent base rather than each hard-
+ * coding a decorative hue. Heat contrast comes from the per-cell color-mix.
+ */
+export const ACCENT_BASE = "var(--interactive-accent)";
+
 /** Fallback base colour for a preset-less matrix. */
-export const BLANK_COLOR = "var(--interactive-accent)";
+export const BLANK_COLOR = ACCENT_BASE;
 
 // Both axes point the same way (index 1 = the "good" end), so priority is an
 // even diagonal — hottest at the top-left, cooling to the bottom-right.
@@ -62,12 +69,12 @@ function priorityPreset(type: string, color: string, heat: PresetDef["heat"]): P
 }
 
 export const PRESETS: Record<MatrixPreset, PresetDef> = {
-  pain:        priorityPreset("pain", "hsl(0, 70%, 55%)", additiveHeat),
-  opportunity: priorityPreset("opportunity", "hsl(220, 65%, 55%)", additiveHeat),
-  impact:      priorityPreset("impact", "hsl(145, 55%, 42%)", additiveHeat),
-  assumption:  priorityPreset("assumption", "hsl(265, 55%, 58%)", gatedHeat),
+  pain:        priorityPreset("pain", ACCENT_BASE, additiveHeat),
+  opportunity: priorityPreset("opportunity", ACCENT_BASE, additiveHeat),
+  impact:      priorityPreset("impact", ACCENT_BASE, additiveHeat),
+  assumption:  priorityPreset("assumption", ACCENT_BASE, gatedHeat),
   scenario: {
-    color: "hsl(215, 45%, 55%)",
+    color: ACCENT_BASE,
     xTitle: () => t("matrix.axis.scenario.x"),
     yTitle: () => t("matrix.axis.scenario.y"),
     xTicks: () => [t("matrix.scenario.low"), t("matrix.scenario.high")],
