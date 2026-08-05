@@ -1,21 +1,26 @@
-## 0.47.0
+## 0.48.0
 
-Two new canvases for life and career design.
+Two new canvases, and a palette that follows your accent.
 
-- **Wheel of Life** (`type: wheeloflife`) — the coaching classic as a segmented
-  dartboard: each life area is a wedge filled from the centre out to its 0–10
-  score, so imbalance is obvious at a glance. Notes appear on hover. Author it
-  with `area: <Name> | <score> | <note?>`.
+- **Circle of Influence & Concern** (`type: circleofinfluence`) — Covey's
+  proactivity model as concentric rings: **Concern** (things you can't act on),
+  **Influence** (things you can affect), and an optional inner **Control** ring
+  (your own actions). Author it one item per line with `concern:` / `influence:`
+  / `control:`.
 
-- **Odyssey of Life** (`type: odyssey`) — the Odyssey Plan from *Designing Your
-  Life*: two to four parallel multi-year plans side by side, each with a
-  headline, a timeline of year milestones, a dashboard of 0–10 fuel-gauge
-  dials, and the open questions it raises. Author plans with
-  `plan: <Label> | <Title>` and indent `year N:`, `gauge: <Name> | <0–10>`,
-  and `question:` lines beneath.
+- **Whole Person / Four Dimensions** (`type: wholeperson`) — the Whole-Person
+  Paradigm / "Sharpen the Saw": a four-wedge wheel (**Body · Mind · Heart ·
+  Spirit**) scored 0–10, plus a card per dimension listing renewal activities.
+  Author it as `body: <0–10> | <activity> | …`.
 
-Both are read-only in this release (the canvas reflects the source) and both
-degrade gracefully — recoverable problems surface as a warning chip instead of
-failing the whole canvas. Documented in the README and the canvas syntax
-reference, and covered by unit tests plus pixel-level visual-regression
-baselines.
+- **Accent-derived colours across all life-design canvases** — the Wheel of
+  Life, Odyssey of Life, Whole Person, and Circle of Influence now derive their
+  palettes from your Obsidian accent colour (harmonised hues rotated off the
+  accent; the Circle fades a single accent monochrome inward), so they re-tint
+  live when you change your accent instead of using fixed colours. Value meters
+  (the Odyssey dashboard gauges) keep their intuitive low→high red→green.
+
+Both new canvases are read-only and degrade gracefully — recoverable problems
+surface as a warning chip instead of failing the whole canvas. Documented in the
+README and the canvas syntax reference, and covered by unit tests plus
+pixel-level visual-regression baselines.
