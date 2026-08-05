@@ -59,6 +59,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `sipoc, flow` | SIPOC Diagram (flow view) | SVG flow |
 | `story` | User Story Map | Grid |
 | `swot` | SWOT Analysis | Grid |
+| `futureself` | Future Self | Grid |
 | `vpc` | Value Proposition Canvas | Grid |
 | `venn` | Venn Diagram | SVG overlap |
 | `wardley` | Wardley Map | SVG canvas |
@@ -746,6 +747,35 @@ block: Threats
   Economic downturn reducing SMB software spend
 ```
 ~~~
+
+---
+
+### Future Self
+
+Petra Wille's reflection canvas: capture where you are now (**As-Is**), where you want to be (**To-Be**), and the 1–5 **Actions** that bridge the gap over a set period. As-Is and To-Be stack in the left column; Actions spans the right. Every block is card mode (one card per line), and a `period:` line adds an editable timeframe to the header.
+
+~~~
+```vizardry
+type: futureself
+title: Future Self
+period: May – Jul 2025
+
+block: As-Is
+  Reactive; firefighting most days
+  Strong craft, weak at delegation
+
+block: To-Be
+  Leading through others
+  One clear strategic bet
+
+block: Actions
+  Hand off two recurring duties
+  Weekly 1:1s with each report
+  Write the strategy one-pager
+```
+~~~
+
+The `period:` field and the block content are editable inline in Live Preview.
 
 ---
 
@@ -1623,7 +1653,7 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ## Syntax reference
 
-### Grid canvases (type: adkar, bmc, experiment, fourls, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
+### Grid canvases (type: adkar, bmc, experiment, fourls, futureself, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
 
 | Syntax | Meaning |
 |---|---|

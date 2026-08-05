@@ -12,6 +12,7 @@ import { RAC } from "./frameworks/rac";
 import { SWOT } from "./frameworks/swot";
 import { FOURLS } from "./frameworks/fourls";
 import { PTW } from "./frameworks/ptw";
+import { FUTURE_SELF } from "./frameworks/futureself";
 
 // The map is derived from the id field on each definition — no duplicate key.
 //
@@ -20,7 +21,7 @@ import { PTW } from "./frameworks/ptw";
 // mentioned in README.md, which doesn't apply to this shared registry.
 
 export const ALL_FRAMEWORKS: FrameworkDefinition[] = [
-  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, PTW, VPC, KATA, JOBS, RAC, SWOT, EXPERIMENT,
+  ADKAR, BMC, FOURLS, LEAN, OPPORTUNITY, LEANUX, PTW, VPC, KATA, JOBS, RAC, SWOT, EXPERIMENT, FUTURE_SELF,
 ];
 
 export const FRAMEWORKS: Record<string, FrameworkDefinition> = Object.fromEntries(

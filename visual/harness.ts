@@ -57,6 +57,22 @@ const FIXTURES: Record<string, string> = {
   odyssey: inner(ODYSSEY_TEMPLATE),
   circleofinfluence: inner(CIRCLE_OF_INFLUENCE_TEMPLATE),
   wholeperson: inner(WHOLE_PERSON_TEMPLATE),
+  futureself: `type: futureself
+title: Future Self
+period: May – Jul 2025
+
+block: As-Is
+  Reactive; firefighting most days
+  Strong craft, weak at delegation
+
+block: To-Be
+  Leading through others
+  One clear strategic bet
+
+block: Actions
+  Hand off two recurring duties
+  Weekly 1:1s with each report
+  Write the strategy one-pager`,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

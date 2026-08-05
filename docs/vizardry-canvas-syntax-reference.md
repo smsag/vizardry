@@ -52,6 +52,7 @@ These are the rules that most often get broken. Follow all of them:
 | `ptw` | Playing to Win | Grid |
 | `rac` | Riskiest Assumptions Canvas | Grid |
 | `swot` | SWOT Analysis | Grid |
+| `futureself` | Future Self | Grid |
 | `vpc` | Value Proposition Canvas | Grid |
 | `story` | User Story Map | Grid |
 | `matrix` | Blank matrix (needs `x:`/`y:`) | Matrix |
@@ -97,6 +98,33 @@ block: <Exact Label>
 ```
 
 **Card mode (optional):** append `| card` to a block to render each of its indented lines as a draggable card instead of plain text (`block: Label | card`); or set `cards: all` once at the top level to make every block card mode. Card-mode blocks support drag-to-reorder in Live Preview.
+
+**Period field (optional):** a framework may add an editable `period:` line — a short free-text timeframe shown in the canvas header. Currently only **Future Self** uses it.
+
+### Future Self (`futureself`)
+
+Petra Wille's reflection canvas. Blocks: `As-Is` · `To-Be` · `Actions` (all card blocks) — As-Is and To-Be stack in the left column, Actions spans the right. A `period:` line sets the timeframe shown in the header. Each indented line under a block becomes its own card.
+
+~~~
+```vizardry
+type: futureself
+title: Future Self
+period: May – Jul 2025
+
+block: As-Is
+  Reactive; firefighting most days
+  Strong craft, weak at delegation
+
+block: To-Be
+  Leading through others
+  One clear strategic bet
+
+block: Actions
+  Hand off two recurring duties
+  Weekly 1:1s with each report
+  Write the strategy one-pager
+```
+~~~
 
 ### ADKAR Change Model (`adkar`)
 

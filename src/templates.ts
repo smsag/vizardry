@@ -2,7 +2,8 @@ import type { FrameworkDefinition } from "./types";
 
 export function generateCanvasTemplate(framework: FrameworkDefinition): string {
   const blocks = framework.blocks.map(b => `block: ${b.label}\n  `).join("\n\n");
-  return `\`\`\`vizardry\ntype: ${framework.id}\ntitle: ${framework.label}\n\n${blocks}\n\`\`\`\n`;
+  const period = framework.periodField ? "period: \n" : "";
+  return `\`\`\`vizardry\ntype: ${framework.id}\ntitle: ${framework.label}\n${period}\n${blocks}\n\`\`\`\n`;
 }
 
 export const FISHBONE_TEMPLATE = `\`\`\`vizardry

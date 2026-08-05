@@ -36,6 +36,14 @@ describe("parseFrameworkSource", () => {
     expect(result.ok && result.data["goal"]).toBe("Value");
   });
 
+  it("ignores a top-level period: config line without warning", () => {
+    const result = parseFrameworkSource("period: May – Jul 2025\nblock: Goal\n  Value");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data).toEqual({ goal: "Value" });
+    expect(result.warnings).toBeUndefined();
+  });
+
   it("keeps the first of a block declared twice (later skipped) with a warning", () => {
     const result = parseFrameworkSource("block: Goal\n  First\n\nblock: Goal\n  Second");
     expect(result.ok).toBe(true);
