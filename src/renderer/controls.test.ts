@@ -286,6 +286,45 @@ describe("download / export", () => {
     clickSpy.mockRestore();
   });
 
+  it("excludes interaction chrome from the capture but keeps content and link indicators", async () => {
+    const el = container();
+    initCanvas(el, "wardley", "My Map", undefined, "source", undefined, undefined);
+    clickDownload(el);
+    await vi.waitFor(() => expect(mockToBlob).toHaveBeenCalled());
+
+    const filter = mockToBlob.mock.calls[0][1].filter as (n: Node) => boolean;
+    const node = (cls: string): HTMLElement => {
+      const d = document.createElement("div");
+      d.className = cls;
+      return d;
+    };
+
+    // Chrome — toolbar, carousel nav, and inline edit affordances — is dropped.
+    for (const c of [
+      "vizardry-header-actions",
+      "vizardry-nav", "vzd-story-nav", "vzd-journey-nav",
+      "vzd-journey-card-delete", "vzd-story-task-delete",
+      "vzd-scqa-card-add", "vzd-scqa-card-del", "vzd-roadmap-add-item",
+      "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
+      "vzd-tree-edit-add", "vzd-tree-edit-del",
+      "vzd-lane-bullet-add", "vzd-lane-bullet-del",
+      "vzd-nodemap-box-delete-btn",
+    ]) {
+      expect(filter(node(c)), `${c} should be excluded`).toBe(false);
+    }
+
+    // Content and link indicators are kept.
+    for (const c of [
+      "vizardry-block", "vzd-mx-item-card", "vzd-journey-card",
+      "vzd-card-link-btn", "vizardry-block-link-btn",
+    ]) {
+      expect(filter(node(c)), `${c} should be kept`).toBe(true);
+    }
+
+    // Text nodes (no classList) are kept.
+    expect(filter(document.createTextNode("hi"))).toBe(true);
+  });
+
   it("mobile: shares the PNG file via the system share sheet, not a download anchor", async () => {
     mockPlatform.isMobile = true;
     mockPlatform.isDesktop = false;

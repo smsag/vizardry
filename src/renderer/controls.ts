@@ -147,6 +147,45 @@ export function revealForCapture(container: HTMLElement): () => void {
 }
 
 /**
+ * Interaction chrome that must never appear in the exported PNG: the header
+ * toolbar, the mobile carousel navs, and every inline editing affordance
+ * (add / delete / unlink buttons and SVG drag-handles). Some of these are
+ * hover-gated — so absent from a desktop capture, which has no hover — but
+ * others are deliberately always-visible so they work on touch (see the
+ * "no hover gating, so they work on touch/mobile too" affordances in
+ * styles.css), which is why they leak into a mobile export. Only the top-level
+ * container class of each affordance is listed: html-to-image's `filter` skips
+ * a node's whole subtree, so excluding the wrapper drops its inner
+ * circle/icon/× parts too. Link indicators (vzd-card-link-btn,
+ * vizardry-block-link-btn) are intentionally kept — they mark a link rather
+ * than edit, and read fine in a static image.
+ */
+const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
+  "vizardry-header-actions",
+  // Mobile carousel navigation
+  "vizardry-nav", "vzd-story-nav", "vzd-journey-nav",
+  // Inline add / delete / unlink affordances (HTML buttons)
+  "vzd-scqa-card-add", "vzd-scqa-card-del",
+  "vzd-roadmap-add-item", "vzd-sipoc-add-row",
+  "vzd-journey-card-delete", "vzd-journey-add-card",
+  "vzd-story-task-delete", "vzd-story-add-task",
+  "vzd-nodemap-box-delete-btn",
+  // SVG affordances (the wrapping <g> / text element carries the class)
+  "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
+  "vzd-nodemap-unlink-btn", "vzd-nodemap-add-handle-g",
+  "vzd-tree-edit-add", "vzd-tree-edit-del",
+  "vzd-lane-bullet-add", "vzd-lane-bullet-del",
+]);
+
+/** True when `node` is interaction chrome to omit from the exported image. */
+function isExportChrome(node: Node): boolean {
+  const cl = (node as Element).classList;
+  if (!cl) return false; // text nodes and the like have no classList
+  for (const c of EXPORT_CHROME_CLASSES) if (cl.contains(c)) return true;
+  return false;
+}
+
+/**
  * If `label` resolves to a heading in the current note, appends a chain-link
  * button to `parent` that jumps to it. Shared by the card canvases (card
  * blocks, Story, SCQA grid) so a linked card gets the same affordance the grid
@@ -421,7 +460,9 @@ export function addHeaderControls(
           // the element's own size when layout isn't measurable (e.g. jsdom).
           width: container.scrollWidth || undefined,
           height: container.scrollHeight || undefined,
-          filter: (node) => !(node as HTMLElement).classList?.contains("vizardry-header-actions"),
+          // Strip interaction chrome (toolbar, carousel nav, inline edit
+          // affordances) so the exported image is content-only.
+          filter: (node) => !isExportChrome(node),
         });
       } finally {
         restoreLayout();
