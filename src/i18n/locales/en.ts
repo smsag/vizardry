@@ -283,6 +283,11 @@ export const en = {
   "settings.secret.link":                "Link…",
 
   // ── Settings: Linear section ────────────────────────────────────────────────
+  "settings.section.appearance":         "Appearance",
+  "settings.sketch.name":                "Sketch (hand-drawn) style",
+  "settings.sketch.desc":                "Render canvases with a handwriting font and monochrome ink, with a subtle hand-drawn wobble — like a whiteboard sketch.",
+  "settings.sketchFont.name":            "Handwriting font (optional)",
+  "settings.sketchFont.desc":            "Font family to use in sketch mode. Leave blank for the built-in handwriting font.",
   "settings.section.linear":             "Linear",
   "settings.linear.enable.name":         "Enable Linear integration",
   "settings.linear.enable.desc":         "Show issue status on roadmap cards and generate AI summaries on hover.",

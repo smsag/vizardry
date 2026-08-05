@@ -96,8 +96,40 @@ const app: any = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ctx: any = { sourcePath: "fixtures.md", getSectionInfo: () => null };
 
+/** Mirrors the plugin's ensureSketchDefs() so sketch baselines get the wobble. */
+function injectSketchDefs(): void {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("id", "vzd-sketch-defs");
+  svg.setAttribute("width", "0");
+  svg.setAttribute("height", "0");
+  svg.style.position = "absolute";
+  const filter = document.createElementNS(NS, "filter");
+  filter.setAttribute("id", "vzd-sketch-rough");
+  const turb = document.createElementNS(NS, "feTurbulence");
+  turb.setAttribute("type", "fractalNoise");
+  turb.setAttribute("baseFrequency", "0.02");
+  turb.setAttribute("numOctaves", "2");
+  turb.setAttribute("seed", "7");
+  turb.setAttribute("result", "noise");
+  const disp = document.createElementNS(NS, "feDisplacementMap");
+  disp.setAttribute("in", "SourceGraphic");
+  disp.setAttribute("in2", "noise");
+  disp.setAttribute("scale", "1.1");
+  disp.setAttribute("xChannelSelector", "R");
+  disp.setAttribute("yChannelSelector", "G");
+  filter.appendChild(turb);
+  filter.appendChild(disp);
+  svg.appendChild(filter);
+  document.body.appendChild(svg);
+}
+
 function render(): void {
   if (location.search.includes("mobile")) Platform.isMobile = true;
+  if (location.search.includes("sketch")) {
+    document.body.classList.add("vizardry-sketch");
+    injectSketchDefs();
+  }
 
   const root = document.getElementById("app")!;
   for (const [name, source] of Object.entries(FIXTURES)) {
@@ -111,10 +143,13 @@ function render(): void {
     }
   }
 
-  // Let any rAF-scheduled layout (initCanvas → applyFullWidth) settle, then
-  // signal readiness for the screenshot.
+  // Let any rAF-scheduled layout (initCanvas → applyFullWidth) settle and any
+  // web font (sketch mode's Caveat) finish loading, then signal readiness.
+  const signalReady = (): void => document.body.setAttribute("data-ready", "1");
   requestAnimationFrame(() => {
-    setTimeout(() => document.body.setAttribute("data-ready", "1"), 50);
+    const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    if (fonts?.ready) void fonts.ready.then(() => setTimeout(signalReady, 50));
+    else setTimeout(signalReady, 50);
   });
 }
 

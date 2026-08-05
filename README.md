@@ -1686,6 +1686,20 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 ---
 
+## Sketch mode
+
+**Settings → Vizardry → Appearance → "Sketch (hand-drawn) style"** restyles every canvas to look like a whiteboard sketch:
+
+- a **handwriting font** (the bundled [Caveat](https://fonts.google.com/specimen/Caveat), or your own via the optional font-family field),
+- **monochrome ink** — colours desaturate to grey (derived from your accent, so it stays theme-aware), and
+- a subtle **hand-drawn line wobble** on the diagram strokes.
+
+It's a global toggle that applies live to all rendered canvases — no re-render needed — and is captured in PNG exports and presentation mode too. True status signals (errors/warnings) still read as grey in this mode.
+
+> Bundled font: **Caveat** © Pablo Impallari (Impallari Type), used under the [SIL Open Font License 1.1](https://openfontlicense.org/). Only a Latin subset is embedded, and it loads only when sketch mode is on.
+
+---
+
 ## Syntax reference
 
 ### Grid canvases (type: adkar, bmc, experiment, fourls, futureself, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
