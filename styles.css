@@ -1409,26 +1409,27 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
    set in ostTreeOptions().
    ──────────────────────────────────────────────────────────────────────── */
 
-/* Lane hues are a monochrome depth-ramp off the accent: the root level is the
-   accent, each deeper level mixes further toward the theme's muted-text neutral
-   — so the hierarchy reads by intensity, stays legible in light and dark (both
-   --interactive-accent and --text-muted are theme-aware, no dark override
-   needed), and follows the user's accent. */
+/* Lane hues are a harmonised set off the accent: the root level is the accent
+   itself, each deeper level rotates the hue by 90° while keeping the accent's
+   saturation and lightness — so the levels stay distinct and legible (a fading
+   monochrome ramp washed the leaves out) while still following the user's
+   accent. All parts are theme-independent, so no dark override is needed. */
 .vizardry-ost {
-  --vzd-ost-outcome: var(--interactive-accent);
-  --vzd-ost-opportunity: color-mix(in srgb, var(--interactive-accent) 80%, var(--text-muted));
-  --vzd-ost-solution: color-mix(in srgb, var(--interactive-accent) 58%, var(--text-muted));
-  --vzd-ost-experiment: color-mix(in srgb, var(--interactive-accent) 40%, var(--text-muted));
+  --vzd-ost-outcome:     hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --vzd-ost-opportunity: hsl(calc(var(--accent-h) + 90) var(--accent-s) var(--accent-l));
+  --vzd-ost-solution:    hsl(calc(var(--accent-h) + 180) var(--accent-s) var(--accent-l));
+  --vzd-ost-experiment:  hsl(calc(var(--accent-h) + 270) var(--accent-s) var(--accent-l));
 }
 
 /* SCQA / SCR lane hues (situation → complication → question → answer |
-   resolution). SCR reuses situation/complication + resolution (its leaf). */
+   resolution). SCR reuses situation/complication + resolution (its leaf, at the
+   same depth-2 offset as question). */
 .vizardry-scqa {
-  --vzd-scqa-situation: var(--interactive-accent);
-  --vzd-scqa-complication: color-mix(in srgb, var(--interactive-accent) 80%, var(--text-muted));
-  --vzd-scqa-question: color-mix(in srgb, var(--interactive-accent) 58%, var(--text-muted));
-  --vzd-scqa-answer: color-mix(in srgb, var(--interactive-accent) 40%, var(--text-muted));
-  --vzd-scqa-resolution: color-mix(in srgb, var(--interactive-accent) 40%, var(--text-muted));
+  --vzd-scqa-situation:    hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --vzd-scqa-complication: hsl(calc(var(--accent-h) + 90) var(--accent-s) var(--accent-l));
+  --vzd-scqa-question:     hsl(calc(var(--accent-h) + 180) var(--accent-s) var(--accent-l));
+  --vzd-scqa-answer:       hsl(calc(var(--accent-h) + 270) var(--accent-s) var(--accent-l));
+  --vzd-scqa-resolution:   hsl(calc(var(--accent-h) + 180) var(--accent-s) var(--accent-l));
 }
 
 /* Dashed band divider spanning the canvas width */
