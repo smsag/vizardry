@@ -307,6 +307,34 @@ describe("renderMatrix", () => {
     expect(item?.style.top).toContain("37.5"); // 1 - 0.625 = 0.375
   });
 
+  it("stacks two+ items snapped to the same cell instead of overlapping pins", () => {
+    const el = container();
+    renderMatrix(build("item: One at: t1\nitem: Two at: t1\nitem: Three at: t1", "impact"), el);
+    const stacks = el.querySelectorAll(".vzd-mx-cell-stack");
+    expect(stacks).toHaveLength(1);
+    const cards = stacks[0].querySelectorAll(".vzd-mx-item-card--stacked");
+    expect(cards).toHaveLength(3);
+    expect(Array.from(cards).map(c => c.querySelector(".vzd-mx-item-label")?.textContent)).toEqual(["One", "Two", "Three"]);
+    // No overlapping floating pins for those items.
+    expect(el.querySelectorAll(".vzd-mx-item")).toHaveLength(0);
+  });
+
+  it("keeps a lone cell item as a centred pin (no stack)", () => {
+    const el = container();
+    renderMatrix(build("item: Solo at: t1", "impact"), el);
+    expect(el.querySelector(".vzd-mx-cell-stack")).toBeFalsy();
+    expect(el.querySelectorAll(".vzd-mx-item")).toHaveLength(1);
+  });
+
+  it("cascades coincident free-coordinate items so their cards don't fully overlap", () => {
+    const el = container();
+    renderMatrix(build("item: A [0.7,0.7]\nitem: B [0.7,0.7]", "impact"), el);
+    const pins = el.querySelectorAll<HTMLElement>(".vzd-mx-item");
+    expect(pins).toHaveLength(2);
+    expect(pins[0].style.transform).toBe("");            // first stays put
+    expect(pins[1].style.transform).toContain("translate"); // second is offset
+  });
+
   it("names a cell when the author labels it", () => {
     const el = container();
     renderMatrix(build("x: E | Lo | Hi\ny: R | Lo | Hi\nt1: Do first | very-high"), el);

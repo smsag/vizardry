@@ -4028,6 +4028,29 @@ code:has(.vzd-upvoty-key) {
 .vzd-mx-item--dragging .vzd-mx-item-dot,
 .vzd-mx-item--dragging .vzd-mx-item-card { cursor: grabbing; }
 
+/* Two+ items snapped to one cell stack inside it instead of overlapping at the
+   centre (they scroll within the cell when it overflows). */
+.vzd-mx-cell-stack {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  overflow-y: auto;
+}
+.vzd-mx-item-card--stacked {
+  position: static;
+  transform: none;
+  max-width: none;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+}
+.vzd-mx-item-card--stacked.vzd-mx-item--editable { cursor: grab; }
+.vzd-mx-item-card--stacked.vzd-mx-item--editable:hover { border-color: var(--vzd-matrix-base); }
+
 /* Heat legend pills inside the canvas header; base var inherited from container. */
 .vzd-matrix-legend {
   display: flex;

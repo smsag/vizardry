@@ -83,9 +83,7 @@ export function renderMatrix(
 
   // Item overlay.
   const overlay = area.createEl("div", { cls: "vzd-mx-items" });
-  for (const item of data.items) {
-    renderItem(item, overlay, area, cols, rows, container, editMode, app, ctx, resolver, navigateTo);
-  }
+  renderItems(data.items, overlay, area, cols, rows, container, editMode, app, ctx, resolver, navigateTo);
 
   // X tick bands (left → right).
   const xTicks = main.createEl("div", { cls: "vzd-mx-xticks" });
@@ -121,19 +119,33 @@ function itemLinkResolver(item: MatrixItem, base?: LinkResolver): LinkResolver |
   };
 }
 
-/** Resolves an item's position to plane coordinates (0…1, origin bottom-left). */
-function itemXY(item: MatrixItem, cols: number, rows: number): { x: number; y: number } {
-  if (item.at && cols > 0 && rows > 0) {
-    const n = Number(item.at.slice(1));
-    const col = ((n - 1) % cols) + 1;
-    const row = Math.floor((n - 1) / cols) + 1; // 1 = top
-    return { x: (col - 0.5) / cols, y: 1 - (row - 0.5) / rows };
-  }
-  return { x: item.x ?? 0.5, y: item.y ?? 0.5 };
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+
+/** Centre of a snapped cell, in plane coords (0…1, origin bottom-left). */
+function cellCenter(at: string, cols: number, rows: number): { x: number; y: number } {
+  const n = Number(at.slice(1));
+  const col = ((n - 1) % cols) + 1;
+  const row = Math.floor((n - 1) / cols) + 1; // 1 = top
+  return { x: (col - 0.5) / cols, y: 1 - (row - 0.5) / rows };
 }
 
-function renderItem(
-  item: MatrixItem,
+/** Rect of a snapped cell as CSS percentages. */
+function cellRect(at: string, cols: number, rows: number): { left: string; top: string; width: string; height: string } {
+  const n = Number(at.slice(1));
+  const col = ((n - 1) % cols) + 1;
+  const row = Math.floor((n - 1) / cols) + 1;
+  return { left: pct((col - 1) / cols), top: pct((row - 1) / rows), width: pct(1 / cols), height: pct(1 / rows) };
+}
+
+/**
+ * Places all items. When two or more items are snapped to the same cell they
+ * stack inside it (Option A) instead of piling up at the centre and becoming
+ * unreadable; a lone cell item and free `[x, y]` items keep the floating pin.
+ * Free items that resolve to the same point cascade so their cards stay
+ * readable (Option B).
+ */
+function renderItems(
+  items: MatrixItem[],
   overlay: HTMLElement,
   area: HTMLElement,
   cols: number,
@@ -145,22 +157,156 @@ function renderItem(
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
 ): void {
-  const { x, y } = itemXY(item, cols, rows);
-  const el = overlay.createEl("div", { cls: "vzd-mx-item" });
-  el.style.left = pct(x);
-  el.style.top = pct(1 - y);
-  el.createEl("div", { cls: "vzd-mx-item-dot" });
-  const card = el.createEl("div", { cls: "vzd-mx-item-card" });
+  const snapped = new Map<string, MatrixItem[]>();
+  const free: MatrixItem[] = [];
+  for (const item of items) {
+    if (item.at && cols > 0 && rows > 0) {
+      const key = item.at.toLowerCase();
+      const arr = snapped.get(key);
+      if (arr) arr.push(item); else snapped.set(key, [item]);
+    } else {
+      free.push(item);
+    }
+  }
+
+  for (const [key, cellItems] of snapped) {
+    // A single item keeps the classic centred pin (existing matrices unchanged).
+    if (cellItems.length === 1) {
+      const { x, y } = cellCenter(key, cols, rows);
+      renderFreeItem(cellItems[0], x, y, 0, overlay, area, container, editMode, app, ctx, resolver, navigateTo);
+      continue;
+    }
+    const stack = overlay.createEl("div", { cls: "vzd-mx-cell-stack" });
+    const r = cellRect(key, cols, rows);
+    stack.style.left = r.left; stack.style.top = r.top;
+    stack.style.width = r.width; stack.style.height = r.height;
+    for (const item of cellItems) {
+      const { card, body } = buildItemCard(item, resolver, navigateTo, app, ctx);
+      card.classList.add("vzd-mx-item-card--stacked");
+      stack.appendChild(card);
+      if (editMode && app && ctx) {
+        card.classList.add("vzd-mx-item--editable");
+        wireStackedCard(card, body, item, area, overlay, container, app, ctx, resolver, navigateTo);
+      }
+    }
+  }
+
+  const seen = new Map<string, number>();
+  for (const item of free) {
+    const x = item.x ?? 0.5, y = item.y ?? 0.5;
+    const ck = `${x.toFixed(3)},${y.toFixed(3)}`;
+    const k = seen.get(ck) ?? 0;
+    seen.set(ck, k + 1);
+    renderFreeItem(item, x, y, k, overlay, area, container, editMode, app, ctx, resolver, navigateTo);
+  }
+}
+
+/** Builds an item's card (label + link + body). Shared by pins and stacks. */
+function buildItemCard(
+  item: MatrixItem,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+): { card: HTMLElement; body: HTMLElement } {
+  const card = document.createElement("div");
+  card.className = "vzd-mx-item-card";
   const labelEl = card.createEl("div", { cls: "vzd-mx-item-label", text: item.label });
   // Link the label to a heading/ticket: explicit annotation on the item line,
   // or a heading whose name matches the label (auto-detect via the shared resolver).
   renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
   const body = card.createEl("div", { cls: "vizardry-block-body" });
   renderBlockBody(body, item.content, resolver, navigateTo, app, ctx?.sourcePath);
+  return { card, body };
+}
+
+/** A floating pin (dot + card) at plane coords; `collision` cascades coincident items. */
+function renderFreeItem(
+  item: MatrixItem,
+  x: number,
+  y: number,
+  collision: number,
+  overlay: HTMLElement,
+  area: HTMLElement,
+  container: HTMLElement,
+  editMode: boolean,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+): void {
+  const el = overlay.createEl("div", { cls: "vzd-mx-item" });
+  el.style.left = pct(x);
+  el.style.top = pct(1 - y);
+  if (collision > 0) {
+    el.style.transform = `translate(${collision * 12}px, ${collision * 12}px)`;
+    el.style.zIndex = String(2 + collision);
+  }
+  el.createEl("div", { cls: "vzd-mx-item-dot" });
+  const { card, body } = buildItemCard(item, resolver, navigateTo, app, ctx);
+  el.appendChild(card);
 
   if (!editMode || !app || !ctx) return;
   el.classList.add("vzd-mx-item--editable");
   wireItem(el, card, body, item, area, container, app, ctx, resolver, navigateTo);
+}
+
+/** Drag/edit for a card inside a cell stack: dragging pulls it out into a
+ *  floating pin (converting it to a free `[x, y]`); a click edits its body. */
+function wireStackedCard(
+  card: HTMLElement,
+  body: HTMLElement,
+  item: MatrixItem,
+  area: HTMLElement,
+  overlay: HTMLElement,
+  container: HTMLElement,
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  resolver?: LinkResolver,
+  navigateTo?: (heading: string) => void,
+): void {
+  card.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("a, button, textarea")) return;
+    e.preventDefault();
+
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false, nx = 0.5, ny = 0.5;
+    let anchor: HTMLElement | null = null;
+    card.setPointerCapture(e.pointerId);
+
+    const onMove = (ev: PointerEvent): void => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
+      if (!moved) {
+        moved = true;
+        // Pull the card out of the stack into a floating pin that follows the pointer.
+        anchor = overlay.createEl("div", { cls: "vzd-mx-item vzd-mx-item--editable vzd-mx-item--dragging" });
+        anchor.createEl("div", { cls: "vzd-mx-item-dot" });
+        card.classList.remove("vzd-mx-item-card--stacked");
+        anchor.appendChild(card);
+      }
+      const rect = area.getBoundingClientRect();
+      nx = clamp01((ev.clientX - rect.left) / rect.width);
+      ny = clamp01(1 - (ev.clientY - rect.top) / rect.height);
+      anchor!.style.left = pct(nx);
+      anchor!.style.top = pct(1 - ny);
+    };
+
+    const onUp = (): void => {
+      card.releasePointerCapture(e.pointerId);
+      card.removeEventListener("pointermove", onMove);
+      card.removeEventListener("pointerup", onUp);
+      if (moved) {
+        item.x = nx; item.y = ny; item.at = undefined;
+        if (!writeItemPosition(app, ctx, container, item.label, nx, ny)) new Notice(t("edit.writeFailed"));
+      } else {
+        openItemEditor(card, body, item, container, app, ctx, resolver, navigateTo);
+      }
+    };
+
+    card.addEventListener("pointermove", onMove);
+    card.addEventListener("pointerup", onUp);
+  });
 }
 
 function wireItem(
