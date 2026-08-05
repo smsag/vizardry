@@ -58,6 +58,95 @@ export function expandForCapture(root: HTMLElement, win: Window): () => void {
 }
 
 /**
+ * Resets a Story or Journey column carousel back to its full grid. On a narrow
+ * viewport the renderer collapses these to the active column via *inline* styles
+ * (`display:none` on off-column cells, a narrowed `grid-template-columns`), which
+ * a stylesheet can't reach — so the reveal is done in JS. Shared by presentation
+ * mode (openPresentation → loadContent, on a throwaway clone) and the PNG export
+ * (revealForCapture, on the live canvas). `grid` is the `.vzd-story-grid` /
+ * `.vzd-journey-grid` element. `onTouch`, when given, is called with every element
+ * just before it is mutated so a caller can snapshot it for later restore; the
+ * presentation clone is discarded, so it passes nothing.
+ */
+function revealColumnCarousel(
+  grid: HTMLElement,
+  kind: "story" | "journey",
+  onTouch?: (el: HTMLElement) => void,
+): void {
+  onTouch?.(grid);
+  grid.style.gridTemplateColumns = "";
+  if (kind === "story") {
+    grid.querySelectorAll<HTMLElement>(".vzd-story-activity-header").forEach((el) => {
+      onTouch?.(el);
+      el.style.display = "";
+      el.style.gridColumn = el.dataset.origGridCol ?? "";
+    });
+    grid.querySelectorAll<HTMLElement>(".vzd-story-step-header, .vzd-story-cell").forEach((el) => {
+      onTouch?.(el);
+      el.style.display = "";
+      el.style.gridColumn = "";
+    });
+  } else {
+    grid.querySelectorAll<HTMLElement>(".vzd-journey-lane-cells").forEach((el) => {
+      onTouch?.(el);
+      el.style.gridTemplateColumns = "";
+    });
+    grid.querySelectorAll<HTMLElement>(".vzd-journey-phase-header, .vzd-journey-cell").forEach((el) => {
+      onTouch?.(el);
+      el.style.display = "";
+      el.style.gridColumn = "";
+    });
+  }
+}
+
+/**
+ * Companion to {@link expandForCapture} for the PNG export. On a narrow (mobile)
+ * viewport several canvases don't scroll — they collapse into a *carousel* that
+ * shows only the active panel: the grid frameworks and the Roadmap / Pace-Layers
+ * stacks hide every non-active panel behind `visibility:hidden` in a single
+ * stacked cell, and Story / Journey maps collapse to the active column. That
+ * clipping is layout, not overflow, so `expandForCapture` alone would still
+ * export just the on-screen panel — the reported "only the visible part is
+ * saved" bug for carousel canvases.
+ *
+ * This reveals the whole canvas the way presentation mode does: a
+ * `vizardry-capturing` class re-establishes the real grid and un-hides every
+ * panel (CSS, via the `--vzd-*` custom props the renderer stamps on the
+ * grid/blocks — see styles.css), and the Story / Journey column carousels are
+ * reset via the shared {@link revealColumnCarousel}. Every mutation is
+ * snapshotted so the returned callback restores the exact prior markup after
+ * capture. On desktop nothing is collapsed, so this changes no computed layout —
+ * a no-op, leaving the desktop export path unchanged.
+ */
+export function revealForCapture(container: HTMLElement): () => void {
+  const saved: Array<{ el: HTMLElement; style: string | null; cls: string | null }> = [];
+  const touch = (el: HTMLElement): void => {
+    saved.push({ el, style: el.getAttribute("style"), cls: el.getAttribute("class") });
+  };
+
+  // Grid frameworks, Roadmap and Pace Layers: the class alone restores the real
+  // grid and un-hides every panel (the `.vizardry-capturing` rules in
+  // styles.css) — no per-panel bookkeeping needed.
+  touch(container);
+  container.classList.add("vizardry-capturing");
+
+  // Story / Journey collapse via inline styles a stylesheet can't reach.
+  const story = container.querySelector<HTMLElement>(".vzd-story-grid");
+  if (story) revealColumnCarousel(story, "story", touch);
+  const journey = container.querySelector<HTMLElement>(".vzd-journey-grid");
+  if (journey) revealColumnCarousel(journey, "journey", touch);
+
+  return () => {
+    for (const { el, style, cls } of saved) {
+      if (style === null) el.removeAttribute("style");
+      else el.setAttribute("style", style);
+      if (cls === null) el.removeAttribute("class");
+      else el.setAttribute("class", cls);
+    }
+  };
+}
+
+/**
  * If `label` resolves to a heading in the current note, appends a chain-link
  * button to `parent` that jumps to it. Shared by the card canvases (card
  * blocks, Story, SCQA grid) so a linked card gets the same affordance the grid
@@ -312,9 +401,14 @@ export function addHeaderControls(
       // Cap the pixel ratio: unchanged on desktop, but bounded on high-DPI
       // phones where devicePixelRatio*2 (≈6) makes oversized PNGs that can OOM.
       const pixelRatio = Math.min((win.devicePixelRatio || 1) * 2, 4);
-      // Expand any scroll wrappers so the *whole* canvas is captured, not just
-      // the on-screen slice (the mobile "only the visible part is saved" bug),
-      // then size the capture to the full scroll extent. Restored in finally.
+      // On mobile the "only the visible part is saved" bug has two causes, so
+      // undo both before sizing the capture. First reveal any carousel-collapsed
+      // panels (grid / roadmap / pace-layers / story / journey show only the
+      // active panel on a narrow viewport); then expand any scroll wrappers so
+      // the *whole* canvas is captured, not just the on-screen slice. Reveal
+      // first so the now-full (possibly wider) layout is what gets expanded and
+      // measured. Both are restored in finally, in reverse order.
+      const restoreReveal = revealForCapture(container);
       const restoreLayout = expandForCapture(container, win);
       let blob: Blob | null;
       try {
@@ -331,6 +425,7 @@ export function addHeaderControls(
         });
       } finally {
         restoreLayout();
+        restoreReveal();
       }
       if (!blob) throw new Error("html-to-image returned an empty blob");
 
@@ -450,30 +545,10 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     clone.querySelectorAll(".vizardry-block").forEach(b => b.classList.add("vizardry-block-active"));
     clone.querySelectorAll(".vzd-pl-row").forEach(r => r.classList.add("vzd-pl-row--active"));
 
-    // Restore story step carousel state — show full grid
-    if (clone.classList.contains("vzd-story-grid")) {
-      clone.style.gridTemplateColumns = "";
-      clone.querySelectorAll<HTMLElement>(".vzd-story-activity-header").forEach(el => {
-        el.style.display = "";
-        el.style.gridColumn = el.dataset.origGridCol ?? "";
-      });
-      clone.querySelectorAll<HTMLElement>(".vzd-story-step-header, .vzd-story-cell").forEach(el => {
-        el.style.display = "";
-        el.style.gridColumn = "";
-      });
-    }
-
-    // Restore journey phase carousel state — show full grid
-    if (clone.classList.contains("vzd-journey-grid")) {
-      clone.style.gridTemplateColumns = "";
-      clone.querySelectorAll<HTMLElement>(".vzd-journey-lane-cells").forEach(el => {
-        el.style.gridTemplateColumns = "";
-      });
-      clone.querySelectorAll<HTMLElement>(".vzd-journey-phase-header, .vzd-journey-cell").forEach(el => {
-        el.style.display = "";
-        el.style.gridColumn = "";
-      });
-    }
+    // Restore Story / Journey column carousel to the full grid (shared with the
+    // PNG export's revealForCapture; the clone is discarded, so no snapshot).
+    if (clone.classList.contains("vzd-story-grid")) revealColumnCarousel(clone, "story");
+    if (clone.classList.contains("vzd-journey-grid")) revealColumnCarousel(clone, "journey");
 
     rebindPresentationInteractions(clone, sourceContainer);
     wrap.appendChild(clone);

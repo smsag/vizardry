@@ -20,7 +20,7 @@ const { mockGetLinearService, mockGetUpvotyService } = vi.hoisted(() => ({
 vi.mock("../linear", () => ({ getLinearService: mockGetLinearService }));
 vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
 
-import { initCanvas, renderHeadingLink, expandForCapture } from "./controls";
+import { initCanvas, renderHeadingLink, expandForCapture, revealForCapture } from "./controls";
 
 function container(): HTMLElement {
   const el = document.createElement("div");
@@ -190,6 +190,68 @@ describe("expandForCapture", () => {
   });
 });
 
+describe("revealForCapture", () => {
+  it("adds the vizardry-capturing class, then restores the canvas exactly", () => {
+    const el = document.createElement("div");
+    el.className = "vizardry-canvas";
+    document.body.appendChild(el);
+    const before = el.getAttribute("class");
+
+    const restore = revealForCapture(el);
+    expect(el.classList.contains("vizardry-capturing")).toBe(true);
+
+    restore();
+    expect(el.classList.contains("vizardry-capturing")).toBe(false);
+    expect(el.getAttribute("class")).toBe(before);
+  });
+
+  it("resets a collapsed Story column carousel to the full grid, then restores it byte-for-byte", () => {
+    const el = document.createElement("div");
+    el.className = "vizardry-canvas";
+    const grid = document.createElement("div");
+    grid.className = "vzd-story-grid";
+    grid.style.gridTemplateColumns = "1fr"; // mobile-collapsed
+    const activity = document.createElement("div");
+    activity.className = "vzd-story-activity-header";
+    activity.dataset.origGridCol = "2 / 5";
+    activity.style.display = "none";
+    activity.style.gridColumn = "1 / 2";
+    const cell = document.createElement("div");
+    cell.className = "vzd-story-cell";
+    cell.style.display = "none";
+    grid.append(activity, cell);
+    el.appendChild(grid);
+    document.body.appendChild(el);
+
+    const gridBefore = grid.getAttribute("style");
+    const activityBefore = activity.getAttribute("style");
+    const cellBefore = cell.getAttribute("style");
+
+    const restore = revealForCapture(el);
+    // Collapse undone: the narrowed template is cleared and hidden cells shown.
+    expect(grid.style.gridTemplateColumns).toBe("");
+    expect(activity.style.display).toBe("");
+    expect(activity.style.gridColumn).toBe("2 / 5"); // restored from origGridCol
+    expect(cell.style.display).toBe("");
+
+    restore();
+    expect(grid.getAttribute("style")).toBe(gridBefore);
+    expect(activity.getAttribute("style")).toBe(activityBefore);
+    expect(cell.getAttribute("style")).toBe(cellBefore);
+  });
+
+  it("is a byte-for-byte no-op for a canvas with no carousel (SVG canvases, desktop)", () => {
+    const el = document.createElement("div");
+    el.className = "vizardry-canvas";
+    el.innerHTML = `<div class="vzd-wardley-wrap"><svg></svg></div>`;
+    document.body.appendChild(el);
+    const before = el.outerHTML;
+
+    revealForCapture(el)();
+    expect(el.outerHTML).toBe(before);
+  });
+});
+
 describe("download / export", () => {
   function clickDownload(el: HTMLElement): void {
     const btn = el.querySelector<HTMLButtonElement>(".vizardry-download-btn")!;
@@ -272,6 +334,39 @@ describe("download / export", () => {
     expect(opts.height).toBe(900);
     // Layout restored after capture — no leftover expansion left on the canvas.
     expect(el.style.overflow).toBe("");
+
+    delete (window.navigator as any).share;
+    delete (window.navigator as any).canShare;
+  });
+
+  it("mobile: reveals carousel-collapsed panels during capture, then restores the canvas", async () => {
+    // A grid canvas is carousel-collapsed on mobile; the export must un-collapse
+    // it while html-to-image reads styles, then leave the live canvas untouched.
+    mockPlatform.isMobile = true;
+    mockPlatform.isDesktop = false;
+    (window.navigator as any).share = vi.fn().mockResolvedValue(undefined);
+    (window.navigator as any).canShare = vi.fn(() => true);
+
+    const el = container();
+    initCanvas(el, "bmc", "Model", undefined, "source", undefined, undefined);
+    // The grid a framework renderer would produce (custom props + a block).
+    const grid = el.createEl("div", { cls: "vizardry-grid" });
+    const block = grid.createEl("div", { cls: "vizardry-block" });
+
+    let capturingDuringToBlob: boolean | null = null;
+    mockToBlob.mockImplementation((node: HTMLElement) => {
+      capturingDuringToBlob = node.classList.contains("vizardry-capturing");
+      return Promise.resolve(new Blob(["png"], { type: "image/png" }));
+    });
+
+    clickDownload(el);
+    await vi.waitFor(() => expect(mockToBlob).toHaveBeenCalled());
+
+    // Present while the styles were being read…
+    expect(capturingDuringToBlob).toBe(true);
+    // …and fully cleaned up afterwards — no leftover class on the live canvas.
+    expect(el.classList.contains("vizardry-capturing")).toBe(false);
+    expect(block.classList.contains("vizardry-capturing")).toBe(false);
 
     delete (window.navigator as any).share;
     delete (window.navigator as any).canShare;
