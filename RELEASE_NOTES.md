@@ -1,8 +1,12 @@
-## 0.51.0
+## 0.52.0
 
-- **Radar / Spider chart** (`type: radar`) — rate 3–12 attributes on a 0–10 scale
-  and see them plotted on spokes and connected into a filled polygon. Great for
-  agility, team-health, or skills assessments; the insert template ships
-  pre-filled as Petra Wille's **Agility Attributes Assessment**. Author it with
-  `axis: <statement> | <score>`. Colours follow your Obsidian accent. Read-only
-  for now (scores live in the source).
+- **Sketch (hand-drawn) mode** — a new toggle in **Settings → Vizardry →
+  Appearance** restyles every canvas to look like a whiteboard sketch: a
+  handwriting font (bundled Caveat, or your own via the optional font field),
+  monochrome ink (colours desaturate to grey, derived from your accent so it
+  stays theme-aware), and a subtle hand-drawn line wobble on diagram strokes.
+  It applies live to all rendered canvases and is captured in PNG exports and
+  presentation mode.
+
+_Bundled font: Caveat © Pablo Impallari (Impallari Type), SIL Open Font
+License 1.1._
