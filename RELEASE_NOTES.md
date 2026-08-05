@@ -1,9 +1,8 @@
-## 0.50.0
+## 0.51.0
 
-- **Future Self** (`type: futureself`) — Petra Wille's reflection canvas: capture
-  where you are now (**As-Is**), where you want to be (**To-Be**), and the 1–5
-  **Actions** that bridge the gap over a set period. As-Is and To-Be stack in the
-  left column; Actions spans the right. Every region is a card list, and a new
-  editable **Period** field in the header sets the timeframe (e.g. "May – Jul
-  2025"). Author it with `block: As-Is/To-Be/Actions` and an optional `period:`
-  line; content and the period are editable inline in Live Preview.
+- **Radar / Spider chart** (`type: radar`) — rate 3–12 attributes on a 0–10 scale
+  and see them plotted on spokes and connected into a filled polygon. Great for
+  agility, team-health, or skills assessments; the insert template ships
+  pre-filled as Petra Wille's **Agility Attributes Assessment**. Author it with
+  `axis: <statement> | <score>`. Colours follow your Obsidian accent. Read-only
+  for now (scores live in the source).
