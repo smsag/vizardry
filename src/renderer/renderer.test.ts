@@ -289,6 +289,30 @@ describe("renderMatrix", () => {
     expect(el.querySelectorAll(".vzd-mx-yticks .vzd-mx-tick")).toHaveLength(4);
   });
 
+  it("shows a custom title: line instead of the preset name", () => {
+    const el = container();
+    const source = "type: matrix, impact\ntitle: My Priorities\n\nitem: A [0.5,0.5]";
+    renderMatrix(build("item: A [0.5,0.5]", "impact"), el, { source });
+    expect(el.querySelector(".vizardry-title")?.textContent).toBe("My Priorities");
+  });
+
+  it("falls back to the preset name when there is no title: line", () => {
+    const el = container();
+    const source = "type: matrix, impact\n\nitem: A [0.5,0.5]";
+    renderMatrix(build("item: A [0.5,0.5]", "impact"), el, { source });
+    expect(el.querySelector(".vizardry-title")?.textContent).toBe("Impact / Effort Matrix");
+  });
+
+  it("makes the title click-to-edit in edit mode", () => {
+    const el = container();
+    const sourceApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    renderMatrix(build("item: A [0.5,0.5]", "impact"), el, {
+      source: "type: matrix, impact\n\nitem: A [0.5,0.5]", app: sourceApp, ctx,
+    });
+    expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
+  });
+
   it("positions a free-coordinate item (top = 1 - y)", () => {
     const el = container();
     renderMatrix(build("item: Fix checkout [0.2, 0.8]", "impact"), el);
