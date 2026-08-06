@@ -1235,6 +1235,46 @@ button.vzd-btn {
   max-height: none;
 }
 
+/* ══ PNG export capture ══════════════════════════════════════════════
+   Added to a canvas only while html-to-image reads its computed styles
+   (controls.ts → revealForCapture), then removed. On a narrow (mobile)
+   viewport the carousel @media below stacks every panel into one cell and
+   hides all but the active one; these rules re-establish the real desktop
+   layout so the exported PNG is the whole canvas, not just the on-screen
+   slice. Mirrors the presentation-mode reveal (.vzd-presentation-wrap). On
+   desktop nothing is collapsed, so this changes no layout — a no-op. */
+.vizardry-capturing .vizardry-grid {
+  display: grid !important;
+  grid-template-areas: var(--vzd-template) !important;
+  grid-template-columns: var(--vzd-columns) !important;
+  grid-template-rows: var(--vzd-rows) !important;
+}
+.vizardry-capturing .vizardry-block {
+  display: flex !important;
+  visibility: visible !important;
+  grid-area: var(--vzd-area) !important;
+}
+.vizardry-capturing .vzd-roadmap-grid {
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) !important;
+}
+.vizardry-capturing .vzd-roadmap-col {
+  grid-area: auto !important;
+  visibility: visible !important;
+}
+.vizardry-capturing .vzd-pl-stack {
+  display: flex !important;
+}
+.vizardry-capturing .vzd-pl-row {
+  grid-area: auto !important;
+  visibility: visible !important;
+}
+/* Carousel nav chrome is not part of the canvas — omit it from the export. */
+.vizardry-capturing .vizardry-nav,
+.vizardry-capturing .vzd-story-nav,
+.vizardry-capturing .vzd-journey-nav {
+  display: none !important;
+}
+
 /* ══ Carousel ════════════════════════════════════════════════════════
    Opt-in image carousel for Read View. Activated via frontmatter:
      carousel: true
