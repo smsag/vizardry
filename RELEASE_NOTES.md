@@ -1,3 +1,12 @@
+## 0.52.2
+
+- **Sketch mode: fixed the type scale for the handwriting font** — in
+  hand-drawn (sketch) mode the canvas title was oversized while body text (like
+  the default placeholder text in blocks) was too small, because the Caveat
+  handwriting font has different proportions than the UI font. Titles are now
+  tamed and body text scaled up for comfortable reading; the A+/A− font
+  controls still work.
+
 ## 0.52.1
 
 - **Matrix canvases: items sharing a cell no longer overlap** — when a cell

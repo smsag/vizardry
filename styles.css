@@ -4316,3 +4316,21 @@ body.vizardry-sketch .vizardry-canvas > :not(.vizardry-header) {
 body.vizardry-sketch .vizardry-canvas svg {
   filter: url(#vzd-sketch-rough);
 }
+
+/* Type scale for the handwriting font. Caveat has a much smaller x-height and
+   taller ascenders than the UI font, so at the same px the body reads small
+   while the 1.5x title reads large. Scale the whole canvas up (via
+   --vzd-base-default, so the A+/A- controls keep working) and tame the title so
+   the handwriting flourish no longer dominates. */
+body.vizardry-sketch .vizardry-canvas {
+  --vzd-base-default: calc(var(--font-ui-small) * 1.2);
+}
+body.vizardry-sketch .vizardry-title {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
+}
+/* The empty-block placeholder is the one body text pinned to a fixed size
+   (--font-ui-smaller) rather than --vzd-base, so it stays tiny in Caveat unless
+   scaled here too. */
+body.vizardry-sketch .vizardry-block-body.vizardry-block-empty[data-placeholder]::before {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
+}
