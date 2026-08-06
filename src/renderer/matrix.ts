@@ -8,6 +8,7 @@ import { renderBlockBody } from "./block-editor";
 import { presetColor } from "../matrix-presets";
 import { writeItemPosition, writeItemContent } from "../shared/matrix-edit";
 import { isEditModeActive } from "../shared/editor";
+import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { classifyTicketTarget, type LinkResolver } from "../shared/links";
 import type { RenderContext } from "./render-context";
 
@@ -40,13 +41,22 @@ export function renderMatrix(
   const rows = data.yAxis.ticks.length;
   const hasHeat = data.cells.some(c => c.heat);
 
+  // Respect a custom `title:` line and make it click-to-edit, like every other
+  // canvas — without this the Matrix always showed the preset name (e.g.
+  // "Impact / Effort Matrix") and ignored the user's title.
+  const defaultTitle = data.preset ? TITLES[data.preset] : "Matrix";
+  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
+  const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
+    : undefined;
+
   initCanvas(
     container,
     "matrix",
-    data.preset ? TITLES[data.preset] : "Matrix",
+    title,
     hasHeat ? (header) => renderLegend(header) : undefined,
     source,
-    undefined,
+    onTitleEdit,
     app,
     ctx,
   );
