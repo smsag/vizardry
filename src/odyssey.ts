@@ -30,7 +30,7 @@ const YEAR_RE = /^year\s*(\d+)\s*:\s*(.*)$/i;
  * offending line rather than failing the whole canvas:
  *   - a keyword line that appears before any `plan:` (or after the plan cap)
  *   - a gauge with a blank name or missing/non-numeric value
- *   - a `year` with no text, or a duplicate year within a plan
+ *   - a `year` with no text
  *   - a plan beyond the fourth (the canvas caps at four)
  *   - per-plan overflow of gauges/milestones/questions
  * Out-of-range gauge values are clamped into 0–10. It is only fatal when fewer
@@ -88,10 +88,6 @@ export function parseOdyssey(source: string): OdysseyResult {
       const text = ym[2].trim();
       if (!text) {
         warnings.push(`Line ${lineNum}: skipped year ${year} — no milestone text`);
-        continue;
-      }
-      if (current.milestones.some(m => m.year === year)) {
-        warnings.push(`Line ${lineNum}: skipped duplicate year ${year} in "${current.title}"`);
         continue;
       }
       if (current.milestones.length >= MAX_MILESTONES) {
@@ -157,6 +153,8 @@ export function parseOdyssey(source: string): OdysseyResult {
   }
 
   // Milestones render top-to-bottom by year regardless of source order.
+  // Multiple activities may share a year; the stable sort keeps their source
+  // order within that year.
   for (const plan of plans) plan.milestones.sort((a, b) => a.year - b.year);
 
   return { ok: true, data: { plans, warnings: warnings.length > 0 ? warnings : undefined } };

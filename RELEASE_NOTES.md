@@ -1,3 +1,11 @@
+## 0.52.3
+
+- **Odyssey: multiple activities in the same year now all show** — a plan with
+  two or more `year N:` lines for the same year previously rendered only the
+  first; every activity is now kept and listed on the timeline.
+- **Matrix: a custom title is respected again** — the canvas showed the preset
+  name instead of the title you set; your title now displays correctly.
+
 ## 0.52.2
 
 - **Sketch mode: fixed the type scale for the handwriting font** — in
