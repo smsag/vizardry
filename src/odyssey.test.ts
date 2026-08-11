@@ -74,12 +74,28 @@ describe("parseOdyssey", () => {
     expect(result.data.warnings).toHaveLength(2);
   });
 
-  it("skips a duplicate year within a plan (first wins)", () => {
+  it("keeps multiple activities in the same year, in source order", () => {
     const result = parseOdyssey("plan: A | X\n  year 1: first\n  year 1: second\nplan: B | Y\n  year 1: y");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.data.plans[0].milestones).toEqual([{ year: 1, text: "first" }]);
-    expect(result.data.warnings?.[0]).toMatch(/duplicate year/);
+    expect(result.data.plans[0].milestones).toEqual([
+      { year: 1, text: "first" },
+      { year: 1, text: "second" },
+    ]);
+    expect(result.data.warnings).toBeUndefined();
+  });
+
+  it("interleaves same-year activities correctly when sorting by year", () => {
+    const result = parseOdyssey("plan: A | X\n  year 2: b2\n  year 1: a1\n  year 1: a2\n  year 2: b1\nplan: B | Y\n  year 1: y");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Sorted by year; within a year, source order (a1 before a2, b2 before b1).
+    expect(result.data.plans[0].milestones).toEqual([
+      { year: 1, text: "a1" },
+      { year: 1, text: "a2" },
+      { year: 2, text: "b2" },
+      { year: 2, text: "b1" },
+    ]);
   });
 
   it("warns and skips a keyword line before the first plan", () => {
