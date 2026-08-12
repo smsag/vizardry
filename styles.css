@@ -4357,6 +4357,73 @@ code:has(.vzd-upvoty-key) {
   vertical-align: baseline;
 }
 
+/* ── Live-edit affordances (Problem canvas, Live Preview) ──────────────────
+   Seamless in-place editing: the heading/body element itself becomes
+   contenteditable — no swapped input, no border, no reflow. A faint tint on
+   hover/focus is the only affordance. */
+.vzd-flow-card-host { position: relative; }
+.vzd-flow-editable {
+  cursor: text;
+  border-radius: 4px;
+  margin: -1px -3px;   /* offset the tint padding so text doesn't shift */
+  padding: 1px 3px;
+  transition: background-color 0.1s ease;
+}
+.vzd-flow-editable:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
+}
+.vzd-flow-editable[contenteditable] {
+  outline: none;
+  background: color-mix(in srgb, var(--interactive-accent) 11%, transparent);
+}
+/* Placeholders for empty fields — shown only at rest, never while editing. */
+.vzd-flow-heading--edit:empty:not([contenteditable])::before { content: "Heading"; color: var(--text-faint); }
+.vzd-flow-body--edit:empty:not([contenteditable])::before { content: "Description (optional)"; color: var(--text-faint); }
+.vzd-flow-heading--edit:empty, .vzd-flow-body--edit:empty { min-height: 1.15em; }
+
+/* Delete "×" — hover-revealed, top-right of the card. */
+.vzd-flow-card-delete {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--background-modifier-error);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.vzd-flow-node-g:hover .vzd-flow-card-delete { display: flex; }
+.vzd-flow-card-delete:hover { filter: brightness(1.12); }
+
+/* "+ Add" — one per column, revealed on canvas hover. */
+.vzd-flow-add {
+  width: 100%;
+  height: 22px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72em;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.vzd-flow-svg:hover .vzd-flow-add { opacity: 0.65; }
+.vzd-flow-add:hover {
+  opacity: 1;
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
 /* ── Sketch (hand-drawn) mode ─────────────────────────────────────────────────
    Toggled globally via body.vizardry-sketch (from the plugin setting). Swaps to
    a handwriting font, desaturates the accent so every accent-derived palette

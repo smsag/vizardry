@@ -34,6 +34,17 @@ const HEADING_BODY_GAP = 5;
 const CHAR_W = 7;
 const MARKER_ID = "vzd-flow-arrow";
 
+/** Live-edit hooks. Present only when the canvas is editable (Problem in Live
+ *  Preview); SIPOC flow omits them and stays read-only. */
+export interface FlowEdit {
+  /** Persist an edited card (both fields; the caller writes `heading | body`). */
+  editText: (node: FlowNode, heading: string, body: string) => void;
+  /** Delete a card. */
+  deleteCard: (node: FlowNode) => void;
+  /** Append a new card to a stage's column. */
+  addCard: (stageKey: string) => void;
+}
+
 export interface FlowSpec {
   stages: StageDef[];
   nodes: FlowNode[];
@@ -41,6 +52,7 @@ export interface FlowSpec {
   /** Uniform row height + shared row grid across columns (SIPOC). Default false
    *  (Problem): each column stacks its cards with their own heights. */
   alignRows?: boolean;
+  edit?: FlowEdit;
 }
 
 interface Placed extends FlowNode {
@@ -137,7 +149,46 @@ function drawEdge(svg: SVGElement, from: Placed, to: Placed): void {
   svg.appendChild(createSvgEl("path", { d, class: "vzd-flow-edge", "marker-end": `url(#${MARKER_ID})` }));
 }
 
-function renderCard(svg: SVGElement, node: Placed, rc: RenderContext): void {
+/**
+ * Makes `el` editable *in place* — the element itself becomes contenteditable
+ * (no swapped-in textarea, no border, no reflow on entry), mirroring the canvas
+ * title editor. Commits on Enter/blur, cancels on Escape.
+ */
+function makeEditable(el: HTMLElement, initial: string, commit: (value: string) => void): void {
+  el.classList.add("vzd-flow-editable");
+  el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (el.getAttribute("contenteditable")) return;
+    el.setAttribute("contenteditable", "plaintext-only");
+    el.setAttribute("spellcheck", "false");
+    el.focus();
+
+    const doc = el.ownerDocument;
+    const range = doc.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = (doc.defaultView ?? window).getSelection?.();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    const finish = (save: boolean): void => {
+      el.removeEventListener("keydown", onKey);
+      el.removeAttribute("contenteditable");
+      el.removeAttribute("spellcheck");
+      const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (save && text !== initial) { el.textContent = text; commit(text); }
+      else el.textContent = initial;
+    };
+    const onKey = (ev: KeyboardEvent): void => {
+      if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
+      else if (ev.key === "Escape") { ev.preventDefault(); finish(false); }
+    };
+    el.addEventListener("keydown", onKey);
+    el.addEventListener("blur", () => finish(true), { once: true });
+  });
+}
+
+function renderCard(svg: SVGElement, node: Placed, rc: RenderContext, edit?: FlowEdit): void {
   const g = createSvgEl("g", { class: "vzd-flow-node-g" });
   svg.appendChild(g);
 
@@ -152,24 +203,69 @@ function renderCard(svg: SVGElement, node: Placed, rc: RenderContext): void {
   const host = document.createElement("div");
   host.className = "vzd-flow-card-host";
   if (node.eyebrow) host.createEl("div", { cls: "vzd-flow-eyebrow", text: node.eyebrow });
-  if (node.heading) {
-    const headEl = host.createEl("div", { cls: "vzd-flow-heading", text: node.heading });
-    renderHeadingLink(headEl, node.heading, rc.resolver, rc.navigateTo, rc.app, rc.ctx?.sourcePath);
+
+  if (edit) {
+    // Editable in place: heading + body always present so an empty field can be
+    // filled; placeholders come from CSS (:empty::before).
+    const headEl = host.createEl("div", { cls: "vzd-flow-heading vzd-flow-heading--edit", text: node.heading });
+    makeEditable(headEl, node.heading, (h) => edit.editText(node, h, node.body ?? ""));
+    const bodyEl = host.createEl("div", { cls: "vzd-flow-body vzd-flow-body--edit", text: node.body ?? "" });
+    makeEditable(bodyEl, node.body ?? "", (b) => edit.editText(node, node.heading, b));
+
+    const del = host.createEl("button", {
+      cls: "vzd-flow-card-delete", attr: { "aria-label": "Delete card", type: "button" },
+    });
+    del.textContent = "×";
+    del.addEventListener("click", (e) => { e.stopPropagation(); edit.deleteCard(node); });
+  } else {
+    if (node.heading) {
+      const headEl = host.createEl("div", { cls: "vzd-flow-heading", text: node.heading });
+      renderHeadingLink(headEl, node.heading, rc.resolver, rc.navigateTo, rc.app, rc.ctx?.sourcePath);
+    }
+    if (node.body) host.createEl("div", { cls: "vzd-flow-body", text: node.body });
   }
-  if (node.body) host.createEl("div", { cls: "vzd-flow-body", text: node.body });
+
   fo.appendChild(host);
   g.appendChild(fo);
+}
+
+/** A "+ Add" affordance below each present column (edit mode only). */
+function renderAddButtons(svg: SVGElement, placed: Placed[], spec: FlowSpec): void {
+  const byStage = new Map<string, { x: number; bottom: number }>();
+  for (const p of placed) {
+    const cur = byStage.get(p.stage);
+    const bottom = p.y + p.h;
+    if (!cur) byStage.set(p.stage, { x: p.x, bottom });
+    else cur.bottom = Math.max(cur.bottom, bottom);
+  }
+  for (const stage of spec.stages) {
+    const col = byStage.get(stage.key);
+    if (!col) continue;
+    const fo = createSvgEl("foreignObject", {
+      x: String(col.x), y: String(col.bottom + 8), width: String(CARD_W), height: "26",
+    });
+    const btn = document.createElement("button");
+    btn.className = "vzd-flow-add";
+    btn.type = "button";
+    btn.setAttribute("aria-label", `Add ${stage.eyebrow} card`);
+    btn.textContent = "+ Add";
+    btn.addEventListener("click", (e) => { e.stopPropagation(); spec.edit!.addCard(stage.key); });
+    fo.appendChild(btn);
+    svg.appendChild(fo);
+  }
 }
 
 /** Builds the flow SVG (marker + edges under cards) into `wrap`. */
 export function renderFlowGraph(wrap: HTMLElement, spec: FlowSpec, rc: RenderContext): void {
   const { placed, width, height } = layout(spec);
   const byId = new Map(placed.map(p => [p.id, p]));
+  // Reserve a row under the columns for the per-column "+ Add" affordances.
+  const h = height + (spec.edit ? 36 : 0);
 
   const svg = createSvgEl("svg", {
-    viewBox: `0 0 ${width} ${height}`,
+    viewBox: `0 0 ${width} ${h}`,
     width: String(width),
-    height: String(height),
+    height: String(h),
     class: "vzd-flow-svg",
   });
   renderMarker(svg);
@@ -177,6 +273,7 @@ export function renderFlowGraph(wrap: HTMLElement, spec: FlowSpec, rc: RenderCon
     const from = byId.get(edge.from), to = byId.get(edge.to);
     if (from && to) drawEdge(svg, from, to);
   }
-  for (const node of placed) renderCard(svg, node, rc);
+  for (const node of placed) renderCard(svg, node, rc, spec.edit);
+  if (spec.edit) renderAddButtons(svg, placed, spec);
   wrap.appendChild(svg);
 }

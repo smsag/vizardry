@@ -1,3 +1,11 @@
+## 0.56.0
+
+- **Problem canvas: edit inline in Live Preview** — click a card's heading or
+  body to edit it right in the card (no popup, no jump — the text just becomes
+  editable), press Enter to save or Escape to cancel. A hover **×** deletes a
+  card and **+ Add** under a column adds one; every change writes straight back
+  to the source. (SIPOC flow stays a read-only view — edit it as a table.)
+
 ## 0.55.0
 
 - **Problem canvas: stable card ids for linking** — cards can now carry an
