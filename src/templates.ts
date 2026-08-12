@@ -261,18 +261,18 @@ export const PROBLEM_TEMPLATE = `\`\`\`vizardry
 type: problem, engineering
 title: Product X assembly efficiency
 
-ideal: Fully automated line | Product X assembles as efficiently as possible.
+ideal_1: Fully automated line | Product X assembles as efficiently as possible.
 
-reality: Manual transport | Parts are carried between lines and fitted by hand.
-reality: Rework loop | Mis-installed parts are pulled and redone downstream.
+reality_1: Manual transport | Parts are carried between lines and fitted by hand.
+reality_2: Rework loop | Mis-installed parts are pulled and redone downstream.
 
-consequences: Missed goals | Company Y is behind its production target this year.
+consequences_1: Missed goals | Company Y is behind its production target this year.
 
-proposal: Conveyors + arms | Install belts and robot arms so workers stay put.
+proposal_1: Conveyors + arms | Install belts and robot arms so workers stay put.
 
-link: Fully automated line -> Manual transport & Rework loop
-link: Manual transport & Rework loop -> Missed goals
-link: Missed goals -> Conveyors + arms
+link: ideal_1 -> reality_1 & reality_2
+link: reality_1 & reality_2 -> consequences_1
+link: consequences_1 -> proposal_1
 \`\`\`
 `;
 
