@@ -1,3 +1,11 @@
+## 0.56.1
+
+- **Problem canvas editing: fixes to adding a card in Live Preview** — adding a
+  card no longer shows a spurious "couldn't save" error, and new (and
+  body-less) cards are sized to fit their editable fields instead of being
+  clipped at the bottom of a column. Clearing both fields of a card now removes
+  it cleanly.
+
 ## 0.56.0
 
 - **Problem canvas: edit inline in Live Preview** — click a card's heading or

@@ -36,6 +36,13 @@ function cardLines(
     const key = trimmed.slice(0, colon).trim().toLowerCase();
     if (key === "title" || key === "link") continue;
     if (!stageKeys.has(stageOf(key))) continue;
+    // Mirror the parser: a line whose value has neither a heading nor a body is
+    // not a card (it's skipped), so it must not shift the card index either.
+    const value = trimmed.slice(colon + 1).trim();
+    const bar = value.indexOf("|");
+    const heading = (bar === -1 ? value : value.slice(0, bar)).trim();
+    const body = bar === -1 ? "" : value.slice(bar + 1).trim();
+    if (!heading && !body) continue;
     out.push(ln);
   }
   return out;

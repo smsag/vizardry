@@ -34,7 +34,12 @@ export function renderProblem(
     edit = {
       editText: (node: FlowNode, heading: string, body: string) => {
         const i = indexById.get(node.id);
-        if (i === undefined || !writeProblemCard(app, ctx, container, i, stageKeys, heading, body)) failed();
+        if (i === undefined) { failed(); return; }
+        // Clearing both fields removes the card rather than leaving an empty line.
+        const ok = (!heading.trim() && !body.trim())
+          ? removeProblemCard(app, ctx, container, i, stageKeys)
+          : writeProblemCard(app, ctx, container, i, stageKeys, heading, body);
+        if (!ok) failed();
       },
       deleteCard: (node: FlowNode) => {
         const i = indexById.get(node.id);
