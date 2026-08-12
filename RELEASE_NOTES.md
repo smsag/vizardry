@@ -1,3 +1,13 @@
+## 0.54.0
+
+- **SIPOC flow view redesigned as a card grid** — the flow view now renders
+  each node as a labelled card (column name + value) laid out on a tidy grid
+  that lines up row-by-row and column-by-column, sharing the Problem canvas's
+  flow renderer. The **Process** column is colour-highlighted so the heart of
+  the process stands out, and a card whose value matches a note heading links
+  out to that chapter. Authoring is unchanged (`row:` + `link:`), so existing
+  SIPOC flow diagrams keep working.
+
 ## 0.53.0
 
 - **New canvas: Problem Statement (`type: problem`)** — writes a problem
