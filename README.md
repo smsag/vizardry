@@ -20,6 +20,8 @@ block: Label
 
 **In Live Preview**, click any block body to edit it inline. Changes are written back to the source file automatically when you click away (or press Escape to discard).
 
+**Multiple canvases in one block** — repeat the `type:` line to stack several canvases (of any mix of types) in a single fence; they render as a **carousel** with prev/next arrows and dots (arrow keys and swipe work too). A block with one `type:` line renders a single canvas exactly as before. Carousel canvases are read-only — edit them as text. See the [syntax reference](docs/vizardry-canvas-syntax-reference.md#multiple-canvases-in-one-fence-carousel).
+
 ---
 
 ## Supported frameworks

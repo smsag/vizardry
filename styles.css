@@ -554,6 +554,74 @@ button.vzd-btn {
 
 }
 
+/* ══ Multi-canvas carousel ═══════════════════════════════════════════
+   Several canvases in one ```vizardry fence, shown one at a time on every
+   viewport. Panels stack in a single grid cell so the frame is as tall as the
+   tallest canvas and swiping never shifts content below it; only the active
+   panel is visible. The nav (reusing .vizardry-nav-* children) is always on,
+   unlike the mobile-only grid carousel.
+   ══════════════════════════════════════════════════════════════════ */
+.vzd-multi {
+  outline: none;
+}
+
+.vzd-multi-track {
+  display: grid;
+  grid-template-columns: 1fr;
+  position: relative;
+}
+
+.vzd-multi-panel {
+  grid-area: 1 / 1; /* stack every panel in the same cell */
+  min-width: 0;
+  visibility: hidden;
+}
+
+.vzd-multi-panel.is-active {
+  visibility: visible;
+}
+
+/* Always-visible nav (the shared .vizardry-nav is display:none off-mobile). */
+.vizardry-nav.vzd-multi-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.vzd-multi-nav .vizardry-nav-btn {
+  min-width: 32px;
+  min-height: 32px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vzd-multi-nav .vizardry-nav-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.vzd-multi-nav .vizardry-nav-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+  transition: background 0.15s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.vzd-multi-nav .vizardry-nav-dot.is-active {
+  background: var(--text-muted);
+}
+
+.vzd-multi-nav .vizardry-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 /* ══ User Story Map ══════════════════════════════════════════════════
    Nested grid: activity headers span their steps, step headers occupy
    one column each, slice bands group task cards into priority rows.
