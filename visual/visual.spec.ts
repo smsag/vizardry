@@ -5,7 +5,7 @@ import path from "path";
 // Must match the fixture names in harness.ts.
 const ALL = [
   "bmc", "swot", "fishbone", "impact", "story", "mindmap", "ost", "venn",
-  "sipoc", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
+  "sipoc", "sipocflow", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
   "matrix", "scqa", "journey", "wheeloflife", "odyssey",
   "circleofinfluence", "wholeperson", "futureself", "radar", "problem",
 ];

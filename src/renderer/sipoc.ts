@@ -9,10 +9,10 @@ import { activateTextareaEdit } from "./inline-edit";
 import { insertSIPOCRowAfter, writeSIPOCCell } from "../shared/sipoc-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
-import { createSvgEl } from "../shared/svg";
-import { SIPOC_FLOW_LABEL_MAX_CHARS } from "../shared/constants";
 import { bestTextColor } from "../shared/color-utils";
 import type { RenderContext } from "./render-context";
+import type { FlowNode, FlowEdge, StageDef, FlowRole } from "../types/problem";
+import { renderFlowGraph } from "./flow-graph";
 
 export function renderSIPOC(
   data: SIPOCData,
@@ -21,7 +21,7 @@ export function renderSIPOC(
 ): void {
   const { source, app, ctx } = rc;
   if (data.variant === "flow") {
-    renderSIPOCFlowView(data, container, source, app, ctx);
+    renderSIPOCFlowView(data, container, rc);
   } else {
     renderSIPOCTable(data, container, source, app, ctx);
   }
@@ -279,131 +279,23 @@ function colLabels(): Record<SIPOCColumn, string> {
   };
 }
 
-const W = 900;
-const HEADER_H = 44;
-const PAD = { top: 16, right: 0, bottom: 20, left: 0 };
-const COL_W = (W - PAD.left - PAD.right) / FLOW_COLS.length; // 180
-const ROW_H = 68;
-const NODE_W = 120;
-const NODE_H = 36;
-const MARKER_ID = "vzd-sipoc-flow-arrow";
-
-// ── Geometry helpers ───────────────────────────────────────────────────────
-
-function colCx(colIdx: number): number {
-  return PAD.left + (colIdx + 0.5) * COL_W;
-}
-
-function nodeY(idx: number, count: number, plotH: number): number {
-  return HEADER_H + PAD.top + (plotH * (idx + 0.5)) / count;
-}
-
-/** Right-edge connection point of a node (for outgoing arrows). */
-function rightPort(cx: number, cy: number): { x: number; y: number } {
-  return { x: cx + NODE_W / 2, y: cy };
-}
-
-/** Left-edge connection point of a node (for incoming arrows). */
-function leftPort(cx: number, cy: number): { x: number; y: number } {
-  return { x: cx - NODE_W / 2, y: cy };
-}
-
-/** Bottom-centre connection point (for downward same-column arrows). */
-function bottomPort(cx: number, cy: number): { x: number; y: number } {
-  return { x: cx, y: cy + NODE_H / 2 };
-}
-
-/** Top-centre connection point (for upward same-column arrows). */
-function topPort(cx: number, cy: number): { x: number; y: number } {
-  return { x: cx, y: cy - NODE_H / 2 };
-}
-
-// ── Node drawing ─────────────────────────────────────────────────────────────
+// ── Flow view ────────────────────────────────────────────────────────────────
 //
-// Every derived node draws as a plain rounded rect — there's no source syntax
-// left to request a different shape (the unified parser dropped the old
-// freeform `Name [shape]` declarations in favour of deriving nodes from table
-// rows). Reintroducing shape variety would mean adding a per-cell shape
-// override syntax first; until then, the other 9 shapes SIPOC-flow used to
-// support would just be dead, untestable code.
+// The five SIPOC columns become the shared flow-graph's stages (Process is
+// colour-highlighted via the `hi` role), each distinct cell value becomes a
+// heading card, and `link:` directives become edges. `alignRows` lays the cards
+// out on a uniform top-aligned grid so the columns line up row by row.
 
-function drawNode(svg: SVGElement, cx: number, cy: number, label: string, isAnchor: boolean): void {
-  const cls = `vzd-sf-node${isAnchor ? " vzd-sf-node--accent" : ""}`;
+const FLOW_ROLE: Record<SIPOCColumn, FlowRole> = {
+  suppliers: "neutral",
+  inputs: "neutral",
+  process: "hi",
+  outputs: "neutral",
+  customers: "neutral",
+};
 
-  svg.appendChild(createSvgEl("rect", {
-    x: String(cx - NODE_W / 2), y: String(cy - NODE_H / 2),
-    width: String(NODE_W), height: String(NODE_H),
-    rx: "4",
-    class: cls,
-  }));
-
-  // Label — truncate long text
-  const displayLabel = label.length > SIPOC_FLOW_LABEL_MAX_CHARS ? label.slice(0, SIPOC_FLOW_LABEL_MAX_CHARS - 1) + "…" : label;
-  const text = createSvgEl("text", {
-    x: String(cx), y: String(cy),
-    class: "vzd-sf-label",
-    "text-anchor": "middle",
-    "dominant-baseline": "central",
-  });
-  text.textContent = displayLabel;
-
-  // title tooltip for full label when truncated
-  if (label.length > SIPOC_FLOW_LABEL_MAX_CHARS) {
-    const title = createSvgEl("title");
-    title.textContent = label;
-    text.appendChild(title);
-  }
-
-  svg.appendChild(text);
-}
-
-// ── Arrow routing ──────────────────────────────────────────────────────────
-
-/**
- * Draws a cubic-bezier arrow from (x1,y1) to (x2,y2).
- *
- * Horizontal mode (cross-column): control points pull along the x-axis.
- * Vertical mode (same-column): control points pull along the y-axis so the
- * curve reads as a clean downward/upward arc within the column band.
- */
-function drawArrow(
-  svg: SVGElement,
-  x1: number, y1: number,
-  x2: number, y2: number,
-  direction: "right" | "left" | "vertical",
-): void {
-  let d: string;
-
-  if (direction === "vertical") {
-    const tension = Math.max(Math.abs(y2 - y1) * 0.45, 20);
-    const goingDown = y2 >= y1;
-    const cp1y = goingDown ? y1 + tension : y1 - tension;
-    const cp2y = goingDown ? y2 - tension : y2 + tension;
-    d = `M${x1},${y1} C${x1},${cp1y} ${x2},${cp2y} ${x2},${y2}`;
-  } else {
-    const tension = Math.abs(x2 - x1) * 0.45;
-    const cp1x = direction === "right" ? x1 + tension : x1 - tension;
-    const cp2x = direction === "right" ? x2 - tension : x2 + tension;
-    d = `M${x1},${y1} C${cp1x},${y1} ${cp2x},${y2} ${x2},${y2}`;
-  }
-
-  const path = createSvgEl("path", {
-    d,
-    class: "vzd-sf-link",
-    "marker-end": `url(#${MARKER_ID})`,
-  });
-  svg.appendChild(path);
-}
-
-// ── Main flow renderer ───────────────────────────────────────────────────────
-
-function renderSIPOCFlowView(
-  data: SIPOCData,
-  container: HTMLElement,
-  source?: string,
-  app?: App,
-  ctx?: MarkdownPostProcessorContext,
-): void {
+function renderSIPOCFlowView(data: SIPOCData, container: HTMLElement, rc: RenderContext): void {
+  const { source, app, ctx } = rc;
   const defaultTitle = "SIPOC Flow Diagram";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = (app && ctx && source !== undefined && isEditModeActive(app))
@@ -417,128 +309,11 @@ function renderSIPOCFlowView(
     return;
   }
 
-  const wrap = container.createEl("div", { cls: "vzd-sipoc-flow-wrap" });
+  const labels = colLabels();
+  const stages: StageDef[] = FLOW_COLS.map(col => ({ key: col, eyebrow: labels[col], role: FLOW_ROLE[col] }));
+  const nodes: FlowNode[] = graph.nodes.map(n => ({ stage: n.column, id: n.id, heading: n.label }));
+  const edges: FlowEdge[] = graph.links.map(l => ({ from: l.from, to: l.to }));
 
-  // Determine height from the tallest column
-  const colCounts = FLOW_COLS.map(col => graph.nodes.filter(n => n.column === col).length);
-  const maxNodes = Math.max(...colCounts, 1);
-  const plotH = maxNodes * ROW_H;
-  const H = HEADER_H + PAD.top + plotH + PAD.bottom;
-
-  const svg = createSvgEl("svg", {
-    viewBox: `0 0 ${W} ${H}`,
-    class: "vzd-sipoc-flow-svg",
-  });
-
-  // ── Defs: arrowhead marker ─────────────────────────────────────────────
-  const defs = createSvgEl("defs");
-  const marker = createSvgEl("marker", {
-    id: MARKER_ID,
-    markerWidth: "8", markerHeight: "8",
-    refX: "7", refY: "3",
-    orient: "auto",
-  });
-  const mPath = createSvgEl("path", { d: "M0,0 L0,6 L8,3 z", class: "vzd-sf-arrowhead" });
-  marker.appendChild(mPath);
-  defs.appendChild(marker);
-  svg.appendChild(defs);
-
-  // ── Column bands and headers ───────────────────────────────────────────
-  // Collect rect+text pairs so we can set contrast-checked text colours after
-  // the SVG is attached to the DOM (required for getComputedStyle to resolve
-  // color-mix() values in the header fill).
-  const headerPairs: Array<{ rect: Element; text: HTMLElement }> = [];
-
-  FLOW_COLS.forEach((col, i) => {
-    const x = PAD.left + i * COL_W;
-
-    const band = createSvgEl("rect", {
-      x: String(x), y: "0",
-      width: String(COL_W), height: String(H),
-      class: `vzd-sf-band vzd-sf-band--${col}`,
-    });
-    svg.appendChild(band);
-
-    const divider = createSvgEl("line", {
-      x1: String(x), y1: "0",
-      x2: String(x), y2: String(H),
-      class: "vzd-sf-divider",
-    });
-    svg.appendChild(divider);
-
-    const headerRect = createSvgEl("rect", {
-      x: String(x), y: "0",
-      width: String(COL_W), height: String(HEADER_H),
-      class: `vzd-sf-header vzd-sf-header--${col}`,
-    });
-    svg.appendChild(headerRect);
-
-    const headerText = createSvgEl("text", {
-      x: String(x + COL_W / 2), y: String(HEADER_H / 2),
-      class: "vzd-sf-header-label",
-      "text-anchor": "middle",
-      "dominant-baseline": "central",
-    });
-    headerText.textContent = colLabels()[col];
-    svg.appendChild(headerText);
-
-    headerPairs.push({ rect: headerRect, text: headerText as unknown as HTMLElement });
-  });
-
-  // ── Build position map ─────────────────────────────────────────────────
-  // Map nodeId → {cx, cy} for link drawing
-  const posMap = new Map<string, { cx: number; cy: number }>();
-
-  FLOW_COLS.forEach((col, colIdx) => {
-    const colNodes = graph.nodes.filter(n => n.column === col);
-    const cx = colCx(colIdx);
-    colNodes.forEach((node, idx) => {
-      const cy = nodeY(idx, Math.max(colNodes.length, 1), plotH);
-      posMap.set(node.id, { cx, cy });
-    });
-  });
-
-  // ── Draw links (behind nodes) ──────────────────────────────────────────
-  const colIndex = Object.fromEntries(FLOW_COLS.map((c, i) => [c, i])) as Record<SIPOCColumn, number>;
-
-  for (const link of graph.links) {
-    const from = posMap.get(link.from);
-    const to = posMap.get(link.to);
-    if (!from || !to) continue;
-
-    const fromNode = graph.nodes.find(n => n.id === link.from)!;
-    const toNode = graph.nodes.find(n => n.id === link.to)!;
-
-    let src: { x: number; y: number };
-    let dst: { x: number; y: number };
-    let direction: "right" | "left" | "vertical";
-
-    if (fromNode.column === toNode.column) {
-      const goingDown = from.cy <= to.cy;
-      src = goingDown ? bottomPort(from.cx, from.cy) : topPort(from.cx, from.cy);
-      dst = goingDown ? topPort(to.cx, to.cy)        : bottomPort(to.cx, to.cy);
-      direction = "vertical";
-    } else {
-      const goingRight = colIndex[fromNode.column] < colIndex[toNode.column];
-      src = goingRight ? rightPort(from.cx, from.cy) : leftPort(from.cx, from.cy);
-      dst = goingRight ? leftPort(to.cx, to.cy)       : rightPort(to.cx, to.cy);
-      direction = goingRight ? "right" : "left";
-    }
-
-    drawArrow(svg, src.x, src.y, dst.x, dst.y, direction);
-  }
-
-  // ── Draw nodes (on top of links) ──────────────────────────────────────
-  for (const node of graph.nodes) {
-    const pos = posMap.get(node.id)!;
-    const isAccent = node.column === "process";
-    drawNode(svg, pos.cx, pos.cy, node.label, isAccent);
-  }
-
-  wrap.appendChild(svg);
-
-  // Apply contrast-checked text colours now that color-mix() has been resolved.
-  for (const { rect, text } of headerPairs) {
-    text.style.fill = bestTextColor(rect, true);
-  }
+  const wrap = container.createEl("div", { cls: "vzd-flow-wrap" });
+  renderFlowGraph(wrap, { stages, nodes, edges, alignRows: true }, rc);
 }

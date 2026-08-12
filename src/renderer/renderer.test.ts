@@ -1390,7 +1390,8 @@ describe("renderSIPOC — flow view", () => {
     expect(() => renderSIPOC(data, el)).not.toThrow();
     const svg = el.querySelector("svg");
     expect(svg).toBeTruthy();
-    const labels = Array.from(svg!.querySelectorAll(".vzd-sf-header-label")).map(t => t.textContent);
+    // Column labels now appear as the eyebrow on each card (one per column).
+    const labels = Array.from(el.querySelectorAll(".vzd-flow-eyebrow")).map(t => t.textContent);
     expect(labels).toContain("Supplier");
     expect(labels).toContain("Process");
     expect(labels).toContain("Customer");
@@ -1400,7 +1401,7 @@ describe("renderSIPOC — flow view", () => {
     const el = container();
     const data: SIPOCData = { variant: "flow", rows, links: [] };
     renderSIPOC(data, el);
-    const nodes = el.querySelectorAll(".vzd-sf-node");
+    const nodes = el.querySelectorAll(".vzd-flow-card");
     expect(nodes).toHaveLength(5);
   });
 
@@ -1416,7 +1417,7 @@ describe("renderSIPOC — flow view", () => {
     };
     renderSIPOC(data, el);
     // 1 shared supplier + 2 distinct per other column (input/process/output/customer) = 1 + 4*2
-    expect(el.querySelectorAll(".vzd-sf-node")).toHaveLength(9);
+    expect(el.querySelectorAll(".vzd-flow-card")).toHaveLength(9);
   });
 
   it("does not render Owner/Metric in flow view", () => {
@@ -1435,8 +1436,35 @@ describe("renderSIPOC — flow view", () => {
     const el = container();
     const data: SIPOCData = { variant: "flow", rows, links: [{ from: "Vendor", to: "Spec Doc" }] };
     renderSIPOC(data, el);
-    const links = el.querySelectorAll(".vzd-sf-link");
+    const links = el.querySelectorAll(".vzd-flow-edge");
     expect(links).toHaveLength(1);
+  });
+
+  it("highlights the Process column with the accent (hi) role", () => {
+    const el = container();
+    const data: SIPOCData = { variant: "flow", rows, links: [] };
+    renderSIPOC(data, el);
+    // Only the Process cell gets the accent-highlight role.
+    const hi = el.querySelectorAll(".vzd-flow-card--hi");
+    expect(hi).toHaveLength(1);
+    expect(el.querySelectorAll(".vzd-flow-card--neutral")).toHaveLength(4);
+  });
+
+  it("aligns the cards on a grid — a column's cards share an x", () => {
+    const el = container();
+    const data: SIPOCData = {
+      variant: "flow",
+      rows: [
+        sipocRow({ supplier: "A1", input: "I1", process: "P1", output: "O1", customer: "C1" }),
+        sipocRow({ supplier: "A2", input: "I2", process: "P2", output: "O2", customer: "C2" }),
+      ],
+      links: [],
+    };
+    renderSIPOC(data, el);
+    const rects = Array.from(el.querySelectorAll<SVGRectElement>("rect.vzd-flow-card"));
+    // The two supplier cards (first two by column order) share an x and differ in y.
+    const supplierXs = rects.slice(0, 2).map(r => r.getAttribute("x"));
+    expect(supplierXs[0]).toBe(supplierXs[1]);
   });
 
   it("shows a flow-view error when a link references unknown text", () => {
@@ -1444,7 +1472,7 @@ describe("renderSIPOC — flow view", () => {
     const data: SIPOCData = { variant: "flow", rows, links: [{ from: "Vendor", to: "Ghost" }] };
     renderSIPOC(data, el);
     expect(el.classList.contains("vizardry-error")).toBe(true);
-    expect(el.querySelector(".vzd-sf-node")).toBeFalsy();
+    expect(el.querySelector(".vzd-flow-card")).toBeFalsy();
   });
 
   it("shows a flow-view error when a link target is ambiguous across columns", () => {
