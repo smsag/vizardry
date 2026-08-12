@@ -175,6 +175,8 @@ const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
   "vzd-nodemap-unlink-btn", "vzd-nodemap-add-handle-g",
   "vzd-tree-edit-add", "vzd-tree-edit-del",
   "vzd-lane-bullet-add", "vzd-lane-bullet-del",
+  // Flow canvas (Problem) live-edit affordances
+  "vzd-flow-card-delete", "vzd-flow-add",
 ]);
 
 /** True when `node` is interaction chrome to omit from the exported image. */

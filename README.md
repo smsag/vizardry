@@ -1411,6 +1411,7 @@ link: consequences_1 -> proposal_1
 - If a card heading matches a `#`/`##` heading in the same note, the card gets a jump-to-chapter link (with a section preview), like other card canvases.
 - An unknown subtype fails with the list of valid ones; an unknown stage, an empty card, a duplicate id, or a malformed/dangling link skips that line with a warning chip rather than failing the whole canvas.
 - Wider-than-screen flows scroll horizontally.
+- **Editable in Live Preview:** click a card's heading or body to edit it in place, delete a card with its **×**, or add one with **+ Add** under a column — changes write straight back to the source. (In Read View, edit as text.)
 
 ---
 

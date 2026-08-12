@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import "../test-setup";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { parseProblem } from "../problem";
 import { renderProblem } from "./problem";
-import type { FlowData } from "../types/problem";
+import { renderFlowGraph, type FlowEdit } from "./flow-graph";
+import type { FlowData, StageDef } from "../types/problem";
 
 function render(source: string, variant?: string): HTMLElement {
   const r = parseProblem(source, variant);
@@ -60,5 +61,73 @@ describe("renderProblem", () => {
   it("renders a warning chip for recoverable issues", () => {
     const el = render("ideal: X\nbogus: line");
     expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
+  });
+});
+
+describe("renderFlowGraph — live editing", () => {
+  const stages: StageDef[] = [
+    { key: "ideal", eyebrow: "Ideal", role: "setup" },
+    { key: "reality", eyebrow: "Reality", role: "gap" },
+  ];
+  const nodes = [
+    { stage: "ideal", id: "ideal_1", heading: "I", body: "b" },
+    { stage: "reality", id: "reality_1", heading: "R" },
+  ];
+
+  function host(): HTMLElement {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it("read mode: no edit affordances", () => {
+    const el = host();
+    renderFlowGraph(el, { stages, nodes, edges: [] }, {});
+    expect(el.querySelectorAll(".vzd-flow-editable")).toHaveLength(0);
+    expect(el.querySelectorAll(".vzd-flow-card-delete, .vzd-flow-add")).toHaveLength(0);
+  });
+
+  it("edit mode: editable fields + a delete per card + an add per column", () => {
+    const el = host();
+    const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
+    renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
+    expect(el.querySelectorAll(".vzd-flow-editable")).toHaveLength(4); // heading + body per card
+    expect(el.querySelectorAll(".vzd-flow-card-delete")).toHaveLength(2);
+    expect(el.querySelectorAll(".vzd-flow-add")).toHaveLength(2); // one per stage column
+  });
+
+  it("clicking a heading edits it in place; Enter commits the new text", () => {
+    const el = host();
+    const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
+    renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
+    const headEl = el.querySelector<HTMLElement>(".vzd-flow-heading--edit")!;
+    headEl.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(headEl.getAttribute("contenteditable")).toBe("plaintext-only");
+    headEl.textContent = "New heading";
+    headEl.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(edit.editText).toHaveBeenCalledWith(expect.objectContaining({ id: "ideal_1" }), "New heading", "b");
+    expect(headEl.getAttribute("contenteditable")).toBeNull(); // exits edit cleanly
+  });
+
+  it("Escape cancels an edit without committing", () => {
+    const el = host();
+    const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
+    renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
+    const headEl = el.querySelector<HTMLElement>(".vzd-flow-heading--edit")!;
+    headEl.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    headEl.textContent = "changed";
+    headEl.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(edit.editText).not.toHaveBeenCalled();
+    expect(headEl.textContent).toBe("I"); // reverted
+  });
+
+  it("clicking delete / add calls the handlers", () => {
+    const el = host();
+    const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
+    renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
+    el.querySelector<HTMLElement>(".vzd-flow-card-delete")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(edit.deleteCard).toHaveBeenCalledWith(expect.objectContaining({ id: "ideal_1" }));
+    el.querySelector<HTMLElement>(".vzd-flow-add")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(edit.addCard).toHaveBeenCalledWith("ideal");
   });
 });
