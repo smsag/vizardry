@@ -1,3 +1,14 @@
+## 0.57.0
+
+- **Several canvases in one block — shown as a carousel** — repeat the `type:`
+  line inside a single ```vizardry fence to stack multiple canvases; they now
+  render one at a time as a carousel with prev/next arrows, a dot per canvas,
+  arrow-key and swipe navigation. The canvases can be any mix of framework
+  types (a SWOT, then a Problem Statement, then a matrix), each with its own
+  title and toolbar. A block with a single `type:` line renders exactly as
+  before. Carousel canvases are read-only for now — edit them as text (per-panel
+  inline editing is planned for a later release).
+
 ## 0.56.1
 
 - **Problem canvas editing: fixes to adding a card in Live Preview** — adding a

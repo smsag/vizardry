@@ -29,7 +29,7 @@ vi.mock("html-to-image", () => ({
   toBlob: vi.fn().mockResolvedValue(new Blob(["png"], { type: "image/png" })),
 }));
 
-import { dispatchVizardry, extractType } from "./vizardry-dispatch";
+import { dispatchVizardry, extractType, splitVizardryCanvases } from "./vizardry-dispatch";
 
 function container(): HTMLElement {
   const el = document.createElement("div");
@@ -117,16 +117,6 @@ describe("dispatchVizardry", () => {
     dispatchVizardry("type: nonsense\nblock: Goal\n  X", el, fakeCtx(), fakeApp());
     expect(el.classList.contains("vizardry-error")).toBe(true);
     expect(el.querySelector(".vizardry-error-message")?.textContent).toContain('Unknown type "nonsense"');
-  });
-
-  it("ignores a duplicate top-level type: line instead of surfacing a confusing parse error", () => {
-    const el = container();
-    dispatchVizardry("type: swot\ntype: bmc\nblock: Strengths\n  Fast team", el, fakeCtx(), fakeApp());
-    // Renders using the first type: line ("swot"), not a "unexpected
-    // syntax" error from the swot parser choking on the leftover
-    // "type: bmc" line.
-    expect(el.classList.contains("vizardry-error")).toBe(false);
-    expect(el.querySelector(".vizardry-grid")).toBeTruthy();
   });
 
   it("dispatches a flat grid id to renderCanvas", () => {
@@ -231,5 +221,113 @@ describe("dispatchVizardry", () => {
       el, fakeCtx(), fakeApp(),
     );
     expect(el.classList.contains("vizardry-error")).toBe(true);
+  });
+});
+
+// ── splitVizardryCanvases ─────────────────────────────────────────────────────
+
+describe("splitVizardryCanvases", () => {
+  it("returns the source unchanged for a single type: line", () => {
+    const src = "type: swot\nblock: Strengths\n  Fast team";
+    expect(splitVizardryCanvases(src)).toEqual([src]);
+  });
+
+  it("returns the source unchanged when there is no type: line", () => {
+    const src = "block: Goal\n  X";
+    expect(splitVizardryCanvases(src)).toEqual([src]);
+  });
+
+  it("splits at each top-level type: line", () => {
+    const segs = splitVizardryCanvases("type: swot\nblock: S\ntype: bmc\nblock: K");
+    expect(segs).toEqual(["type: swot\nblock: S", "type: bmc\nblock: K"]);
+  });
+
+  it("attaches preamble before the first type: to the first canvas", () => {
+    const segs = splitVizardryCanvases("\ntitle: Deck\ntype: swot\nblock: S\ntype: bmc\nblock: K");
+    expect(segs[0]).toBe("\ntitle: Deck\ntype: swot\nblock: S");
+    expect(segs[1]).toBe("type: bmc\nblock: K");
+  });
+
+  it("does not treat an indented type:-looking line as a boundary", () => {
+    const segs = splitVizardryCanvases("type: swot\nblock: S\n  type: not a boundary");
+    expect(segs).toHaveLength(1);
+  });
+
+  it("gives each segment exactly one top-level type: line (feeds extractType cleanly)", () => {
+    const segs = splitVizardryCanvases("type: swot\nx\ntype: bmc\ny\ntype: matrix\nz");
+    expect(segs).toHaveLength(3);
+    for (const seg of segs) {
+      const topLevelTypes = seg.split("\n").filter(l => l.search(/\S/) === 0 && l.trim().toLowerCase().startsWith("type:"));
+      expect(topLevelTypes).toHaveLength(1);
+    }
+  });
+});
+
+// ── dispatchVizardry: multi-canvas carousel ──────────────────────────────────
+
+describe("dispatchVizardry — multi-canvas carousel", () => {
+  const twoCanvas = [
+    "type: swot",
+    "block: Strengths",
+    "  Fast team",
+    "type: bmc",
+    "block: Key Partners",
+    "  Suppliers",
+  ].join("\n");
+
+  it("renders a carousel with one panel per canvas when several type: lines exist", () => {
+    const el = container();
+    dispatchVizardry(twoCanvas, el, fakeCtx(), fakeApp());
+    expect(el.querySelector(".vzd-multi")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-multi-panel")).toHaveLength(2);
+    // Each panel rendered its own grid canvas.
+    expect(el.querySelectorAll(".vzd-multi-panel .vizardry-grid")).toHaveLength(2);
+  });
+
+  it("shows only the first panel and provides nav (prev/next + a dot per panel)", () => {
+    const el = container();
+    dispatchVizardry(twoCanvas, el, fakeCtx(), fakeApp());
+    const panels = el.querySelectorAll(".vzd-multi-panel");
+    expect(panels[0].classList.contains("is-active")).toBe(true);
+    expect(panels[1].classList.contains("is-active")).toBe(false);
+    expect(el.querySelector(".vzd-multi-nav")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-multi-nav .vizardry-nav-dot")).toHaveLength(2);
+    expect(el.querySelectorAll(".vzd-multi-nav .vizardry-nav-btn")).toHaveLength(2);
+  });
+
+  it("advances to the next panel when the next button is clicked", () => {
+    const el = container();
+    dispatchVizardry(twoCanvas, el, fakeCtx(), fakeApp());
+    const [prev, next] = Array.from(el.querySelectorAll<HTMLButtonElement>(".vzd-multi-nav .vizardry-nav-btn"));
+    expect(prev.disabled).toBe(true); // at the first panel
+    next.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const panels = el.querySelectorAll(".vzd-multi-panel");
+    expect(panels[0].classList.contains("is-active")).toBe(false);
+    expect(panels[1].classList.contains("is-active")).toBe(true);
+    expect(next.disabled).toBe(true); // now at the last panel
+  });
+
+  it("renders a single canvas (no carousel) for a lone type: line", () => {
+    const el = container();
+    dispatchVizardry("type: swot\nblock: Strengths\n  Fast team", el, fakeCtx(), fakeApp());
+    expect(el.querySelector(".vzd-multi")).toBeNull();
+    expect(el.querySelector(".vizardry-grid")).toBeTruthy();
+  });
+
+  it("renders carousel panels read-only even though the view reports edit mode", () => {
+    // fakeApp's getActiveViewOfType returns undefined, so isEditModeActive is
+    // true for a lone canvas — but inside the carousel renderReadOnly forces
+    // read-only, so the Problem canvas wires no in-place edit affordances.
+    const el = container();
+    const src = [
+      "type: problem, business",
+      "vision: Fast",
+      "type: problem, business",
+      "issue: Slow",
+    ].join("\n");
+    dispatchVizardry(src, el, fakeCtx(), fakeApp());
+    expect(el.querySelectorAll(".vzd-multi-panel")).toHaveLength(2);
+    expect(el.querySelectorAll(".vzd-flow-editable")).toHaveLength(0);
+    expect(el.querySelectorAll(".vzd-flow-add")).toHaveLength(0);
   });
 });

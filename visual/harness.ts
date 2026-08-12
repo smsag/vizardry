@@ -61,6 +61,19 @@ const FIXTURES: Record<string, string> = {
   wholeperson: inner(WHOLE_PERSON_TEMPLATE),
   radar: inner(RADAR_TEMPLATE),
   problem: inner(PROBLEM_TEMPLATE),
+  // Several canvases of mixed types in one fence → carousel (first panel shown).
+  multicanvas: `type: swot
+title: Strengths / Weaknesses
+block: Strengths
+  Fast, senior team
+block: Weaknesses
+  Thin on QA
+
+type: problem, business
+title: The Problem
+vision: Ship weekly
+issue: Releases slip
+method: Automate the pipeline`,
   futureself: `type: futureself
 title: Future Self
 period: May – Jul 2025

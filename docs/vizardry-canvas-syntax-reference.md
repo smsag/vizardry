@@ -20,7 +20,8 @@ These are the rules that most often get broken. Follow all of them:
 6. **Blank lines are always ignored** — use them freely for readability.
 7. **Grid block labels must match the framework's list exactly** (case-insensitive). A typo'd label is silently dropped (the block just stays empty).
 8. **Don't quote values.** Write `title: My Map`, not `title: "My Map"`. No YAML, no JSON — this is a line-based mini-language.
-9. **One `type:` line, one `title:` line.** Extra top-level lines a framework doesn't recognise cause an "unexpected syntax" error (grid frameworks are the exception — they ignore unknown top-level lines that aren't `block:`).
+9. **One `title:` line per canvas.** Extra top-level lines a framework doesn't recognise cause an "unexpected syntax" error (grid frameworks are the exception — they ignore unknown top-level lines that aren't `block:`).
+10. **Repeat `type:` to stack several canvases in one fence** — each top-level `type:` line starts a new canvas and they render as a **carousel** (one at a time, with prev/next arrows and dots). See "Multiple canvases in one fence" below. If you only mean one canvas, use exactly one `type:` line.
 
 ---
 
@@ -33,6 +34,32 @@ These are the rules that most often get broken. Follow all of them:
 - **Blank lines:** ignored.
 - **Heading / ticket links:** append `[[#Heading]]`, `[text](#Anchor)`, or `[text](TICKET-123)` to an element label (see "Links" near the end).
 - **`collapsed: true`** — optional top-level line; starts the canvas minimized (also written back by the minimize button).
+
+---
+
+## Multiple canvases in one fence (carousel)
+
+One ` ```vizardry ` fence can hold **several canvases**, shown as a carousel — one at a time, with prev/next arrows and a dot per canvas (arrow keys and touch swipe work too). Each top-level **`type:` line starts a new canvas**; every line belongs to the `type:` above it. The canvases can be **any mix of framework types** (a SWOT, then a Problem Statement, then a matrix).
+
+```vizardry
+type: swot
+title: Where we stand
+block: Strengths
+  Fast, senior team
+
+type: problem, business
+title: The problem
+vision: Ship weekly
+issue: Releases slip
+method: Automate the pipeline
+```
+
+Rules:
+
+- **One `type:` line → a single canvas** (no carousel), exactly as before — this feature changes nothing for existing blocks.
+- Each canvas keeps its **own `title:`** and its own toolbar (copy, export, …). Export saves the **current** panel.
+- Any lines **before the first `type:`** attach to the first canvas.
+- **Read-only:** in-place editing (click-to-edit, add/delete) is disabled inside a carousel — edit the canvases as text. (Editing per panel is planned for a later release.)
 
 ---
 

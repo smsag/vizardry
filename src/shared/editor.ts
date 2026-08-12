@@ -8,12 +8,33 @@ export type ResolvedEditor = {
 };
 
 /**
+ * Render-scoped read-only override. While `renderReadOnly` is on the stack,
+ * `isEditModeActive` reports false regardless of the actual view mode, so every
+ * renderer (all 18 gate their edit affordances on `isEditModeActive`) skips
+ * wiring editing for that render. Used by the multi-canvas carousel: several
+ * canvases share one code fence, so per-canvas write-back can't target the
+ * right source lines — the whole carousel renders read-only in this first
+ * release. Rendering is fully synchronous, so a simple depth counter is safe
+ * (renderers decide their edit state at render time, not on later interaction).
+ */
+let readOnlyDepth = 0;
+export function renderReadOnly<T>(fn: () => T): T {
+  readOnlyDepth++;
+  try {
+    return fn();
+  } finally {
+    readOnlyDepth--;
+  }
+}
+
+/**
  * True unless the note is open in Obsidian's read-only Reading View.
  * A canvas is only ever editable in Live Preview or raw Source Mode —
  * Obsidian's plugin API reports both of those as "source" and only
  * Reading View as "preview".
  */
 export function isEditModeActive(app: App): boolean {
+  if (readOnlyDepth > 0) return false;
   return app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
 }
 
