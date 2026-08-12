@@ -84,6 +84,7 @@ These are the rules that most often get broken. Follow all of them:
 | `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 | `radar` | Radar / Spider Chart | SVG chart |
+| `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
 
 ---
 
@@ -1492,6 +1493,49 @@ axis: We have solid risk-management practices | 6
 | `axis: <statement> \| <score>` | An attribute and its 0–10 score (the spoke distance from centre) |
 
 Axes are drawn in source order, evenly around the circle, and numbered around the rim. Scores outside 0–10 are clamped. A blank statement, a duplicate, or a missing/non-numeric score skips that line with a warning chip; it's only fatal with fewer than three axes.
+
+---
+
+## Problem Statement (`problem`)
+
+Renders a problem statement as a left-to-right **flow of linked cards** following the arc *Setup → Gap → Stakes → Direction*. The vocabulary is selected by the subtype on the `type:` line (comma variant — no separate key):
+
+| `type:` | Stage keywords (columns, left→right) |
+| --- | --- |
+| `problem` / `problem, engineering` | `ideal` · `reality` · `consequences` · `proposal` |
+| `problem, business` | `vision` · `issue` · `method` |
+| `problem, research` | `context` · `issue` · `relevance` · `objective` |
+| `problem, fivew` | `where` · `when` · `what` · `who` · `why` · `how` |
+
+```vizardry
+type: problem, engineering
+title: Product X assembly efficiency
+
+ideal: Fully automated line | Product X assembles as efficiently as possible.
+reality: Manual transport | Parts are carried between lines and fitted by hand.
+reality: Rework loop | Mis-installed parts are pulled and redone downstream.
+consequences: Missed goals | Company Y is behind its production target this year.
+proposal: Conveyors + arms | Install belts and robot arms so workers stay put.
+
+link: Fully automated line -> Manual transport & Rework loop
+link: Manual transport & Rework loop -> Missed goals
+link: Missed goals -> Conveyors + arms
+```
+
+| Line | Meaning |
+| --- | --- |
+| `<stage>: heading \| body` | A card in that stage's column. `heading` is the bold title (**also the link handle**); `\| body` is an optional supporting sentence. A bare `<stage>: heading` renders a heading-only card. |
+| `link: A -> B` | A directed edge from card `A` to card `B`, matched by heading (case-insensitive). |
+| `link: A -> B -> C` | A **chain**, expanded to `A -> B` and `B -> C`. |
+| `link: A -> B & C` | A **group**: every handle before `&`/`->` links to every handle after — fan-out (`A -> B & C`) and merge (`B & C -> D`). |
+
+**Rules:**
+- The stage keyword must belong to the subtype; an unknown keyword is skipped with a warning.
+- Cards sharing a stage **stack in source order** in that column. One `ideal` can fan out to several `reality` cards (1→n), and several can merge (n→1).
+- The **Gap** stage (e.g. `reality`/`issue`) is subtly tinted; the **Direction** stage (e.g. `proposal`/`method`/`objective`) is accent-filled.
+- A card heading that matches a `#`/`##` heading in the note links out to that chapter (with a section preview).
+- Graceful degradation: an unknown subtype is fatal (lists the valid ones); an empty card, a duplicate heading, a self-link, or a dangling/malformed link is dropped with a warning chip. Fatal only when no cards are defined.
+- Read-only in this pass — edit the source as text. Flows wider than the view scroll horizontally.
 
 ---
 

@@ -257,6 +257,25 @@ link: Alert rules -> Product owner
 \`\`\`
 `;
 
+export const PROBLEM_TEMPLATE = `\`\`\`vizardry
+type: problem, engineering
+title: Product X assembly efficiency
+
+ideal: Fully automated line | Product X assembles as efficiently as possible.
+
+reality: Manual transport | Parts are carried between lines and fitted by hand.
+reality: Rework loop | Mis-installed parts are pulled and redone downstream.
+
+consequences: Missed goals | Company Y is behind its production target this year.
+
+proposal: Conveyors + arms | Install belts and robot arms so workers stay put.
+
+link: Fully automated line -> Manual transport & Rework loop
+link: Manual transport & Rework loop -> Missed goals
+link: Missed goals -> Conveyors + arms
+\`\`\`
+`;
+
 export const WARDLEY_TEMPLATE = `\`\`\`vizardry
 type: wardley
 title: Wardley Map

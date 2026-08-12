@@ -1,3 +1,19 @@
+## 0.53.0
+
+- **New canvas: Problem Statement (`type: problem`)** — writes a problem
+  statement as a left-to-right flow of linked cards following the arc
+  *Setup → Gap → Stakes → Direction*. Pick the vocabulary with a subtype on the
+  type line (no extra key): `problem, engineering` (ideal / reality /
+  consequences / proposal), `problem, business` (vision / issue / method),
+  `problem, research` (context / issue / relevance / objective), or
+  `problem, fivew` (who / what / when / where / why / how). Each card is
+  `heading | sentence` (the sentence is optional), and `link:` lines connect
+  them — with chains (`A -> B -> C`) and `&` groups for fan-out and merge
+  (`A -> B & C`), so one ideal can branch to several realities and several can
+  merge back. The problem stage is tinted and the proposed fix is accent-filled
+  so both stand out, and a card whose heading matches a note heading links out
+  to that chapter. Read-only in this first release (edit as text).
+
 ## 0.52.3
 
 - **Odyssey: multiple activities in the same year now all show** — a plan with

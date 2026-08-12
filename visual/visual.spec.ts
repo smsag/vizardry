@@ -7,7 +7,7 @@ const ALL = [
   "bmc", "swot", "fishbone", "impact", "story", "mindmap", "ost", "venn",
   "sipoc", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
   "matrix", "scqa", "journey", "wheeloflife", "odyssey",
-  "circleofinfluence", "wholeperson", "futureself", "radar",
+  "circleofinfluence", "wholeperson", "futureself", "radar", "problem",
 ];
 
 // On mobile we only snapshot the canvases whose layout is width-sensitive

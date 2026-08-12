@@ -70,6 +70,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 | `radar` | Radar / Spider Chart | SVG chart |
+| `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
 
 ---
 
@@ -1368,6 +1369,48 @@ Each statement is numbered and labelled around the rim; the shaded area is your 
 - Between 3 and 12 axes, drawn evenly around the circle in source order
 - Scores are numbers 0–10; out-of-range values are clamped
 - A blank statement, a duplicate, or a missing/non-numeric score skips that line and surfaces as a warning chip rather than failing the whole canvas
+
+---
+
+### Problem Statement
+
+A **problem statement** walks a reader from the situation to the fix: *Setup → Gap → Stakes → Direction*. This canvas renders that arc as a left-to-right **flow of linked cards**. The vocabulary is chosen with a subtype on the `type:` line (no separate key):
+
+| `type:` | Stages (the eyebrow on each card, left→right) |
+| --- | --- |
+| `problem` or `problem, engineering` | ideal · reality · consequences · proposal |
+| `problem, business` | vision · issue · method |
+| `problem, research` | context · issue · relevance · objective |
+| `problem, fivew` | where · when · what · who · why · how |
+
+Each stage keyword adds a card; the value is `heading | sentence`, where the **sentence is optional** (a bare `stage: heading` is a heading-only card). Cards are connected with `link:` lines — the **card heading is the link handle**. A link supports Mermaid-style **chains** (`A -> B -> C`) and **`&` groups** for fan-out / merge (`A -> B & C`, `B & C -> D`):
+
+````
+```vizardry
+type: problem, engineering
+title: Product X assembly efficiency
+
+ideal: Fully automated line | Product X assembles as efficiently as possible.
+
+reality: Manual transport | Parts are carried between lines and fitted by hand.
+reality: Rework loop | Mis-installed parts are pulled and redone downstream.
+
+consequences: Missed goals | Company Y is behind its production target this year.
+
+proposal: Conveyors + arms | Install belts and robot arms so workers stay put.
+
+link: Fully automated line -> Manual transport & Rework loop
+link: Manual transport & Rework loop -> Missed goals
+link: Missed goals -> Conveyors + arms
+```
+````
+
+**Rules:**
+- Multiple cards can share a stage — they **stack in source order** in that column; one `ideal` can fan out to several `reality` cards (1→n), and several can merge into one (n→1).
+- The **Gap** stage is subtly tinted and the **Direction** stage is accent-filled, so the problem and the proposed fix stand out at a glance.
+- If a card heading matches a `#`/`##` heading in the same note, the card gets a jump-to-chapter link (with a section preview), like other card canvases.
+- An unknown subtype fails with the list of valid ones; an unknown stage, an empty card, a duplicate heading, or a malformed/dangling link skips that line with a warning chip rather than failing the whole canvas.
+- Wider-than-screen flows scroll horizontally.
 
 ---
 
