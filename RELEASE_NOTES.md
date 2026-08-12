@@ -1,3 +1,12 @@
+## 0.55.0
+
+- **Problem canvas: stable card ids for linking** — cards can now carry an
+  explicit id in the key (`reality_1: …`), and `link:` lines reference cards by
+  that id instead of their heading text. A bare key auto-numbers
+  (`reality`, `reality` → `reality_1`, `reality_2`), so short docs stay terse.
+  This means links no longer break when two cards share a heading or when you
+  edit a heading; existing heading-based links keep working as a fallback.
+
 ## 0.54.0
 
 - **SIPOC flow view redesigned as a card grid** — the flow view now renders
