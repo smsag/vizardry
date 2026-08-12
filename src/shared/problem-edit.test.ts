@@ -75,6 +75,29 @@ describe("writeProblemCard", () => {
     const app = makeApp("n.md", null);
     expect(writeProblemCard(app, makeCtx("n.md", 0, 7) as never, el(), 0, STAGES, "x", "")).toBe(false);
   });
+
+  it("skips an empty-value stage line so the card index does not drift", () => {
+    // A `reality:` line with no heading and no body is not a card (the parser
+    // skips it). It must not shift the index of later cards.
+    const lines = [
+      "```vizardry",                        // 0
+      "type: problem, engineering",         // 1
+      "ideal_1: Fast line",                 // 2  card 0
+      "reality:",                           // 3  empty value — NOT a card
+      "reality_1: Manual",                  // 4  card 1
+      "```",                                // 5
+    ];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("n.md", editor);
+    // Card index 1 must resolve to line 4, not the empty line 3.
+    const ok = writeProblemCard(app, makeCtx("n.md", 0, 5) as never, el(), 1, STAGES, "Manual", "By hand");
+    expect(ok).toBe(true);
+    expect(editor.replaceRange).toHaveBeenCalledWith(
+      "reality_1: Manual | By hand",
+      { line: 4, ch: 0 },
+      { line: 4, ch: lines[4].length },
+    );
+  });
 });
 
 describe("removeProblemCard", () => {

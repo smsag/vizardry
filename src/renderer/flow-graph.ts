@@ -61,11 +61,14 @@ interface Placed extends FlowNode {
   x: number; y: number; w: number; h: number;
 }
 
-function cardHeight(node: FlowNode): number {
+function cardHeight(node: FlowNode, editMode: boolean): number {
   const contentW = CARD_W - CARD_PAD_X * 2;
   const cpl = estimateCharsPerLine(contentW, { charW: CHAR_W, min: 10 });
-  const headingLines = node.heading ? Math.max(1, wrappedLineCount(node.heading, cpl)) : 0;
-  const bodyLines = node.body ? wrappedLineCount(node.body, cpl) : 0;
+  // In edit mode both fields are always rendered (with placeholders), so
+  // reserve at least one line for each even when empty — otherwise the
+  // always-present field overflows the fixed-height card and is clipped.
+  const headingLines = node.heading ? Math.max(1, wrappedLineCount(node.heading, cpl)) : (editMode ? 1 : 0);
+  const bodyLines = node.body ? wrappedLineCount(node.body, cpl) : (editMode ? 1 : 0);
   let h = CARD_PAD_TOP + EYEBROW_H;
   if (headingLines) h += headingLines * HEADING_LINE_H;
   if (bodyLines) h += HEADING_BODY_GAP + bodyLines * BODY_LINE_H;
@@ -76,6 +79,7 @@ function cardHeight(node: FlowNode): number {
  *  gap; present stages keep arc order left→right. */
 function layout(spec: FlowSpec): { placed: Placed[]; width: number; height: number } {
   const { stages, nodes, alignRows } = spec;
+  const editMode = !!spec.edit;
   const roleByStage = new Map(stages.map(s => [s.key, s.role]));
   const eyebrowByStage = new Map(stages.map(s => [s.key, s.eyebrow]));
   const presentStages = stages.filter(s => nodes.some(n => n.stage === s.key));
@@ -93,7 +97,7 @@ function layout(spec: FlowSpec): { placed: Placed[]; width: number; height: numb
 
   if (alignRows) {
     // Uniform row height so card k of every column shares row k's y.
-    const rowH = Math.max(1, ...nodes.map(cardHeight));
+    const rowH = Math.max(1, ...nodes.map(n => cardHeight(n, editMode)));
     presentStages.forEach((stage, colIdx) => {
       const x = PAD + colIdx * (CARD_W + COL_GAP);
       colNodes[colIdx].forEach((node, k) => {
@@ -107,7 +111,7 @@ function layout(spec: FlowSpec): { placed: Placed[]; width: number; height: numb
       const x = PAD + colIdx * (CARD_W + COL_GAP);
       let y = PAD;
       for (const node of colNodes[colIdx]) {
-        const h = cardHeight(node);
+        const h = cardHeight(node, editMode);
         placed.push(place(node, x, y, h));
         y += h + CARD_GAP;
       }

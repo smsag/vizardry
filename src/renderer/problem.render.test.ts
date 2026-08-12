@@ -121,6 +121,22 @@ describe("renderFlowGraph — live editing", () => {
     expect(headEl.textContent).toBe("I"); // reverted
   });
 
+  it("edit mode reserves height for the always-shown fields so cards aren't clipped", () => {
+    // A body-less card renders its (empty) body field with a placeholder in edit
+    // mode, so its box must be taller than the same node rendered read-only —
+    // otherwise the field overflows the fixed-height card and gets cut off.
+    const readEl = host();
+    renderFlowGraph(readEl, { stages, nodes, edges: [] }, {});
+    const editEl = host();
+    const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
+    renderFlowGraph(editEl, { stages, nodes, edges: [], edit }, {});
+
+    // The reality card (index 1) has no body; compare its rect height.
+    const readH = Number(readEl.querySelectorAll<SVGRectElement>("rect.vzd-flow-card")[1].getAttribute("height"));
+    const editH = Number(editEl.querySelectorAll<SVGRectElement>("rect.vzd-flow-card")[1].getAttribute("height"));
+    expect(editH).toBeGreaterThan(readH);
+  });
+
   it("clicking delete / add calls the handlers", () => {
     const el = host();
     const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
