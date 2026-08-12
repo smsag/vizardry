@@ -27,6 +27,13 @@
     --accent-s: 74%;
     --accent-l: 63%;
     --font-text-size: 16px;
+    /* Obsidian's default interface font-size ramp. Without these, every
+       canvas's var(--font-ui-small)-based sizing collapses to the browser
+       default (16px flat), so the harness would not reflect real typography. */
+    --font-ui-smaller: 13px;
+    --font-ui-small: 14px;
+    --font-ui-medium: 16px;
+    --font-ui-large: 20px;
     --font-interface: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   html, body { margin: 0; background: #ffffff; color: var(--text-normal);
