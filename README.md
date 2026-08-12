@@ -1383,25 +1383,25 @@ A **problem statement** walks a reader from the situation to the fix: *Setup →
 | `problem, research` | context · issue · relevance · objective |
 | `problem, fivew` | where · when · what · who · why · how |
 
-Each stage keyword adds a card; the value is `heading | sentence`, where the **sentence is optional** (a bare `stage: heading` is a heading-only card). Cards are connected with `link:` lines — the **card heading is the link handle**. A link supports Mermaid-style **chains** (`A -> B -> C`) and **`&` groups** for fan-out / merge (`A -> B & C`, `B & C -> D`):
+Each stage keyword adds a card; the value is `heading | sentence`, where the **sentence is optional** (a bare `stage: heading` is a heading-only card). The **stage is the key's prefix**, and an optional `_suffix` gives the card a **stable id** used as the link handle (`reality_1`); a bare key auto-numbers (`reality`, `reality`, … → `reality_1`, `reality_2`, …). Cards are connected with `link:` lines that reference cards **by id** (or, as a fallback, by their heading text), and support Mermaid-style **chains** (`A -> B -> C`) and **`&` groups** for fan-out / merge (`A -> B & C`, `B & C -> D`):
 
 ````
 ```vizardry
 type: problem, engineering
 title: Product X assembly efficiency
 
-ideal: Fully automated line | Product X assembles as efficiently as possible.
+ideal_1: Fully automated line | Product X assembles as efficiently as possible.
 
-reality: Manual transport | Parts are carried between lines and fitted by hand.
-reality: Rework loop | Mis-installed parts are pulled and redone downstream.
+reality_1: Manual transport | Parts are carried between lines and fitted by hand.
+reality_2: Rework loop | Mis-installed parts are pulled and redone downstream.
 
-consequences: Missed goals | Company Y is behind its production target this year.
+consequences_1: Missed goals | Company Y is behind its production target this year.
 
-proposal: Conveyors + arms | Install belts and robot arms so workers stay put.
+proposal_1: Conveyors + arms | Install belts and robot arms so workers stay put.
 
-link: Fully automated line -> Manual transport & Rework loop
-link: Manual transport & Rework loop -> Missed goals
-link: Missed goals -> Conveyors + arms
+link: ideal_1 -> reality_1 & reality_2
+link: reality_1 & reality_2 -> consequences_1
+link: consequences_1 -> proposal_1
 ```
 ````
 
@@ -1409,7 +1409,7 @@ link: Missed goals -> Conveyors + arms
 - Multiple cards can share a stage — they **stack in source order** in that column; one `ideal` can fan out to several `reality` cards (1→n), and several can merge into one (n→1).
 - The **Gap** stage is subtly tinted and the **Direction** stage is accent-filled, so the problem and the proposed fix stand out at a glance.
 - If a card heading matches a `#`/`##` heading in the same note, the card gets a jump-to-chapter link (with a section preview), like other card canvases.
-- An unknown subtype fails with the list of valid ones; an unknown stage, an empty card, a duplicate heading, or a malformed/dangling link skips that line with a warning chip rather than failing the whole canvas.
+- An unknown subtype fails with the list of valid ones; an unknown stage, an empty card, a duplicate id, or a malformed/dangling link skips that line with a warning chip rather than failing the whole canvas.
 - Wider-than-screen flows scroll horizontally.
 
 ---

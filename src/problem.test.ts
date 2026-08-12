@@ -27,26 +27,42 @@ describe("parseProblem — subtype resolution", () => {
   });
 });
 
-describe("parseProblem — nodes", () => {
-  it("splits heading | body and keeps the body optional", () => {
+describe("parseProblem — nodes and ids", () => {
+  it("splits heading | body, keeps the body optional, and derives id from the key", () => {
     const r = parseProblem("ideal: Fast line | Assembles efficiently.\nreality: Manual transport");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.data.nodes).toEqual([
-      { stage: "ideal", id: "fast line", heading: "Fast line", body: "Assembles efficiently." },
-      { stage: "reality", id: "manual transport", heading: "Manual transport", body: undefined },
+      { stage: "ideal", id: "ideal_1", heading: "Fast line", body: "Assembles efficiently." },
+      { stage: "reality", id: "reality_1", heading: "Manual transport", body: undefined },
     ]);
   });
 
-  it("keeps multiple nodes of the same stage in source order", () => {
+  it("auto-numbers same-stage cards (stage_N) in source order", () => {
     const r = parseProblem("reality: A\nreality: B\nreality: C");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
+    expect(r.data.nodes.map(n => n.id)).toEqual(["reality_1", "reality_2", "reality_3"]);
     expect(r.data.nodes.map(n => n.heading)).toEqual(["A", "B", "C"]);
   });
 
-  it("warns and skips a keyword that is not a stage of the subtype", () => {
-    const r = parseProblem("ideal: X\nprocess: not here");
+  it("honours an explicit stage_n id and auto-assigns around it without collision", () => {
+    const r = parseProblem("reality_1: A\nreality: B");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // The bare `reality:` skips the taken reality_1 and becomes reality_2.
+    expect(r.data.nodes.map(n => n.id)).toEqual(["reality_1", "reality_2"]);
+  });
+
+  it("warns on a duplicate explicit id", () => {
+    const r = parseProblem("reality_1: A\nreality_1: B");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.warnings?.some(w => /duplicate key "reality_1"/.test(w))).toBe(true);
+  });
+
+  it("warns and skips a keyword whose prefix is not a stage of the subtype", () => {
+    const r = parseProblem("ideal: X\nprocess_1: not here");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.data.nodes).toHaveLength(1);
@@ -60,35 +76,45 @@ describe("parseProblem — nodes", () => {
 });
 
 describe("parseProblem — links", () => {
-  it("expands a & group into fan-out and merge edges (1→n, n→1)", () => {
+  it("resolves links by id and expands & groups into fan-out and merge edges", () => {
     const src = [
-      "ideal: I",
-      "reality: R1",
-      "reality: R2",
-      "consequences: C",
-      "link: I -> R1 & R2",
-      "link: R1 & R2 -> C",
+      "ideal_1: I",
+      "reality_1: R1",
+      "reality_2: R2",
+      "consequences_1: C",
+      "link: ideal_1 -> reality_1 & reality_2",
+      "link: reality_1 & reality_2 -> consequences_1",
     ].join("\n");
     const r = parseProblem(src);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.data.edges).toEqual([
-      { from: "i", to: "r1" },
-      { from: "i", to: "r2" },
-      { from: "r1", to: "c" },
-      { from: "r2", to: "c" },
+      { from: "ideal_1", to: "reality_1" },
+      { from: "ideal_1", to: "reality_2" },
+      { from: "reality_1", to: "consequences_1" },
+      { from: "reality_2", to: "consequences_1" },
     ]);
   });
 
   it("expands a chain A -> B -> C into consecutive edges", () => {
-    const r = parseProblem("ideal: A\nreality: B\nconsequences: C\nlink: A -> B -> C");
+    const r = parseProblem("ideal_1: A\nreality_1: B\nconsequences_1: C\nlink: ideal_1 -> reality_1 -> consequences_1");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.data.edges).toEqual([{ from: "a", to: "b" }, { from: "b", to: "c" }]);
+    expect(r.data.edges).toEqual([
+      { from: "ideal_1", to: "reality_1" },
+      { from: "reality_1", to: "consequences_1" },
+    ]);
+  });
+
+  it("falls back to matching a link by heading text (back-compat)", () => {
+    const r = parseProblem("ideal: Fully automated line\nreality: Manual transport\nlink: Fully automated line -> Manual transport");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.edges).toEqual([{ from: "ideal_1", to: "reality_1" }]);
   });
 
   it("drops a dangling link with a warning", () => {
-    const r = parseProblem("ideal: A\nlink: A -> Ghost");
+    const r = parseProblem("ideal_1: A\nlink: ideal_1 -> ghost");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.data.edges).toHaveLength(0);
@@ -96,15 +122,15 @@ describe("parseProblem — links", () => {
   });
 
   it("dedupes identical edges and drops self-links", () => {
-    const r = parseProblem("ideal: A\nreality: B\nlink: A -> B\nlink: A -> B\nlink: A -> A");
+    const r = parseProblem("ideal_1: A\nreality_1: B\nlink: ideal_1 -> reality_1\nlink: ideal_1 -> reality_1\nlink: ideal_1 -> ideal_1");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.data.edges).toEqual([{ from: "a", to: "b" }]);
+    expect(r.data.edges).toEqual([{ from: "ideal_1", to: "reality_1" }]);
     expect(r.data.warnings?.some(w => /self-link/.test(w))).toBe(true);
   });
 
   it("warns on a malformed link (no arrow)", () => {
-    const r = parseProblem("ideal: A\nlink: A B");
+    const r = parseProblem("ideal_1: A\nlink: ideal_1 B");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.data.warnings?.some(w => /needs "A -> B"/.test(w))).toBe(true);
