@@ -456,6 +456,23 @@ describe("renderTree", () => {
     expect(mainText?.textContent?.length).toBeLessThanOrEqual(MINDMAP_OPTS.maxLabelChars);
   });
 
+  it("shows a delete button on every non-root node (incl. branches with children), never on the root", () => {
+    const el = container();
+    const branch = makeNode("Branch", 1, [makeNode("Sub", 2)]); // has a child
+    const leaf = makeNode("Leaf", 1);
+    const root = makeNode("Root", 0, [branch, leaf]);
+    const onDelete = vi.fn();
+    renderTree({ root }, CLASSIC_OPTS, el, undefined, undefined,
+      { onRename: vi.fn(), onAddChild: vi.fn(), onDelete });
+
+    // Branch (with child), Sub, Leaf → 3 delete buttons; none on the root.
+    const delButtons = el.querySelectorAll<SVGGElement>(".vzd-tree-edit-del");
+    expect(delButtons).toHaveLength(3);
+
+    delButtons[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
   it("opens a first-level rename field carrying the classes the sketch-mode legibility fix targets", () => {
     // The sketch-mode fix restyles `.vzd-tree-rename-host` / `.vzd-tree-rename-input`
     // so a first-level node's white text-on-accent doesn't render white-on-white.
