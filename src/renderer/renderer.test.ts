@@ -365,14 +365,10 @@ describe("renderMatrix", () => {
     expect(el.querySelector(".vzd-mx-cell-name")?.textContent).toBe("Do first");
   });
 
-  it("shows the heat legend only when some cell has heat", () => {
+  it("renders no heat legend (removed) even for a heat preset", () => {
     const withHeat = container();
     renderMatrix(build("item: A [0.5,0.5]", "impact"), withHeat);
-    expect(withHeat.querySelector(".vzd-matrix-legend")).toBeTruthy();
-
-    const noHeat = container();
-    renderMatrix(build("x: E | Lo | Hi\ny: R | Lo | Hi\nitem: A [0.5,0.5]"), noHeat);
-    expect(noHeat.querySelector(".vzd-matrix-legend")).toBeNull();
+    expect(withHeat.querySelector(".vzd-matrix-legend")).toBeNull();
   });
 
   it("links an item label to a heading (auto-detect and explicit annotation)", () => {

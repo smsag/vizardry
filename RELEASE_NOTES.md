@@ -1,3 +1,9 @@
+## 0.58.1
+
+- **Matrix: removed the heat legend** — the *Very High / High / Medium / Low*
+  pills in the matrix header are gone; the cell tinting speaks for itself, and
+  the header stays clean.
+
 ## 0.58.0
 
 - **New canvas: Test Card (`type: testcard`)** — plan one experiment on a single

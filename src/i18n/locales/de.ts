@@ -237,11 +237,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.subtitle.impact":      "(Priorisierung)",
   "matrix.subtitle.assumption":  "(Riskantestes zuerst testen)",
 
-  "matrix.legend.veryHigh": "Sehr hoch",
-  "matrix.legend.high":     "Hoch",
-  "matrix.legend.medium":   "Mittel",
-  "matrix.legend.low":      "Niedrig",
-
   // ── Upvoty enrichment ────────────────────────────────────────────────────────
   "upvoty.loading":          "Lädt…",
   "upvoty.noSummary":        "Keine KI-Zusammenfassung verfügbar.",

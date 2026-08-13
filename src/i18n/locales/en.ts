@@ -239,11 +239,6 @@ export const en = {
   "matrix.subtitle.impact":      "(Prioritisation)",
   "matrix.subtitle.assumption":  "(Test Riskiest First)",
 
-  "matrix.legend.veryHigh": "Very High",
-  "matrix.legend.high":     "High",
-  "matrix.legend.medium":   "Medium",
-  "matrix.legend.low":      "Low",
-
   // Preset axis titles (the tick labels reuse matrix.row.* / matrix.col.*)
   "matrix.axis.pain.x":        "Prevalence",
   "matrix.axis.pain.y":        "Severity",
