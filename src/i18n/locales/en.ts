@@ -194,6 +194,8 @@ export const en = {
   "framework.matrix.description": "Two tick axes form a cell grid; place items as cards freely or in cells. Presets: pain, opportunity, impact, assumption, scenario.",
   "framework.scenario.description": "Two critical uncertainties, four scenarios — a GBN/Schwartz 2×2.",
 
+  "matrix.item.detailsPlaceholder": "Add details…",
+
   "matrix.row.pain.1": "Very Major Pain",
   "matrix.row.pain.2": "Major Pain",
   "matrix.row.pain.3": "Minor Pain",

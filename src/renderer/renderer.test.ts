@@ -313,50 +313,59 @@ describe("renderMatrix", () => {
     expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 
-  it("positions a free-coordinate item (top = 1 - y)", () => {
+  it("positions a free-coordinate item as a pinned pill (top = 1 - y)", () => {
     const el = container();
     renderMatrix(build("item: Fix checkout [0.2, 0.8]", "impact"), el);
     const item = el.querySelector<HTMLElement>(".vzd-mx-item");
-    expect(item?.querySelector(".vzd-mx-item-label")?.textContent).toBe("Fix checkout");
+    expect(item?.querySelector(".vzd-mx-pill .vzd-mx-item-label")?.textContent).toBe("Fix checkout");
     expect(item?.style.left).toContain("20");   // x 0.2 → 20%
     expect(item?.style.top).toContain("20");     // 1 - 0.8 → 20%
   });
 
-  it("snaps an `at:` item to its cell centre", () => {
+  it("places an `at:` item in a pill cloud over its cell", () => {
     const el = container();
-    // t7 in a 4×4 = col 3, row 2 (top-based) → centre (0.625, 0.625).
+    // t7 in a 4×4 = col 3, row 2 (top-based) → cell rect corner (0.5, 0.25).
     renderMatrix(build("item: Dark mode at: t7", "impact"), el);
-    const item = el.querySelector<HTMLElement>(".vzd-mx-item");
-    expect(item?.style.left).toContain("62.5");
-    expect(item?.style.top).toContain("37.5"); // 1 - 0.625 = 0.375
+    const cloud = el.querySelector<HTMLElement>(".vzd-mx-cell-pills");
+    expect(cloud?.querySelector(".vzd-mx-pill .vzd-mx-item-label")?.textContent).toBe("Dark mode");
+    expect(cloud?.style.left).toContain("50");   // (3-1)/4 = 0.5
+    expect(cloud?.style.top).toContain("25");    // (2-1)/4 = 0.25
+    expect(el.querySelectorAll(".vzd-mx-item")).toHaveLength(0); // not a free pin
   });
 
-  it("stacks two+ items snapped to the same cell instead of overlapping pins", () => {
+  it("flows two+ items snapped to the same cell into one pill cloud", () => {
     const el = container();
     renderMatrix(build("item: One at: t1\nitem: Two at: t1\nitem: Three at: t1", "impact"), el);
-    const stacks = el.querySelectorAll(".vzd-mx-cell-stack");
-    expect(stacks).toHaveLength(1);
-    const cards = stacks[0].querySelectorAll(".vzd-mx-item-card--stacked");
-    expect(cards).toHaveLength(3);
-    expect(Array.from(cards).map(c => c.querySelector(".vzd-mx-item-label")?.textContent)).toEqual(["One", "Two", "Three"]);
+    const clouds = el.querySelectorAll(".vzd-mx-cell-pills");
+    expect(clouds).toHaveLength(1);
+    const pills = clouds[0].querySelectorAll(".vzd-mx-pill");
+    expect(pills).toHaveLength(3);
+    expect(Array.from(pills).map(p => p.querySelector(".vzd-mx-item-label")?.textContent)).toEqual(["One", "Two", "Three"]);
     // No overlapping floating pins for those items.
     expect(el.querySelectorAll(".vzd-mx-item")).toHaveLength(0);
   });
 
-  it("keeps a lone cell item as a centred pin (no stack)", () => {
-    const el = container();
-    renderMatrix(build("item: Solo at: t1", "impact"), el);
-    expect(el.querySelector(".vzd-mx-cell-stack")).toBeFalsy();
-    expect(el.querySelectorAll(".vzd-mx-item")).toHaveLength(1);
-  });
-
-  it("cascades coincident free-coordinate items so their cards don't fully overlap", () => {
+  it("cascades coincident free-coordinate items so their pills don't fully overlap", () => {
     const el = container();
     renderMatrix(build("item: A [0.7,0.7]\nitem: B [0.7,0.7]", "impact"), el);
     const pins = el.querySelectorAll<HTMLElement>(".vzd-mx-item");
     expect(pins).toHaveLength(2);
     expect(pins[0].style.transform).toBe("");            // first stays put
     expect(pins[1].style.transform).toContain("translate"); // second is offset
+  });
+
+  it("click opens a detail popover with the item's description; a second open replaces it", () => {
+    const el = container();
+    renderMatrix(build("item: Fix checkout [0.2,0.8]\n  Wallet payments rejected", "impact"), el);
+    expect(el.querySelector(".vzd-mx-popover")).toBeNull(); // closed by default
+    el.querySelector<HTMLElement>(".vzd-mx-pill")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const pop = el.querySelector(".vzd-mx-popover");
+    expect(pop).toBeTruthy();
+    expect(pop?.querySelector(".vzd-mx-popover-title")?.textContent).toContain("Fix checkout");
+    expect(pop?.querySelector(".vzd-mx-popover-body")?.textContent).toContain("Wallet payments rejected");
+    // Only ever one popover open.
+    el.querySelector<HTMLElement>(".vzd-mx-pill")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(el.querySelectorAll(".vzd-mx-popover")).toHaveLength(1);
   });
 
   it("names a cell when the author labels it", () => {
@@ -445,6 +454,23 @@ describe("renderTree", () => {
     renderTree({ root: makeNode(longText, 0) }, MINDMAP_OPTS, el);
     const mainText = el.querySelector(".vzd-tree-text-main");
     expect(mainText?.textContent?.length).toBeLessThanOrEqual(MINDMAP_OPTS.maxLabelChars);
+  });
+
+  it("shows a delete button on every non-root node (incl. branches with children), never on the root", () => {
+    const el = container();
+    const branch = makeNode("Branch", 1, [makeNode("Sub", 2)]); // has a child
+    const leaf = makeNode("Leaf", 1);
+    const root = makeNode("Root", 0, [branch, leaf]);
+    const onDelete = vi.fn();
+    renderTree({ root }, CLASSIC_OPTS, el, undefined, undefined,
+      { onRename: vi.fn(), onAddChild: vi.fn(), onDelete });
+
+    // Branch (with child), Sub, Leaf → 3 delete buttons; none on the root.
+    const delButtons = el.querySelectorAll<SVGGElement>(".vzd-tree-edit-del");
+    expect(delButtons).toHaveLength(3);
+
+    delButtons[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
   it("opens a first-level rename field carrying the classes the sketch-mode legibility fix targets", () => {

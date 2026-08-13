@@ -4099,65 +4099,89 @@ code:has(.vzd-upvoty-key) {
   color: var(--text-muted);
 }
 
-/* Item overlay: zero-size anchors positioned over the cell grid. */
+/* Item overlay: pills over the cell grid; details open in a popover on click. */
 .vzd-mx-items { position: absolute; inset: 0; }
-.vzd-mx-item { position: absolute; width: 0; height: 0; z-index: 2; }
-.vzd-mx-item-dot {
-  position: absolute;
-  left: -5px;
-  top: -5px;
-  width: 10px;
-  height: 10px;
+
+/* A compact item pill (title only). */
+.vzd-mx-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vzd-matrix-base) 16%, var(--background-primary));
+  border: 1px solid color-mix(in srgb, var(--vzd-matrix-base) 45%, var(--background-modifier-border));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  user-select: none;
+}
+.vzd-mx-pill:hover { background: color-mix(in srgb, var(--vzd-matrix-base) 28%, var(--background-primary)); }
+/* A dot marks a pill that has a description to reveal. */
+.vzd-mx-pill--has-details .vzd-mx-item-label::after {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 5px;
   border-radius: 50%;
   background: var(--vzd-matrix-base);
-  border: 2px solid var(--background-primary);
-  box-shadow: 0 0 0 1px var(--vzd-matrix-base);
+  vertical-align: middle;
 }
-.vzd-mx-item-card {
-  position: absolute;
-  left: 0;
-  top: 9px;
-  transform: translateX(-50%);
-  max-width: 160px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 3px 7px;
-  text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+.vzd-mx-item-label {
+  font-weight: 600;
+  font-size: 0.78em;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.vzd-mx-item-label { font-weight: 700; font-size: 0.8em; color: var(--text-normal); }
-.vzd-mx-item-card .vizardry-block-body { font-size: 0.75em; color: var(--text-muted); }
-.vzd-mx-item-card .vizardry-block-empty { display: none; }
-.vzd-mx-item--editable .vzd-mx-item-dot,
-.vzd-mx-item--editable .vzd-mx-item-card { cursor: grab; }
-.vzd-mx-item--editable .vzd-mx-item-card:hover { border-color: var(--vzd-matrix-base); }
-.vzd-mx-item--dragging { z-index: 5; }
-.vzd-mx-item--dragging .vzd-mx-item-dot,
-.vzd-mx-item--dragging .vzd-mx-item-card { cursor: grabbing; }
 
-/* Two+ items snapped to one cell stack inside it instead of overlapping at the
-   centre (they scroll within the cell when it overflows). */
-.vzd-mx-cell-stack {
+/* Free `[x, y]` item: a pill pinned (centred) at its point. The wrapper is a
+   zero-size anchor, so the pill needs an explicit content width or its
+   shrink-to-fit box collapses (and the ellipsis clips the label to nothing). */
+.vzd-mx-item { position: absolute; z-index: 2; }
+.vzd-mx-item > .vzd-mx-pill {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: 180px;
+}
+.vzd-mx-item--editable > .vzd-mx-pill { cursor: grab; }
+.vzd-mx-item--dragging { z-index: 5; }
+.vzd-mx-item--dragging > .vzd-mx-pill { cursor: grabbing; }
+
+/* Cell-snapped items: a wrapping pill cloud filling the cell. */
+.vzd-mx-cell-pills {
   position: absolute;
   z-index: 2;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 4px;
-  overflow-y: auto;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  overflow: auto;
 }
-.vzd-mx-item-card--stacked {
-  position: static;
-  transform: none;
-  max-width: none;
-  width: 100%;
-  text-align: left;
-  box-sizing: border-box;
+
+/* Detail popover, anchored under (or above) the clicked pill. */
+.vzd-mx-popover {
+  position: absolute;
+  z-index: 20;
+  transform: translateX(-50%);
+  max-width: 240px;
+  min-width: 120px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
-.vzd-mx-item-card--stacked.vzd-mx-item--editable { cursor: grab; }
-.vzd-mx-item-card--stacked.vzd-mx-item--editable:hover { border-color: var(--vzd-matrix-base); }
+.vzd-mx-popover-title { font-weight: 700; font-size: 0.85em; color: var(--text-normal); margin-bottom: 4px; }
+.vzd-mx-popover-body { font-size: 0.8em; color: var(--text-muted); }
+.vzd-mx-popover-body .vizardry-block-empty { display: none; }
+.vzd-mx-popover-body .vzd-plain-textarea { width: 100%; font-size: inherit; }
 
 @media (max-width: 480px) {
   .vzd-mx-main { min-width: 320px; }

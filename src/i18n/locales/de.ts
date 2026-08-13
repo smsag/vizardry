@@ -192,6 +192,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "matrix.scenario.high":      "Hoch",
   "framework.scenario.description": "Zwei kritische Unsicherheiten, vier Szenarien — eine GBN/Schwartz-2×2-Matrix.",
 
+  "matrix.item.detailsPlaceholder": "Details hinzufügen…",
+
   "matrix.row.pain.1": "Sehr großer Schmerzpunkt",
   "matrix.row.pain.2": "Großer Schmerzpunkt",
   "matrix.row.pain.3": "Kleiner Schmerzpunkt",

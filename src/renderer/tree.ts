@@ -348,12 +348,15 @@ function renderAddButton(
   });
 }
 
-/** "×" delete button — top-right corner, only on leaf nodes. */
+/** "×" delete button — top-right corner, on every node except the root.
+ *  Deleting a node removes its whole subtree (the edit engines handle that and
+ *  refuse the root), so branches with children are deletable too — not just
+ *  leaves. */
 function renderDelButton(
   group: SVGGElement, node: TreeNode, opts: TreeRenderOptions,
   editHandlers: TreeEditHandlers, closeRename: () => void,
 ): void {
-  if (node.children.length !== 0) return;
+  if (node.level === 0) return;
   const delBtn = createSvgEl("g", {
     class: "vzd-tree-edit-del",
     transform: `translate(${opts.nodeW - 5}, 5)`,
