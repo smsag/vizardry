@@ -4551,6 +4551,21 @@ body.vizardry-sketch .vizardry-block-body.vizardry-block-empty[data-placeholder]
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
 }
 
+/* Tree-node rename input: normally a transparent field floating over the node,
+   coloured to match the node's own label (white text-on-accent on the accent-
+   filled root). In sketch mode the accent greys out and the rough SVG filter
+   composites the rename foreignObject onto white, so that white text lands
+   white-on-white and the input disappears while editing a first-level node.
+   Pin the field to a solid, theme-contrasting background + ink so it stays
+   legible; the !important beats the inline node-text colour set in JS. */
+body.vizardry-sketch .vzd-tree-rename-host {
+  background: var(--background-primary);
+  border-radius: 4px;
+}
+body.vizardry-sketch .vzd-tree-rename-input {
+  color: var(--text-normal) !important;
+}
+
 /* ══ Test Card ═══════════════════════════════════════════════════════
    A single experiment card: four prompt steps (hypothesis / test / metric /
    criteria), each with an editable fill-in and optional 1–3 rating gauges.
