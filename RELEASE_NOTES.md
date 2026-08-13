@@ -1,3 +1,16 @@
+## 0.59.0
+
+- **Matrix items are now pills with a click-to-open detail popover** — each item
+  shows as a compact title pill instead of an always-on card, so the plane stays
+  readable no matter how many items you have. A small dot marks a pill that has
+  a description; click a pill to open a popover with the details (and, in edit
+  mode, to edit them). Items snapped to the same cell flow as a tidy pill cloud;
+  free `[x, y]` items stay pinned at their point. Drag still repositions a pill.
+- **Tree canvases: you can delete a branch node, not just leaves** — the delete
+  **×** now appears on every node except the root (Mind Map, Opportunity
+  Solution Tree, Impact Map, Fishbone), so the default branches are deletable
+  too. Deleting a branch removes its whole subtree.
+
 ## 0.58.1
 
 - **Matrix: removed the heat legend** — the *Very High / High / Medium / Low*
