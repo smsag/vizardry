@@ -4159,25 +4159,6 @@ code:has(.vzd-upvoty-key) {
 .vzd-mx-item-card--stacked.vzd-mx-item--editable { cursor: grab; }
 .vzd-mx-item-card--stacked.vzd-mx-item--editable:hover { border-color: var(--vzd-matrix-base); }
 
-/* Heat legend pills inside the canvas header; base var inherited from container. */
-.vzd-matrix-legend {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-.vzd-matrix-legend-pill {
-  font-size: 0.75em;
-  font-weight: 600;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  color: var(--text-normal);
-}
-.vzd-matrix-legend-pill--very-high { background: color-mix(in srgb, var(--vzd-matrix-base) 40%, var(--background-secondary)); }
-.vzd-matrix-legend-pill--high      { background: color-mix(in srgb, var(--vzd-matrix-base) 26%, var(--background-secondary)); }
-.vzd-matrix-legend-pill--medium    { background: color-mix(in srgb, var(--vzd-matrix-base) 15%, var(--background-secondary)); }
-.vzd-matrix-legend-pill--low       { background: color-mix(in srgb, var(--vzd-matrix-base) 7%, var(--background-secondary)); }
-
 @media (max-width: 480px) {
   .vzd-mx-main { min-width: 320px; }
   .vzd-mx-area { min-height: 260px; }

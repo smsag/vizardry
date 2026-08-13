@@ -2,7 +2,6 @@ import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { MatrixData, MatrixItem, MatrixPreset } from "../types";
 import { t } from "../i18n";
-import type { TranslationKey } from "../i18n/locales/en";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import { renderBlockBody } from "./block-editor";
 import { presetColor } from "../matrix-presets";
@@ -39,7 +38,6 @@ export function renderMatrix(
 
   const cols = data.xAxis.ticks.length;
   const rows = data.yAxis.ticks.length;
-  const hasHeat = data.cells.some(c => c.heat);
 
   // Respect a custom `title:` line and make it click-to-edit, like every other
   // canvas — without this the Matrix always showed the preset name (e.g.
@@ -54,7 +52,7 @@ export function renderMatrix(
     container,
     "matrix",
     title,
-    hasHeat ? (header) => renderLegend(header) : undefined,
+    undefined,
     source,
     onTitleEdit,
     app,
@@ -102,21 +100,6 @@ export function renderMatrix(
   }
 
   wrap.createEl("div", { cls: "vzd-mx-xname", text: data.xAxis.title });
-}
-
-function renderLegend(header: HTMLElement): void {
-  const actionsDiv = header.querySelector(".vizardry-header-actions");
-  const legend = header.createEl("div", { cls: "vzd-matrix-legend" });
-  const levels: Array<{ key: TranslationKey; cls: string }> = [
-    { key: "matrix.legend.veryHigh", cls: "vzd-matrix-legend-pill--very-high" },
-    { key: "matrix.legend.high",     cls: "vzd-matrix-legend-pill--high" },
-    { key: "matrix.legend.medium",   cls: "vzd-matrix-legend-pill--medium" },
-    { key: "matrix.legend.low",      cls: "vzd-matrix-legend-pill--low" },
-  ];
-  for (const { key, cls } of levels) {
-    legend.createEl("span", { cls: `vzd-matrix-legend-pill ${cls}`, text: t(key) });
-  }
-  if (actionsDiv) header.insertBefore(legend, actionsDiv);
 }
 
 /** A resolver that returns the item's own explicit link annotation, falling
