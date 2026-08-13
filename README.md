@@ -73,6 +73,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 | `radar` | Radar / Spider Chart | SVG chart |
 | `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
+| `testcard` | Test Card | Card |
 
 ---
 
@@ -1414,6 +1415,38 @@ link: consequences_1 -> proposal_1
 - An unknown subtype fails with the list of valid ones; an unknown stage, an empty card, a duplicate id, or a malformed/dangling link skips that line with a warning chip rather than failing the whole canvas.
 - Wider-than-screen flows scroll horizontally.
 - **Editable in Live Preview:** click a card's heading or body to edit it in place, delete a card with its **×**, or add one with **+ Add** under a column — changes write straight back to the source. (In Read View, edit as text.)
+
+---
+
+### Test Card
+
+A **Test Card** plans one experiment on a single card, following the arc *Hypothesis → Test → Metric → Criteria*: **We believe that…**, **To verify that, we will…**, **And measure…**, **We are right if…**. Each of the first three steps carries a **1–3 rating gauge** — how *Critical* the hypothesis is, the *Test cost* and *Data reliability* of the test, and the *Time required* for the metric. A `deadline:` shows as a header chip.
+
+````
+```vizardry
+type: testcard
+title: Pricing test
+deadline: 2026-09-01
+
+hypothesis: SMB customers will pay $49/mo for the pro tier
+critical: 3
+
+test: Run a two-week paywall A/B test on the pricing page
+cost: 2
+reliability: 2
+
+metric: Paid conversion rate among trial signups
+time: 1
+
+criteria: Paid conversion exceeds 5%
+```
+````
+
+**Rules:**
+- The four steps and their prompts are fixed; you fill in `hypothesis:`, `test:`, `metric:`, `criteria:` (any may be left blank), plus the gauges `critical:`, `cost:`, `reliability:`, `time:` as a number **0–3** (0 or omitted = unset).
+- Order is ignored; an unknown field or an out-of-range gauge skips with a warning chip rather than failing the card.
+- **Editable in Live Preview:** click a step to edit its text, click a gauge dot to set its level (click the top filled dot to lower it), and click the deadline to change it — all written straight back to source. (In Read View, edit as text.)
+- Styling is Vizardry-native (theme-aware, sketch-mode and font-size controls apply).
 
 ---
 

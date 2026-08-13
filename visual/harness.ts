@@ -22,7 +22,7 @@ import {
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
   ODYSSEY_TEMPLATE, CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
-  PROBLEM_TEMPLATE,
+  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE,
 } from "../src/templates";
 
 /** Strip the ```vizardry … ``` fence so only the inner block source remains. */
@@ -61,6 +61,7 @@ const FIXTURES: Record<string, string> = {
   wholeperson: inner(WHOLE_PERSON_TEMPLATE),
   radar: inner(RADAR_TEMPLATE),
   problem: inner(PROBLEM_TEMPLATE),
+  testcard: inner(TEST_CARD_TEMPLATE),
   // Several canvases of mixed types in one fence → carousel (first panel shown).
   multicanvas: `type: swot
 title: Strengths / Weaknesses
