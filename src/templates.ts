@@ -276,6 +276,25 @@ link: consequences_1 -> proposal_1
 \`\`\`
 `;
 
+export const TEST_CARD_TEMPLATE = `\`\`\`vizardry
+type: testcard
+title: Pricing test
+deadline: 2026-09-01
+
+hypothesis: SMB customers will pay $49/mo for the pro tier
+critical: 3
+
+test: Run a two-week paywall A/B test on the pricing page
+cost: 2
+reliability: 2
+
+metric: Paid conversion rate among trial signups
+time: 1
+
+criteria: Paid conversion exceeds 5%
+\`\`\`
+`;
+
 export const WARDLEY_TEMPLATE = `\`\`\`vizardry
 type: wardley
 title: Wardley Map

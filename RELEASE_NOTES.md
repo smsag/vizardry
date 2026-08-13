@@ -1,3 +1,21 @@
+## 0.58.0
+
+- **New canvas: Test Card (`type: testcard`)** — plan one experiment on a single
+  card, following *Hypothesis → Test → Metric → Criteria*: **We believe that…**,
+  **To verify that, we will…**, **And measure…**, **We are right if…**. The
+  first three steps carry a 1–3 rating gauge (how *Critical* the hypothesis is,
+  the *Test cost* and *Data reliability* of the test, the *Time required* for
+  the metric), and a `deadline:` shows as a header chip. Editable in Live
+  Preview: click a step to edit its text, click a gauge dot to set the level,
+  click the deadline to change it — all written back to source.
+- **Fix: editing a canvas title no longer snaps back to the framework name** —
+  in Live Preview, clicking a title sometimes committed the edit the instant it
+  opened (Obsidian stealing focus fired a premature save), reverting an untitled
+  canvas to its default name before you could type. The title now waits for you.
+- **Fix: tree-canvas node rename is legible in sketch mode** — renaming a
+  first-level node (Mind Map, Impact Map, OST, Fishbone, …) with sketch mode on
+  showed white text on a white field; the editing box now stays readable.
+
 ## 0.57.0
 
 - **Several canvases in one block — shown as a carousel** — repeat the `type:`

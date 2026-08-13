@@ -112,6 +112,7 @@ Rules:
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 | `radar` | Radar / Spider Chart | SVG chart |
 | `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
+| `testcard` | Test Card | Card |
 
 ---
 
@@ -1563,6 +1564,44 @@ link: consequences_1 -> proposal_1
 - A card heading that matches a `#`/`##` heading in the note links out to that chapter (with a section preview).
 - Graceful degradation: an unknown subtype is fatal (lists the valid ones); an empty card, a duplicate id, a self-link, or a dangling/malformed link is dropped with a warning chip. Fatal only when no cards are defined.
 - Editable in **Live Preview**: click a card's heading or body to edit it in place, use the **×** to delete a card or **+ Add** under a column to add one (writes back to the source). In Read View, edit the source as text. Flows wider than the view scroll horizontally.
+
+---
+
+## Test Card (`testcard`)
+
+A single card that plans one experiment: *Hypothesis → Test → Metric → Criteria*, each step a fixed prompt with a fill-in, and 1–3 rating gauges on the first three steps.
+
+```
+type: testcard
+title: Pricing test
+deadline: 2026-09-01
+hypothesis: SMB customers will pay $49/mo for the pro tier
+critical: 3
+test: Run a two-week paywall A/B test on the pricing page
+cost: 2
+reliability: 2
+metric: Paid conversion rate among trial signups
+time: 1
+criteria: Paid conversion exceeds 5%
+```
+
+**Fields** (all optional, top-level `key: value`, order ignored):
+
+| Key | Fills in | Prompt shown |
+| --- | --- | --- |
+| `hypothesis:` | Step 1 · Hypothesis | *We believe that…* |
+| `test:` | Step 2 · Test | *To verify that, we will…* |
+| `metric:` | Step 3 · Metric | *And measure…* |
+| `criteria:` | Step 4 · Criteria | *We are right if…* |
+| `deadline:` | header chip | — |
+
+**Gauges** — a number **0–3** (0 or omitted = unset): `critical:` (step 1), `cost:` and `reliability:` (step 2), `time:` (step 3).
+
+**Rules:**
+- The steps, prompts, and gauge set are fixed; the source only fills them in.
+- An unknown field or a non-numeric / out-of-range gauge is dropped with a warning chip; the card never fails outright.
+- Editable in **Live Preview**: click a step to edit its text, click a gauge dot to set the level (click the top filled dot to lower it), click the deadline chip to change it — all written back to source. In Read View, edit as text.
+- Styling is Vizardry-native (theme-aware; sketch mode and font-size controls apply). It carries no Strategyzer branding.
 
 ---
 

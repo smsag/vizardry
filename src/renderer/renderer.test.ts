@@ -450,6 +450,27 @@ describe("renderTree", () => {
     const mainText = el.querySelector(".vzd-tree-text-main");
     expect(mainText?.textContent?.length).toBeLessThanOrEqual(MINDMAP_OPTS.maxLabelChars);
   });
+
+  it("opens a first-level rename field carrying the classes the sketch-mode legibility fix targets", () => {
+    // The sketch-mode fix restyles `.vzd-tree-rename-host` / `.vzd-tree-rename-input`
+    // so a first-level node's white text-on-accent doesn't render white-on-white.
+    // Guard that a rename still produces exactly those hooks (nested as the CSS
+    // expects) so the fix can't silently stop matching.
+    const el = container();
+    const root = makeNode("Root", 0, [makeNode("Child", 1)]);
+    const handlers = { onRename: vi.fn(), onAddChild: vi.fn(), onDelete: vi.fn() };
+    renderTree({ root }, CLASSIC_OPTS, el, undefined, undefined, handlers);
+
+    const rootGroup = el.querySelector<SVGGElement>(".vzd-tree-node--editable")!;
+    expect(rootGroup).toBeTruthy();
+    rootGroup.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+    const host = el.querySelector(".vzd-tree-rename-host");
+    const input = el.querySelector<HTMLInputElement>("input.vzd-rename-input.vzd-tree-rename-input");
+    expect(host).toBeTruthy();
+    expect(input).toBeTruthy();
+    expect(host!.contains(input!)).toBe(true);
+  });
 });
 
 // ── renderOST ─────────────────────────────────────────────────────────────────

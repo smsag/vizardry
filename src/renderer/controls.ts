@@ -8,6 +8,7 @@ import { getPluginVersion } from "../shared/version";
 import type { LinkResolver } from "../shared/links";
 import { attachSectionPreview } from "./section-preview";
 import { writeCollapseState } from "../shared/block-edit";
+import { createBlurGuard } from "./inline-edit";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 
@@ -328,6 +329,13 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
     span.setAttribute("spellcheck", "false");
     span.focus();
 
+    // Ignore the blur Obsidian's CM6 Live Preview fires by stealing focus back
+    // right after .focus() — without this, that spurious blur commits the edit
+    // before the user has typed a single character, reverting the title to its
+    // current value (the framework name on an untitled canvas). Same guard the
+    // shared inline-edit input uses.
+    const guard = createBlurGuard();
+
     // Place cursor at end
     const range = span.ownerDocument.createRange();
     range.selectNodeContents(span);
@@ -336,13 +344,18 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
     sel?.removeAllRanges();
     sel?.addRange(range);
 
-    const commit = (): void => {
-      if (!span.classList.contains("vizardry-title--editing")) return;
+    const teardown = (): void => {
+      guard.dispose();
       span.classList.remove("vizardry-title--editing");
       span.removeAttribute("contenteditable");
       span.removeAttribute("spellcheck");
       span.removeEventListener("keydown", onKeyDown);
+      span.removeEventListener("blur", onBlur);
+    };
 
+    const commit = (): void => {
+      if (!span.classList.contains("vizardry-title--editing")) return;
+      teardown();
       const newTitle = (span.textContent ?? "").trim().slice(0, TITLE_MAX_LENGTH) || title;
       span.textContent = newTitle;
       onTitleEdit(newTitle);
@@ -350,10 +363,7 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
 
     const cancel = (): void => {
       if (!span.classList.contains("vizardry-title--editing")) return;
-      span.classList.remove("vizardry-title--editing");
-      span.removeAttribute("contenteditable");
-      span.removeAttribute("spellcheck");
-      span.removeEventListener("keydown", onKeyDown);
+      teardown();
       span.textContent = title;
     };
 
@@ -362,8 +372,13 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
       if (ev.key === "Escape") { ev.preventDefault(); cancel(); }
     };
 
+    const onBlur = (): void => {
+      if (guard.ignoreBlur()) return; // spurious CM6 focus-steal, not a real blur
+      commit();
+    };
+
     span.addEventListener("keydown", onKeyDown);
-    span.addEventListener("blur", commit, { once: true });
+    span.addEventListener("blur", onBlur);
   });
 }
 

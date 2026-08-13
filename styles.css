@@ -4550,3 +4550,134 @@ body.vizardry-sketch .vizardry-title {
 body.vizardry-sketch .vizardry-block-body.vizardry-block-empty[data-placeholder]::before {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
 }
+
+/* Tree-node rename input: normally a transparent field floating over the node,
+   coloured to match the node's own label (white text-on-accent on the accent-
+   filled root). In sketch mode the accent greys out and the rough SVG filter
+   composites the rename foreignObject onto white, so that white text lands
+   white-on-white and the input disappears while editing a first-level node.
+   Pin the field to a solid, theme-contrasting background + ink so it stays
+   legible; the !important beats the inline node-text colour set in JS. */
+body.vizardry-sketch .vzd-tree-rename-host {
+  background: var(--background-primary);
+  border-radius: 4px;
+}
+body.vizardry-sketch .vzd-tree-rename-input {
+  color: var(--text-normal) !important;
+}
+
+/* ══ Test Card ═══════════════════════════════════════════════════════
+   A single experiment card: four prompt steps (hypothesis / test / metric /
+   criteria), each with an editable fill-in and optional 1–3 rating gauges.
+   Vizardry-native, theme-aware — no fixed brand colours.
+   ══════════════════════════════════════════════════════════════════ */
+.vzd-tc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.vzd-tc-step {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  background: var(--background-primary);
+}
+
+/* Only the hypothesis — the belief the whole card tests — gets a faint accent
+   edge; every other step is a plain neutral card. */
+.vzd-tc-step--hypothesis { border-left: 3px solid color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border)); }
+
+.vzd-tc-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.vzd-tc-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.55rem;
+}
+
+.vzd-tc-prompt {
+  font-weight: 700;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.vzd-tc-fill {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  color: var(--text-normal);
+  border-bottom: 1px dashed var(--background-modifier-border);
+  padding: 0 2px 1px;
+}
+
+.vzd-tc-fill--empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.vzd-tc-fill--editable { cursor: text; }
+.vzd-tc-fill--editable:hover {
+  border-bottom-color: var(--interactive-accent);
+}
+
+/* The in-place textarea inherits the fill's flow; keep it borderless/seamless. */
+.vzd-tc-fill .vzd-tc-textarea {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+
+.vzd-tc-gauges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  margin-top: 0.6rem;
+}
+
+.vzd-tc-gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.vzd-tc-gauge-label {
+  color: var(--text-muted);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.vzd-tc-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.vzd-tc-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+  background: transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.vzd-tc-dot.is-filled {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+.vzd-tc-dot--editable { cursor: pointer; }
+.vzd-tc-dot--editable:hover {
+  border-color: var(--interactive-accent);
+}

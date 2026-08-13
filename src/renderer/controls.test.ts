@@ -95,6 +95,32 @@ describe("editable title — keydown listener lifecycle", () => {
 
     vi.restoreAllMocks();
   });
+
+  it("ignores the immediate CM6 focus-steal blur so the edit isn't committed before the user types", () => {
+    // Regression: on an untitled canvas the default title is the framework name.
+    // In Live Preview, .focus() triggers an immediate blur (CM6 steals focus
+    // back); without a guard that blur commits straight away and the title
+    // snaps back to the framework name — "the type is shown, not the title set".
+    vi.useFakeTimers();
+    const el = container();
+    const onTitleEdit = vi.fn();
+    initCanvas(el, "bmc", "Business Model Canvas", undefined, "source", onTitleEdit, undefined);
+    const span = el.querySelector<HTMLElement>(".vizardry-title--editable")!;
+
+    span.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    // A blur that fires within the guard window (the focus-steal) must be ignored.
+    span.dispatchEvent(new FocusEvent("blur", { bubbles: false }));
+    expect(onTitleEdit).not.toHaveBeenCalled();
+    expect(span.classList.contains("vizardry-title--editing")).toBe(true); // still editing
+
+    // The user types a real title; after the guard window, a genuine blur commits.
+    span.textContent = "My Company";
+    vi.advanceTimersByTime(200);
+    span.dispatchEvent(new FocusEvent("blur", { bubbles: false }));
+    expect(onTitleEdit).toHaveBeenCalledWith("My Company");
+
+    vi.useRealTimers();
+  });
 });
 
 describe("renderHeadingLink — ticket fallback", () => {
