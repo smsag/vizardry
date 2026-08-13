@@ -638,7 +638,7 @@ A matrix is **two tick-labelled axes forming a grid of cells, plus items placed 
 - **Axes:** `x: Title | tick | tick | …` (ticks left→right) and `y: Title | tick | tick | …` (ticks **bottom→top**). N x-ticks × M y-ticks = an **N×M** grid of cells.
 - **Cells** are auto-numbered `t1 … t(N·M)` in reading order — **t1 = top-left**, increasing left→right then top→bottom.
 - `tN: Name | heat` — optionally name and/or tint a cell. `heat` ∈ `very-high` `high` `medium` `low`. Either part is optional (`t1: Do first`, `t4: | low`, or `t1: Do first | very-high`).
-- **Items** are cards placed either at a **free coordinate** `item: Label [x, y]` (x,y in `0…1`, **origin bottom-left**, so `[1,1]` is top-right) or **snapped to a cell** `item: Label at: tN`. Indented lines under an item become its card body. **Item labels must be unique** within the matrix.
+- **Items** are compact **pills** placed either at a **free coordinate** `item: Label [x, y]` (x,y in `0…1`, **origin bottom-left**, so `[1,1]` is top-right) or **snapped to a cell** `item: Label at: tN`. Indented lines under an item become its **description**, shown in a **popover** when the pill is clicked (a dot on the pill marks items that have one). Items snapped to the same cell flow as a pill cloud. **Item labels must be unique** within the matrix.
 
 ### Cell numbering
 

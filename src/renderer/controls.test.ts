@@ -341,7 +341,7 @@ describe("download / export", () => {
 
     // Content and link indicators are kept.
     for (const c of [
-      "vizardry-block", "vzd-mx-item-card", "vzd-journey-card",
+      "vizardry-block", "vzd-mx-pill", "vzd-journey-card",
       "vzd-card-link-btn", "vizardry-block-link-btn",
     ]) {
       expect(filter(node(c)), `${c} should be kept`).toBe(true);

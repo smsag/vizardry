@@ -114,14 +114,6 @@ function itemLinkResolver(item: MatrixItem, base?: LinkResolver): LinkResolver |
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 
-/** Centre of a snapped cell, in plane coords (0…1, origin bottom-left). */
-function cellCenter(at: string, cols: number, rows: number): { x: number; y: number } {
-  const n = Number(at.slice(1));
-  const col = ((n - 1) % cols) + 1;
-  const row = Math.floor((n - 1) / cols) + 1; // 1 = top
-  return { x: (col - 0.5) / cols, y: 1 - (row - 0.5) / rows };
-}
-
 /** Rect of a snapped cell as CSS percentages. */
 function cellRect(at: string, cols: number, rows: number): { left: string; top: string; width: string; height: string } {
   const n = Number(at.slice(1));
@@ -131,11 +123,12 @@ function cellRect(at: string, cols: number, rows: number): { left: string; top: 
 }
 
 /**
- * Places all items. When two or more items are snapped to the same cell they
- * stack inside it (Option A) instead of piling up at the centre and becoming
- * unreadable; a lone cell item and free `[x, y]` items keep the floating pin.
- * Free items that resolve to the same point cascade so their cards stay
- * readable (Option B).
+ * Places all items as compact **pills** (title only). Cell-snapped (`at: tN`)
+ * items flow as a wrapping chip-cloud inside their cell; free `[x, y]` items sit
+ * at their point (coincident ones cascade). The description is not shown inline
+ * — clicking a pill opens a popover with the details (and, in edit mode, an
+ * editable field). This keeps the plane readable no matter how many items share
+ * a quadrant.
  */
 function renderItems(
   items: MatrixItem[],
@@ -150,6 +143,7 @@ function renderItems(
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
 ): void {
+  const popover = makePopover(area);
   const snapped = new Map<string, MatrixItem[]>();
   const free: MatrixItem[] = [];
   for (const item of items) {
@@ -162,121 +156,113 @@ function renderItems(
     }
   }
 
+  // Cell-snapped items → a wrapping pill cloud over the cell.
   for (const [key, cellItems] of snapped) {
-    // A single item keeps the classic centred pin (existing matrices unchanged).
-    if (cellItems.length === 1) {
-      const { x, y } = cellCenter(key, cols, rows);
-      renderFreeItem(cellItems[0], x, y, 0, overlay, area, container, editMode, app, ctx, resolver, navigateTo);
-      continue;
-    }
-    const stack = overlay.createEl("div", { cls: "vzd-mx-cell-stack" });
+    const cloud = overlay.createEl("div", { cls: "vzd-mx-cell-pills" });
     const r = cellRect(key, cols, rows);
-    stack.style.left = r.left; stack.style.top = r.top;
-    stack.style.width = r.width; stack.style.height = r.height;
+    cloud.style.left = r.left; cloud.style.top = r.top;
+    cloud.style.width = r.width; cloud.style.height = r.height;
     for (const item of cellItems) {
-      const { card, body } = buildItemCard(item, resolver, navigateTo, app, ctx);
-      card.classList.add("vzd-mx-item-card--stacked");
-      stack.appendChild(card);
-      if (editMode && app && ctx) {
-        card.classList.add("vzd-mx-item--editable");
-        wireStackedCard(card, body, item, area, overlay, container, app, ctx, resolver, navigateTo);
-      }
+      const pill = buildPill(item, resolver, navigateTo, app, ctx);
+      cloud.appendChild(pill);
+      wirePill(pill, item, area, overlay, container, editMode, popover, app, ctx, resolver, navigateTo);
     }
   }
 
+  // Free `[x, y]` items → a pill pinned at the point (coincident ones cascade).
   const seen = new Map<string, number>();
   for (const item of free) {
     const x = item.x ?? 0.5, y = item.y ?? 0.5;
     const ck = `${x.toFixed(3)},${y.toFixed(3)}`;
     const k = seen.get(ck) ?? 0;
     seen.set(ck, k + 1);
-    renderFreeItem(item, x, y, k, overlay, area, container, editMode, app, ctx, resolver, navigateTo);
+    const wrap = overlay.createEl("div", { cls: "vzd-mx-item" });
+    wrap.style.left = pct(x);
+    wrap.style.top = pct(1 - y);
+    if (k > 0) {
+      wrap.style.transform = `translate(${k * 12}px, ${k * 12}px)`;
+      wrap.style.zIndex = String(2 + k);
+    }
+    const pill = buildPill(item, resolver, navigateTo, app, ctx);
+    wrap.appendChild(pill);
+    wirePill(pill, item, area, overlay, container, editMode, popover, app, ctx, resolver, navigateTo);
   }
 }
 
-/** Builds an item's card (label + link + body). Shared by pins and stacks. */
-function buildItemCard(
+/** Builds a compact pill: the title (with its heading/ticket link) and a marker
+ *  when it has a description to reveal. */
+function buildPill(
   item: MatrixItem,
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
-): { card: HTMLElement; body: HTMLElement } {
-  const card = document.createElement("div");
-  card.className = "vzd-mx-item-card";
-  const labelEl = card.createEl("div", { cls: "vzd-mx-item-label", text: item.label });
+): HTMLElement {
+  const pill = document.createElement("div");
+  pill.className = "vzd-mx-pill";
+  pill.setAttribute("role", "button");
+  pill.tabIndex = 0;
+  const labelEl = pill.createEl("span", { cls: "vzd-mx-item-label", text: item.label });
   // Link the label to a heading/ticket: explicit annotation on the item line,
   // or a heading whose name matches the label (auto-detect via the shared resolver).
   renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
-  const body = card.createEl("div", { cls: "vizardry-block-body" });
-  renderBlockBody(body, item.content, resolver, navigateTo, app, ctx?.sourcePath);
-  return { card, body };
+  if (item.content.trim()) pill.classList.add("vzd-mx-pill--has-details");
+  return pill;
 }
 
-/** A floating pin (dot + card) at plane coords; `collision` cascades coincident items. */
-function renderFreeItem(
+/** Read: click opens the detail popover. Edit: drag repositions the item (into a
+ *  free `[x, y]`), a plain click opens the popover with an editable description. */
+function wirePill(
+  pill: HTMLElement,
   item: MatrixItem,
-  x: number,
-  y: number,
-  collision: number,
-  overlay: HTMLElement,
   area: HTMLElement,
+  overlay: HTMLElement,
   container: HTMLElement,
   editMode: boolean,
+  popover: Popover,
   app?: App,
   ctx?: MarkdownPostProcessorContext,
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
 ): void {
-  const el = overlay.createEl("div", { cls: "vzd-mx-item" });
-  el.style.left = pct(x);
-  el.style.top = pct(1 - y);
-  if (collision > 0) {
-    el.style.transform = `translate(${collision * 12}px, ${collision * 12}px)`;
-    el.style.zIndex = String(2 + collision);
+  const openDetails = (): void =>
+    popover.open(pill, item, editMode && !!app && !!ctx, container, app, ctx, resolver, navigateTo);
+
+  if (!editMode || !app || !ctx) {
+    pill.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("a, .vzd-card-link-btn")) return; // link handled itself
+      e.stopPropagation();
+      openDetails();
+    });
+    return;
   }
-  el.createEl("div", { cls: "vzd-mx-item-dot" });
-  const { card, body } = buildItemCard(item, resolver, navigateTo, app, ctx);
-  el.appendChild(card);
 
-  if (!editMode || !app || !ctx) return;
-  el.classList.add("vzd-mx-item--editable");
-  wireItem(el, card, body, item, area, container, app, ctx, resolver, navigateTo);
-}
-
-/** Drag/edit for a card inside a cell stack: dragging pulls it out into a
- *  floating pin (converting it to a free `[x, y]`); a click edits its body. */
-function wireStackedCard(
-  card: HTMLElement,
-  body: HTMLElement,
-  item: MatrixItem,
-  area: HTMLElement,
-  overlay: HTMLElement,
-  container: HTMLElement,
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
-): void {
-  card.addEventListener("pointerdown", (e) => {
+  pill.classList.add("vzd-mx-item--editable");
+  pill.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest("a, button, textarea")) return;
+    if ((e.target as HTMLElement).closest("a, button, textarea, .vzd-card-link-btn")) return;
     e.preventDefault();
 
     const startX = e.clientX, startY = e.clientY;
+    const fromFreeWrap = pill.parentElement?.classList.contains("vzd-mx-item") ?? false;
     let moved = false, nx = 0.5, ny = 0.5;
     let anchor: HTMLElement | null = null;
-    card.setPointerCapture(e.pointerId);
+    pill.setPointerCapture(e.pointerId);
 
     const onMove = (ev: PointerEvent): void => {
       if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
       if (!moved) {
         moved = true;
-        // Pull the card out of the stack into a floating pin that follows the pointer.
-        anchor = overlay.createEl("div", { cls: "vzd-mx-item vzd-mx-item--editable vzd-mx-item--dragging" });
-        anchor.createEl("div", { cls: "vzd-mx-item-dot" });
-        card.classList.remove("vzd-mx-item-card--stacked");
-        anchor.appendChild(card);
+        popover.close();
+        if (fromFreeWrap) {
+          anchor = pill.parentElement as HTMLElement;
+          anchor.style.transform = ""; anchor.style.zIndex = "";
+          anchor.classList.add("vzd-mx-item--dragging");
+        } else {
+          // Pull the pill out of its cell cloud into a floating pin.
+          anchor = overlay.createEl("div", { cls: "vzd-mx-item vzd-mx-item--dragging" });
+          anchor.appendChild(pill);
+        }
       }
       const rect = area.getBoundingClientRect();
       nx = clamp01((ev.clientX - rect.left) / rect.width);
@@ -286,91 +272,120 @@ function wireStackedCard(
     };
 
     const onUp = (): void => {
-      card.releasePointerCapture(e.pointerId);
-      card.removeEventListener("pointermove", onMove);
-      card.removeEventListener("pointerup", onUp);
+      pill.releasePointerCapture(e.pointerId);
+      pill.removeEventListener("pointermove", onMove);
+      pill.removeEventListener("pointerup", onUp);
       if (moved) {
+        anchor?.classList.remove("vzd-mx-item--dragging");
         item.x = nx; item.y = ny; item.at = undefined;
         if (!writeItemPosition(app, ctx, container, item.label, nx, ny)) new Notice(t("edit.writeFailed"));
       } else {
-        openItemEditor(card, body, item, container, app, ctx, resolver, navigateTo);
+        openDetails();
       }
     };
 
-    card.addEventListener("pointermove", onMove);
-    card.addEventListener("pointerup", onUp);
+    pill.addEventListener("pointermove", onMove);
+    pill.addEventListener("pointerup", onUp);
   });
 }
 
-function wireItem(
-  el: HTMLElement,
-  card: HTMLElement,
+interface Popover {
+  open: (
+    pill: HTMLElement,
+    item: MatrixItem,
+    editMode: boolean,
+    container: HTMLElement,
+    app?: App,
+    ctx?: MarkdownPostProcessorContext,
+    resolver?: LinkResolver,
+    navigateTo?: (heading: string) => void,
+  ) => void;
+  close: () => void;
+}
+
+/** A single-instance detail popover anchored to the clicked pill. Only one is
+ *  ever open; it closes on Esc, an outside click, or another pill opening. */
+function makePopover(area: HTMLElement): Popover {
+  let el: HTMLElement | null = null;
+  let cleanup: (() => void) | null = null;
+
+  const close = (): void => {
+    cleanup?.(); cleanup = null;
+    el?.remove(); el = null;
+  };
+
+  const open: Popover["open"] = (pill, item, editMode, container, app, ctx, resolver, navigateTo) => {
+    close();
+    const pop = area.createEl("div", { cls: "vzd-mx-popover" });
+    el = pop;
+
+    const titleEl = pop.createEl("div", { cls: "vzd-mx-popover-title" });
+    const labelEl = titleEl.createEl("span", { cls: "vzd-mx-item-label", text: item.label });
+    renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
+
+    const body = pop.createEl("div", { cls: "vzd-mx-popover-body vizardry-block-body" });
+    if (editMode && app && ctx) {
+      editPopoverBody(body, item, container, app, ctx, resolver, navigateTo);
+    } else {
+      renderBlockBody(body, item.content, resolver, navigateTo, app, ctx?.sourcePath);
+      if (!item.content.trim()) body.remove(); // read-only + empty → title-only card
+    }
+
+    positionPopover(pop, pill, area);
+
+    // Dismiss on outside pointerdown / Escape. Registered on the next tick so the
+    // click that opened the popover doesn't immediately close it.
+    const onDocPointer = (ev: Event): void => {
+      const target = ev.target as Node;
+      if (pop.contains(target) || pill.contains(target)) return;
+      close();
+    };
+    const onKey = (ev: KeyboardEvent): void => { if (ev.key === "Escape") close(); };
+    const doc = pill.ownerDocument;
+    const timer = doc.defaultView?.setTimeout(() => doc.addEventListener("pointerdown", onDocPointer, true), 0);
+    doc.addEventListener("keydown", onKey);
+    cleanup = () => {
+      if (timer !== undefined) doc.defaultView?.clearTimeout(timer);
+      doc.removeEventListener("pointerdown", onDocPointer, true);
+      doc.removeEventListener("keydown", onKey);
+    };
+  };
+
+  return { open, close };
+}
+
+/** Positions the popover under the pill (flipping above when it would overflow
+ *  the plane) and clamps it horizontally so it stays inside. */
+function positionPopover(pop: HTMLElement, pill: HTMLElement, area: HTMLElement): void {
+  const ar = area.getBoundingClientRect();
+  const pr = pill.getBoundingClientRect();
+  const cx = pr.left + pr.width / 2 - ar.left;
+  const below = pr.bottom - ar.top + 6;
+
+  const pw = pop.offsetWidth;
+  const ph = pop.offsetHeight;
+  const clampedCx = ar.width > pw ? Math.max(pw / 2 + 4, Math.min(ar.width - pw / 2 - 4, cx)) : cx;
+  pop.style.left = `${clampedCx}px`;
+  pop.style.top = below + ph > ar.height && pr.top - ar.top - ph - 6 > 0
+    ? `${pr.top - ar.top - ph - 6}px`
+    : `${below}px`;
+}
+
+/** Replaces the popover body with an auto-growing textarea; commits the edited
+ *  description on blur/Enter, reverts on Escape. */
+function editPopoverBody(
   body: HTMLElement,
   item: MatrixItem,
-  area: HTMLElement,
   container: HTMLElement,
   app: App,
   ctx: MarkdownPostProcessorContext,
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
 ): void {
-  el.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest("a, button, textarea")) return;
-    e.preventDefault();
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    let moved = false;
-    let nx = 0.5;
-    let ny = 0.5;
-    el.setPointerCapture(e.pointerId);
-
-    const onMove = (ev: PointerEvent): void => {
-      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
-      moved = true;
-      el.classList.add("vzd-mx-item--dragging");
-      const rect = area.getBoundingClientRect();
-      nx = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
-      ny = Math.max(0, Math.min(1, 1 - (ev.clientY - rect.top) / rect.height));
-      el.style.left = pct(nx);
-      el.style.top = pct(1 - ny);
-    };
-
-    const onUp = (): void => {
-      el.releasePointerCapture(e.pointerId);
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerup", onUp);
-      el.classList.remove("vzd-mx-item--dragging");
-      if (moved) {
-        item.x = nx; item.y = ny; item.at = undefined;
-        if (!writeItemPosition(app, ctx, container, item.label, nx, ny)) new Notice(t("edit.writeFailed"));
-      } else {
-        openItemEditor(card, body, item, container, app, ctx, resolver, navigateTo);
-      }
-    };
-
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerup", onUp);
-  });
-}
-
-function openItemEditor(
-  card: HTMLElement,
-  body: HTMLElement,
-  item: MatrixItem,
-  container: HTMLElement,
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  resolver?: LinkResolver,
-  navigateTo?: (heading: string) => void,
-): void {
-  if (card.hasClass("vzd-mx-item-editing")) return;
-  card.addClass("vzd-mx-item-editing");
   body.empty();
-
   const textarea = body.createEl("textarea", { cls: "vzd-plain-textarea vzd-block-textarea" });
   textarea.value = item.content;
+  textarea.placeholder = t("matrix.item.detailsPlaceholder");
   const resize = (): void => { textarea.style.height = "auto"; textarea.style.height = `${textarea.scrollHeight}px`; };
   resize();
   textarea.addEventListener("input", resize);
@@ -381,19 +396,18 @@ function openItemEditor(
   const finish = (write: boolean): void => {
     if (committed) return;
     committed = true;
-    card.removeClass("vzd-mx-item-editing");
     const newValue = textarea.value.trim();
     if (write && writeItemContent(app, ctx, container, item.label, newValue)) {
       item.content = newValue;
-      renderBlockBody(body, newValue, resolver, navigateTo, app, ctx.sourcePath);
-    } else {
-      if (write) new Notice(t("edit.writeFailed"));
-      renderBlockBody(body, item.content, resolver, navigateTo, app, ctx.sourcePath);
+    } else if (write) {
+      new Notice(t("edit.writeFailed"));
     }
+    renderBlockBody(body, item.content, resolver, navigateTo, app, ctx.sourcePath);
   };
 
   textarea.addEventListener("blur", () => finish(true));
   textarea.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); finish(true); }
   });
 }

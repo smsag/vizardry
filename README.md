@@ -1452,7 +1452,7 @@ criteria: Paid conversion exceeds 5%
 
 ### Matrix
 
-One two-axis engine covering priority grids, scenario 2×2s, and free scatter plots. Two `x:`/`y:` tick axes form a cell grid; **items** are cards placed at a coordinate or snapped to a cell. A **preset** fills the axes, per-cell heat, and colour.
+One two-axis engine covering priority grids, scenario 2×2s, and free scatter plots. Two `x:`/`y:` tick axes form a cell grid; **items** are compact **pills** placed at a coordinate or snapped to a cell — click a pill to open a **popover** with its description (a dot on the pill marks those that have one). Items snapped to the same cell flow as a tidy pill cloud. A **preset** fills the axes, per-cell heat, and colour.
 
 ~~~
 ```vizardry
@@ -1517,7 +1517,7 @@ item: Audit + certification at: t2
 - Indented lines under an item — its card body
 - Link an item label to a heading or Linear/Upvoty ticket with `[[#Heading]]` / `[text](TICKET)` placed **before** the position token, e.g. `item: Fix login [Fix login](CORE-1234) at: t1`
 
-**In edit mode:** drag an item to reposition (writes `[x, y]` back to the source), click it to edit its body.
+**In edit mode:** drag a pill to reposition it (writes `[x, y]` back to the source); click it to open the popover and edit its description.
 
 ---
 
