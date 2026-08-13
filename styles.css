@@ -4570,10 +4570,9 @@ body.vizardry-sketch .vizardry-block-body.vizardry-block-empty[data-placeholder]
   background: var(--background-primary);
 }
 
-/* Step 1 (hypothesis) and step 4 (criteria) are the belief and the pass/fail —
-   give them a faint accent edge so the arc reads at a glance. */
+/* Only the hypothesis — the belief the whole card tests — gets a faint accent
+   edge; every other step is a plain neutral card. */
 .vzd-tc-step--hypothesis { border-left: 3px solid color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border)); }
-.vzd-tc-step--criteria   { border-left: 3px solid color-mix(in srgb, var(--color-green, var(--interactive-accent)) 55%, var(--background-modifier-border)); }
 
 .vzd-tc-eyebrow {
   text-transform: uppercase;
