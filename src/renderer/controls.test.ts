@@ -7,6 +7,8 @@ vi.mock("obsidian", () => ({
   setIcon: vi.fn(),
   moment: { locale: () => "en" },
   Platform: mockPlatform,
+  MarkdownView: class MarkdownView {},
+  Notice: vi.fn(),
 }));
 const mockToBlob = vi.hoisted(() => vi.fn());
 vi.mock("html-to-image", () => ({
@@ -20,7 +22,8 @@ const { mockGetLinearService, mockGetUpvotyService } = vi.hoisted(() => ({
 vi.mock("../linear", () => ({ getLinearService: mockGetLinearService }));
 vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
 
-import { initCanvas, renderHeadingLink, expandForCapture, revealForCapture } from "./controls";
+import { initCanvas, renderHeadingLink, navigateToCanvas, expandForCapture, revealForCapture } from "./controls";
+import { Notice } from "obsidian";
 
 function container(): HTMLElement {
   const el = document.createElement("div");
@@ -170,6 +173,55 @@ describe("renderHeadingLink — ticket fallback", () => {
     renderHeadingLink(el, "Untracked item", resolver, undefined);
 
     expect(el.children.length).toBe(0);
+  });
+});
+
+describe("renderHeadingLink — canvas link", () => {
+  it("renders a canvas link button when the label resolves to a canvas title", () => {
+    const el = container();
+    const resolver = { resolve: () => undefined, resolveCanvas: () => "Q3 Roadmap" };
+    renderHeadingLink(el, "Roadmap", resolver, undefined, {} as never, "note.md");
+    const btn = el.querySelector<HTMLElement>(".vzd-card-canvas-link-btn");
+    expect(btn).toBeTruthy();
+    expect(btn?.dataset.canvasTitle).toBe("Q3 Roadmap");
+  });
+
+  it("prefers an explicit canvas link over a heading that shares the label text", () => {
+    const el = container();
+    // resolve() would return a heading (auto-detect), but the explicit canvas link wins.
+    const resolver = { resolve: () => "Roadmap", resolveCanvas: () => "Q3 Roadmap" };
+    renderHeadingLink(el, "Roadmap", resolver, () => {}, {} as never, "note.md");
+    expect(el.querySelector(".vzd-card-canvas-link-btn")).toBeTruthy();
+    expect(el.querySelector(".vzd-card-link-btn:not(.vzd-card-canvas-link-btn)")).toBeNull();
+  });
+});
+
+describe("navigateToCanvas", () => {
+  function canvas(title: string): HTMLElement {
+    const el = document.createElement("div");
+    el.className = "vizardry-canvas";
+    el.dataset.canvasTitle = title.toLowerCase();
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it("flashes the canvas whose title matches (falling back to a document scan)", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (Element.prototype as any).scrollIntoView = vi.fn();
+    const a = canvas("First Canvas");
+    const b = canvas("Q3 Roadmap");
+    const app = { workspace: { getLeavesOfType: () => [] } } as never;
+
+    navigateToCanvas(app, "note.md", "Q3 Roadmap");
+    expect(b.classList.contains("vizardry-canvas--jump-flash")).toBe(true);
+    expect(a.classList.contains("vizardry-canvas--jump-flash")).toBe(false);
+    expect(b.scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("shows a Notice when no canvas with that title is present", () => {
+    const app = { workspace: { getLeavesOfType: () => [] } } as never;
+    navigateToCanvas(app, "note.md", "Missing Canvas");
+    expect(Notice).toHaveBeenCalled();
   });
 });
 

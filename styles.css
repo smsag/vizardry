@@ -2446,6 +2446,20 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   opacity: 1;
 }
 
+/* Canvas-link button (jump to another canvas by title) — same placement as the
+   section link, tinted to read as a slightly different affordance. */
+.vzd-card-canvas-link-btn { color: var(--interactive-accent); }
+
+/* Brief highlight on the canvas a link jumps to. */
+@keyframes vzd-canvas-jump-flash {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  20%      { box-shadow: 0 0 0 3px var(--interactive-accent); }
+}
+.vizardry-canvas--jump-flash {
+  animation: vzd-canvas-jump-flash 1.2s ease-in-out;
+  border-radius: 8px;
+}
+
 .vzd-roadmap-card-subtitle {
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.75);
   color: var(--text-muted);

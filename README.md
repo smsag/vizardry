@@ -1691,6 +1691,18 @@ Details of the approach...
 
 The `Problem` and `Solution` blocks automatically get link icons because matching headings exist in the note.
 
+*Link to another canvas* — use `[label](canvas:Title)` to jump to **another canvas in the same note** whose `title:` matches `Title` (case-insensitive). A distinct link icon appears; clicking scrolls to that canvas and briefly highlights it. Handy when a note holds several canvases that reference each other (e.g. a Problem Statement pointing at its Opportunity Solution Tree):
+
+~~~
+```vizardry
+type: bmc
+block: Key Activities [see the roadmap](canvas:Q3 Roadmap)
+  Ship onboarding
+```
+~~~
+
+Same-note only for now, and the target is matched by title — so give canvases you link to a distinct `title:`. (Canvas links have no auto-detection; use the explicit `canvas:` form.)
+
 **Rules:**
 - Inline annotations (`[[#Heading]]` or `[text](#Anchor)`) take priority over auto-detection
 - Heading text is matched case-insensitively

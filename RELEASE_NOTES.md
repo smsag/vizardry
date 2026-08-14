@@ -1,3 +1,15 @@
+## 0.60.0
+
+- **Link an item to another canvas, not just a section** — alongside heading
+  links (`[[#Heading]]`) and ticket links, you can now write
+  `[label](canvas:Title)` to jump to **another canvas in the same note** whose
+  `title:` matches. A distinct canvas-link icon appears; clicking scrolls to
+  that canvas and briefly highlights it. Works on every element that already
+  supports links (grid blocks and their lines, Matrix, RACI, Pace Layers, tree
+  nodes, and all card canvases). Same-note only for now, matched by title (give
+  linked canvases a distinct `title:`); explicit `canvas:` form only, so it
+  never collides with heading auto-detection.
+
 ## 0.59.0
 
 - **Matrix items are now pills with a click-to-open detail popover** — each item

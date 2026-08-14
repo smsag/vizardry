@@ -68,6 +68,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "nav.goToImage":        "Zu Bild {{n}} wechseln",
   "nav.imageCarousel":    "Bildkarussell, {{n}} Bilder",
   "nav.jumpTo":           "Springen zu: {{heading}}",
+  "nav.jumpToCanvas":     "Zur Canvas springen: {{title}}",
+  "nav.canvasNotFound":   "Keine Canvas mit dem Titel \"{{title}}\" in dieser Notiz",
 
   // ── Inline editing ──────────────────────────────────────────────────────────
   "edit.clickToEdit": "Zum Bearbeiten klicken",

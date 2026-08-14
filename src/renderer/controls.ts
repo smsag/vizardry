@@ -1,4 +1,4 @@
-import { setIcon, MarkdownView, Platform } from "obsidian";
+import { setIcon, MarkdownView, Platform, Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { applyFullWidth } from "./full-width";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
@@ -204,6 +204,20 @@ export function renderHeadingLink(
   app?: App,
   sourcePath?: string,
 ): void {
+  // Explicit `[text](canvas:Title)` — jump to another canvas in the same note.
+  // Checked before heading auto-detect so an explicit canvas link isn't stolen
+  // by a heading that happens to share the label's text.
+  const canvasTitle = resolver?.resolveCanvas?.(label);
+  if (canvasTitle && app && sourcePath) {
+    const linkBtn = parent.createEl("button", { cls: "vzd-card-link-btn vzd-card-canvas-link-btn vzd-btn" });
+    setIcon(linkBtn, "layout-grid");
+    linkBtn.setAttribute("aria-label", t("nav.jumpToCanvas", { title: canvasTitle }));
+    linkBtn.dataset.canvasTitle = canvasTitle;
+    markInteractive(linkBtn);
+    linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateToCanvas(app, sourcePath, canvasTitle); });
+    return;
+  }
+
   const heading = resolver?.resolve(label);
   if (heading && navigateTo) {
     const linkBtn = parent.createEl("button", { cls: "vzd-card-link-btn vzd-btn" });
@@ -224,6 +238,41 @@ export function renderHeadingLink(
     if (ticket.service === "linear") renderLinearKeyBadge(parent, ticket.key);
     else renderUpvotyKeyBadge(parent, ticket.key);
   }
+}
+
+/**
+ * Scrolls to another canvas in the same note by its title and flashes it. The
+ * target `.vizardry-canvas` carries `data-canvas-title` (set in initCanvas); we
+ * prefer the pane showing `sourcePath`, then fall back to any matching canvas in
+ * the document. Shows a Notice when no canvas with that title is rendered.
+ */
+export function navigateToCanvas(app: App, sourcePath: string, title: string): void {
+  const key = title.toLowerCase().trim();
+  const findIn = (root: ParentNode | null | undefined): HTMLElement | null => {
+    if (!root) return null;
+    for (const el of Array.from(root.querySelectorAll<HTMLElement>(".vizardry-canvas[data-canvas-title]"))) {
+      if (el.dataset.canvasTitle === key) return el;
+    }
+    return null;
+  };
+
+  let target: HTMLElement | null = null;
+  for (const leaf of app.workspace.getLeavesOfType("markdown")) {
+    const view = leaf.view;
+    if (view instanceof MarkdownView && view.file?.path === sourcePath) {
+      target = findIn(view.containerEl);
+      if (target) break;
+    }
+  }
+  target ??= findIn(document);
+
+  if (!target) {
+    new Notice(t("nav.canvasNotFound", { title }));
+    return;
+  }
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.addClass("vizardry-canvas--jump-flash");
+  ownerWindow(target).setTimeout(() => target?.removeClass("vizardry-canvas--jump-flash"), 1200);
 }
 
 /**
@@ -282,6 +331,9 @@ export function initCanvas(
 ): void {
   container.addClass("vizardry-canvas");
   container.setAttribute("data-framework", frameworkId);
+  // Anchor for same-note canvas links (`[text](canvas:Title)`): the canvas is
+  // findable by its (normalised) title. See navigateToCanvas / renderHeadingLink.
+  container.dataset.canvasTitle = title.toLowerCase().trim();
   // Store the raw source so resolveEditor can locate this block by content
   // scan when ctx.getSectionInfo() returns null (e.g. in Live Preview mode).
   // Without this, inline edits fail to save in Live Edit ("Edit could not be
