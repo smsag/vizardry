@@ -1,3 +1,18 @@
+## 0.61.0
+
+- **New canvas: Product Compass (`type: compass`)** — a one-page discovery
+  brief that works as an **index**: it summarizes a feature's thinking and
+  **links out** to the deeper artifacts, sitting on top of a PRD and growing as
+  discovery deepens. Four fixed sections — **Challenge** (Forces · Problem ·
+  Case/Insights), **North Star**, **Solution & Test Ideas**, and **Go-To-Market
+  / Pricing** — filled with freeform `keyword: value` lines (all optional; every
+  keyword except `northstar` is repeatable). Insights render as **stat tiles**
+  (`insight: 40% | of shops churn`), the North Star as a prominent banner, and
+  `problem:` / `idea:` lines link out with `[label](canvas:Title)` /
+  `[[#Heading]]` / ticket keys — so the Solutions section becomes a live index
+  to your OSTs and Test Cards. Editable in Live Preview: click a line to edit,
+  hover **×** to delete, **+** to add.
+
 ## 0.60.0
 
 - **Link an item to another canvas, not just a section** — alongside heading

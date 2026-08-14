@@ -295,6 +295,32 @@ criteria: Paid conversion exceeds 5%
 \`\`\`
 `;
 
+export const COMPASS_TEMPLATE = `\`\`\`vizardry
+type: compass
+title: Personalized Onboarding
+
+forces: New users abandon setup halfway (JTBD push)
+forces: A guided wizard promises a quick first win (pull)
+forces: LLMs make personalized guidance cheap (tech foresight)
+forces: Users now expect consumer-grade setup (social)
+
+problem: New shops can't reach first value fast enough
+
+insight: 40% | of new shops abandon setup before activation
+insight: 3× | higher 90-day churn for manual accounts
+insight: 12 interviews | all cite "too many steps"
+
+northstar: 50% of new shops reach activation within day one
+
+idea: Guided setup wizard
+idea: Smart defaults by store category
+idea: Progress checklist with nudges
+
+gtm: Roll out to new signups first, then backfill existing
+pricing: Included in all tiers — an activation lever, not a paywall
+\`\`\`
+`;
+
 export const WARDLEY_TEMPLATE = `\`\`\`vizardry
 type: wardley
 title: Wardley Map

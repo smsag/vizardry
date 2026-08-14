@@ -4700,3 +4700,152 @@ body.vizardry-sketch .vzd-tree-rename-input {
 .vzd-tc-dot--editable:hover {
   border-color: var(--interactive-accent);
 }
+
+/* ══ Product Compass ═════════════════════════════════════════════════
+   A vertical discovery-brief one-pager: Challenge → North Star → Solution &
+   Test ideas → GTM/Pricing. Theme-aware; links reuse .vzd-card-link-btn. */
+.vzd-compass {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.vzd-compass-section {
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 0.7rem;
+}
+.vzd-compass-section:first-child { border-top: none; padding-top: 0; }
+
+.vzd-compass-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.74);
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+.vzd-compass-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35em;
+  height: 1.35em;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 0.85em;
+  flex: 0 0 auto;
+}
+
+.vzd-compass-body { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.vzd-compass-sublabel {
+  font-weight: 700;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.82);
+  color: var(--text-normal);
+  margin-top: 0.2rem;
+}
+
+.vzd-compass-placeholder {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* A text line that may carry a link icon at its right. */
+.vzd-compass-force,
+.vzd-compass-problem,
+.vzd-compass-idea,
+.vzd-compass-line {
+  position: relative;
+  padding: 2px 22px 2px 0;
+  color: var(--text-normal);
+}
+.vzd-compass-force::before,
+.vzd-compass-idea::before {
+  content: "▸";
+  color: var(--text-muted);
+  margin-right: 0.4em;
+}
+.vzd-compass-problem { font-weight: 600; }
+
+/* Case / Insights → stat tiles. */
+.vzd-compass-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+.vzd-compass-stat {
+  flex: 1 1 130px;
+  min-width: 110px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  background: var(--background-secondary);
+}
+.vzd-compass-stat-figure {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.7);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--interactive-accent);
+}
+.vzd-compass-stat-text {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* North Star → accent banner. */
+.vzd-compass-northstar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border));
+}
+.vzd-compass-northstar-star { color: var(--interactive-accent); font-size: 1.1em; flex: 0 0 auto; }
+.vzd-compass-northstar-text { font-weight: 700; font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.05); color: var(--text-normal); }
+
+.vzd-compass-line-text { }
+
+/* Compass edit affordances (Live Preview only). */
+.vzd-compass-editable { cursor: text; border-radius: 4px; }
+.vzd-compass-editable:hover { background: color-mix(in srgb, var(--interactive-accent) 8%, transparent); }
+.vzd-compass-force,
+.vzd-compass-idea,
+.vzd-compass-problem,
+.vzd-compass-line { padding-right: 40px; }  /* room for the × */
+.vzd-compass-del {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  padding: 0 5px;
+  color: var(--text-faint);
+  opacity: 0;
+  line-height: 1.2;
+}
+.vzd-compass-stat { position: relative; }
+.vzd-compass-stat .vzd-compass-del { top: 3px; right: 3px; transform: none; }
+.vzd-compass-force:hover .vzd-compass-del,
+.vzd-compass-idea:hover .vzd-compass-del,
+.vzd-compass-problem:hover .vzd-compass-del,
+.vzd-compass-line:hover .vzd-compass-del,
+.vzd-compass-stat:hover .vzd-compass-del { opacity: 1; }
+.vzd-compass-del:hover { color: var(--text-error, var(--text-normal)); }
+.vzd-compass-add {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.7;
+}
+.vzd-compass-add:hover { opacity: 1; color: var(--interactive-accent); }
+.vzd-compass-inline-input, .vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }

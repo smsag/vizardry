@@ -50,12 +50,14 @@ import { parseWholePerson } from "./wholeperson";
 import { parseRadar } from "./radar";
 import { parseProblem } from "./problem";
 import { parseTestCard } from "./testcard";
+import { parseCompass } from "./compass";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap, renderWheelOfLife, renderOdyssey,
   renderCircleOfInfluence, renderWholePerson, renderRadar, renderProblem, renderTestCard,
+  renderCompass,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -71,7 +73,7 @@ import {
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
   CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
-  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE,
+  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
 } from "./templates";
 
 /**
@@ -243,4 +245,8 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // Test Card parses raw source (top-level `key: value` lines, no inline-link
   // syntax) and needs no heading-link resolver.
   { id: "testcard", label: "Test Card", template: TEST_CARD_TEMPLATE, createProcessor: plain(parseTestCard, renderTestCard) },
+
+  // Product Compass: a discovery brief that indexes and links out. Registered
+  // `linked` so `problem:`/`idea:` lines can carry heading / ticket / canvas: links.
+  { id: "compass", label: "Product Compass", template: COMPASS_TEMPLATE, createProcessor: linked(parseCompass, renderCompass) },
 ];

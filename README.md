@@ -74,6 +74,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `radar` | Radar / Spider Chart | SVG chart |
 | `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
+| `compass` | Product Compass | Brief |
 
 ---
 
@@ -1447,6 +1448,39 @@ criteria: Paid conversion exceeds 5%
 - Order is ignored; an unknown field or an out-of-range gauge skips with a warning chip rather than failing the card.
 - **Editable in Live Preview:** click a step to edit its text, click a gauge dot to set its level (click the top filled dot to lower it), and click the deadline to change it — all written straight back to source. (In Read View, edit as text.)
 - Styling is Vizardry-native (theme-aware, sketch-mode and font-size controls apply).
+
+### Product Compass
+
+A **Product Compass** is a one-page discovery **brief that works as an index**: it summarizes a feature's thinking and **links out** to the deeper artifacts. It sits on top of a PRD and grows as discovery deepens. Four fixed sections — **Challenge** (Forces · Problem · Case/Insights), **North Star**, **Solution & Test Ideas** (where the links out live), **Go-To-Market / Pricing** — filled with freeform `keyword: value` lines (all optional; every keyword except `northstar` is repeatable).
+
+````
+```vizardry
+type: compass
+title: Personalized Onboarding
+
+forces: New users abandon setup halfway (JTBD push)
+forces: LLMs make personalized guidance cheap (tech foresight)
+
+problem: New shops can't reach first value fast enough
+
+insight: 40% | of new shops abandon setup before activation
+insight: 3× | higher 90-day churn for manual accounts
+
+northstar: 50% of new shops reach activation within day one
+
+idea: Guided setup wizard [OST](canvas:Onboarding OST)
+idea: Smart defaults by store category [Test](canvas:Defaults Test Card)
+
+gtm: Roll out to new signups first, then backfill
+pricing: Included in all tiers — an activation lever, not a paywall
+```
+````
+
+**Rules:**
+- `insight:` optionally splits on `|` into **figure | text** to render a stat tile; without `|` it's a plain line. `northstar:` takes the first line (one guiding outcome); everything else is repeatable.
+- `problem:` and `idea:` lines can link out with `[label](canvas:Title)` (to another canvas — e.g. the OST or Test Card), `[[#Heading]]`, or a ticket key. This is the "index" in action.
+- Unknown keys and empty values degrade to a warning chip; empty sections show a faint prompt so the structure stays visible.
+- **Editable in Live Preview:** click any line to edit it (raw value, so links are kept), hover **×** to delete, **+** to add a line to a section. (In Read View, edit as text.)
 
 ---
 
