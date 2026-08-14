@@ -20,3 +20,4 @@ export { renderWholePerson } from "./renderer/wholeperson";
 export { renderRadar } from "./renderer/radar";
 export { renderProblem } from "./renderer/problem";
 export { renderTestCard } from "./renderer/testcard";
+export { renderCompass } from "./renderer/compass";

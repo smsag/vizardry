@@ -8,7 +8,7 @@ const ALL = [
   "sipoc", "sipocflow", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
   "matrix", "scqa", "journey", "wheeloflife", "odyssey",
   "circleofinfluence", "wholeperson", "futureself", "radar", "problem",
-  "multicanvas", "testcard", "canvaslink",
+  "multicanvas", "testcard", "canvaslink", "compass",
 ];
 
 // On mobile we only snapshot the canvases whose layout is width-sensitive
