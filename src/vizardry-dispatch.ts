@@ -147,16 +147,16 @@ function renderSingleCanvas(
 
   try {
     if (definition) {
-      const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
+      const { strippedSource, inlineLinks, inlineTicketLinks, inlineCanvasLinks } = extractInlineLinks(parseSource);
       const result = parseFrameworkSource(strippedSource);
       if (!result.ok) { renderError(result.error, el); return; }
-      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+      const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks, inlineCanvasLinks);
       renderCanvas(definition, result.data, result.cardBlocks, el, resolver, navigateTo, app, ctx, source, result.allCards);
       renderCanvasWarnings(el, result.warnings);
       // Re-evaluate link buttons whenever the note's headings change (e.g. a
       // matching heading is added outside the code block after first render).
       registerCanvasRelink(ctx.sourcePath, () => {
-        const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(app, ctx), inlineTicketLinks);
+        const freshResolver = createLinkResolver(inlineLinks, getFileHeadings(app, ctx), inlineTicketLinks, inlineCanvasLinks);
         relinkCanvas(el, definition, freshResolver, navigateTo, app, ctx);
       }, el);
     } else if (custom) {

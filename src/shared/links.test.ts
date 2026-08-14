@@ -145,3 +145,39 @@ describe("createLinkResolver — resolveTicket", () => {
     expect(resolver.resolveTicket?.("Untracked item")).toBeUndefined();
   });
 });
+
+describe("extractInlineLinks — canvas: links", () => {
+  it("strips a [text](canvas:Title) target and records the label → title mapping", () => {
+    const source = "block: Roadmap [Roadmap](canvas:Q3 Roadmap)";
+    const { strippedSource, inlineCanvasLinks, inlineLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("block: Roadmap");
+    expect(inlineCanvasLinks).toEqual({ "roadmap": "Q3 Roadmap" });
+    expect(inlineLinks).toEqual({}); // not treated as a heading
+  });
+
+  it("works on a non-keyword (child node) line too", () => {
+    const source = "root: Idea\n  See plan [See plan](canvas:Delivery Plan)";
+    const { strippedSource, inlineCanvasLinks } = extractInlineLinks(source);
+    expect(strippedSource).toBe("root: Idea\n  See plan");
+    expect(inlineCanvasLinks).toEqual({ "see plan": "Delivery Plan" });
+  });
+
+  it("does not treat a #Heading or a ticket target as a canvas link", () => {
+    const { inlineCanvasLinks: fromHeading } = extractInlineLinks("block: A [A](#Section)");
+    const { inlineCanvasLinks: fromTicket } = extractInlineLinks("block: B [B](CORE-1)");
+    expect(fromHeading).toEqual({});
+    expect(fromTicket).toEqual({});
+  });
+});
+
+describe("createLinkResolver — resolveCanvas", () => {
+  it("resolves a canvas annotation case-insensitively", () => {
+    const resolver = createLinkResolver({}, [], {}, { "roadmap": "Q3 Roadmap" });
+    expect(resolver.resolveCanvas?.("Roadmap")).toBe("Q3 Roadmap");
+  });
+
+  it("returns undefined when no canvas annotation matches (no auto-detect)", () => {
+    const resolver = createLinkResolver({}, ["Q3 Roadmap"], {}, {});
+    expect(resolver.resolveCanvas?.("Q3 Roadmap")).toBeUndefined();
+  });
+});

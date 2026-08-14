@@ -75,6 +75,8 @@ export const en = {
   "nav.goToImage":        "Go to image {{n}}",
   "nav.imageCarousel":    "Image carousel, {{n}} images",
   "nav.jumpTo":           "Jump to: {{heading}}",
+  "nav.jumpToCanvas":     "Jump to canvas: {{title}}",
+  "nav.canvasNotFound":   "No canvas titled \"{{title}}\" in this note",
 
   // ── Inline editing ──────────────────────────────────────────────────────────
   "edit.clickToEdit":  "Click to edit",

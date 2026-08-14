@@ -1631,7 +1631,17 @@ block: Next Experiment [Next Experiment](#Next%20Experiment)
 
 3. **Ticket link** — `[label](TICKET-KEY)` links to Linear or Upvoty when that integration is configured, e.g. `[Fix login](CORE-1234)`.
 
-4. **Auto-detection** — if a note heading exactly matches an element label (case-insensitive), the link icon appears automatically with no extra syntax.
+4. **Canvas link** — `[label](canvas:Title)` jumps to **another canvas in the same note** whose `title:` is `Title` (matched case-insensitively). A distinct link icon appears; clicking scrolls to that canvas and briefly highlights it. Same-note only for now; the target is matched by title, so give canvases you link to a distinct `title:`.
+
+~~~
+```vizardry
+type: bmc
+block: Key Activities [see the roadmap](canvas:Q3 Roadmap)
+  Ship onboarding
+```
+~~~
+
+5. **Auto-detection** — if a note heading exactly matches an element label (case-insensitive), the heading link icon appears automatically with no extra syntax. (Canvas links have **no** auto-detection — use the explicit `canvas:` form.)
 
 For **matrix items**, place the annotation *before* the position token:
 `item: Fix login [Fix login](CORE-1234) at: t1`.

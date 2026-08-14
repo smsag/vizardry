@@ -113,10 +113,10 @@ type RenderFn<T> = (data: T, el: HTMLElement, rc: RenderContext) => void;
  */
 function linked<T>(parse: ParseFn<T>, render: RenderFn<T>): (app: App) => ProcessorFn {
   return (app) => (parseSource, fullSource, variant, el, ctx) => {
-    const { strippedSource, inlineLinks, inlineTicketLinks } = extractInlineLinks(parseSource);
+    const { strippedSource, inlineLinks, inlineTicketLinks, inlineCanvasLinks } = extractInlineLinks(parseSource);
     const result = parse(strippedSource, variant);
     if (!result.ok) { renderError(result.error, el); return; }
-    const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks);
+    const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks, inlineCanvasLinks);
     render(result.data, el, { source: fullSource, app, ctx, resolver, navigateTo });
   };
 }

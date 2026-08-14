@@ -62,6 +62,14 @@ const FIXTURES: Record<string, string> = {
   radar: inner(RADAR_TEMPLATE),
   problem: inner(PROBLEM_TEMPLATE),
   testcard: inner(TEST_CARD_TEMPLATE),
+  // A block that links to another canvas by title (canvas: target) → shows the
+  // canvas-link button next to the block value.
+  canvaslink: `type: swot
+title: Linked SWOT
+block: Strengths
+  Senior team [team](canvas:Delivery Plan)
+block: Opportunities
+  New segment`,
   // Several canvases of mixed types in one fence → carousel (first panel shown).
   multicanvas: `type: swot
 title: Strengths / Weaknesses

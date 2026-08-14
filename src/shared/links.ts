@@ -16,6 +16,9 @@ export interface LinkResolver {
   /** Explicit `[label](CORE-1234)`-style ticket annotation — no auto-detect
    *  fallback (that's what the separate blind text-scan enrichment is for). */
   resolveTicket?(label: string): TicketMatch | undefined;
+  /** Explicit `[label](canvas:Title)` annotation — the `title:` of another
+   *  canvas in the same note to jump to. No auto-detect fallback. */
+  resolveCanvas?(label: string): string | undefined;
 }
 
 /** An explicit per-item Linear/Upvoty ticket annotation. */
@@ -97,9 +100,15 @@ export function extractInlineLinks(source: string): {
   strippedSource: string;
   inlineLinks: Record<string, string>;
   inlineTicketLinks: Record<string, TicketMatch>;
+  inlineCanvasLinks: Record<string, string>;
 } {
   const inlineLinks: Record<string, string> = {};
   const inlineTicketLinks: Record<string, TicketMatch> = {};
+  const inlineCanvasLinks: Record<string, string> = {};
+
+  /** `canvas:Title` → the target canvas title, or null if not that shape. */
+  const canvasTarget = (target: string): string | null =>
+    /^canvas:/i.test(target) ? target.slice(target.indexOf(":") + 1).trim() : null;
 
   // 1. Wiki-link style: [[#Heading]]
   // Groups: (indent)(keyword: )(label text) [[#Heading]]
@@ -126,6 +135,12 @@ export function extractInlineLinks(source: string): {
       try { heading = decodeURIComponent(target.slice(1)); }
       catch { return indent + keyword + label.trim(); }
       if (key) inlineLinks[key] = heading;
+      return indent + keyword + label.trim();
+    }
+
+    const canvas = canvasTarget(target);
+    if (canvas !== null) {
+      if (key && canvas) inlineCanvasLinks[key] = canvas;
       return indent + keyword + label.trim();
     }
 
@@ -163,6 +178,12 @@ export function extractInlineLinks(source: string): {
       return indent + label.trim();
     }
 
+    const canvas = canvasTarget(target);
+    if (canvas !== null) {
+      if (canvas) inlineCanvasLinks[key] = canvas;
+      return indent + label.trim();
+    }
+
     const ticket = classifyTicketTarget(target);
     if (ticket) {
       inlineTicketLinks[key] = ticket;
@@ -172,7 +193,7 @@ export function extractInlineLinks(source: string): {
     return m;
   });
 
-  return { strippedSource, inlineLinks, inlineTicketLinks };
+  return { strippedSource, inlineLinks, inlineTicketLinks, inlineCanvasLinks };
 }
 
 /**
@@ -210,6 +231,7 @@ export function createLinkResolver(
   inlineLinks: Record<string, string>,
   headings: string[],
   inlineTicketLinks: Record<string, TicketMatch> = {},
+  inlineCanvasLinks: Record<string, string> = {},
 ): LinkResolver {
   return {
     resolve(label: string): string | undefined {
@@ -219,6 +241,9 @@ export function createLinkResolver(
     },
     resolveTicket(label: string): TicketMatch | undefined {
       return inlineTicketLinks[label.toLowerCase().trim()];
+    },
+    resolveCanvas(label: string): string | undefined {
+      return inlineCanvasLinks[label.toLowerCase().trim()];
     },
   };
 }
@@ -232,12 +257,13 @@ export function buildLinkSupport(
   ctx: MarkdownPostProcessorContext,
   inlineLinks: Record<string, string>,
   inlineTicketLinks?: Record<string, TicketMatch>,
+  inlineCanvasLinks?: Record<string, string>,
 ): {
   resolver: LinkResolver;
   navigateTo: (heading: string) => void;
 } {
   const headings = getFileHeadings(app, ctx);
-  const resolver = createLinkResolver(inlineLinks, headings, inlineTicketLinks);
+  const resolver = createLinkResolver(inlineLinks, headings, inlineTicketLinks, inlineCanvasLinks);
   const navigateTo = (heading: string): void => {
     void app.workspace.openLinkText(`#${heading}`, ctx.sourcePath, false);
   };
