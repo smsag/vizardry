@@ -21,7 +21,7 @@ import type { CompassData, CompassInsight } from "./types/compass";
  */
 
 /** Canonical section key for a raw keyword (spaces/hyphens ignored). */
-function canonKey(raw: string): string | null {
+export function canonKey(raw: string): string | null {
   const k = raw.toLowerCase().replace(/[\s_-]+/g, "");
   switch (k) {
     case "force": case "forces": return "forces";

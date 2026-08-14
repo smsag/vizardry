@@ -171,6 +171,7 @@ const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
   "vzd-journey-card-delete", "vzd-journey-add-card",
   "vzd-story-task-delete", "vzd-story-add-task",
   "vzd-nodemap-box-delete-btn",
+  "vzd-compass-del", "vzd-compass-add",
   // SVG affordances (the wrapping <g> / text element carries the class)
   "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
   "vzd-nodemap-unlink-btn", "vzd-nodemap-add-handle-g",

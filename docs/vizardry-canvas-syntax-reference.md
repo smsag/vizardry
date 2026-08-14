@@ -113,6 +113,7 @@ Rules:
 | `radar` | Radar / Spider Chart | SVG chart |
 | `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
+| `compass` | Product Compass | Brief |
 
 ---
 
@@ -1602,6 +1603,43 @@ criteria: Paid conversion exceeds 5%
 - An unknown field or a non-numeric / out-of-range gauge is dropped with a warning chip; the card never fails outright.
 - Editable in **Live Preview**: click a step to edit its text, click a gauge dot to set the level (click the top filled dot to lower it), click the deadline chip to change it — all written back to source. In Read View, edit as text.
 - Styling is Vizardry-native (theme-aware; sketch mode and font-size controls apply). It carries no Strategyzer branding.
+
+---
+
+## Product Compass (`compass`)
+
+A vertical discovery-brief one-pager that indexes a feature/product and links out to the deeper artifacts (an OST, a Test Card, …). Four fixed sections; the content within each is freeform `keyword: value` lines — all optional, and every keyword except `northstar` is **repeatable**.
+
+```
+type: compass
+title: Personalized Onboarding
+
+forces: New users abandon setup halfway (JTBD push)
+forces: Users now expect consumer-grade setup (social)
+problem: New shops can't reach first value fast enough
+insight: 40% | of new shops abandon setup before activation
+insight: 3× | higher 90-day churn for manual accounts
+northstar: 50% of new shops reach activation within day one
+idea: Guided setup wizard [OST](canvas:Onboarding OST)
+idea: Smart defaults by store category [Test](canvas:Defaults Test Card)
+gtm: Roll out to new signups first
+pricing: Included in all tiers
+```
+
+| Keyword | Section | Notes |
+| --- | --- | --- |
+| `forces:` | Challenge → Forces | repeatable; JTBD + strategic foresight, freeform |
+| `problem:` | Challenge → Problem | repeatable; may carry a link |
+| `insight:` | Challenge → Case / Insights | repeatable; `figure \| text` renders a stat tile (no `\|` = plain) |
+| `northstar:` | North Star | **single** — the first one wins |
+| `idea:` | Solution & Test Ideas | repeatable; the link-out hub (`canvas:` / heading / ticket) |
+| `gtm:` / `pricing:` | Go-To-Market / Pricing | repeatable |
+
+**Rules:**
+- Aliases accepted (`force`, `problem statement`, `case`, `north star`, `solution`, `go-to-market`, `price`).
+- Unknown keys and empty values are dropped with a warning chip; the brief never fails outright.
+- Empty sections show a faint prompt so the structure stays visible as the brief grows.
+- Editable in **Live Preview**: click any line to edit it (the raw value, so links are preserved), hover **×** to delete, **+** to add a line to a section. In Read View, edit as text.
 
 ---
 
