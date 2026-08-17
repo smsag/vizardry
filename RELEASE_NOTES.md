@@ -1,3 +1,12 @@
+## 0.61.4
+
+- **Sketch mode: much more readable** — the hand-drawn line wobble now
+  applies only to SVG shapes (paths, lines, circles), leaving text and
+  labels crisp instead of slightly displaced. The base type scale is
+  larger (1.35× instead of 1.2×) to better compensate for Caveat's small
+  x-height, and the monochrome ink is darker (32% vs 42% lightness) for
+  stronger contrast.
+
 ## 0.61.3
 
 - **Internal: unified Linear and Upvoty cache implementations** — both
