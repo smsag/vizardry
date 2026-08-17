@@ -182,30 +182,31 @@ function findCodeFenceBySource(
  * doesn't falsely close the outer vizardry fence.
  */
 export function isInsideVizardryFence(editor: MarkdownView["editor"], line: number): boolean {
-  let open = false;
-  let openLen = 0;
-  let lang = "";
-  const lineCount = editor.lineCount();
+  const unmatchedClosers: number[] = [];
 
-  for (let i = 0; i <= line && i < lineCount; i++) {
+  for (let i = line; i >= 0; i--) {
     const trimmed = editor.getLine(i).trim();
-    if (!open) {
-      const openMatch = trimmed.match(/^(`{3,})(.*)$/);
-      if (!openMatch) continue;
-      open = true;
-      openLen = openMatch[1].length;
-      lang = openMatch[2].trim().split(/\s+/)[0]?.toLowerCase() ?? "";
-      if (i === line) return false; // cursor is on the opening fence line itself
+    const fenceMatch = trimmed.match(/^(`{3,})(.*)$/);
+    if (!fenceMatch) continue;
+
+    const backtickLen = fenceMatch[1].length;
+    const rest = fenceMatch[2].trim();
+
+    if (rest === "") {
+      unmatchedClosers.push(backtickLen);
     } else {
-      const closeRe = new RegExp(`^\`{${openLen},}\\s*$`);
-      if (closeRe.test(trimmed)) {
-        if (i === line) return false; // cursor is on the closing fence line itself
-        open = false;
+      const matchIdx = unmatchedClosers.findIndex(cl => cl >= backtickLen);
+      if (matchIdx !== -1) {
+        unmatchedClosers.splice(matchIdx, 1);
+      } else {
+        if (i === line) return false;
+        const lang = rest.split(/\s+/)[0]?.toLowerCase() ?? "";
+        return lang === "vizardry";
       }
     }
   }
 
-  return open && lang === "vizardry";
+  return false;
 }
 
 export function insertTemplateAtCursor(editor: Editor, template: string): void {

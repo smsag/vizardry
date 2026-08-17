@@ -29,6 +29,8 @@ export function getLinearService(): LinearService | null {
 class LinearService {
   private plugin: Plugin & { app: App; settings: PluginSettings };
   readonly cache: LinearCache;
+  private inflightStatus = new Map<string, Promise<LinearState | null>>();
+  private inflightSummary = new Map<string, Promise<{ title: string; summary: string; state: LinearState; assignee: string | null; updatedAt: string; url: string } | { error: string } | null>>();
 
   constructor(plugin: Plugin & { app: App; settings: PluginSettings }) {
     this.plugin = plugin;
@@ -50,80 +52,96 @@ class LinearService {
   async getStatus(issueKey: string): Promise<LinearState | null> {
     if (!this.isEnabled()) return null;
 
-    const linearApiKey = await this.getLinearApiKey();
-    if (!linearApiKey) return null;
+    const existing = this.inflightStatus.get(issueKey);
+    if (existing) return existing;
 
-    const { statusTtlMinutes, linearBaseUrl } = this.plugin.settings;
-    const cached = this.cache.getStatus(issueKey, statusTtlMinutes);
-    if (cached) return cached;
+    const p = (async () => {
+      const linearApiKey = await this.getLinearApiKey();
+      if (!linearApiKey) return null;
 
-    try {
-      const issue = await fetchLinearIssue(issueKey, linearApiKey, linearBaseUrl);
-      this.cache.setStatus(issueKey, issue.state);
-      const existing = this.cache.getEntry(issueKey);
-      // The issue changed on Linear (or we've never cached it) — reset the
-      // summary so a stale one isn't shown until the next getSummary() call
-      // regenerates it. (existing.issueUpdatedAt === issue.updatedAt is
-      // never true here — that case is excluded by the guard above — so
-      // there's no "keep the existing summary" branch to preserve.)
-      if (!existing || existing.issueUpdatedAt !== issue.updatedAt) {
-        await this.cache.setSummary(issueKey, {
-          state: issue.state,
-          summary: "",
-          issueUpdatedAt: issue.updatedAt,
-          summarizedAt: 0,
-        });
+      const { statusTtlMinutes, linearBaseUrl } = this.plugin.settings;
+      const cached = this.cache.getStatus(issueKey, statusTtlMinutes);
+      if (cached) return cached;
+
+      try {
+        const issue = await fetchLinearIssue(issueKey, linearApiKey, linearBaseUrl);
+        this.cache.setStatus(issueKey, issue.state);
+        const entry = this.cache.getEntry(issueKey);
+        // The issue changed on Linear (or we've never cached it) — reset the
+        // summary so a stale one isn't shown until the next getSummary() call
+        // regenerates it. (entry.issueUpdatedAt === issue.updatedAt is never
+        // true here — that case is excluded by the guard above — so there's
+        // no "keep the existing summary" branch to preserve.)
+        if (!entry || entry.issueUpdatedAt !== issue.updatedAt) {
+          await this.cache.setSummary(issueKey, {
+            state: issue.state,
+            summary: "",
+            issueUpdatedAt: issue.updatedAt,
+            summarizedAt: 0,
+          });
+        }
+        return issue.state;
+      } catch (err) {
+        console.warn(`Vizardry: LinearService.getStatus("${issueKey}")`, err);
+        return null;
       }
-      return issue.state;
-    } catch (err) {
-      console.warn(`Vizardry: LinearService.getStatus("${issueKey}")`, err);
-      return null;
-    }
+    })();
+    this.inflightStatus.set(issueKey, p);
+    void p.finally(() => this.inflightStatus.delete(issueKey));
+    return p;
   }
 
   async getSummary(issueKey: string): Promise<{ title: string; summary: string; state: LinearState; assignee: string | null; updatedAt: string; url: string } | { error: string } | null> {
     if (!this.isEnabled()) return null;
 
-    let linearApiKey: string | null;
-    let llmApiKey: string | null;
-    try {
-      [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
-    } catch (err) {
-      console.warn("Vizardry: getSummary — key loading threw", err);
-      return { error: t("service.error.keyLookupFailed", { message: (err as Error).message ?? String(err) }) };
-    }
+    const existing = this.inflightSummary.get(issueKey);
+    if (existing) return existing;
 
-    if (!linearApiKey) return { error: t("service.error.noLinearKey", { secret: this.plugin.settings.linearSecretName }) };
-    if (!llmApiKey) return { error: t("service.error.noAiKey", { secret: this.plugin.settings.llmSecretName }) };
-
-    const { summaryTtlHours, linearBaseUrl, llmProvider, llmModel } = this.plugin.settings;
-
-    try {
-      const issue = await fetchLinearIssue(issueKey, linearApiKey, linearBaseUrl);
-      this.cache.setStatus(issueKey, issue.state);
-
-      const cachedSummary = this.cache.getSummary(issueKey, summaryTtlHours, issue.updatedAt);
-      if (cachedSummary) {
-        return { title: issue.title, summary: cachedSummary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt, url: issue.url };
+    const p = (async () => {
+      let linearApiKey: string | null;
+      let llmApiKey: string | null;
+      try {
+        [linearApiKey, llmApiKey] = await Promise.all([this.getLinearApiKey(), this.getLlmApiKey()]);
+      } catch (err) {
+        console.warn("Vizardry: getSummary — key loading threw", err);
+        return { error: t("service.error.keyLookupFailed", { message: (err as Error).message ?? String(err) }) };
       }
 
-      const summary = await summarizeIssue(issue, llmApiKey, llmProvider, llmModel);
-      await this.cache.setSummary(issueKey, {
-        state: issue.state,
-        summary,
-        issueUpdatedAt: issue.updatedAt,
-        summarizedAt: Date.now(),
-      });
+      if (!linearApiKey) return { error: t("service.error.noLinearKey", { secret: this.plugin.settings.linearSecretName }) };
+      if (!llmApiKey) return { error: t("service.error.noAiKey", { secret: this.plugin.settings.llmSecretName }) };
 
-      return { title: issue.title, summary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt, url: issue.url };
-    } catch (err) {
-      const msg = (err as Error).message ?? String(err);
-      console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);
-      if (!_authNoticeShown && msg.toLowerCase().includes("invalid or missing api key")) {
-        _authNoticeShown = true;
-        new Notice(t("service.notice.linearAuth"), 8000);
+      const { summaryTtlHours, linearBaseUrl, llmProvider, llmModel } = this.plugin.settings;
+
+      try {
+        const issue = await fetchLinearIssue(issueKey, linearApiKey, linearBaseUrl);
+        this.cache.setStatus(issueKey, issue.state);
+
+        const cachedSummary = this.cache.getSummary(issueKey, summaryTtlHours, issue.updatedAt);
+        if (cachedSummary) {
+          return { title: issue.title, summary: cachedSummary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt, url: issue.url };
+        }
+
+        const summary = await summarizeIssue(issue, llmApiKey, llmProvider, llmModel);
+        await this.cache.setSummary(issueKey, {
+          state: issue.state,
+          summary,
+          issueUpdatedAt: issue.updatedAt,
+          summarizedAt: Date.now(),
+        });
+
+        return { title: issue.title, summary, state: issue.state, assignee: issue.assignee, updatedAt: issue.updatedAt, url: issue.url };
+      } catch (err) {
+        const msg = (err as Error).message ?? String(err);
+        console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);
+        if (!_authNoticeShown && msg.toLowerCase().includes("invalid or missing api key")) {
+          _authNoticeShown = true;
+          new Notice(t("service.notice.linearAuth"), 8000);
+        }
+        return { error: msg };
       }
-      return { error: msg };
-    }
+    })();
+    this.inflightSummary.set(issueKey, p);
+    void p.finally(() => this.inflightSummary.delete(issueKey));
+    return p;
   }
 }

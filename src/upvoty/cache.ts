@@ -3,6 +3,8 @@ import type { UpvotyPost, UpvotyCacheEntry } from "./types";
 import { updatePersistedData } from "../shared/persisted-data";
 import { evictSummaryEntries, touchSummaryEntry } from "../shared/summary-cache";
 
+const MAX_STATUS_ENTRIES = 200;
+
 interface StatusEntry {
   post: UpvotyPost;
   fetchedAt: number;
@@ -46,7 +48,13 @@ export class UpvotyCache {
   }
 
   setPost(postId: string, post: UpvotyPost): void {
+    this.statusCache.delete(postId);
     this.statusCache.set(postId, { post, fetchedAt: Date.now() });
+    while (this.statusCache.size > MAX_STATUS_ENTRIES) {
+      const oldest = this.statusCache.keys().next().value;
+      if (oldest === undefined) break;
+      this.statusCache.delete(oldest);
+    }
   }
 
   // ── Summaries ────────────────────────────────────────────────────────────────
