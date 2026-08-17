@@ -19,8 +19,8 @@
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { resolveEditor } from "./editor";
 import {
-  getEditorAccess,
   detectIndentUnit,
   subtreeEnd,
   deleteLines,
@@ -118,7 +118,7 @@ export function renameKeywordTreeNode(
   const keyword = keywordOverride || config.levelKeyword[level];
   if (!keyword) return false;
 
-  const access = getEditorAccess(app, ctx, el, "renameKeywordTreeNode");
+  const access = resolveEditor(app, ctx, el, "renameKeywordTreeNode");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -149,7 +149,7 @@ export function addKeywordTreeChild(
     return false;
   }
 
-  const access = getEditorAccess(app, ctx, el, "addKeywordTreeChild");
+  const access = resolveEditor(app, ctx, el, "addKeywordTreeChild");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -218,7 +218,7 @@ export function deleteKeywordTreeNode(
   const keyword = keywordOverride || config.levelKeyword[level];
   if (!keyword) return false;
 
-  const access = getEditorAccess(app, ctx, el, "deleteKeywordTreeNode");
+  const access = resolveEditor(app, ctx, el, "deleteKeywordTreeNode");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -262,7 +262,7 @@ export function addKeywordTreeBullet(
   nodeKeyword: string, nodeText: string, bulletText: string,
 ): boolean {
   if (!bulletText.trim()) return false;
-  const access = getEditorAccess(app, ctx, el, "addKeywordTreeBullet");
+  const access = resolveEditor(app, ctx, el, "addKeywordTreeBullet");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -288,7 +288,7 @@ export function editKeywordTreeBullet(
   nodeKeyword: string, nodeText: string, oldBullet: string, newBullet: string,
 ): boolean {
   if (!newBullet.trim() || newBullet === oldBullet) return false;
-  const access = getEditorAccess(app, ctx, el, "editKeywordTreeBullet");
+  const access = resolveEditor(app, ctx, el, "editKeywordTreeBullet");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -317,7 +317,7 @@ export function deleteKeywordTreeBullet(
   config: KeywordTreeConfig,
   nodeKeyword: string, nodeText: string, bulletText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "deleteKeywordTreeBullet");
+  const access = resolveEditor(app, ctx, el, "deleteKeywordTreeBullet");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 

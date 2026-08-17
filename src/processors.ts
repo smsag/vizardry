@@ -25,7 +25,15 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { extractInlineLinks, buildLinkSupport } from "./shared/links";
-import { resolveVaultPath } from "./shared/vault";
+function resolveVaultPath(sourcePath: string, rel: string): string {
+  const parts = (sourcePath.replace(/[^/]+$/, "") + rel).split("/");
+  const out: string[] = [];
+  for (const p of parts) {
+    if (p === "..") out.pop();
+    else if (p !== ".") out.push(p);
+  }
+  return out.join("/");
+}
 import { parseFishbone } from "./fishbone";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";

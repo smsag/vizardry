@@ -75,12 +75,12 @@ describe("UpvotyCache", () => {
     const plugin = fakePlugin();
     const cache = new UpvotyCache(plugin as any);
     cache.init({ "post-1": { summary: "X", postUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
-    cache.setPost("post-1", { id: "post-1" } as any);
+    cache.setStatus("post-1", { id: "post-1" } as any);
 
     await cache.clearAndPersist();
 
     expect(cache.getEntry("post-1")).toBeUndefined();
-    expect(cache.getPost("post-1", 60)).toBeNull();
+    expect(cache.getStatus("post-1", 60)).toBeNull();
     expect(plugin.saveData).toHaveBeenCalledWith(expect.objectContaining({ upvotyCache: {} }));
   });
 });

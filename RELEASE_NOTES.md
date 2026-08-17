@@ -1,3 +1,16 @@
+## 0.61.3
+
+- **Internal: unified Linear and Upvoty cache implementations** — both
+  integrations now share a single generic `IntegrationCache` class, eliminating
+  ~200 lines of near-identical code that previously had to be kept in sync.
+- **Internal: inlined thin tree-edit wrappers** — four one-liner forwarding
+  modules (fishbone-edit, impact-edit, mindmap-edit, ost-edit) replaced with
+  config constants passed directly to the shared engine, removing ~450 lines
+  and 8 files with no change in behaviour.
+- **Internal: removed pass-through and single-use modules** — `getEditorAccess`
+  (a pass-through to `resolveEditor`), `vault.ts`, `nodemap-colors.ts`, and an
+  unused constant deleted or inlined into their sole consumer.
+
 ## 0.61.2
 
 - **Performance: duplicate API calls eliminated** — rapidly clicking the same

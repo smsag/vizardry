@@ -8,9 +8,6 @@ export const SWIPE_THRESHOLD_PX = 40;
  */
 export const FULL_WIDTH_MARGIN_PX = 32;
 
-/** Maximum characters shown in a SIPOC Flow node label before truncation with "…". */
-export const SIPOC_FLOW_LABEL_MAX_CHARS = 16;
-
 /** Approximate character width (px) used for Wardley Map label overlap estimation. */
 export const WARDLEY_CHAR_W_PX = 7;
 /** Minimum vertical gap (px) enforced between any two Wardley Map label baselines. */

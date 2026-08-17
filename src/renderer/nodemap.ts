@@ -8,7 +8,21 @@ import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { rectBoundary, type Vec2 } from "../shared/geometry";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
-import { resolveNodeMapColor } from "../shared/nodemap-colors";
+const NODEMAP_PALETTE: Record<string, string> = {
+  red: "hsl(0, 70%, 55%)",
+  orange: "hsl(28, 85%, 55%)",
+  yellow: "hsl(48, 85%, 50%)",
+  green: "hsl(145, 55%, 42%)",
+  teal: "hsl(175, 55%, 40%)",
+  blue: "hsl(220, 65%, 55%)",
+  purple: "hsl(270, 55%, 55%)",
+  pink: "hsl(330, 65%, 60%)",
+  gray: "hsl(220, 10%, 55%)",
+};
+
+function resolveNodeMapColor(color: NodeMapColor): string {
+  return color.startsWith("#") ? color : (NODEMAP_PALETTE[color] ?? color);
+}
 import { wireRenameInputKeys, createBlurGuard, activateTextareaEdit } from "./inline-edit";
 import {
   writeNodeMapBoxPosition, addNodeMapBox, removeNodeMapBox, renameNodeMapBox,
