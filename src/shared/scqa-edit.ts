@@ -17,7 +17,8 @@
  */
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { getEditorAccess, editorWrite } from "./tree-editor-access";
+import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 import {
   renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode,
   addKeywordTreeBullet, editKeywordTreeBullet, deleteKeywordTreeBullet,
@@ -102,7 +103,7 @@ export function reorderSCQANode(
   nodeText: string,
   targetIndex: number,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "reorderSCQANode");
+  const access = resolveEditor(app, ctx, el, "reorderSCQANode");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 

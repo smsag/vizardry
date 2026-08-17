@@ -88,7 +88,7 @@ class UpvotyService {
 
       try {
         const post = await fetchUpvotyPost(postId, upvotyBaseUrl, upvotyApiKey);
-        this.cache.setPost(postId, post);
+        this.cache.setStatus(postId, post);
 
         const cachedSummary = this.cache.getSummary(postId, summaryTtlHours, post.updated_at);
         if (cachedSummary) {
@@ -139,12 +139,12 @@ class UpvotyService {
         return { error: t("service.error.noUpvotyKeyShort") };
       }
 
-      const cached = this.cache.getPost(postId, this.plugin.settings.upvotyStatusTtlMinutes);
+      const cached = this.cache.getStatus(postId, this.plugin.settings.upvotyStatusTtlMinutes);
       if (cached) return cached;
 
       try {
         const post = await fetchUpvotyPost(postId, this.plugin.settings.upvotyBaseUrl, apiKey);
-        this.cache.setPost(postId, post);
+        this.cache.setStatus(postId, post);
         return post;
       } catch (err) {
         const msg = (err as Error).message ?? String(err);

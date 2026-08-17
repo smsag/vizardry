@@ -9,10 +9,29 @@ import type { RenderContext } from "./render-context";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
-import { renameMindMapNode, addMindMapChild, deleteMindMapNode } from "../shared/mindmap-edit";
-import { renameOSTNode, addOSTChild, deleteOSTNode, addOSTBullet, editOSTBullet, deleteOSTBullet } from "../shared/ost-edit";
-import { renameImpactNode, addImpactChild, deleteImpactNode } from "../shared/impact-edit";
-import { renameFishboneNode, addFishboneChild, deleteFishboneNode } from "../shared/fishbone-edit";
+import { renameRootKwTreeNode, addRootKwTreeChild, deleteRootKwTreeNode } from "../shared/rootkw-tree-edit";
+import type { RootKwTreeConfig } from "../shared/rootkw-tree-edit";
+import {
+  renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode,
+  addKeywordTreeBullet, editKeywordTreeBullet, deleteKeywordTreeBullet,
+} from "../shared/keyword-tree-edit";
+import type { KeywordTreeConfig } from "../shared/keyword-tree-edit";
+
+const MINDMAP_CONFIG: RootKwTreeConfig = { rootKeyword: "root" };
+
+const FISHBONE_CONFIG: KeywordTreeConfig = {
+  levelKeyword: { 0: "effect", 1: "category", 2: "cause", 3: "subcause" },
+};
+
+const IMPACT_CONFIG: KeywordTreeConfig = {
+  levelKeyword: { 0: "goal", 1: "actor", 2: "impact", 3: "deliverable" },
+};
+
+const OST_CONFIG: KeywordTreeConfig = {
+  levelKeyword: { 0: "outcome", 1: "need", 2: "solution", 3: "experiment" },
+  levelAliases: { 1: ["pain", "desire"] },
+  strictNesting: true,
+};
 
 // ── Mind Map ──────────────────────────────────────────────────────────────────
 
@@ -46,17 +65,17 @@ function makeMindMapHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameMindMapNode(app, ctx, container, node.text, newText)) {
+      if (!renameRootKwTreeNode(app, ctx, container, MINDMAP_CONFIG, node.text, newText)) {
         showWriteFailedNotice(container);
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addMindMapChild(app, ctx, container, node.text, t("tree.newNode"))) {
+      if (!addRootKwTreeChild(app, ctx, container, MINDMAP_CONFIG, node.text, t("tree.newNode"))) {
         showWriteFailedNotice(container);
       }
     },
     onDelete(node: TreeNode): void {
-      if (!deleteMindMapNode(app, ctx, container, node.text)) {
+      if (!deleteRootKwTreeNode(app, ctx, container, MINDMAP_CONFIG, node.text)) {
         showWriteFailedNotice(container);
       }
     },
@@ -91,17 +110,17 @@ function makeImpactHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameImpactNode(app, ctx, container, node.level, node.text, newText)) {
+      if (!renameKeywordTreeNode(app, ctx, container, IMPACT_CONFIG, node.level, node.text, newText)) {
         showWriteFailedNotice(container);
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addImpactChild(app, ctx, container, node.level, node.text, "")) {
+      if (!addKeywordTreeChild(app, ctx, container, IMPACT_CONFIG, node.level, node.text, "")) {
         showWriteFailedNotice(container);
       }
     },
     onDelete(node: TreeNode): void {
-      if (!deleteImpactNode(app, ctx, container, node.level, node.text)) {
+      if (!deleteKeywordTreeNode(app, ctx, container, IMPACT_CONFIG, node.level, node.text)) {
         showWriteFailedNotice(container);
       }
     },
@@ -137,32 +156,32 @@ function makeOSTHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameOSTNode(app, ctx, el, node.key ?? "", node.level, node.text, newText)) {
+      if (!renameKeywordTreeNode(app, ctx, el, OST_CONFIG, node.level, node.text, newText, node.key ?? "")) {
         showWriteFailedNotice(el);
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addOSTChild(app, ctx, el, node.key ?? "", node.level, node.text, t("tree.newNode"))) {
+      if (!addKeywordTreeChild(app, ctx, el, OST_CONFIG, node.level, node.text, t("tree.newNode"), node.key ?? "")) {
         showWriteFailedNotice(el);
       }
     },
     onDelete(node: TreeNode): void {
-      if (!deleteOSTNode(app, ctx, el, node.key ?? "", node.level, node.text)) {
+      if (!deleteKeywordTreeNode(app, ctx, el, OST_CONFIG, node.level, node.text, node.key ?? "")) {
         showWriteFailedNotice(el);
       }
     },
     onAddBullet(node: TreeNode, text: string): void {
-      if (!addOSTBullet(app, ctx, el, node.key ?? "", node.text, text)) {
+      if (!addKeywordTreeBullet(app, ctx, el, OST_CONFIG, node.key ?? "", node.text, text)) {
         showWriteFailedNotice(el);
       }
     },
     onEditBullet(node: TreeNode, oldText: string, newText: string): void {
-      if (!editOSTBullet(app, ctx, el, node.key ?? "", node.text, oldText, newText)) {
+      if (!editKeywordTreeBullet(app, ctx, el, OST_CONFIG, node.key ?? "", node.text, oldText, newText)) {
         showWriteFailedNotice(el);
       }
     },
     onDeleteBullet(node: TreeNode, text: string): void {
-      if (!deleteOSTBullet(app, ctx, el, node.key ?? "", node.text, text)) {
+      if (!deleteKeywordTreeBullet(app, ctx, el, OST_CONFIG, node.key ?? "", node.text, text)) {
         showWriteFailedNotice(el);
       }
     },
@@ -197,17 +216,17 @@ function makeFishboneHandlers(
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
-      if (!renameFishboneNode(app, ctx, container, node.level, node.text, newText)) {
+      if (!renameKeywordTreeNode(app, ctx, container, FISHBONE_CONFIG, node.level, node.text, newText)) {
         showWriteFailedNotice(container);
       }
     },
     onAddChild(node: TreeNode): void {
-      if (!addFishboneChild(app, ctx, container, node.level, node.text, t("tree.newNode"))) {
+      if (!addKeywordTreeChild(app, ctx, container, FISHBONE_CONFIG, node.level, node.text, t("tree.newNode"))) {
         showWriteFailedNotice(container);
       }
     },
     onDelete(node: TreeNode): void {
-      if (!deleteFishboneNode(app, ctx, container, node.level, node.text)) {
+      if (!deleteKeywordTreeNode(app, ctx, container, FISHBONE_CONFIG, node.level, node.text)) {
         showWriteFailedNotice(container);
       }
     },

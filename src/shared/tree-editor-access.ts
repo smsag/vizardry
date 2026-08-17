@@ -1,39 +1,5 @@
-/**
- * Shared helpers for tree canvas edit modules (Mind Map, OST, Impact Map).
- *
- * Each module needs: the live editor reference, the code-block line bounds,
- * and utilities for indent-based source manipulation.
- */
-
-import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
+import type { Editor } from "obsidian";
 import { ownerWindow } from "./lifecycle";
-import { resolveEditor } from "./editor";
-
-export interface EditorAccess {
-  editor: Editor;
-  lineStart: number;
-  lineEnd: number;
-}
-
-/**
- * Resolves the live editor and the code-block line range for the given
- * element. Returns null when the note is not open in editing mode (Read View).
- *
- * Delegates to resolveEditor so the tree canvases (OST, Mind Map, Impact,
- * Fishbone, SCQA tree) share its Live-Preview fallback: ctx.getSectionInfo()
- * returns null in Live Preview, and resolveEditor then locates the block by
- * scanning for the code fence matching the container's dataset.vzSource.
- * Without this, tree-node edits fail to save in Live Edit ("Edit could not be
- * saved — open the note in editing mode").
- */
-export function getEditorAccess(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  el: HTMLElement,
-  callerName: string,
-): EditorAccess | null {
-  return resolveEditor(app, ctx, el, callerName);
-}
 
 /**
  * Returns the number of leading spaces on the first indented line in the

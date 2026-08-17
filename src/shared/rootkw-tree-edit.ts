@@ -19,8 +19,8 @@
  */
 
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
+import { resolveEditor } from "./editor";
 import {
-  getEditorAccess,
   detectIndentUnit,
   subtreeEnd,
   deleteLines,
@@ -86,7 +86,7 @@ export function renameRootKwTreeNode(
 ): boolean {
   if (!newText.trim() || newText === oldText) return false;
 
-  const access = getEditorAccess(app, ctx, el, "renameRootKwTreeNode");
+  const access = resolveEditor(app, ctx, el, "renameRootKwTreeNode");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -108,7 +108,7 @@ export function addRootKwTreeChild(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
   config: RootKwTreeConfig, parentText: string, newChildText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "addRootKwTreeChild");
+  const access = resolveEditor(app, ctx, el, "addRootKwTreeChild");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
@@ -158,7 +158,7 @@ export function deleteRootKwTreeNode(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
   config: RootKwTreeConfig, nodeText: string,
 ): boolean {
-  const access = getEditorAccess(app, ctx, el, "deleteRootKwTreeNode");
+  const access = resolveEditor(app, ctx, el, "deleteRootKwTreeNode");
   if (!access) return false;
   const { editor, lineStart, lineEnd } = access;
 
