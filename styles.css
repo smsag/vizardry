@@ -4755,12 +4755,19 @@ body.vizardry-sketch .vzd-tree-rename-input {
   font-style: italic;
 }
 
-/* A text line that may carry a link icon at its right. */
+/* A text line that may carry a link icon at its right. display: flex (not
+   plain inline flow) so the ▸ bullet and the text/input sit as flex items on
+   one line — with plain inline flow, the edit <input>'s width: 100% resolves
+   against the whole row's width, and since that doesn't fit next to the
+   bullet on the same line, the browser wraps the input onto its own new
+   line the moment you click to edit. */
 .vzd-compass-force,
 .vzd-compass-problem,
 .vzd-compass-idea,
 .vzd-compass-line {
   position: relative;
+  display: flex;
+  align-items: baseline;
   padding: 2px 22px 2px 0;
   color: var(--text-normal);
 }
@@ -4770,7 +4777,16 @@ body.vizardry-sketch .vzd-tree-rename-input {
   color: var(--text-muted);
   margin-right: 0.4em;
 }
-.vzd-compass-problem { font-weight: 600; }
+/* Problem stands out — same accent-tint recipe as the Problem Statement
+   canvas's "gap" stage card (renderer/flow-graph.ts), so the crux of the
+   brief reads as visually distinct the same way across both canvases. */
+.vzd-compass-problem {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-primary));
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 45%, var(--background-modifier-border));
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+}
 
 /* Case / Insights → stat tiles. */
 .vzd-compass-stats {
@@ -4812,7 +4828,11 @@ body.vizardry-sketch .vzd-tree-rename-input {
 .vzd-compass-northstar-star { color: var(--interactive-accent); font-size: 1.1em; flex: 0 0 auto; }
 .vzd-compass-northstar-text { font-weight: 700; font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.05); color: var(--text-normal); }
 
-.vzd-compass-line-text { }
+/* Flex item alongside the ▸ bullet (see the row rule above) — flex: 1 1 auto
+   with min-width: 0 lets it (and the edit <input> inside it, width: 100%)
+   fill just the space next to the bullet instead of the input's percentage
+   width resolving against the whole row and forcing a wrap. */
+.vzd-compass-line-text { flex: 1 1 auto; min-width: 0; }
 
 /* Compass edit affordances (Live Preview only). */
 .vzd-compass-editable { cursor: text; border-radius: 4px; }
