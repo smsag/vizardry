@@ -3,6 +3,8 @@ import type { CacheEntry, LinearState } from "./types";
 import { updatePersistedData } from "../shared/persisted-data";
 import { evictSummaryEntries, touchSummaryEntry } from "../shared/summary-cache";
 
+const MAX_STATUS_ENTRIES = 200;
+
 interface StatusEntry {
   state: LinearState;
   fetchedAt: number;
@@ -46,7 +48,13 @@ export class LinearCache {
   }
 
   setStatus(issueKey: string, state: LinearState): void {
+    this.statusCache.delete(issueKey);
     this.statusCache.set(issueKey, { state, fetchedAt: Date.now() });
+    while (this.statusCache.size > MAX_STATUS_ENTRIES) {
+      const oldest = this.statusCache.keys().next().value;
+      if (oldest === undefined) break;
+      this.statusCache.delete(oldest);
+    }
   }
 
   // ── Summaries ────────────────────────────────────────────────────────────────

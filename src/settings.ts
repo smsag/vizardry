@@ -6,6 +6,14 @@ import { getLinearService } from "./linear";
 import { getUpvotyService } from "./upvoty";
 import { t } from "./i18n";
 
+function debounce<T extends (...args: unknown[]) => unknown>(fn: T, ms: number): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+}
+
 export interface PluginSettings {
   // Appearance
   /** Render canvases with a handwriting font + monochrome ink (whiteboard look). */
@@ -49,7 +57,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   linearBaseUrl: "https://api.linear.app/graphql",
   linearSecretName: "vzd-linear-key",
   llmProvider: "anthropic",
-  llmModel: "claude-haiku-4-5-20251001",
+  llmModel: "claude-haiku-4-5-latest",
   llmSecretName: "vzd-llm-key",
   summaryTtlHours: 24,
   statusTtlMinutes: 5,
@@ -62,8 +70,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 };
 
 const ANTHROPIC_MODELS = [
-  { value: "claude-haiku-4-5-20251001",  label: "Claude Haiku 4.5 (fast, cheap)" },
-  { value: "claude-sonnet-4-5-20251001", label: "Claude Sonnet 4.5 (balanced)" },
+  { value: "claude-haiku-4-5-latest",  label: "Claude Haiku 4.5 (fast, cheap)" },
+  { value: "claude-sonnet-4-5-latest", label: "Claude Sonnet 4.5 (balanced)" },
 ];
 
 const OPENAI_MODELS = [
@@ -265,6 +273,25 @@ export class VizardrySettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
+    const debouncedSaveSketchFont = debounce(() => {
+      this.plugin.applySketchMode();
+      void this.plugin.saveSettings();
+    }, 300);
+
+    const debouncedSaveAndClearLinear = debounce(() => {
+      void this.plugin.saveSettings();
+      void getLinearService()?.cache.clearAndPersist();
+    }, 300);
+
+    const debouncedSave = debounce(() => {
+      void this.plugin.saveSettings();
+    }, 300);
+
+    const debouncedSaveAndClearUpvoty = debounce(() => {
+      void this.plugin.saveSettings();
+      void getUpvotyService()?.cache.clearAndPersist();
+    }, 300);
+
     // ── Appearance ─────────────────────────────────────────────────────────────
     containerEl.createEl("h2", { text: t("settings.section.appearance") });
 
@@ -288,10 +315,9 @@ export class VizardrySettingTab extends PluginSettingTab {
         text
           .setPlaceholder("Caveat, Comic Sans MS, cursive")
           .setValue(this.plugin.settings.sketchFont)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.sketchFont = value;
-            this.plugin.applySketchMode();
-            await this.plugin.saveSettings();
+            debouncedSaveSketchFont();
           }),
       );
 
@@ -332,10 +358,9 @@ export class VizardrySettingTab extends PluginSettingTab {
         text
           .setPlaceholder("https://api.linear.app/graphql")
           .setValue(this.plugin.settings.linearBaseUrl)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.linearBaseUrl = value.trim() || DEFAULT_SETTINGS.linearBaseUrl;
-            await this.plugin.saveSettings();
-            void getLinearService()?.cache.clearAndPersist();
+            debouncedSaveAndClearLinear();
           }),
       );
 
@@ -471,9 +496,9 @@ export class VizardrySettingTab extends PluginSettingTab {
         text
           .setPlaceholder("UPV")
           .setValue(this.plugin.settings.upvotyKeyPrefix)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.upvotyKeyPrefix = value.trim() || "UPV";
-            await this.plugin.saveSettings();
+            debouncedSave();
           }),
       );
 
@@ -484,10 +509,9 @@ export class VizardrySettingTab extends PluginSettingTab {
         text
           .setPlaceholder("https://api.upvotyfeedback.com/v1")
           .setValue(this.plugin.settings.upvotyBaseUrl)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.upvotyBaseUrl = value.trim() || DEFAULT_SETTINGS.upvotyBaseUrl;
-            await this.plugin.saveSettings();
-            void getUpvotyService()?.cache.clearAndPersist();
+            debouncedSaveAndClearUpvoty();
           }),
       );
 
@@ -498,9 +522,9 @@ export class VizardrySettingTab extends PluginSettingTab {
         text
           .setPlaceholder("https://app.upvoty.com/feedback")
           .setValue(this.plugin.settings.upvotyAppUrl)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.upvotyAppUrl = value.trim() || DEFAULT_SETTINGS.upvotyAppUrl;
-            await this.plugin.saveSettings();
+            debouncedSave();
           }),
       );
 
