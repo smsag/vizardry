@@ -1,3 +1,18 @@
+## 0.61.1
+
+- **Fix: editing a Forces or Idea line in Product Compass no longer breaks
+  onto a new line** — the click-to-edit input is full-width, which didn't fit
+  next to the ▸ bullet in plain inline flow, so entering edit mode wrapped it
+  onto its own line. The row is now a flex layout so the input correctly
+  fills just the space next to the bullet.
+- **Product Compass: Problem now stands out** — it gets the same accent-tint
+  treatment as the Problem Statement canvas's "gap" stage card, so the crux
+  of the brief reads as visually distinct the same way across both canvases.
+- **Product Compass: larger default text** — Compass carries actual prose
+  (problem statements, GTM notes) rather than the short block labels most
+  other canvases show, so its default type scale is now 10% larger; every
+  other canvas is unaffected.
+
 ## 0.61.0
 
 - **New canvas: Product Compass (`type: compass`)** — a one-page discovery
