@@ -4709,6 +4709,17 @@ body.vizardry-sketch .vzd-tree-rename-input {
   flex-direction: column;
   gap: 1.1rem;
   margin-top: 0.5rem;
+  /* Compass carries actual prose (problem statements, GTM notes) rather than
+     the short 2-6 word block labels most other canvases show, so the shared
+     --vzd-base default (Obsidian's small UI font) reads as cramped here.
+     Re-declaring --vzd-base (not the global default) scales every compass
+     sub-element proportionally — eyebrows, sublabels, stat tiles, North Star
+     text all reference var(--vzd-base) already — while leaving every other
+     canvas's compact aesthetic untouched. Compounds correctly on top of a
+     user's own +/- font-size adjustment, since it multiplies whatever value
+     is inherited rather than replacing it. */
+  --vzd-base: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
+  font-size: var(--vzd-base);
 }
 
 .vzd-compass-section {
