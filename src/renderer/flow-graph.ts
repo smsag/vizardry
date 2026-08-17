@@ -165,7 +165,7 @@ function makeEditable(el: HTMLElement, initial: string, commit: (value: string) 
     if (el.getAttribute("contenteditable")) return;
     el.setAttribute("contenteditable", "plaintext-only");
     el.setAttribute("spellcheck", "false");
-    el.focus();
+    el.focus({ preventScroll: true });
 
     const doc = el.ownerDocument;
     const range = doc.createRange();

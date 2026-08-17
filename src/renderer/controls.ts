@@ -380,7 +380,7 @@ function renderEditableTitle(header: HTMLElement, title: string, onTitleEdit: (n
     span.classList.add("vizardry-title--editing");
     span.setAttribute("contenteditable", "true");
     span.setAttribute("spellcheck", "false");
-    span.focus();
+    span.focus({ preventScroll: true });
 
     // Ignore the blur Obsidian's CM6 Live Preview fires by stealing focus back
     // right after .focus() — without this, that spurious blur commits the edit

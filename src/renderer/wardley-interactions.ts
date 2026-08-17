@@ -418,7 +418,7 @@ export function attachRenameBehavior(
     svg.appendChild(foreignObject);
     ix.activeRename = { foreignObject, input };
 
-    input.focus();
+    input.focus({ preventScroll: true });
     input.select();
 
     // Same CM6/Live Preview focus-steal guard as activateInlineEdit — this

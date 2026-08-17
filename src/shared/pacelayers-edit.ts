@@ -1,5 +1,6 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 import { LAYER_LABELS } from "../pacelayers";
 import type { PaceLayerName, PaceLayerType } from "../types";
 
@@ -227,30 +228,32 @@ function _writePaceLayerCell(
   const layerBodyEnd = findLayerBodyEnd(editor, layerHeaderLine, totalLines);
   const cellLine = findCellLine(editor, layerHeaderLine, layerBodyEnd, cellKey);
 
-  if (cellLine !== -1) {
-    // ── Replace path ────────────────────────────────────────────────────────────
-    const raw = editor.getLine(cellLine);
-    // /^(\s*)/ always matches (possibly zero characters), so this is never null.
-    const indent = raw.match(/^(\s*)/)![1];
+  editorWrite(() => {
+    if (cellLine !== -1) {
+      // ── Replace path ────────────────────────────────────────────────────────────
+      const raw = editor.getLine(cellLine);
+      // /^(\s*)/ always matches (possibly zero characters), so this is never null.
+      const indent = raw.match(/^(\s*)/)![1];
 
-    const lastValueLine = findLastValueLine(editor, cellLine, layerBodyEnd);
-    const lastRaw = editor.getLine(lastValueLine);
-    const formatted = buildFormattedValue(cellKey, newValue, indent);
-    editor.replaceRange(
-      formatted,
-      { line: cellLine,      ch: 0 },
-      { line: lastValueLine, ch: lastRaw.length },
-    );
-  } else {
-    // ── Insert path ─────────────────────────────────────────────────────────────
-    const insertAfter = findInsertionLine(editor, layerHeaderLine, layerBodyEnd);
-    const insertLineText = editor.getLine(insertAfter);
-    const formatted = "\n" + buildFormattedValue(cellKey, newValue, "  ");
-    editor.replaceRange(
-      formatted,
-      { line: insertAfter, ch: insertLineText.length },
-    );
-  }
+      const lastValueLine = findLastValueLine(editor, cellLine, layerBodyEnd);
+      const lastRaw = editor.getLine(lastValueLine);
+      const formatted = buildFormattedValue(cellKey, newValue, indent);
+      editor.replaceRange(
+        formatted,
+        { line: cellLine,      ch: 0 },
+        { line: lastValueLine, ch: lastRaw.length },
+      );
+    } else {
+      // ── Insert path ─────────────────────────────────────────────────────────────
+      const insertAfter = findInsertionLine(editor, layerHeaderLine, layerBodyEnd);
+      const insertLineText = editor.getLine(insertAfter);
+      const formatted = "\n" + buildFormattedValue(cellKey, newValue, "  ");
+      editor.replaceRange(
+        formatted,
+        { line: insertAfter, ch: insertLineText.length },
+      );
+    }
+  }, el);
 
   return true;
 }

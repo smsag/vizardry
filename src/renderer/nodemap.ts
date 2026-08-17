@@ -418,7 +418,7 @@ function attachEditBehavior(
       input.value = ref.box.name;
       input.className = "vzd-rename-input vzd-nodemap-rename-input";
       host.insertBefore(input, ref.nameEl);
-      input.focus();
+      input.focus({ preventScroll: true });
       input.select();
 
       const blurGuard = createBlurGuard();

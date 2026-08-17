@@ -421,7 +421,7 @@ function openLaneInput(
   fo.appendChild(host);
   svg.appendChild(fo);
   renameState.fo = fo;
-  input.focus();
+  input.focus({ preventScroll: true });
   input.select();
 
   const blurGuard = createBlurGuard();
@@ -696,7 +696,7 @@ function renderTreeNodes(
       svg.appendChild(fo);
       renameState.fo = fo;
 
-      input.focus();
+      input.focus({ preventScroll: true });
       input.select();
 
       // Same CM6/Live Preview focus-steal guard as activateInlineEdit —

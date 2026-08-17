@@ -3,6 +3,7 @@ import { Notice } from "obsidian";
 import type { JourneyLaneKey } from "../types";
 import { JOURNEY_LANE_CONFIG } from "../journey";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 const LANE_KEYS = JOURNEY_LANE_CONFIG.map(l => l.key);
 
@@ -109,7 +110,9 @@ export function writeJourneyMeta(
 
   if (!trimmedValue) {
     if (foundLine !== -1) {
-      editor.replaceRange("", { line: foundLine, ch: 0 }, { line: foundLine + 1, ch: 0 });
+      editorWrite(() => {
+        editor.replaceRange("", { line: foundLine, ch: 0 }, { line: foundLine + 1, ch: 0 });
+      }, el);
     }
     return true;
   }
@@ -118,7 +121,9 @@ export function writeJourneyMeta(
 
   if (foundLine !== -1) {
     const raw = editor.getLine(foundLine);
-    editor.replaceRange(newLineText, { line: foundLine, ch: 0 }, { line: foundLine, ch: raw.length });
+    editorWrite(() => {
+      editor.replaceRange(newLineText, { line: foundLine, ch: 0 }, { line: foundLine, ch: raw.length });
+    }, el);
     return true;
   }
 
@@ -126,7 +131,9 @@ export function writeJourneyMeta(
   const firstContent = editor.getLine(lineStart + 1).trim().toLowerCase();
   if (firstContent.startsWith("title:")) insertAt = lineStart + 2;
 
-  editor.replaceRange(`${newLineText}\n`, { line: insertAt, ch: 0 });
+  editorWrite(() => {
+    editor.replaceRange(`${newLineText}\n`, { line: insertAt, ch: 0 });
+  }, el);
   return true;
 }
 
@@ -150,7 +157,9 @@ export function renamePhase(
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (re.test(raw.trim())) {
-      editor.replaceRange(`phase: ${newName}`, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+      editorWrite(() => {
+        editor.replaceRange(`phase: ${newName}`, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+      }, el);
       return true;
     }
   }
@@ -187,10 +196,12 @@ export function addJourneyCard(
   const indentStr = block.laneIndent !== -1 ? " ".repeat(block.laneIndent) : " ".repeat(block.phaseIndent + 2);
 
   const insertLine = editor.getLine(insertAfter);
-  editor.replaceRange(
-    `\n${indentStr}${laneKey}: ${cardName.trim() || "New Card"}`,
-    { line: insertAfter, ch: insertLine.length },
-  );
+  editorWrite(() => {
+    editor.replaceRange(
+      `\n${indentStr}${laneKey}: ${cardName.trim() || "New Card"}`,
+      { line: insertAfter, ch: insertLine.length },
+    );
+  }, el);
   return true;
 }
 
@@ -220,7 +231,9 @@ export function deleteJourneyCard(
     return false;
   }
 
-  editor.replaceRange("", { line: target.line, ch: 0 }, { line: target.line + 1, ch: 0 });
+  editorWrite(() => {
+    editor.replaceRange("", { line: target.line, ch: 0 }, { line: target.line + 1, ch: 0 });
+  }, el);
   return true;
 }
 
@@ -257,7 +270,9 @@ export function renameJourneyCard(
   const newText = target.subtitle
     ? `${indent}${laneKey}: ${newName} | ${target.subtitle}`
     : `${indent}${laneKey}: ${newName}`;
-  editor.replaceRange(newText, { line: target.line, ch: 0 }, { line: target.line, ch: target.raw.length });
+  editorWrite(() => {
+    editor.replaceRange(newText, { line: target.line, ch: 0 }, { line: target.line, ch: target.raw.length });
+  }, el);
   return true;
 }
 
@@ -299,10 +314,12 @@ export function reorderJourneyCard(
   });
 
   edits.sort((a, b) => b.line - a.line);
-  for (const edit of edits) {
-    const raw = editor.getLine(edit.line);
-    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-  }
+  editorWrite(() => {
+    for (const edit of edits) {
+      const raw = editor.getLine(edit.line);
+      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+    }
+  }, el);
   return true;
 }
 
@@ -358,13 +375,17 @@ export function moveJourneyCardCrossPhase(
   // edit on either side of the other doesn't shift the other's line offset —
   // mirrors moveStoryTaskCrossColumn's branching.
   if (source.line > insertAfterLine) {
-    editor.replaceRange("", { line: source.line, ch: 0 }, { line: source.line + 1, ch: 0 });
-    const afterText = editor.getLine(insertAfterLine);
-    editor.replaceRange(`\n${newCardLine}`, { line: insertAfterLine, ch: afterText.length });
+    editorWrite(() => {
+      editor.replaceRange("", { line: source.line, ch: 0 }, { line: source.line + 1, ch: 0 });
+      const afterText = editor.getLine(insertAfterLine);
+      editor.replaceRange(`\n${newCardLine}`, { line: insertAfterLine, ch: afterText.length });
+    }, el);
   } else {
-    const afterText = editor.getLine(insertAfterLine);
-    editor.replaceRange(`\n${newCardLine}`, { line: insertAfterLine, ch: afterText.length });
-    editor.replaceRange("", { line: source.line, ch: 0 }, { line: source.line + 1, ch: 0 });
+    editorWrite(() => {
+      const afterText = editor.getLine(insertAfterLine);
+      editor.replaceRange(`\n${newCardLine}`, { line: insertAfterLine, ch: afterText.length });
+      editor.replaceRange("", { line: source.line, ch: 0 }, { line: source.line + 1, ch: 0 });
+    }, el);
   }
 
   return true;

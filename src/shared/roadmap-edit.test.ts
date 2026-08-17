@@ -56,7 +56,7 @@ function fakeCtx(editor: ReturnType<typeof makeMockEditor>) {
     sourcePath: "test.md",
     getSectionInfo: () => ({ lineStart: 0, lineEnd: editor.lineCount() - 1 }),
   } as unknown as import("obsidian").MarkdownPostProcessorContext;
-  const el = { dataset: {} } as unknown as HTMLElement;
+  const el = { dataset: {}, closest: () => null } as unknown as HTMLElement;
   return { app, ctx, el };
 }
 

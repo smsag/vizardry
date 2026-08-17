@@ -171,7 +171,7 @@ export function activateTextareaEdit(
   };
   resize();
   textarea.addEventListener("input", resize);
-  textarea.focus();
+  textarea.focus({ preventScroll: true });
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
   let committed = false;

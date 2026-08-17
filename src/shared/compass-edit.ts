@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 import { canonKey } from "../compass";
 
 /**
@@ -77,11 +78,13 @@ export function writeCompassValue(
   const colon = raw.indexOf(":");
   if (colon === -1) return false;
   const clean = value.replace(/\s+/g, " ").trim();
-  editor.replaceRange(
-    `${raw.slice(0, colon + 1)} ${clean}`,
-    { line: ln, ch: 0 },
-    { line: ln, ch: raw.length },
-  );
+  editorWrite(() => {
+    editor.replaceRange(
+      `${raw.slice(0, colon + 1)} ${clean}`,
+      { line: ln, ch: 0 },
+      { line: ln, ch: raw.length },
+    );
+  }, el);
   return true;
 }
 
@@ -95,7 +98,9 @@ export function removeCompassValue(
   const { editor, lineStart, lineEnd } = resolved;
   const ln = nthLine(editor, lineStart, lineEnd, key, index);
   if (ln === -1) return false;
-  editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+  editorWrite(() => {
+    editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+  }, el);
   return true;
 }
 
@@ -118,6 +123,8 @@ export function insertCompassValue(
     while (after > lineStart && editor.getLine(after).trim() === "") after--;
   }
   const raw = editor.getLine(after);
-  editor.replaceRange(`\n${key}: ${placeholder}`, { line: after, ch: raw.length });
+  editorWrite(() => {
+    editor.replaceRange(`\n${key}: ${placeholder}`, { line: after, ch: raw.length });
+  }, el);
   return true;
 }
