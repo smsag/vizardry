@@ -1,3 +1,36 @@
+## 0.61.6
+
+- **Fix: image carousel no longer crashes on an empty images block** — a
+  `type: carousel` fence with no `image:` lines caused a TypeError that
+  prevented the entire canvas from rendering.
+- **Fix: SIPOC / RACI editing no longer inserts text after the closing fence**
+  — writing a new cell value into the last row/task placed the line outside
+  the code block; it now stays inside.
+- **Fix: Linear "no summary" message now actually displays** — the fallback
+  error span was created then immediately destroyed by a `textContent`
+  assignment in the same expression.
+- **Fix: URLs with `://` are no longer truncated in Wardley Maps and Pace
+  Layers** — the inline-comment stripper treated `://` as a comment marker,
+  silently cutting content after the protocol prefix.
+- **Fix: `-->` arrow in Node Maps now works correctly** — `link: A --> B`
+  previously left a stray dash in the source node name; the parser now
+  recognises the double-dash arrow form.
+- **Fix: renaming a Wardley component updates both sides of self-links** —
+  `link: Auth -> Auth` previously only renamed the left side, breaking the
+  reference on the right.
+- **Fix: keywords are now case-insensitive in 5 more parsers** — Impact Map,
+  Story Map, Venn, RACI, and Journey now accept `Phase:`, `Actor:`, etc.
+  the same way every other parser already did.
+- **Fix: Impact Map rejects empty required fields** — `actor:`, `impact:`,
+  and `deliverable:` with no name now produce a clear error instead of
+  silently creating a blank entity.
+- **Fix: section-preview and key-enrichment popovers clean up on plugin
+  unload** — disabling or reloading the plugin no longer leaves orphaned
+  popover DOM elements and leaked event listeners.
+- **Accessibility: keyboard support for matrix pills, Venn links, and
+  carousel fullscreen controls** — all now respond to Enter/Space and are
+  reachable by Tab.
+
 ## 0.61.5
 
 - **Fix: canvas no longer jumps when editing** — activating an edit field
