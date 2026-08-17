@@ -7,6 +7,7 @@
   x-height, and the monochrome ink is darker (32% vs 42% lightness) for
   stronger contrast.
 
+
 ## 0.61.3
 
 - **Internal: unified Linear and Upvoty cache implementations** — both
