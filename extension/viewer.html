@@ -1,0 +1,297 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Vizardry Viewer</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  /* ── Obsidian theme variables (light) ─────────────────────────────────── */
+  :root {
+    --background-primary: #ffffff;
+    --background-primary-alt: #f6f6f6;
+    --background-secondary: #f2f3f5;
+    --background-secondary-alt: #e3e5e8;
+    --background-modifier-border: #dcddde;
+    --background-modifier-hover: #eaeaea;
+    --text-normal: #1f2328;
+    --text-muted: #6a6f76;
+    --text-faint: #999da3;
+    --text-on-accent: #ffffff;
+    --interactive-accent: #5b61e6;
+    --interactive-accent-hover: #4a50d0;
+    --accent-h: 238;
+    --accent-s: 74%;
+    --accent-l: 63%;
+    --font-text-size: 16px;
+    --font-ui-smaller: 13px;
+    --font-ui-small: 14px;
+    --font-ui-medium: 16px;
+    --font-ui-large: 20px;
+    --font-interface: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-text: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-monospace: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  /* ── Dark theme ───────────────────────────────────────────────────────── */
+  :root.theme-dark {
+    --background-primary: #1e1e1e;
+    --background-primary-alt: #262626;
+    --background-secondary: #2b2b2b;
+    --background-secondary-alt: #333333;
+    --background-modifier-border: #444444;
+    --background-modifier-hover: #3a3a3a;
+    --text-normal: #dcddde;
+    --text-muted: #999da3;
+    --text-faint: #6a6f76;
+    --text-on-accent: #ffffff;
+    --interactive-accent: #7f85f5;
+    --interactive-accent-hover: #6c72e8;
+    --accent-h: 238;
+    --accent-s: 85%;
+    --accent-l: 73%;
+  }
+  /* ── Viewer layout ────────────────────────────────────────────────────── */
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: var(--font-ui-medium);
+  }
+  .vzd-ext-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--background-modifier-border);
+    flex-wrap: wrap;
+  }
+  .vzd-ext-toolbar .brand {
+    font-weight: 600;
+    font-size: 15px;
+    margin-right: auto;
+    color: var(--interactive-accent);
+  }
+  .vzd-ext-toolbar button {
+    padding: 5px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .vzd-ext-toolbar button:hover {
+    background: var(--background-modifier-hover);
+  }
+  .vzd-ext-toolbar button.primary {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: transparent;
+  }
+  .vzd-ext-toolbar button.primary:hover {
+    background: var(--interactive-accent-hover);
+  }
+  /* ── Empty state (paste / open) ───────────────────────────────────────── */
+  .vzd-ext-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 49px);
+    padding: 32px 16px;
+    gap: 16px;
+  }
+  .vzd-ext-empty h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .vzd-ext-empty p {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: var(--font-ui-small);
+  }
+  .vzd-ext-empty textarea {
+    width: 100%;
+    max-width: 720px;
+    min-height: 260px;
+    padding: 12px;
+    border: 2px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    background: var(--background-primary-alt);
+    color: var(--text-normal);
+    font-family: var(--font-monospace);
+    font-size: 13px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .vzd-ext-empty textarea:focus {
+    border-color: var(--interactive-accent);
+  }
+  .vzd-ext-empty .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .vzd-ext-empty .actions button {
+    padding: 8px 20px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .vzd-ext-empty .actions button:hover {
+    background: var(--background-modifier-hover);
+  }
+  .vzd-ext-empty .actions button.primary {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: transparent;
+  }
+  .vzd-ext-empty .actions button.primary:hover {
+    background: var(--interactive-accent-hover);
+  }
+  /* ── Drop zone overlay ────────────────────────────────────────────────── */
+  .vzd-ext-drop-active::after {
+    content: "Drop .md file here";
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(91, 97, 230, 0.12);
+    border: 3px dashed var(--interactive-accent);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--interactive-accent);
+    pointer-events: none;
+  }
+  /* ── Rendered content ─────────────────────────────────────────────────── */
+  .vzd-ext-content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+  }
+  .vzd-ext-canvas-host {
+    margin: 24px 0;
+  }
+  .vzd-ext-error {
+    padding: 12px;
+    background: #fef2f2;
+    color: #b91c1c;
+    border-radius: 6px;
+    font-family: var(--font-monospace);
+    font-size: 13px;
+  }
+  :root.theme-dark .vzd-ext-error {
+    background: #3b1515;
+    color: #fca5a5;
+  }
+  /* ── Prose typography ─────────────────────────────────────────────────── */
+  .vzd-ext-prose {
+    line-height: 1.7;
+  }
+  .vzd-ext-prose h1 { font-size: 1.8em; margin: 1.2em 0 0.5em; font-weight: 700; }
+  .vzd-ext-prose h2 { font-size: 1.4em; margin: 1.1em 0 0.4em; font-weight: 600; }
+  .vzd-ext-prose h3 { font-size: 1.15em; margin: 1em 0 0.3em; font-weight: 600; }
+  .vzd-ext-prose h4, .vzd-ext-prose h5, .vzd-ext-prose h6 {
+    font-size: 1em; margin: 0.8em 0 0.3em; font-weight: 600;
+  }
+  .vzd-ext-prose p { margin: 0.6em 0; }
+  .vzd-ext-prose ul, .vzd-ext-prose ol { padding-left: 1.6em; margin: 0.5em 0; }
+  .vzd-ext-prose li { margin: 0.25em 0; }
+  .vzd-ext-prose blockquote {
+    margin: 0.8em 0;
+    padding: 0.4em 1em;
+    border-left: 3px solid var(--interactive-accent);
+    color: var(--text-muted);
+    background: var(--background-primary-alt);
+    border-radius: 0 4px 4px 0;
+  }
+  .vzd-ext-prose pre {
+    background: var(--background-secondary);
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: var(--font-monospace);
+    font-size: 13px;
+  }
+  .vzd-ext-prose code {
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+    background: var(--background-secondary);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  .vzd-ext-prose pre code {
+    background: none;
+    padding: 0;
+  }
+  .vzd-ext-prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.8em 0;
+    overflow-x: auto;
+    display: block;
+  }
+  .vzd-ext-prose th, .vzd-ext-prose td {
+    border: 1px solid var(--background-modifier-border);
+    padding: 6px 12px;
+    text-align: left;
+  }
+  .vzd-ext-prose th {
+    background: var(--background-secondary);
+    font-weight: 600;
+  }
+  .vzd-ext-prose a {
+    color: var(--interactive-accent);
+    text-decoration: none;
+  }
+  .vzd-ext-prose a:hover { text-decoration: underline; }
+  .vzd-ext-prose img { max-width: 100%; border-radius: 4px; }
+  .vzd-ext-prose hr {
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+    margin: 1.5em 0;
+  }
+  /* ── Hidden file input ────────────────────────────────────────────────── */
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+  <div class="vzd-ext-toolbar">
+    <span class="brand">Vizardry</span>
+    <button id="btn-open-file">Open File</button>
+    <button id="btn-clear" style="display:none">Clear</button>
+    <button id="btn-theme">Theme</button>
+  </div>
+
+  <div id="empty-state" class="vzd-ext-empty">
+    <h2>Vizardry Viewer</h2>
+    <p>Paste Markdown with vizardry blocks, or open a .md file.</p>
+    <textarea id="md-input" placeholder="Paste your Markdown here&#10;&#10;```vizardry&#10;type: bmc&#10;title: My Canvas&#10;block: Key Partners&#10;  Suppliers&#10;```"></textarea>
+    <div class="actions">
+      <button class="primary" id="btn-render">Render</button>
+      <button id="btn-open-file-2">Open .md File</button>
+    </div>
+  </div>
+
+  <div id="rendered" class="vzd-ext-content" style="display:none"></div>
+
+  <input type="file" id="file-input" accept=".md,.markdown,.txt,.text">
+  <script src="dist/viewer.js"></script>
+</body>
+</html>
