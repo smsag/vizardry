@@ -1,3 +1,21 @@
+## 0.61.2
+
+- **Performance: duplicate API calls eliminated** — rapidly clicking the same
+  Linear or Upvoty badge no longer fires duplicate fetch + LLM summarise
+  chains; concurrent callers share a single in-flight request.
+- **Resilience: LLM model IDs no longer date-stamped** — defaults switched
+  from snapshot IDs (`claude-haiku-4-5-20251001`) to evergreen aliases
+  (`claude-haiku-4-5-latest`) so summarisation survives upstream deprecations.
+- **Performance: settings text fields no longer save on every keystroke** —
+  typing into sketch font, URLs, or key prefix fields now debounces disk
+  writes (300 ms after the last character).
+- **Performance: heading autocomplete in large notes** — the fence-detection
+  scan now runs backward from the cursor instead of forward from line 0,
+  reducing per-keystroke cost from O(n) to O(k).
+- **Reliability: status caches are now bounded** — Linear and Upvoty status
+  caches cap at 200 entries with LRU eviction, matching the discipline
+  already applied to summary caches.
+
 ## 0.61.1
 
 - **Fix: editing a Forces or Idea line in Product Compass no longer breaks
