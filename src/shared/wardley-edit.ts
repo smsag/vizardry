@@ -229,12 +229,13 @@ export function renameWardleyComponent(
       const raw = editor.getLine(ln);
 
       let updated: string | null = null;
-      if (reComp.test(raw))    updated = raw.replace(reComp,   `$1${newName}$2`);
-      else if (reAnchor.test(raw)) updated = raw.replace(reAnchor, `$1${newName}`);
-      else if (reLinkFrom.test(raw)) updated = raw.replace(reLinkFrom, `$1${newName}$2`);
-      else if (reLinkTo.test(raw))   updated = raw.replace(reLinkTo,   `$1${newName}$2`);
-      else if (reEvolve.test(raw))   updated = raw.replace(reEvolve,   `$1${newName}$2`);
-      else if (rePipeline.test(raw)) updated = raw.replace(rePipeline, `$1${newName}$2`);
+      let cur = raw;
+      if (reComp.test(cur))    { cur = cur.replace(reComp,   `$1${newName}$2`); updated = cur; }
+      if (reAnchor.test(cur))  { cur = cur.replace(reAnchor, `$1${newName}`);   updated = cur; }
+      if (reLinkFrom.test(cur)) { cur = cur.replace(reLinkFrom, `$1${newName}$2`); updated = cur; }
+      if (reLinkTo.test(cur))   { cur = cur.replace(reLinkTo,   `$1${newName}$2`); updated = cur; }
+      if (reEvolve.test(cur))   { cur = cur.replace(reEvolve,   `$1${newName}$2`); updated = cur; }
+      if (rePipeline.test(cur)) { cur = cur.replace(rePipeline, `$1${newName}$2`); updated = cur; }
 
       if (updated !== null) {
         editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });

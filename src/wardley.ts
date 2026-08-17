@@ -1,10 +1,16 @@
 import type { WardleyComponent, WardleyLink, WardleyMap, WardleyPipeline, WardleyResult } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
 
-/** Strips a trailing `//` inline comment (matching the pacelayers convention). */
+/** Strips a trailing `//` inline comment, but not `://` (URLs). */
 function stripInlineComment(s: string): string {
-  const idx = s.indexOf("//");
-  return idx === -1 ? s : s.slice(0, idx);
+  let idx = 0;
+  while (idx < s.length) {
+    idx = s.indexOf("//", idx);
+    if (idx === -1) return s;
+    if (idx > 0 && s[idx - 1] === ":") { idx += 2; continue; }
+    return s.slice(0, idx);
+  }
+  return s;
 }
 
 function clamp01(n: number): number {

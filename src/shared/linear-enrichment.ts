@@ -85,8 +85,11 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
 
       titleEl.textContent = result.title;
 
-      summaryEl.textContent = result.summary
-        || (summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.noSummary") }), "");
+      if (result.summary) {
+        summaryEl.textContent = result.summary;
+      } else {
+        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.noSummary") });
+      }
 
       // Footer: "<assignee | Unassigned>  |  <age>"
       const assignee = result.assignee ?? t("roadmap.linear.unassigned");

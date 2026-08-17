@@ -10,6 +10,8 @@ import type { UpvotyCacheEntry } from "./upvoty/types";
 import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
 import { triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
+import { closeSectionPreview } from "./renderer/section-preview";
+import { closeAllKeyPopovers } from "./shared/key-enrichment";
 import { setPluginVersion } from "./shared/version";
 import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
@@ -181,6 +183,8 @@ export default class VizardryPlugin extends Plugin {
   onunload(): void {
     for (const timer of this.relinkTimers.values()) clearTimeout(timer);
     this.relinkTimers.clear();
+    closeSectionPreview();
+    closeAllKeyPopovers();
     resetInteractiveIdCounter();
     initLinearService(null);
     destroyUpvotyService();

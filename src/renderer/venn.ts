@@ -202,12 +202,15 @@ export function renderVennDiagram(
         const link = itemEl.createEl("span", {
           cls: "vzd-venn-link",
           text: item.text,
+          attr: { tabindex: "0", role: "link" },
         });
         link.dataset.linkTarget = item.linkTarget;
         markInteractive(link);
-        link.addEventListener("click", () =>
-          openLink(item.linkTarget!)
-        );
+        const go = (): void => openLink(item.linkTarget!);
+        link.addEventListener("click", go);
+        link.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+        });
       } else {
         itemEl.setText(item.text);
       }

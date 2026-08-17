@@ -107,9 +107,11 @@ export function parseNodeMap(source: string): NodeMapResult {
       let tokenIdx: number;
       let tokenLen: number;
       const biIdx = rest.indexOf("<->");
+      const dblArrowIdx = rest.indexOf("-->");
       const dirIdx = rest.indexOf("->");
       const undirIdx = rest.indexOf("--");
       if (biIdx !== -1) { direction = "bidirectional"; tokenIdx = biIdx; tokenLen = 3; }
+      else if (dblArrowIdx !== -1) { direction = "directed"; tokenIdx = dblArrowIdx; tokenLen = 3; }
       else if (dirIdx !== -1) { direction = "directed"; tokenIdx = dirIdx; tokenLen = 2; }
       else if (undirIdx !== -1) { direction = "undirected"; tokenIdx = undirIdx; tokenLen = 2; }
       else {

@@ -34,21 +34,22 @@ export function parseStoryMap(source: string): StoryMapResult {
       taskIndent = -1;
       currentStepTaskKeys = new Set<string>();
 
-      if (trimmed.startsWith("user:")) {
+      const lower = trimmed.toLowerCase();
+      if (lower.startsWith("user:")) {
         user = trimmed.slice("user:".length).trim();
         currentActivity = null;
         currentSlice = null;
-      } else if (trimmed.startsWith("goal:")) {
+      } else if (lower.startsWith("goal:")) {
         goal = trimmed.slice("goal:".length).trim();
         currentActivity = null;
         currentSlice = null;
-      } else if (trimmed.startsWith("activity:")) {
+      } else if (lower.startsWith("activity:")) {
         const name = trimmed.slice("activity:".length).trim();
         if (!name) return { ok: false, error: `Line ${i + 1}: activity requires a name` };
         currentActivity = { name, steps: [] };
         currentSlice = null;
         activities.push(currentActivity);
-      } else if (trimmed.startsWith("slice:")) {
+      } else if (lower.startsWith("slice:")) {
         const name = trimmed.slice("slice:".length).trim();
         if (!name) return { ok: false, error: `Line ${i + 1}: "slice:" requires a name` };
         currentSlice = { name, cells: {} };
@@ -62,7 +63,7 @@ export function parseStoryMap(source: string): StoryMapResult {
       if (blockIndent === -1) blockIndent = indent;
 
       if (indent === blockIndent) {
-        if (!trimmed.startsWith("step:")) {
+        if (!trimmed.toLowerCase().startsWith("step:")) {
           return { ok: false, error: `Line ${i + 1}: expected "step: <name>" under activity — "${trimmed}"` };
         }
         const stepName = trimmed.slice("step:".length).trim();
@@ -84,7 +85,7 @@ export function parseStoryMap(source: string): StoryMapResult {
         if (indent !== taskIndent) {
           return { ok: false, error: `Line ${i + 1}: unexpected indentation — "${trimmed}"` };
         }
-        if (!trimmed.startsWith("task:")) {
+        if (!trimmed.toLowerCase().startsWith("task:")) {
           return { ok: false, error: `Line ${i + 1}: expected "task: <name>" — "${trimmed}"` };
         }
         const rest = trimmed.slice("task:".length).trim();

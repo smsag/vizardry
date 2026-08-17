@@ -39,6 +39,14 @@ export function closeKeyPopover(anchor: HTMLElement): void {
   }
 }
 
+export function closeAllKeyPopovers(): void {
+  for (const [anchor, popover] of openPopovers) {
+    popover.remove();
+    openPopovers.delete(anchor);
+  }
+  topZIndex = 1000;
+}
+
 export function bringKeyPopoverToFront(popover: HTMLElement): void {
   topZIndex += 1;
   popover.style.zIndex = String(topZIndex);

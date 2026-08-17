@@ -34,7 +34,7 @@ export function parseRACIMatrix(source: string): RACIResult {
     const indent = raw.search(/\S/);
 
     if (indent === 0) {
-      if (!trimmed.startsWith("task:")) {
+      if (!trimmed.toLowerCase().startsWith("task:")) {
         return { ok: false, error: `Line ${i + 1}: expected "task: <name>" but got "${trimmed}"` };
       }
       const taskName = trimmed.slice("task:".length).trim();

@@ -39,7 +39,8 @@ export function parseVennDiagram(source: string): VennResult {
       itemIndent = -1;
       currentKey = null;
 
-      if (trimmed.startsWith("circle:")) {
+      const lower = trimmed.toLowerCase();
+      if (lower.startsWith("circle:")) {
         const name = trimmed.slice("circle:".length).trim();
         if (!name) return { ok: false, error: `Line ${i + 1}: circle requires a name` };
         if (circles.length >= 3) return { ok: false, error: `Line ${i + 1}: maximum 3 circles allowed` };
@@ -47,7 +48,7 @@ export function parseVennDiagram(source: string): VennResult {
         currentKey = String(circles.length - 1);
         if (!regionMap.has(currentKey)) regionMap.set(currentKey, []);
 
-      } else if (trimmed.startsWith("intersection:")) {
+      } else if (lower.startsWith("intersection:")) {
         const names = trimmed.slice("intersection:".length).trim();
         if (!names) return { ok: false, error: `Line ${i + 1}: intersection requires circle names separated by "+"` };
         const parts = names.split("+").map(s => s.trim()).filter(Boolean);
@@ -63,7 +64,7 @@ export function parseVennDiagram(source: string): VennResult {
         currentKey = indices.join("+");
         if (!regionMap.has(currentKey)) regionMap.set(currentKey, []);
 
-      } else if (trimmed.startsWith("center:")) {
+      } else if (lower.startsWith("center:")) {
         if (circles.length !== 3) return { ok: false, error: `Line ${i + 1}: "center:" is only valid with exactly 3 circles` };
         currentKey = "0+1+2";
         if (!regionMap.has(currentKey)) regionMap.set(currentKey, []);

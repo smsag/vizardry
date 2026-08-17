@@ -234,6 +234,9 @@ function wirePill(
       e.stopPropagation();
       openDetails();
     });
+    pill.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetails(); }
+    });
     return;
   }
 

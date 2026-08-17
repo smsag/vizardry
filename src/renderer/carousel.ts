@@ -25,7 +25,7 @@ export function renderCarouselBlock(
 
   const descEl = header.createEl("span", {
     cls: "vizardry-title vzd-carousel-desc",
-    text: images[0].alt,
+    text: images.length ? images[0].alt : "",
   });
 
   const actions = header.createEl("div", { cls: "vizardry-header-actions" });
@@ -119,17 +119,17 @@ export function renderCarouselBlock(
     const fsPrev = overlay.createEl("span", {
       cls: "vzd-carousel-fs-btn vzd-carousel-fs-btn--prev",
       text: "‹",
-      attr: { role: "button", "aria-label": t("nav.previousImage") },
+      attr: { role: "button", tabindex: "0", "aria-label": t("nav.previousImage") },
     });
     const fsNext = overlay.createEl("span", {
       cls: "vzd-carousel-fs-btn vzd-carousel-fs-btn--next",
       text: "›",
-      attr: { role: "button", "aria-label": t("nav.nextImage") },
+      attr: { role: "button", tabindex: "0", "aria-label": t("nav.nextImage") },
     });
     const fsClose = overlay.createEl("span", {
       cls: "vzd-carousel-fs-close",
       text: "×",
-      attr: { role: "button", "aria-label": t("controls.exitPresentation") },
+      attr: { role: "button", tabindex: "0", "aria-label": t("controls.exitPresentation") },
     });
 
     const fsGoTo = (next: number): void => {

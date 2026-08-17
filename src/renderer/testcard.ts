@@ -92,7 +92,8 @@ function renderStep(
     fill.addClass("vzd-tc-fill--editable");
     fill.addEventListener("click", () => {
       activateTextareaEdit(fill, fill, step.text, (next) => {
-        writeTestCardField(rc.app!, rc.ctx!, fill.closest(".vizardry-canvas") as HTMLElement, step.key, next);
+        const canvas = fill.closest(".vizardry-canvas") as HTMLElement | null;
+        if (canvas) writeTestCardField(rc.app!, rc.ctx!, canvas, step.key, next);
       }, {
         textareaClass: "vzd-tc-textarea",
         renderDisplay: (host, value) => renderFill(host, value, editable),
@@ -148,7 +149,8 @@ function renderGauge(
         e.stopPropagation();
         level = (i === level) ? i - 1 : i; // clicking the top filled dot clears one
         paint();
-        writeTestCardGauge(rc.app!, rc.ctx!, dots.closest(".vizardry-canvas") as HTMLElement, gauge.key, level);
+        const canvas = dots.closest(".vizardry-canvas") as HTMLElement | null;
+        if (canvas) writeTestCardGauge(rc.app!, rc.ctx!, canvas, gauge.key, level);
       });
     }
   }

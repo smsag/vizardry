@@ -262,9 +262,15 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
   };
 
   for (const raw of lines) {
-    // Strip inline comments
-    const commentIdx = raw.indexOf('//');
-    const line = commentIdx !== -1 ? raw.slice(0, commentIdx) : raw;
+    // Strip inline comments (but not :// in URLs)
+    let commentIdx = 0;
+    while (commentIdx < raw.length) {
+      commentIdx = raw.indexOf('//', commentIdx);
+      if (commentIdx === -1) { commentIdx = raw.length; break; }
+      if (commentIdx > 0 && raw[commentIdx - 1] === ':') { commentIdx += 2; continue; }
+      break;
+    }
+    const line = commentIdx < raw.length ? raw.slice(0, commentIdx) : raw;
 
     const trimmed = line.trimEnd();
     if (trimmed.trim() === '') {

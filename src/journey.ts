@@ -101,11 +101,12 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
       currentPhase = null;
       laneIndent = -1;
 
-      if (trimmed.startsWith("persona:")) {
+      const lower = trimmed.toLowerCase();
+      if (lower.startsWith("persona:")) {
         persona = trimmed.slice("persona:".length).trim();
-      } else if (trimmed.startsWith("scenario:")) {
+      } else if (lower.startsWith("scenario:")) {
         scenario = trimmed.slice("scenario:".length).trim();
-      } else if (trimmed.startsWith("phase:")) {
+      } else if (lower.startsWith("phase:")) {
         const name = trimmed.slice("phase:".length).trim();
         if (!name) {
           // Recoverable: keep the column with a placeholder name.

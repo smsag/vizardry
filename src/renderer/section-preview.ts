@@ -57,6 +57,8 @@ let token = 0;
 let activeCancelClose: (() => void) | null = null;
 let activeScheduleClose: (() => void) | null = null;
 
+export function closeSectionPreview(): void { close(); }
+
 function close(): void {
   token++; // invalidate any in-flight open
   activeCancelClose = null;
