@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 /**
  * Source write-back for the Test Card. Every value — step text, a gauge level,
@@ -37,17 +38,23 @@ export function writeTestCardField(
   }
 
   if (!clean) {
-    if (target !== -1) editor.replaceRange("", { line: target, ch: 0 }, { line: target + 1, ch: 0 });
+    if (target !== -1) {
+      editorWrite(() => {
+        editor.replaceRange("", { line: target, ch: 0 }, { line: target + 1, ch: 0 });
+      }, el);
+    }
     return true;
   }
 
   const text = `${key}: ${clean}`;
-  if (target !== -1) {
-    editor.replaceRange(text, { line: target, ch: 0 }, { line: target, ch: editor.getLine(target).length });
-  } else {
-    // Append after the last content line inside the fence.
-    editor.replaceRange(`\n${text}`, { line: lastContent, ch: editor.getLine(lastContent).length });
-  }
+  editorWrite(() => {
+    if (target !== -1) {
+      editor.replaceRange(text, { line: target, ch: 0 }, { line: target, ch: editor.getLine(target).length });
+    } else {
+      // Append after the last content line inside the fence.
+      editor.replaceRange(`\n${text}`, { line: lastContent, ch: editor.getLine(lastContent).length });
+    }
+  }, el);
   return true;
 }
 

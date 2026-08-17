@@ -1,5 +1,6 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 type BlockLocation = {
   blockHeaderLine: number;
@@ -99,7 +100,7 @@ export function writeBlockContent(
     return false;
   }
 
-  applyBlockEdit(editor, loc, newValue);
+  editorWrite(() => applyBlockEdit(editor, loc, newValue), el);
   return true;
 }
 
@@ -146,7 +147,9 @@ export function moveCardBetweenBlocks(
     { loc: destLoc, value: dest.newContent },
   ].sort((a, b) => b.loc.blockHeaderLine - a.loc.blockHeaderLine);
 
-  for (const { loc, value } of edits) applyBlockEdit(editor, loc, value);
+  editorWrite(() => {
+    for (const { loc, value } of edits) applyBlockEdit(editor, loc, value);
+  }, el);
   return true;
 }
 

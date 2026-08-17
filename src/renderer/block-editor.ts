@@ -65,7 +65,7 @@ export function activateBlockEdit(
   textarea.addEventListener("input", resize);
 
   // Focus and place cursor at end
-  textarea.focus();
+  textarea.focus({ preventScroll: true });
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
   let committed = false;

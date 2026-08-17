@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 function resolveUniqueComponentName(
   editor: { getLine: (line: number) => string },
@@ -53,12 +54,11 @@ export function writeWardleyComponent(
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (targetRe.test(raw.trim())) {
-      // Replace the [vis, evo] bracket pair in-place, preserving inline comments
       const newLine = raw.replace(
         /\[[^\]]+\]/,
         `[${visibility.toFixed(2)}, ${evolution.toFixed(2)}]`,
       );
-      editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+      editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
       return true;
     }
   }
@@ -112,20 +112,22 @@ export function addWardleyComponent(
 
   const coords = `[${visibility.toFixed(2)}, ${evolution.toFixed(2)}]`;
 
-  // Bottom-up: insert link before closing fence first (higher line), then
-  // insert component after source line (lower line) — avoids line-shift issues.
-  if (withLink) {
-    editor.replaceRange(
-      `link: ${sourceComponentName} -> ${resolvedName}\n`,
-      { line: lineEnd, ch: 0 },
-    );
-  }
+  editorWrite(() => {
+    // Bottom-up: insert link before closing fence first (higher line), then
+    // insert component after source line (lower line) — avoids line-shift issues.
+    if (withLink) {
+      editor.replaceRange(
+        `link: ${sourceComponentName} -> ${resolvedName}\n`,
+        { line: lineEnd, ch: 0 },
+      );
+    }
 
-  const sourceLineText = editor.getLine(sourceCompLine);
-  editor.replaceRange(
-    `\ncomponent: ${resolvedName} ${coords}`,
-    { line: sourceCompLine, ch: sourceLineText.length },
-  );
+    const sourceLineText = editor.getLine(sourceCompLine);
+    editor.replaceRange(
+      `\ncomponent: ${resolvedName} ${coords}`,
+      { line: sourceCompLine, ch: sourceLineText.length },
+    );
+  }, el);
 
   return true;
 }
@@ -158,9 +160,8 @@ export function writeWardleyEvolve(
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (findRe.test(raw.trim())) {
-      // Replace the trailing number, keeping any `// comment` after it.
       const newLine = raw.replace(/([0-9]*\.?[0-9]+)(\s*(?:\/\/.*)?)$/, `${evolveTo.toFixed(2)}$2`);
-      editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+      editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
       return true;
     }
   }
@@ -223,22 +224,24 @@ export function renameWardleyComponent(
 
   let found = false;
 
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
+  editorWrite(() => {
+    for (let ln = lineStart; ln <= lineEnd; ln++) {
+      const raw = editor.getLine(ln);
 
-    let updated: string | null = null;
-    if (reComp.test(raw))    updated = raw.replace(reComp,   `$1${newName}$2`);
-    else if (reAnchor.test(raw)) updated = raw.replace(reAnchor, `$1${newName}`);
-    else if (reLinkFrom.test(raw)) updated = raw.replace(reLinkFrom, `$1${newName}$2`);
-    else if (reLinkTo.test(raw))   updated = raw.replace(reLinkTo,   `$1${newName}$2`);
-    else if (reEvolve.test(raw))   updated = raw.replace(reEvolve,   `$1${newName}$2`);
-    else if (rePipeline.test(raw)) updated = raw.replace(rePipeline, `$1${newName}$2`);
+      let updated: string | null = null;
+      if (reComp.test(raw))    updated = raw.replace(reComp,   `$1${newName}$2`);
+      else if (reAnchor.test(raw)) updated = raw.replace(reAnchor, `$1${newName}`);
+      else if (reLinkFrom.test(raw)) updated = raw.replace(reLinkFrom, `$1${newName}$2`);
+      else if (reLinkTo.test(raw))   updated = raw.replace(reLinkTo,   `$1${newName}$2`);
+      else if (reEvolve.test(raw))   updated = raw.replace(reEvolve,   `$1${newName}$2`);
+      else if (rePipeline.test(raw)) updated = raw.replace(rePipeline, `$1${newName}$2`);
 
-    if (updated !== null) {
-      editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
-      found = true;
+      if (updated !== null) {
+        editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+        found = true;
+      }
     }
-  }
+  }, el);
 
   if (!found) {
     console.warn(`Vizardry: renameWardleyComponent — "${oldName}" not found in source`);
@@ -267,7 +270,7 @@ export function removeWardleyLink(
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     if (reLink.test(editor.getLine(ln))) {
-      editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+      editorWrite(() => editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 }), el);
       return true;
     }
   }

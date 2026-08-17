@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 export const TITLE_MAX_LENGTH = 80;
 
@@ -46,21 +47,23 @@ export function writeCanvasTitle(
     }
   }
 
-  if (isDefault) {
-    // Remove the title line if it exists
-    if (titleLine !== -1) {
-      editor.replaceRange("", { line: titleLine, ch: 0 }, { line: titleLine + 1, ch: 0 });
-    }
-  } else {
-    const titleLineText = `title: ${newTitle.trim().slice(0, TITLE_MAX_LENGTH)}`;
-    if (titleLine !== -1) {
-      editor.replaceRange(titleLineText, { line: titleLine, ch: 0 }, { line: titleLine, ch: editor.getLine(titleLine).length });
+  editorWrite(() => {
+    if (isDefault) {
+      // Remove the title line if it exists
+      if (titleLine !== -1) {
+        editor.replaceRange("", { line: titleLine, ch: 0 }, { line: titleLine + 1, ch: 0 });
+      }
     } else {
-      // Insert after the opening fence line
-      const afterFence = lineStart + 1;
-      editor.replaceRange(titleLineText + "\n", { line: afterFence, ch: 0 });
+      const titleLineText = `title: ${newTitle.trim().slice(0, TITLE_MAX_LENGTH)}`;
+      if (titleLine !== -1) {
+        editor.replaceRange(titleLineText, { line: titleLine, ch: 0 }, { line: titleLine, ch: editor.getLine(titleLine).length });
+      } else {
+        // Insert after the opening fence line
+        const afterFence = lineStart + 1;
+        editor.replaceRange(titleLineText + "\n", { line: afterFence, ch: 0 });
+      }
     }
-  }
+  }, el);
 
   return true;
 }

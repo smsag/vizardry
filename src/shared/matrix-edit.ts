@@ -1,5 +1,6 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 /**
  * Write-back for matrix `item:` lines. Both operations locate the
@@ -72,11 +73,11 @@ export function writeItemPosition(
   const rx = Math.round(x * 100) / 100;
   const ry = Math.round(y * 100) / 100;
   const newHeader = `item: ${loc.labelText} [${rx}, ${ry}]`;
-  editor.replaceRange(
+  editorWrite(() => editor.replaceRange(
     newHeader,
     { line: loc.headerLine, ch: 0 },
     { line: loc.headerLine, ch: editor.getLine(loc.headerLine).length },
-  );
+  ), el);
   return true;
 }
 
@@ -100,12 +101,14 @@ export function writeItemContent(
   const trimmed = newValue.trim();
   const indented = trimmed === "" ? "" : trimmed.split("\n").map(l => `  ${l}`).join("\n");
 
-  if (loc.bodyEnd >= loc.bodyStart) {
-    const to = { line: loc.bodyEnd, ch: editor.getLine(loc.bodyEnd).length };
-    editor.replaceRange(indented, { line: loc.bodyStart, ch: 0 }, to);
-  } else if (indented !== "") {
-    const headerLen = editor.getLine(loc.headerLine).length;
-    editor.replaceRange("\n" + indented, { line: loc.headerLine, ch: headerLen });
-  }
+  editorWrite(() => {
+    if (loc.bodyEnd >= loc.bodyStart) {
+      const to = { line: loc.bodyEnd, ch: editor.getLine(loc.bodyEnd).length };
+      editor.replaceRange(indented, { line: loc.bodyStart, ch: 0 }, to);
+    } else if (indented !== "") {
+      const headerLen = editor.getLine(loc.headerLine).length;
+      editor.replaceRange("\n" + indented, { line: loc.headerLine, ch: headerLen });
+    }
+  }, el);
   return true;
 }

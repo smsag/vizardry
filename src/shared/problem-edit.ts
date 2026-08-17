@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 import { isSkippableLine } from "./indent-tree";
 
 /**
@@ -76,11 +77,13 @@ export function writeProblemCard(
   const colon = raw.indexOf(":");
   if (colon === -1) return false;
   const value = encodeValue(heading, body);
-  editor.replaceRange(
-    `${raw.slice(0, colon + 1)} ${value}`,
-    { line: ln, ch: 0 },
-    { line: ln, ch: raw.length },
-  );
+  editorWrite(() => {
+    editor.replaceRange(
+      `${raw.slice(0, colon + 1)} ${value}`,
+      { line: ln, ch: 0 },
+      { line: ln, ch: raw.length },
+    );
+  }, el);
   return true;
 }
 
@@ -98,7 +101,9 @@ export function removeProblemCard(
   const ln = cardLines(editor, lineStart, lineEnd, new Set(stageKeys))[cardIndex];
   if (ln === undefined) return false;
   // Remove the whole line, including its newline (fold into the next line).
-  editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+  editorWrite(() => {
+    editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+  }, el);
   return true;
 }
 
@@ -132,6 +137,8 @@ export function insertProblemCard(
   }
 
   const raw = editor.getLine(after);
-  editor.replaceRange(`\n${stageKey}: ${placeholder}`, { line: after, ch: raw.length });
+  editorWrite(() => {
+    editor.replaceRange(`\n${stageKey}: ${placeholder}`, { line: after, ch: raw.length });
+  }, el);
   return true;
 }

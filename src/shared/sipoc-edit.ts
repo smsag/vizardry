@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { findNthKeyedBlock, writeKeyedSubLine } from "./keyed-block-edit";
+import { editorWrite } from "./tree-editor-access";
 
 /**
  * Writes an updated cell value back into the source code block for a
@@ -31,7 +32,9 @@ export function writeSIPOCCell(
     return false;
   }
 
-  writeKeyedSubLine(editor, row, cellKey, newValue);
+  editorWrite(() => {
+    writeKeyedSubLine(editor, row, cellKey, newValue);
+  }, el);
   return true;
 }
 
@@ -76,10 +79,12 @@ export function insertSIPOCRowAfter(
   }
 
   const lineText = editor.getLine(insertAfterLine);
-  editor.replaceRange(
-    `\nrow:`,
-    { line: insertAfterLine, ch: lineText.length },
-  );
+  editorWrite(() => {
+    editor.replaceRange(
+      `\nrow:`,
+      { line: insertAfterLine, ch: lineText.length },
+    );
+  }, el);
 
   return true;
 }

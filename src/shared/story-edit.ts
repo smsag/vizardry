@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { Notice } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 /** Escapes a string for safe use inside a RegExp. */
 function escRe(s: string): string {
@@ -115,10 +116,12 @@ export function addStoryTask(
 
   const insertAfter = lastTaskLine !== -1 ? lastTaskLine : stepLine;
   const insertLine = editor.getLine(insertAfter);
-  editor.replaceRange(
-    `\n${taskIndentStr}task: ${uniqueName}`,
-    { line: insertAfter, ch: insertLine.length },
-  );
+  editorWrite(() => {
+    editor.replaceRange(
+      `\n${taskIndentStr}task: ${uniqueName}`,
+      { line: insertAfter, ch: insertLine.length },
+    );
+  }, el);
   return true;
 }
 
@@ -170,15 +173,17 @@ export function deleteStoryTask(
     return false;
   }
 
-  edits.sort((a, b) => b.line - a.line);
-  for (const edit of edits) {
-    if (edit.newText === null) {
-      editor.replaceRange("", { line: edit.line, ch: 0 }, { line: edit.line + 1, ch: 0 });
-    } else {
-      const raw = editor.getLine(edit.line);
-      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+  editorWrite(() => {
+    edits.sort((a, b) => b.line - a.line);
+    for (const edit of edits) {
+      if (edit.newText === null) {
+        editor.replaceRange("", { line: edit.line, ch: 0 }, { line: edit.line + 1, ch: 0 });
+      } else {
+        const raw = editor.getLine(edit.line);
+        editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+      }
     }
-  }
+  }, el);
   return true;
 }
 
@@ -212,7 +217,9 @@ export function writeStoryMeta(
 
   if (!trimmedValue) {
     if (foundLine !== -1) {
-      editor.replaceRange("", { line: foundLine, ch: 0 }, { line: foundLine + 1, ch: 0 });
+      editorWrite(() => {
+        editor.replaceRange("", { line: foundLine, ch: 0 }, { line: foundLine + 1, ch: 0 });
+      }, el);
     }
     return true;
   }
@@ -220,8 +227,10 @@ export function writeStoryMeta(
   const newLineText = `${key}: ${trimmedValue}`;
 
   if (foundLine !== -1) {
-    const raw = editor.getLine(foundLine);
-    editor.replaceRange(newLineText, { line: foundLine, ch: 0 }, { line: foundLine, ch: raw.length });
+    editorWrite(() => {
+      const raw = editor.getLine(foundLine);
+      editor.replaceRange(newLineText, { line: foundLine, ch: 0 }, { line: foundLine, ch: raw.length });
+    }, el);
     return true;
   }
 
@@ -230,7 +239,9 @@ export function writeStoryMeta(
   const firstContent = editor.getLine(lineStart + 1).trim().toLowerCase();
   if (firstContent.startsWith("title:")) insertAt = lineStart + 2;
 
-  editor.replaceRange(`${newLineText}\n`, { line: insertAt, ch: 0 });
+  editorWrite(() => {
+    editor.replaceRange(`${newLineText}\n`, { line: insertAt, ch: 0 });
+  }, el);
   return true;
 }
 
@@ -256,10 +267,12 @@ export function renameStoryActivity(
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (re.test(raw.trim())) {
-      editor.replaceRange(
-        `activity: ${newName}`,
-        { line: ln, ch: 0 }, { line: ln, ch: raw.length },
-      );
+      editorWrite(() => {
+        editor.replaceRange(
+          `activity: ${newName}`,
+          { line: ln, ch: 0 }, { line: ln, ch: raw.length },
+        );
+      }, el);
       return true;
     }
   }
@@ -306,11 +319,13 @@ export function renameStoryStep(
   }
 
   // Apply bottom-up
-  edits.sort((a, b) => b.line - a.line);
-  for (const edit of edits) {
-    const raw = editor.getLine(edit.line);
-    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-  }
+  editorWrite(() => {
+    edits.sort((a, b) => b.line - a.line);
+    for (const edit of edits) {
+      const raw = editor.getLine(edit.line);
+      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+    }
+  }, el);
   return true;
 }
 
@@ -368,11 +383,13 @@ export function renameStoryTask(
     return false;
   }
 
-  edits.sort((a, b) => b.line - a.line);
-  for (const edit of edits) {
-    const raw = editor.getLine(edit.line);
-    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-  }
+  editorWrite(() => {
+    edits.sort((a, b) => b.line - a.line);
+    for (const edit of edits) {
+      const raw = editor.getLine(edit.line);
+      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+    }
+  }, el);
   return true;
 }
 
@@ -497,11 +514,13 @@ export function moveStoryTaskSlice(
 
   if (edits.length === 0) return true;
 
-  edits.sort((a, b) => b.line - a.line);
-  for (const edit of edits) {
-    const raw = editor.getLine(edit.line);
-    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-  }
+  editorWrite(() => {
+    edits.sort((a, b) => b.line - a.line);
+    for (const edit of edits) {
+      const raw = editor.getLine(edit.line);
+      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+    }
+  }, el);
   return true;
 }
 
@@ -537,8 +556,10 @@ export function reorderStoryTask(
   keys.splice(toIndex, 0, moved);
 
   const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${keys.join(", ")}`;
-  const raw = editor.getLine(cell.line);
-  editor.replaceRange(newLine, { line: cell.line, ch: 0 }, { line: cell.line, ch: raw.length });
+  editorWrite(() => {
+    const raw = editor.getLine(cell.line);
+    editor.replaceRange(newLine, { line: cell.line, ch: 0 }, { line: cell.line, ch: raw.length });
+  }, el);
   return true;
 }
 
@@ -695,33 +716,35 @@ export function moveStoryTaskCrossColumn(
   // Apply all edits bottom-up.
   // Slice edits are always below activity edits in the source.
   // Within activity edits: apply the higher line first.
-  sliceEdits.sort((a, b) => b.line - a.line);
-  for (const edit of sliceEdits) {
-    const raw = editor.getLine(edit.line);
-    editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-  }
+  editorWrite(() => {
+    sliceEdits.sort((a, b) => b.line - a.line);
+    for (const edit of sliceEdits) {
+      const raw = editor.getLine(edit.line);
+      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+    }
 
-  // Now apply the task line move (in the activities section).
-  // Apply delete then insert or insert then delete, always higher line first.
-  if (taskLine > insertAfterLine) {
-    // Delete first (higher), then insert (lower)
-    editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
-    const afterText = editor.getLine(insertAfterLine);
-    editor.replaceRange(
-      `\n${newTaskLine}`,
-      { line: insertAfterLine, ch: afterText.length },
-    );
-  } else {
-    // taskLine < insertAfterLine: insert at the lower position first, then
-    // delete the original line. The insertion is BELOW taskLine so taskLine
-    // does NOT shift — delete it as-is (no +1 adjustment).
-    const afterText = editor.getLine(insertAfterLine);
-    editor.replaceRange(
-      `\n${newTaskLine}`,
-      { line: insertAfterLine, ch: afterText.length },
-    );
-    editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
-  }
+    // Now apply the task line move (in the activities section).
+    // Apply delete then insert or insert then delete, always higher line first.
+    if (taskLine > insertAfterLine) {
+      // Delete first (higher), then insert (lower)
+      editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
+      const afterText = editor.getLine(insertAfterLine);
+      editor.replaceRange(
+        `\n${newTaskLine}`,
+        { line: insertAfterLine, ch: afterText.length },
+      );
+    } else {
+      // taskLine < insertAfterLine: insert at the lower position first, then
+      // delete the original line. The insertion is BELOW taskLine so taskLine
+      // does NOT shift — delete it as-is (no +1 adjustment).
+      const afterText = editor.getLine(insertAfterLine);
+      editor.replaceRange(
+        `\n${newTaskLine}`,
+        { line: insertAfterLine, ch: afterText.length },
+      );
+      editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
+    }
+  }, el);
 
   return true;
 }

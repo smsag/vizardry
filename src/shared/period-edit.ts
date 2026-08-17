@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 export const PERIOD_MAX_LENGTH = 60;
 
@@ -42,19 +43,21 @@ export function writeCanvasPeriod(
     if (titleLine === -1 && t.startsWith("title:")) titleLine = ln;
   }
 
-  if (!value) {
-    if (periodLine !== -1) {
-      editor.replaceRange("", { line: periodLine, ch: 0 }, { line: periodLine + 1, ch: 0 });
+  editorWrite(() => {
+    if (!value) {
+      if (periodLine !== -1) {
+        editor.replaceRange("", { line: periodLine, ch: 0 }, { line: periodLine + 1, ch: 0 });
+      }
+      return;
     }
-    return true;
-  }
 
-  const text = `period: ${value}`;
-  if (periodLine !== -1) {
-    editor.replaceRange(text, { line: periodLine, ch: 0 }, { line: periodLine, ch: editor.getLine(periodLine).length });
-  } else {
-    const insertAt = (titleLine !== -1 ? titleLine : lineStart) + 1;
-    editor.replaceRange(text + "\n", { line: insertAt, ch: 0 });
-  }
+    const text = `period: ${value}`;
+    if (periodLine !== -1) {
+      editor.replaceRange(text, { line: periodLine, ch: 0 }, { line: periodLine, ch: editor.getLine(periodLine).length });
+    } else {
+      const insertAt = (titleLine !== -1 ? titleLine : lineStart) + 1;
+      editor.replaceRange(text + "\n", { line: insertAt, ch: 0 });
+    }
+  }, el);
   return true;
 }

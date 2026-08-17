@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { findNthKeyedBlock, writeKeyedSubLine } from "./keyed-block-edit";
+import { editorWrite } from "./tree-editor-access";
 
 /**
  * Writes an updated cell value back into the source code block for a
@@ -33,15 +34,19 @@ export function writeRACICell(
   // Editing the task name itself
   if (cellKey === "task") {
     const raw = editor.getLine(task.blockLineStart);
-    editor.replaceRange(
-      `task: ${newValue}`,
-      { line: task.blockLineStart, ch: 0 },
-      { line: task.blockLineStart, ch: raw.length },
-    );
+    editorWrite(() => {
+      editor.replaceRange(
+        `task: ${newValue}`,
+        { line: task.blockLineStart, ch: 0 },
+        { line: task.blockLineStart, ch: raw.length },
+      );
+    }, el);
     return true;
   }
 
   // Editing a RACI sub-key
-  writeKeyedSubLine(editor, task, cellKey, newValue);
+  editorWrite(() => {
+    writeKeyedSubLine(editor, task, cellKey, newValue);
+  }, el);
   return true;
 }

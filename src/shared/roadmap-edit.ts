@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 
 /** Escapes a string for safe use inside a RegExp. */
 function escRe(s: string): string {
@@ -99,10 +100,10 @@ export function addRoadmapItem(
     ? block.items[block.items.length - 1].titleLine
     : block.headerLine;
   const afterText = editor.getLine(insertAfterLine);
-  editor.replaceRange(
+  editorWrite(() => editor.replaceRange(
     `\n${indentStr}item: ${unique}`,
     { line: insertAfterLine, ch: afterText.length },
-  );
+  ), el);
   return true;
 }
 
@@ -134,7 +135,7 @@ export function renameRoadmapItem(
   // Regex matches `item: <oldTitle>` and preserves any trailing ` | <key>` suffix.
   const re = new RegExp(`^(\\s*item:\\s*)${escRe(oldTitle)}(\\s*(?:\\|.*)?$)`, "i");
   const newLine = raw.replace(re, `$1${newTitle.trim()}$2`);
-  editor.replaceRange(newLine, { line: item.titleLine, ch: 0 }, { line: item.titleLine, ch: raw.length });
+  editorWrite(() => editor.replaceRange(newLine, { line: item.titleLine, ch: 0 }, { line: item.titleLine, ch: raw.length }), el);
   return true;
 }
 
@@ -185,18 +186,20 @@ export function moveRoadmapItem(
     insertAfterLine = targetItems[refIdx].titleLine;
   }
 
-  // Apply edits bottom-up to preserve line numbers
-  if (item.titleLine > insertAfterLine) {
-    // Delete first (higher line), then insert (lower line)
-    editor.replaceRange("", { line: item.titleLine, ch: 0 }, { line: item.titleLine + 1, ch: 0 });
-    const afterText = editor.getLine(insertAfterLine);
-    editor.replaceRange(`\n${movedLine}`, { line: insertAfterLine, ch: afterText.length });
-  } else {
-    // Insert first (lower line), then delete (higher line — now shifted +1)
-    const afterText = editor.getLine(insertAfterLine);
-    editor.replaceRange(`\n${movedLine}`, { line: insertAfterLine, ch: afterText.length });
-    editor.replaceRange("", { line: item.titleLine, ch: 0 }, { line: item.titleLine + 1, ch: 0 });
-  }
+  editorWrite(() => {
+    // Apply edits bottom-up to preserve line numbers
+    if (item.titleLine > insertAfterLine) {
+      // Delete first (higher line), then insert (lower line)
+      editor.replaceRange("", { line: item.titleLine, ch: 0 }, { line: item.titleLine + 1, ch: 0 });
+      const afterText = editor.getLine(insertAfterLine);
+      editor.replaceRange(`\n${movedLine}`, { line: insertAfterLine, ch: afterText.length });
+    } else {
+      // Insert first (lower line), then delete (higher line — now shifted +1)
+      const afterText = editor.getLine(insertAfterLine);
+      editor.replaceRange(`\n${movedLine}`, { line: insertAfterLine, ch: afterText.length });
+      editor.replaceRange("", { line: item.titleLine, ch: 0 }, { line: item.titleLine + 1, ch: 0 });
+    }
+  }, el);
 
   return true;
 }

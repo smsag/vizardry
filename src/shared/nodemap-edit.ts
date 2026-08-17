@@ -1,5 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { editorWrite } from "./tree-editor-access";
 import type { NodeMapColor, NodeMapLineStyle, NodeMapLinkDirection } from "../types";
 
 /** Escapes a string for use inside a RegExp. */
@@ -132,7 +133,7 @@ export function writeNodeMapBoxPosition(
   const newLine = raw
     .replace(/x:\s*[+-]?[0-9.]+/, `x: ${Math.round(x)}`)
     .replace(/y:\s*[+-]?[0-9.]+/, `y: ${Math.round(y)}`);
-  editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+  editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
   return true;
 }
 
@@ -154,7 +155,7 @@ export function addNodeMapBox(
   if (!resolved) return null;
   const { editor, lineStart, lineEnd } = resolved;
   const name = resolveUniqueBoxName(editor, lineStart, lineEnd, baseName);
-  editor.replaceRange(`box: ${name} [x: ${Math.round(x)}, y: ${Math.round(y)}]\n`, { line: lineEnd, ch: 0 });
+  editorWrite(() => editor.replaceRange(`box: ${name} [x: ${Math.round(x)}, y: ${Math.round(y)}]\n`, { line: lineEnd, ch: 0 }), el);
   return name;
 }
 
@@ -192,9 +193,11 @@ export function removeNodeMapBox(
     if (parsed.from.toLowerCase() === target || parsed.to.toLowerCase() === target) linesToDelete.add(ln);
   }
 
-  for (const ln of [...linesToDelete].sort((a, b) => b - a)) {
-    editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
-  }
+  editorWrite(() => {
+    for (const ln of [...linesToDelete].sort((a, b) => b - a)) {
+      editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+    }
+  }, el);
   return true;
 }
 
@@ -222,18 +225,20 @@ export function renameNodeMapBox(
   const reLinkTo = new RegExp(`((?:<->|->|--)\\s*)${old}(?=\\s*(?::|\\[|$))`, "i");
 
   let found = false;
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const raw = editor.getLine(ln);
-    let updated = raw;
-    let changed = false;
-    if (reBox.test(updated)) { updated = updated.replace(reBox, `$1${newName}`); changed = true; }
-    if (reLinkFrom.test(updated)) { updated = updated.replace(reLinkFrom, `$1${newName}`); changed = true; }
-    if (reLinkTo.test(updated)) { updated = updated.replace(reLinkTo, `$1${newName}`); changed = true; }
-    if (changed) {
-      editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
-      found = true;
+  editorWrite(() => {
+    for (let ln = lineStart; ln <= lineEnd; ln++) {
+      const raw = editor.getLine(ln);
+      let updated = raw;
+      let changed = false;
+      if (reBox.test(updated)) { updated = updated.replace(reBox, `$1${newName}`); changed = true; }
+      if (reLinkFrom.test(updated)) { updated = updated.replace(reLinkFrom, `$1${newName}`); changed = true; }
+      if (reLinkTo.test(updated)) { updated = updated.replace(reLinkTo, `$1${newName}`); changed = true; }
+      if (changed) {
+        editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+        found = true;
+      }
     }
-  }
+  }, el);
   if (!found) console.warn(`Vizardry: renameNodeMapBox — "${oldName}" not found in source`);
   return found;
 }
@@ -261,16 +266,18 @@ export function writeNodeMapBoxBody(
   const newLines = newBody.split("\n").map(l => l.trim()).filter(l => l.length > 0);
   const insertText = newLines.map(l => `  ${l}`).join("\n");
 
-  if (body) {
-    if (insertText) {
-      editor.replaceRange(insertText, { line: body.first, ch: 0 }, { line: body.last, ch: editor.getLine(body.last).length });
-    } else {
-      editor.replaceRange("", { line: body.first, ch: 0 }, { line: body.last + 1, ch: 0 });
+  editorWrite(() => {
+    if (body) {
+      if (insertText) {
+        editor.replaceRange(insertText, { line: body.first, ch: 0 }, { line: body.last, ch: editor.getLine(body.last).length });
+      } else {
+        editor.replaceRange("", { line: body.first, ch: 0 }, { line: body.last + 1, ch: 0 });
+      }
+    } else if (insertText) {
+      const boxLineText = editor.getLine(boxLine);
+      editor.replaceRange(`\n${insertText}`, { line: boxLine, ch: boxLineText.length });
     }
-  } else if (insertText) {
-    const boxLineText = editor.getLine(boxLine);
-    editor.replaceRange(`\n${insertText}`, { line: boxLine, ch: boxLineText.length });
-  }
+  }, el);
   return true;
 }
 
@@ -302,7 +309,7 @@ export function setNodeMapBoxColor(
   } else {
     return true; // nothing to clear
   }
-  editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+  editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
   return true;
 }
 
@@ -331,7 +338,7 @@ export function removeNodeMapLink(
     if (!parsed) continue;
     const a = parsed.from.toLowerCase(), b = parsed.to.toLowerCase();
     if ((a === from && b === to) || (a === to && b === from)) {
-      editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 });
+      editorWrite(() => editor.replaceRange("", { line: ln, ch: 0 }, { line: ln + 1, ch: 0 }), el);
       return true;
     }
   }
@@ -361,7 +368,7 @@ export function addNodeMapLink(
     if ((a === from && b === to) || (a === to && b === from)) return false; // already linked
   }
 
-  editor.replaceRange(`link: ${fromName} -> ${toName}\n`, { line: lineEnd, ch: 0 });
+  editorWrite(() => editor.replaceRange(`link: ${fromName} -> ${toName}\n`, { line: lineEnd, ch: 0 }), el);
   return true;
 }
 
@@ -410,7 +417,7 @@ export function setNodeMapLinkStyle(
     if (mods.length > 0) newLine += ` [${mods.join(", ")}]`;
 
     const indent = raw.match(/^(\s*)/)?.[1] ?? "";
-    editor.replaceRange(indent + newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
+    editorWrite(() => editor.replaceRange(indent + newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
     return true;
   }
   console.warn(`Vizardry: setNodeMapLinkStyle — link "${fromName} -> ${toName}" not found`);
