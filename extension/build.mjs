@@ -1,4 +1,5 @@
 import esbuild from "esbuild";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -21,3 +22,6 @@ await esbuild.build({
   sourcemap: prod ? false : "inline",
   logLevel: "info",
 });
+
+// Copy styles.css into the extension directory so the extension is self-contained.
+fs.copyFileSync(path.join(root, "styles.css"), path.join(dir, "styles.css"));

@@ -72,6 +72,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build extension
+        run: npm run ext:build
+
+      - name: Package extension
+        run: |
+          cd extension
+          zip -r "../vizardry-extension-${{ steps.ver.outputs.tag }}.zip" \
+            manifest.json popup.html viewer.html styles.css \
+            dist/ icons/
+
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -90,4 +100,5 @@ jobs:
             --title "$tag" \
             --target "${{ github.sha }}" \
             --notes-file "$notes_file" \
-            main.js manifest.json styles.css
+            main.js manifest.json styles.css \
+            "vizardry-extension-$tag.zip"
