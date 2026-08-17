@@ -8,6 +8,7 @@ main.js
 *.tsbuildinfo
 dist/
 build/
+extension/styles.css
 
 # Test output
 coverage/

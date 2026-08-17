@@ -40,3 +40,7 @@ runs:
     - name: Build
       run: npm run build
       shell: bash
+
+    - name: Build extension
+      run: npm run ext:build
+      shell: bash
