@@ -6,6 +6,7 @@
 #   2. manifest.json version has an entry in versions.json
 #   3. README.md mentions every framework (by ID)
 #   4. docs/vizardry-canvas-syntax-reference.md documents every framework type:
+#   5. docs/vizardry-llm-cheatsheet.md documents every framework type: and is ≤600 lines
 #
 # The syntax reference is the ONE public doc under docs/ (the rest of docs/ and
 # AGENTS.md are gitignored internal docs, covered by the Claude Code hooks).
@@ -89,6 +90,40 @@ else
     ok "$REF documents all framework type: IDs"
   else
     fail "$REF is missing mention of: ${REF_MISSING[*]} — update the syntax reference"
+  fi
+fi
+
+# ── 5. LLM cheatsheet covers all frameworks and stays ≤600 lines ────────────
+
+CHEAT="docs/vizardry-llm-cheatsheet.md"
+
+if [ ! -f "$CHEAT" ]; then
+  fail "$CHEAT is missing — the LLM cheatsheet must be committed"
+else
+  CHEAT_LINES=$(wc -l < "$CHEAT")
+  if [ "$CHEAT_LINES" -gt 600 ]; then
+    fail "$CHEAT is $CHEAT_LINES lines — must be ≤600"
+  else
+    ok "$CHEAT is $CHEAT_LINES lines (≤600)"
+  fi
+
+  CHEAT_MISSING=()
+
+  for f in src/frameworks/*.ts; do
+    id=$(basename "$f" .ts)
+    grep -qi "\b${id}\b" "$CHEAT" || CHEAT_MISSING+=("$id")
+  done
+
+  while IFS= read -r id; do
+    [ -z "$id" ] && continue
+    case "$id" in *-*) continue ;; esac
+    grep -qi "\b${id}\b" "$CHEAT" || CHEAT_MISSING+=("$id")
+  done < <(grep -E '^\s+id: "[a-z-]+"' src/processors.ts | grep -oE '"[a-z-]+"' | tr -d '"')
+
+  if [ ${#CHEAT_MISSING[@]} -eq 0 ]; then
+    ok "$CHEAT documents all framework type: IDs"
+  else
+    fail "$CHEAT is missing mention of: ${CHEAT_MISSING[*]} — update the cheatsheet"
   fi
 fi
 
