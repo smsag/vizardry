@@ -4535,9 +4535,9 @@ body.vizardry-sketch .vzd-presentation-overlay :is(div, span, text, tspan) {
 body.vizardry-sketch .vizardry-canvas,
 body.vizardry-sketch .vzd-presentation-overlay {
   --accent-s: 0%;
-  --accent-l: 42%;
-  --interactive-accent: hsl(0 0% 42%);
-  --interactive-accent-hover: hsl(0 0% 30%);
+  --accent-l: 32%;
+  --interactive-accent: hsl(0 0% 32%);
+  --interactive-accent-hover: hsl(0 0% 22%);
 }
 
 /* Catch-all greyscale for the handful of inline / hardcoded colours (Odyssey
@@ -4547,8 +4547,9 @@ body.vizardry-sketch .vizardry-canvas > :not(.vizardry-header) {
   filter: grayscale(1);
 }
 
-/* Hand-drawn line wobble on canvas SVGs. */
-body.vizardry-sketch .vizardry-canvas svg {
+/* Hand-drawn line wobble on SVG shapes only — text and foreignObject stay
+   crisp so labels remain legible at small sizes. */
+body.vizardry-sketch .vizardry-canvas svg :is(path, line, circle, ellipse, rect, polygon, polyline) {
   filter: url(#vzd-sketch-rough);
 }
 
@@ -4558,10 +4559,11 @@ body.vizardry-sketch .vizardry-canvas svg {
    --vzd-base-default, so the A+/A- controls keep working) and tame the title so
    the handwriting flourish no longer dominates. */
 body.vizardry-sketch .vizardry-canvas {
-  --vzd-base-default: calc(var(--font-ui-small) * 1.2);
+  --vzd-base-default: calc(var(--font-ui-small) * 1.35);
+  letter-spacing: 0.01em;
 }
 body.vizardry-sketch .vizardry-title {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.1);
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.15);
 }
 /* The empty-block placeholder is the one body text pinned to a fixed size
    (--font-ui-smaller) rather than --vzd-base, so it stays tiny in Caveat unless
