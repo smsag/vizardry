@@ -1,3 +1,13 @@
+## 0.61.5
+
+- **Fix: canvas no longer jumps when editing** — activating an edit field
+  (clicking a card, renaming a node, opening an inline input) and confirming
+  changes no longer causes the viewport to scroll erratically. Two root
+  causes fixed across all canvases: browser `.focus()` calls now pass
+  `preventScroll`, and every `editor.replaceRange()` path now snapshots and
+  restores the scroller position so CodeMirror's scroll-to-cursor doesn't
+  fire.
+
 ## 0.61.4
 
 - **Sketch mode: much more readable** — the hand-drawn line wobble now
