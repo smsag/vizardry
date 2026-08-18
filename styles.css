@@ -258,6 +258,9 @@ button.vzd-btn {
 
 .vizardry-period-value--editable { cursor: text; }
 
+/* Prevent baseline shift when the inline input replaces the value text. */
+.vizardry-period:has(.vzd-editing) { align-items: center; }
+
 .vizardry-period-value--editable:hover {
   background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-secondary));
 }
@@ -4650,6 +4653,15 @@ body.vizardry-sketch .vzd-tree-rename-input {
   border-bottom-color: var(--interactive-accent);
 }
 
+/* When editing, force the textarea onto its own line so the prompt and fill
+   stack cleanly — avoids the baseline-alignment misplacement that happens when
+   a textarea (different intrinsic baseline) replaces plain text on the same
+   flex line, especially on narrow / mobile screens. */
+.vzd-tc-fill.vzd-editing {
+  flex-basis: 100%;
+  border-bottom-color: transparent;
+}
+
 /* The in-place textarea inherits the fill's flow; keep it borderless/seamless. */
 .vzd-tc-fill .vzd-tc-textarea {
   width: 100%;
@@ -4881,4 +4893,13 @@ body.vizardry-sketch .vzd-tree-rename-input {
   opacity: 0.7;
 }
 .vzd-compass-add:hover { opacity: 1; color: var(--interactive-accent); }
+/* While an inline input is active, switch from baseline to center so the
+   input's different intrinsic baseline doesn't shift the ▸ bullet or text. */
+.vzd-compass-force:has(.vzd-editing),
+.vzd-compass-problem:has(.vzd-editing),
+.vzd-compass-idea:has(.vzd-editing),
+.vzd-compass-line:has(.vzd-editing) {
+  align-items: center;
+}
+
 .vzd-compass-inline-input, .vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }

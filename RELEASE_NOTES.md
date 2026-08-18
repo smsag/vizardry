@@ -1,3 +1,13 @@
+## 0.61.7
+
+- **Fix: inline editing no longer causes layout jumps** — entering edit mode
+  on a Test Card step (and, more subtly, on Compass bullet lines and the
+  period/deadline chip) could shift surrounding content because the textarea
+  or input has a different intrinsic baseline than the text it replaces. The
+  Test Card fill now stacks onto its own line during editing so the prompt
+  stays put; Compass rows and the period widget switch from baseline to
+  center alignment while their input is active.
+
 ## 0.61.6
 
 - **Fix: image carousel no longer crashes on an empty images block** — a
