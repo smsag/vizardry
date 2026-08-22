@@ -53,6 +53,6 @@
   },
   "dependencies": {
     "html-to-image": "^1.11.13",
-    "marked": "^18.0.9"
+    "marked": "^18.0.10"
   }
 }
