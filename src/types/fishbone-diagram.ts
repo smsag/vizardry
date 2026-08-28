@@ -19,6 +19,8 @@ export interface FishboneCategory {
 export interface FishboneDiagram {
   effect: string;
   categories: FishboneCategory[];
+  /** Non-fatal parse issues surfaced as a header chip (graceful degradation). */
+  warnings?: string[];
 }
 
 export type FishboneResult = Result<FishboneDiagram>;

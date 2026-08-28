@@ -28,6 +28,52 @@ category: Technology
 \`\`\`
 `;
 
+export const FISHBONE_6M_TEMPLATE = `\`\`\`vizardry
+type: fishbone, 6m
+title: 6M Cause Analysis
+
+effect: Assembly line stops several times per shift
+
+category: Machine
+  cause: Ageing PLC
+    subcause: Firmware two versions behind
+category: Method
+  cause: Manual changeover between runs
+category: Material
+  cause: Inconsistent supplier tolerances
+\`\`\`
+`;
+
+export const FISHBONE_SERVICE_TEMPLATE = `\`\`\`vizardry
+type: fishbone, service
+title: Service Cause Analysis (4S)
+
+effect: Support satisfaction dropped this quarter
+
+category: Systems
+  cause: Ticketing tool slow to load
+category: Skills
+  cause: New hires still ramping
+category: Suppliers
+  cause: Upstream API outages
+\`\`\`
+`;
+
+export const FISHBONE_MARKETING_TEMPLATE = `\`\`\`vizardry
+type: fishbone, marketing
+title: Marketing Cause Analysis (7P)
+
+effect: Landing page converts below target
+
+category: Promotion
+  cause: Message doesn't match ad copy
+category: Price
+  cause: No plan comparison above the fold
+category: Process
+  cause: Sign-up needs a credit card too early
+\`\`\`
+`;
+
 export const IMPACT_MAP_TEMPLATE = `\`\`\`vizardry
 type: impact
 title: Impact Map

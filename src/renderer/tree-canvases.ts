@@ -204,6 +204,7 @@ export function renderFishbone(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "fishbone", title, undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(container, diagram.warnings);
 
   const editHandlers = isEditMode ? makeFishboneHandlers(app!, ctx!, container) : undefined;
   renderTree(adaptFishboneToTree(diagram), FISHBONE_OPTS, container, resolver, navigateTo, editHandlers);

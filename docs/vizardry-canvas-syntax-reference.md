@@ -930,6 +930,16 @@ category: Expectation
 | `cause:` | 1 (under category) | A contributing cause |
 | `subcause:` | 2 (under cause) | A sub-level cause |
 
+**Category presets** — add a variant on the `type:` line to pre-seed the canonical category bones; your `category:` lines then fill a matching bone by name (or add a new one):
+
+| `type:` | Seeded categories |
+| --- | --- |
+| `fishbone, 6m` (or `manufacturing`) | People · Method · Machine · Material · Measurement · Environment |
+| `fishbone, service` (or `4s`) | Surroundings · Suppliers · Systems · Skills |
+| `fishbone, marketing` (or `7p`) | Product · Price · Place · Promotion · People · Process · Physical Evidence |
+
+Parsing is graceful: an orphan `cause:`/`subcause:`, an unrecognised line, or a duplicate `effect:` each skip with a warning chip rather than failing the canvas; indentation is cosmetic (nesting follows the keyword). It is only fatal when there is no `effect:`.
+
 ---
 
 ## Impact Map (`impact`)

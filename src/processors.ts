@@ -73,7 +73,8 @@ import {
 import { renderCarouselBlock } from "./renderer/carousel";
 import type { RenderContext } from "./renderer/render-context";
 import {
-  FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
+  FISHBONE_TEMPLATE, FISHBONE_6M_TEMPLATE, FISHBONE_SERVICE_TEMPLATE, FISHBONE_MARKETING_TEMPLATE,
+  IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
   OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
@@ -156,6 +157,9 @@ export interface ModalOnlyOption {
 }
 
 export const EXTRA_OPTIONS: ModalOnlyOption[] = [
+  { id: "fishbone-6m",        label: "Fishbone — 6M (Manufacturing)", template: FISHBONE_6M_TEMPLATE },
+  { id: "fishbone-service",   label: "Fishbone — 4S (Service)",       template: FISHBONE_SERVICE_TEMPLATE },
+  { id: "fishbone-marketing", label: "Fishbone — 7P (Marketing)",     template: FISHBONE_MARKETING_TEMPLATE },
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
   { id: "assumption-matrix",  label: "Assumption Map",        template: MATRIX_ASSUMPTION_TEMPLATE },

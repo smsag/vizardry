@@ -1718,6 +1718,8 @@ category: Technology
 
 An Ishikawa diagram: the `effect:` is the fish head; each `category:` is a bone with `cause:` and nested `subcause:` branches feeding into it.
 
+**Category presets:** add a variant on the `type:` line to pre-seed the canonical category bones — `type: fishbone, 6m` (manufacturing: People · Method · Machine · Material · Measurement · Environment), `fishbone, service` (4S: Surroundings · Suppliers · Systems · Skills), or `fishbone, marketing` (7P). Your `category:` lines fill a matching bone by name or add a new one. Parsing is graceful — an orphan cause, an unrecognised line, or a duplicate effect skips with a warning chip rather than failing the whole canvas (only a missing `effect:` is fatal).
+
 ---
 
 ### Now/Next/Later Roadmap
@@ -2064,6 +2066,7 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `category: <name>` | A cause category (e.g. People, Process, Technology) |
 | `cause: <text>` | A contributing cause — indented under `category:` |
 | `subcause: <text>` | A sub-level cause — indented under `cause:` |
+| `type: fishbone, <preset>` | Seed canonical bones: `6m` · `service` · `marketing` |
 
 ---
 

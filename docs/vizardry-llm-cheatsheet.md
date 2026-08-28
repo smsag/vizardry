@@ -249,7 +249,7 @@ category: Communication
 ```
 ~~~
 
-One `effect:` required. `category:` → `cause:` → `subcause:`.
+One `effect:` required (only fatal miss). `category:` → `cause:` → `subcause:`; bad lines skip with a warning. Presets seed canonical bones: `type: fishbone, 6m` / `service` / `marketing`.
 
 ## Impact Map (`impact`)
 
