@@ -28,3 +28,5 @@ export * from "./types/odyssey";
 export * from "./types/circle-of-influence";
 export * from "./types/whole-person";
 export * from "./types/radar";
+export * from "./types/strategy-canvas";
+export * from "./types/buyer-utility-map";

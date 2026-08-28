@@ -70,6 +70,7 @@ Rules:
 | `adkar` | ADKAR Change Model | Grid |
 | `bmc` | Business Model Canvas | Grid |
 | `experiment` | Experiment Canvas | Grid |
+| `errc` | ERRC Grid (Blue Ocean Four Actions) | Grid |
 | `fourls` | 4Ls Retrospective | Grid |
 | `jobs` | Jobs Canvas | Grid |
 | `kata` | Product Kata | Grid |
@@ -111,6 +112,8 @@ Rules:
 | `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 | `radar` | Radar / Spider Chart | SVG chart |
+| `strategycanvas` | Strategy Canvas (Blue Ocean value curves) | SVG chart |
+| `utilitymap` | Buyer Utility Map (Blue Ocean 6×6) | Grid |
 | `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
 | `compass` | Product Compass | Brief |
@@ -519,6 +522,25 @@ block: Sales Channels
 block: Top Riskiest Assumptions
   1. Ops managers are the right buyer (Risk: 36)
   2. PLG drives sufficient acquisition (Risk: 32)
+```
+~~~
+
+### ERRC Grid (`errc`)
+
+The Blue Ocean "Four Actions Framework". Blocks: `Eliminate` · `Raise` · `Reduce` · `Create` (Eliminate/Reduce lower the cost side in the left column; Raise/Create lift the value side in the right column).
+
+~~~
+```vizardry
+type: errc
+title: Blue Ocean — Four Actions
+block: Eliminate
+  Factors the industry takes for granted that add no real value
+block: Raise
+  Factors to lift well above the industry standard
+block: Reduce
+  Factors the industry over-serves relative to what buyers need
+block: Create
+  Factors the industry has never offered
 ```
 ~~~
 
@@ -1522,6 +1544,61 @@ axis: We have solid risk-management practices | 6
 | `axis: <statement> \| <score>` | An attribute and its 0–10 score (the spoke distance from centre) |
 
 Axes are drawn in source order, evenly around the circle, and numbered around the rim. Scores outside 0–10 are clamped. A blank statement, a duplicate, or a missing/non-numeric score skips that line with a warning chip; it's only fatal with fewer than three axes.
+
+---
+
+## Strategy Canvas (`strategycanvas`)
+
+The Blue Ocean value-curve chart: competing factors on the X axis, offering level (Low → High, **0–10**) on the Y axis, one **value curve** per player. `series:` (optional, one line) names the curves pipe-separated; each `factor:` line gives one pipe-separated score per series in the same order. Read-only (scores live in the source).
+
+~~~
+```vizardry
+type: strategycanvas
+title: Strategy Canvas
+
+series: Us | Legacy Carrier | Low-cost Rival
+
+factor: Price            | 8 | 3 | 9
+factor: Meals            | 2 | 8 | 2
+factor: Lounges          | 1 | 9 | 1
+factor: Friendly service | 9 | 4 | 5
+factor: Speed            | 8 | 7 | 6
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `series: A \| B \| C` | Value-curve names in draw order (optional — inferred from the first factor and auto-labelled "Series 1", … if omitted) |
+| `factor: <name> \| s1 \| s2 \| …` | A competing factor and one 0–10 score per series, in series order |
+
+At least two factors; up to six series. Scores outside 0–10 are clamped; a missing score is a gap the curve skips; a non-numeric score, a duplicate factor, or an unrecognised line skips with a warning chip. Fatal only with fewer than two factors.
+
+---
+
+## Buyer Utility Map (`utilitymap`)
+
+The Blue Ocean 6×6 map: the six stages of the buyer experience cycle (columns) crossed with the six utility levers (rows). Each `utility:` / `pain:` line marks one cell positionally — `<Stage> | <Lever> | <note>` (note optional). The canonical stages and levers default in; only the marked cells are written.
+
+~~~
+```vizardry
+type: utilitymap
+title: Where we create buyer utility
+
+utility: Purchase    | Convenience           | Buy + start auto-refill online
+utility: Use         | Simplicity            | One button — no grinding or tamping
+utility: Use         | Fun & Image           | Café-grade crema; a boutique ritual
+pain:    Disposal    | Environmental         | Pods pile up as waste
+```
+~~~
+
+| Key | Meaning |
+| --- | --- |
+| `utility: <Stage> \| <Lever> \| <note>` | A cell where the offering creates buyer utility (note optional) |
+| `pain: <Stage> \| <Lever> \| <note>` | A cell where the offering imposes a pain / blocker |
+| `stages: A \| B \| …` | Optional override of the six stage columns |
+| `levers: A \| B \| …` | Optional override of the six lever rows |
+
+Default stages: `Purchase` · `Delivery` · `Use` · `Supplements` · `Maintenance` · `Disposal`. Default levers: `Customer Productivity` · `Simplicity` · `Convenience` · `Risk` · `Fun & Image` · `Environmental`. Names match case-insensitively and accept short aliases (`Productivity` → *Customer Productivity*, `Fun` → *Fun & Image*). An unknown stage/lever, a missing field, an unrecognised keyword, or a duplicated cell skips with a warning chip — the grid always renders, so it is never fatal. Read-only (cells live in the source).
 
 ---
 

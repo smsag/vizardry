@@ -4010,6 +4010,244 @@ code:has(.vzd-upvoty-key) {
   color: var(--interactive-accent);
 }
 
+/* ══ Strategy Canvas (Blue Ocean value curves) ══════════════════════════════
+   A Cartesian multi-series line chart: competing factors on X, offering level
+   (Low→High, 0–10) on Y, one accent-harmonised value curve per series. */
+
+.vzd-strategy-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  justify-content: center;
+  margin: 0.4rem 0 0.1rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.92);
+  color: var(--text-muted);
+}
+
+.vzd-strategy-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.vzd-strategy-legend-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.vzd-strategy-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  margin: 0.25rem auto 1.75rem;
+  aspect-ratio: 100 / 62;
+}
+
+.vzd-strategy-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.vzd-strategy-grid {
+  stroke: var(--background-modifier-border);
+  stroke-width: 0.25;
+  stroke-dasharray: 1 1;
+}
+
+.vzd-strategy-axis {
+  stroke: var(--text-muted);
+  stroke-width: 0.4;
+}
+
+.vzd-strategy-guide {
+  stroke: var(--background-modifier-border);
+  stroke-width: 0.2;
+}
+
+.vzd-strategy-tick {
+  fill: var(--text-muted);
+  font-size: 2.2px;
+}
+
+.vzd-strategy-axis-label {
+  fill: var(--text-muted);
+  font-size: 2.4px;
+  font-weight: 600;
+}
+
+.vzd-strategy-line {
+  fill: none;
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.vzd-strategy-dot {
+  stroke: var(--background-primary);
+  stroke-width: 0.2;
+}
+
+.vzd-strategy-factor {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.82);
+  line-height: 1.12;
+  color: var(--text-normal);
+}
+
+/* ══ Buyer Utility Map (Blue Ocean 6×6) ═════════════════════════════════════
+   Buyer-experience-cycle stages (columns) × utility levers (rows). Marked cells
+   show utility created (accent) or pain (amber); the rest render as untapped. */
+
+.vzd-utility-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0.4rem 0 0.5rem;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.92);
+  color: var(--text-muted);
+}
+
+.vzd-utility-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vzd-utility-swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 3px;
+  border: 1px solid var(--background-modifier-border);
+  display: inline-block;
+}
+
+.vzd-utility-swatch--utility {
+  background: color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+  border-color: var(--interactive-accent);
+}
+
+.vzd-utility-swatch--pain {
+  background: color-mix(in srgb, var(--color-orange, #d98324) 22%, transparent);
+  border-color: var(--color-orange, #d98324);
+}
+
+.vzd-utility-swatch--empty {
+  background: var(--background-secondary);
+  border-style: dashed;
+}
+
+.vzd-utility-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.vzd-utility-wrap {
+  display: grid;
+  gap: 5px;
+  min-width: 720px;
+}
+
+.vzd-utility-corner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 6px 8px;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.78);
+  color: var(--text-muted);
+}
+
+.vzd-utility-corner-stage {
+  align-self: flex-end;
+}
+
+.vzd-utility-stage {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 8px 8px 4px 4px;
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.9);
+  display: flex;
+  align-items: center;
+}
+
+.vzd-utility-lever {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.88);
+  color: var(--text-normal);
+  background: var(--background-secondary);
+  border-radius: 4px 8px 8px 4px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.vzd-utility-cell {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  min-height: 58px;
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--background-secondary);
+}
+
+.vzd-utility-cell--empty {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.vzd-utility-cell--utility {
+  background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+  border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--background-modifier-border));
+}
+
+.vzd-utility-cell--pain {
+  background: color-mix(in srgb, var(--color-orange, #d98324) 14%, var(--background-primary));
+  border-color: color-mix(in srgb, var(--color-orange, #d98324) 45%, var(--background-modifier-border));
+}
+
+.vzd-utility-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.72);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vzd-utility-cell--utility .vzd-utility-tag {
+  color: var(--interactive-accent);
+}
+
+.vzd-utility-cell--pain .vzd-utility-tag {
+  color: var(--color-orange, #d98324);
+}
+
+.vzd-utility-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background: currentColor;
+}
+
+.vzd-utility-note {
+  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.82);
+  line-height: 1.28;
+  color: var(--text-normal);
+}
+
 /* ══ Matrix (one unified engine) ════════════════════════════════════════════
    Two tick-labelled axes form an N×M cell grid (tinted by heat, optionally
    named); items are cards placed by [x,y] or snapped to a cell. --vzd-matrix-base

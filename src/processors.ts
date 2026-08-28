@@ -59,13 +59,15 @@ import { parseRadar } from "./radar";
 import { parseProblem } from "./problem";
 import { parseTestCard } from "./testcard";
 import { parseCompass } from "./compass";
+import { parseStrategyCanvas } from "./strategycanvas";
+import { parseBuyerUtilityMap } from "./utilitymap";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap, renderWheelOfLife, renderOdyssey,
   renderCircleOfInfluence, renderWholePerson, renderRadar, renderProblem, renderTestCard,
-  renderCompass,
+  renderCompass, renderStrategyCanvas, renderBuyerUtilityMap,
   renderError,
 } from "./renderer";
 import { renderCarouselBlock } from "./renderer/carousel";
@@ -82,6 +84,7 @@ import {
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
   CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
   PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
+  STRATEGY_CANVAS_TEMPLATE, BUYER_UTILITY_MAP_TEMPLATE,
 } from "./templates";
 
 /**
@@ -257,4 +260,10 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // Product Compass: a discovery brief that indexes and links out. Registered
   // `linked` so `problem:`/`idea:` lines can carry heading / ticket / canvas: links.
   { id: "compass", label: "Product Compass", template: COMPASS_TEMPLATE, createProcessor: linked(parseCompass, renderCompass) },
+
+  // Strategy Canvas / Buyer Utility Map (Blue Ocean) parse raw source — their
+  // `series:`/`factor:`/`utility:`/`pain:` lines are pipe-delimited (the inline-
+  // link stripper would mangle them) and need no heading-link resolver.
+  { id: "strategycanvas", label: "Strategy Canvas", template: STRATEGY_CANVAS_TEMPLATE, createProcessor: plain(parseStrategyCanvas, renderStrategyCanvas) },
+  { id: "utilitymap", label: "Buyer Utility Map", template: BUYER_UTILITY_MAP_TEMPLATE, createProcessor: plain(parseBuyerUtilityMap, renderBuyerUtilityMap) },
 ];

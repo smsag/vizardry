@@ -25,6 +25,7 @@ Globals: `collapsed: true` starts minimised. Links on labels: `[[#Heading]]`, `[
 | `adkar` | ADKAR Change Model | Grid |
 | `bmc` | Business Model Canvas | Grid |
 | `experiment` | Experiment Canvas | Grid |
+| `errc` | ERRC Grid (Four Actions) | Grid |
 | `fourls` | 4Ls Retrospective | Grid |
 | `futureself` | Future Self | Grid |
 | `jobs` | Jobs Canvas | Grid |
@@ -66,6 +67,8 @@ Globals: `collapsed: true` starts minimised. Links on labels: `[[#Heading]]`, `[
 | `circleofinfluence` | Circle of Influence | Rings |
 | `wholeperson` | Whole Person | SVG wheel |
 | `radar` | Radar / Spider Chart | SVG chart |
+| `strategycanvas` | Strategy Canvas (Blue Ocean) | SVG chart |
+| `utilitymap` | Buyer Utility Map (Blue Ocean) | Grid |
 | `problem` / `problem, engineering` | Problem Statement (engineering) | SVG flow |
 | `problem, business` | Problem Statement (business) | SVG flow |
 | `problem, research` | Problem Statement (research) | SVG flow |
@@ -98,6 +101,7 @@ block: Weaknesses
 | `adkar` | Awareness · Desire · Knowledge · Ability · Reinforcement |
 | `bmc` | Key Partners · Key Activities · Key Resources · Value Propositions · Customer Relationships · Channels · Customer Segments · Cost Structure · Revenue Streams |
 | `experiment` | Hypothesis · Test · Metric · Success Criteria · Observation · Learning · Decision |
+| `errc` | Eliminate · Raise · Reduce · Create |
 | `fourls` | Liked · Learned · Lacked · Longed For · Actions |
 | `futureself` | As-Is · To-Be · Actions *(all card blocks; also accepts `period: <text>`)* |
 | `jobs` | Job Performer · Main Job · Circumstances · Functional Aspects · Emotional Aspects · Social Aspects · Current Solutions · Desired Outcomes · Obstacles |
@@ -512,6 +516,8 @@ axis: Solid risk management | 6
 ~~~
 
 3–12 axes, each scored 0–10. Plotted as a filled polygon on evenly-spaced spokes.
+
+**Blue Ocean —** `strategycanvas`: `series: A \| B \| C` then `factor: Name \| s1 \| s2 \| s3` (0–10, one score per series in order; ≥2 factors, ≤6 series). `utilitymap`: `utility:`/`pain: <Stage> \| <Lever> \| <note>` marks one of 36 cells; canonical 6 stages (Purchase·Delivery·Use·Supplements·Maintenance·Disposal) × 6 levers (Customer Productivity·Simplicity·Convenience·Risk·Fun & Image·Environmental) default in, optional `stages:`/`levers:` overrides.
 
 ## Problem Statement (`problem`)
 

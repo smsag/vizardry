@@ -21,3 +21,5 @@ export { renderRadar } from "./renderer/radar";
 export { renderProblem } from "./renderer/problem";
 export { renderTestCard } from "./renderer/testcard";
 export { renderCompass } from "./renderer/compass";
+export { renderStrategyCanvas } from "./renderer/strategycanvas";
+export { renderBuyerUtilityMap } from "./renderer/utilitymap";

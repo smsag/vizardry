@@ -9,6 +9,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.fourls.description":     "Gefiel, Gelernt, Gefehlt, Gewünscht — plus eine gemeinsame Aktionsliste.",
   "framework.fishbone.description":   "Ursachen bis zur Wirkung zurückverfolgt.",
   "framework.experiment.description": "Hypothese getestet, beobachtet und in eine Entscheidung überführt.",
+  "framework.errc.description":       "Blue-Ocean-Vier-Aktionen: Eliminieren, Reduzieren, Steigern, Schaffen.",
   "framework.impact.description":     "Alle Features an Zielen ausgerichtet.",
   "framework.jobs.description":       "Kernmotivation der Kunden freigelegt.",
   "framework.kata.description":       "Klarer Weg zum nächsten Experiment.",
@@ -39,6 +40,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.circleofinfluence.description": "Sortiere deine Themen in Sorge, Einfluss und Kontrolle — und richte den Fokus nach innen.",
   "framework.wholeperson.description": "Körper, Verstand, Herz und Geist als Rad bewertet, mit Erneuerungs-Aktivitäten.",
   "framework.radar.description": "Mehrere Attribute von 0–10 bewerten und als gefülltes Radar-/Spinnendiagramm darstellen.",
+  "framework.strategycanvas.description": "Blue-Ocean-Wertkurven — Wettbewerbsfaktoren von 0–10 für dich vs. Konkurrenz.",
+  "framework.utilitymap.description": "Blue-Ocean-6×6-Karte — wo dein Angebot Käufernutzen (oder Schmerz) schafft.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Schriftgröße verringern",

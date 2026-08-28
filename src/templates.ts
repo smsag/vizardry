@@ -321,6 +321,40 @@ pricing: Included in all tiers — an activation lever, not a paywall
 \`\`\`
 `;
 
+export const STRATEGY_CANVAS_TEMPLATE = `\`\`\`vizardry
+type: strategycanvas
+title: Strategy Canvas
+
+series: Us | Legacy Carrier | Low-cost Rival
+
+factor: Price            | 8 | 3 | 9
+factor: Meals            | 2 | 8 | 2
+factor: Lounges          | 1 | 9 | 1
+factor: Seating choice   | 3 | 8 | 4
+factor: Hub connectivity | 4 | 9 | 3
+factor: Friendly service | 9 | 4 | 5
+factor: Speed            | 8 | 7 | 6
+factor: Frequent point-to-point | 9 | 5 | 7
+\`\`\`
+`;
+
+export const BUYER_UTILITY_MAP_TEMPLATE = `\`\`\`vizardry
+type: utilitymap
+title: Buyer Utility Map
+
+utility: Purchase    | Simplicity            | One machine, one pod range
+utility: Purchase    | Convenience           | Buy + start auto-refill online
+utility: Delivery    | Convenience           | Pods arrive on your schedule
+utility: Use         | Customer Productivity | A fresh cup in about 30 seconds
+utility: Use         | Simplicity            | One button — no grinding or tamping
+utility: Use         | Fun & Image           | Café-grade crema; a boutique ritual
+utility: Maintenance | Simplicity            | Auto descale reminder and rinse cycle
+pain:    Supplements | Customer Productivity | Locked to proprietary pods
+pain:    Maintenance | Risk                  | Skip descaling and the machine clogs
+pain:    Disposal    | Environmental         | Aluminium-and-plastic pods pile up as waste
+\`\`\`
+`;
+
 export const WARDLEY_TEMPLATE = `\`\`\`vizardry
 type: wardley
 title: Wardley Map

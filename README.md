@@ -35,6 +35,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `fourls` | 4Ls Retrospective | Grid |
 | `carousel` | Image Carousel | Gallery |
 | `experiment` | Experiment Canvas | Grid |
+| `errc` | ERRC Grid (Blue Ocean Four Actions) | Grid |
 | `fishbone` | Fishbone Diagram | Tree |
 | `impact` | Impact Map | Tree |
 | `journey` | Customer Journey Map | Grid |
@@ -72,6 +73,8 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `circleofinfluence` | Circle of Influence & Concern | Concentric rings |
 | `wholeperson` | Whole Person / Four Dimensions | SVG wheel + cards |
 | `radar` | Radar / Spider Chart | SVG chart |
+| `strategycanvas` | Strategy Canvas (Blue Ocean value curves) | SVG chart |
+| `utilitymap` | Buyer Utility Map (Blue Ocean) | Grid |
 | `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
 | `compass` | Product Compass | Brief |
@@ -1376,6 +1379,79 @@ Each statement is numbered and labelled around the rim; the shaded area is your 
 
 ---
 
+### Strategy Canvas (Blue Ocean)
+
+Kim & Mauborgne's central diagnostic: the **competing factors** of an industry along the X axis, the **offering level** (Low → High, 0–10) on the Y axis, and one **value curve** per player — you, a rival, the industry average. Where the curves diverge is your strategy.
+
+~~~
+```vizardry
+type: strategycanvas
+title: Strategy Canvas
+
+series: Us | Legacy Carrier | Low-cost Rival
+
+factor: Price            | 8 | 3 | 9
+factor: Meals            | 2 | 8 | 2
+factor: Lounges          | 1 | 9 | 1
+factor: Friendly service | 9 | 4 | 5
+factor: Speed            | 8 | 7 | 6
+```
+~~~
+
+`series:` declares the value-curve names once (pipe-separated, like Wardley's `stages:`); each `factor:` line then gives one pipe-separated score per series in the same order (like a matrix axis line). Curves are drawn in accent-harmonised colours with a legend. The canvas is read-only for now (scores live in the source).
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `series: A \| B \| C` | Value-curve names, in draw order (optional; inferred if omitted) |
+| `factor: <name> \| s1 \| s2 \| …` | A competing factor and one 0–10 score per series |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- At least two factors; up to six series. Scores are 0–10; out-of-range values are clamped.
+- A missing score is a gap (the curve skips it); a non-numeric score, a duplicate factor, or an unrecognised line skips with a warning chip rather than failing the whole canvas.
+- If `series:` is omitted, the number of curves is inferred from the first factor and they are auto-labelled *Series 1*, *Series 2*, …
+
+---
+
+### Buyer Utility Map (Blue Ocean)
+
+The other half of the Blue Ocean toolkit: a **6×6 map** crossing the six stages of the buyer experience cycle (**Purchase → Delivery → Use → Supplements → Maintenance → Disposal**) with the six utility levers (**Customer Productivity · Simplicity · Convenience · Risk · Fun & Image · Environmental**). You mark the cells where your offering creates a leap in utility — the empty cells are the untapped space rivals ignore.
+
+~~~
+```vizardry
+type: utilitymap
+title: Buyer Utility Map
+
+utility: Purchase    | Convenience           | Buy + start auto-refill online
+utility: Use         | Simplicity            | One button — no grinding or tamping
+utility: Use         | Fun & Image           | Café-grade crema; a boutique ritual
+pain:    Disposal    | Environmental         | Pods pile up as waste
+```
+~~~
+
+The canonical six stages and six levers default in, so you only write the cells you want to mark; every other cell renders empty. `utility:` marks a cell where you create buyer utility (accent), `pain:` a cell where you impose friction (amber).
+
+**Syntax:**
+
+| Line | Meaning |
+|---|---|
+| `utility: <Stage> \| <Lever> \| <note>` | A cell where the offering creates utility (note optional) |
+| `pain: <Stage> \| <Lever> \| <note>` | A cell where the offering imposes a pain/blocker |
+| `stages: A \| B \| …` | Optional override of the six stage columns |
+| `levers: A \| B \| …` | Optional override of the six lever rows |
+| `title: <text>` | Optional canvas title |
+| `// comment` | Ignored |
+
+**Rules:**
+- Stage and lever names match case-insensitively, and short aliases resolve (`Productivity` → *Customer Productivity*, `Fun` → *Fun & Image*).
+- An unknown stage/lever, a missing field, an unrecognised keyword, or a duplicated cell skips with a warning chip. The grid always renders — it is never fatal.
+- The canvas is read-only for now (cells live in the source).
+
+---
+
 ### Problem Statement
 
 A **problem statement** walks a reader from the situation to the fix: *Setup → Gap → Stakes → Direction*. This canvas renders that arc as a left-to-right **flow of linked cards**. The vocabulary is chosen with a subtype on the `type:` line (no separate key):
@@ -1827,7 +1903,7 @@ It's a global toggle that applies live to all rendered canvases — no re-render
 
 ## Syntax reference
 
-### Grid canvases (type: adkar, bmc, experiment, fourls, futureself, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
+### Grid canvases (type: adkar, bmc, errc, experiment, fourls, futureself, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
 
 | Syntax | Meaning |
 |---|---|

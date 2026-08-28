@@ -16,6 +16,7 @@ export const en = {
   "framework.fourls.description":     "Liked, Learned, Lacked, Longed for — plus a shared action list.",
   "framework.fishbone.description":   "Root causes traced back to an effect.",
   "framework.experiment.description": "Hypothesis tested, observed, and turned into a decision.",
+  "framework.errc.description":       "Blue Ocean Four Actions: Eliminate, Reduce, Raise, Create.",
   "framework.impact.description":     "All features tied to goals.",
   "framework.jobs.description":       "Core customer motivation laid bare.",
   "framework.kata.description":       "Clear path to next experiment.",
@@ -46,6 +47,8 @@ export const en = {
   "framework.circleofinfluence.description": "Sort what you care about into Concern, Influence, and Control — and focus inward.",
   "framework.wholeperson.description": "Body, Mind, Heart, and Spirit scored on a wheel with renewal activities.",
   "framework.radar.description": "Rate several attributes 0–10 and plot them as a filled radar/spider chart.",
+  "framework.strategycanvas.description": "Blue Ocean value curves — competing factors scored 0–10 for you vs. rivals.",
+  "framework.utilitymap.description": "Blue Ocean 6×6 map — where your offering creates buyer utility (or pain).",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
