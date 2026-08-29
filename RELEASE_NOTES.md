@@ -1,3 +1,32 @@
+## 0.62.0
+
+- **New: Blue Ocean Strategy Canvas (`type: strategycanvas`)** — plot the
+  competing factors of an industry against offering level (Low → High, 0–10)
+  and draw one value curve per player. `series: Us | Rival | Industry` names
+  the curves; each `factor: Name | s1 | s2 | s3` gives one score per series.
+  Curves are drawn in accent-harmonised colours with a legend.
+- **New: Blue Ocean Buyer Utility Map (`type: utilitymap`)** — the 6×6 map of
+  buyer-experience stages against utility levers. Mark cells with
+  `utility: <Stage> | <Lever> | <note>` (a leap you create) or
+  `pain: <Stage> | <Lever> | <note>` (friction you impose); the canonical six
+  stages and six levers default in, with optional `stages:` / `levers:`
+  overrides and short-alias matching.
+- **New: ERRC Grid (`type: errc`)** — the Blue Ocean Four Actions Framework
+  (Eliminate · Raise · Reduce · Create) as a grid canvas.
+- **New: Fishbone is now a true herringbone (Ishikawa) diagram** — a
+  horizontal spine driving into the effect head, with category bones angled
+  off it (alternating above and below), causes branching from each bone, and
+  sub-causes ticking outward. Category colours are harmonised from your
+  accent. In-place editing (rename / add / delete on every level) is
+  preserved.
+- **New: Fishbone category presets** — `type: fishbone, 6m` (manufacturing
+  6M), `fishbone, service` (4S), and `fishbone, marketing` (7P) pre-seed the
+  canonical category bones.
+- **Improved: Fishbone parsing is now graceful** — an orphan cause, an
+  unrecognised line, or a duplicate effect skips with a warning chip instead
+  of failing the whole canvas; indentation is treated as cosmetic. Only a
+  missing `effect:` is fatal.
+
 ## 0.61.6
 
 - **Fix: image carousel no longer crashes on an empty images block** — a
