@@ -646,7 +646,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, venn, ost, mindmap, impact
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vizardry-fishbone-wrapper, .vzd-sipoc-wrap, .vzd-sipoc-flow-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-matrix-wrap, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-fishbone-wrap, .vzd-sipoc-wrap, .vzd-sipoc-flow-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-matrix-wrap, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap"
     );
     if (!contentEl) return;
 

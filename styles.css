@@ -4248,6 +4248,56 @@ code:has(.vzd-upvoty-key) {
   color: var(--text-normal);
 }
 
+/* ══ Fishbone (herringbone / true Ishikawa) ═════════════════════════════════
+   Horizontal spine into the effect head; category bones angled off it,
+   alternating above/below, with causes branching from each bone. Colours are
+   harmonised from the Obsidian accent (set inline per category). */
+
+.vzd-fishbone-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0.3rem 0;
+}
+
+.vzd-fishbone-svg {
+  display: block;
+}
+
+.vzd-fb-spine { stroke: var(--interactive-accent); stroke-width: 3; }
+.vzd-fb-arrow { fill: var(--interactive-accent); }
+.vzd-fb-rib { stroke-width: 2.4; fill: none; stroke-linecap: round; }
+.vzd-fb-cause-stub { stroke-width: 1.3; fill: none; stroke-linecap: round; opacity: 0.72; }
+.vzd-fb-head { fill: var(--interactive-accent); }
+
+.vzd-fb-head-label {
+  fill: var(--text-on-accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.vzd-fb-cat-label {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.vzd-fb-cause-label {
+  fill: var(--text-normal);
+  font-size: 12.5px;
+}
+
+.vzd-fb-sub-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.vzd-fb-linked {
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+.vzd-fb-editable { cursor: text; }
+
 /* ══ Matrix (one unified engine) ════════════════════════════════════════════
    Two tick-labelled axes form an N×M cell grid (tinted by heat, optionally
    named); items are cards placed by [x,y] or snapped to a cell. --vzd-matrix-base

@@ -1,5 +1,6 @@
 export { renderCanvas, renderError } from "./renderer/canvas";
-export { renderFishbone, renderImpactMap, renderMindMap, renderOST } from "./renderer/tree-canvases";
+export { renderImpactMap, renderMindMap, renderOST } from "./renderer/tree-canvases";
+export { renderFishbone } from "./renderer/fishbone";
 export { renderStoryMap } from "./renderer/story";
 export { renderVennDiagram } from "./renderer/venn";
 export { renderSIPOC } from "./renderer/sipoc";

@@ -10,7 +10,7 @@
 
 import { Platform } from "obsidian";
 import type {
-  FishboneDiagram, ImpactMap, MindMap, MindMapNode, OSTNode, OSTTree,
+  ImpactMap, MindMap, MindMapNode, OSTNode, OSTTree,
   SCQAData, SCQANode, TreeNode, TreeNodeStyle, TreeRenderOptions,
 } from "../types";
 import { t } from "../i18n";
@@ -104,21 +104,6 @@ export const IMPACT_MAP_OPTS: TreeRenderOptions = {
   ],
 };
 
-export const FISHBONE_OPTS: TreeRenderOptions = {
-  nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
-  hPadding: 24, vPadding: 24, maxLabelChars: 22,
-  direction: "left",
-  maxAddLevel: 3,
-  canvasClass: "vizardry-fishbone",
-  wrapperClass: "vizardry-fishbone-wrapper",
-  levelStyles: [
-    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
-    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 6, dashed: false },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-muted)", borderRadius: 20, dashed: true },
-  ],
-};
-
 // -- Domain -> TreeNode adapters ---------------------------------------------
 
 // Only the Opportunity lane carries a caption; each of its keywords maps to a
@@ -166,22 +151,6 @@ export function adaptImpactMapToTree(map: ImpactMap): { root: TreeNode } {
       node(actor.name, 1, t("impact.level.actor"), actor.impacts.map(impact =>
         node(impact.name, 2, t("impact.level.impact"), impact.deliverables.map(d =>
           node(d, 3, t("impact.level.deliverable"), [])
-        ))
-      ))
-    )),
-  };
-}
-
-export function adaptFishboneToTree(diagram: FishboneDiagram): { root: TreeNode } {
-  const node = (text: string, level: number, sublabel: string, children: TreeNode[]): TreeNode => ({
-    text, level, sublabel, children, x: 0, y: 0, width: 0, height: 0,
-  });
-
-  return {
-    root: node(diagram.effect, 0, t("fishbone.level.effect"), diagram.categories.map(cat =>
-      node(cat.name, 1, t("fishbone.level.category"), cat.causes.map(cause =>
-        node(cause.name, 2, t("fishbone.level.cause"), cause.subcauses.map(sc =>
-          node(sc.name, 3, t("fishbone.level.subcause"), [])
         ))
       ))
     )),
