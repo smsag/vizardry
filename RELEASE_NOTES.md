@@ -1,3 +1,13 @@
+## 0.63.0
+
+- **New: Pin a canvas while you scroll (`sticky: true`)** — a new pin button in
+  the canvas toolbar (left of minimize) keeps the full canvas anchored to the
+  top of the reading pane while you scroll through the rest of the note, so a
+  reference canvas whose blocks link out to detail sections further down stays
+  in view. The pinned copy is a read-only clone; only one canvas is pinned at a
+  time (the one you most recently scrolled past). Persisted as `sticky: true`.
+  Reading View on desktop only — the button is hidden elsewhere.
+
 ## 0.62.0
 
 - **New: Blue Ocean Strategy Canvas (`type: strategycanvas`)** — plot the
