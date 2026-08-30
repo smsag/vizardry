@@ -34,6 +34,7 @@ These are the rules that most often get broken. Follow all of them:
 - **Blank lines:** ignored.
 - **Heading / ticket links:** append `[[#Heading]]`, `[text](#Anchor)`, or `[text](TICKET-123)` to an element label (see "Links" near the end).
 - **`collapsed: true`** — optional top-level line; starts the canvas minimized (also written back by the minimize button).
+- **`sticky: true`** — optional top-level line; pins the canvas to the top of the reading pane while you scroll past it (also written back by the pin button). Reading View on desktop only; a no-op elsewhere.
 
 ---
 
@@ -1784,6 +1785,7 @@ Icon buttons in the title bar, revealed on hover:
 | Download | Export a high-DPI PNG. On **desktop** it downloads the file; on **mobile** it opens the system share sheet (Save to Photos/Files) |
 | Copy source | Copy this canvas's ` ```vizardry ` fence to the clipboard |
 | Present | Full-screen presentation overlay |
+| Pin / Unpin | Keep the canvas pinned at the top of the reading pane while you scroll the rest of the note; persisted as `sticky: true`. Reading View on desktop only |
 | Minimize / Expand | Collapse to the title bar; persisted as `collapsed: true` in the source |
 
 ---

@@ -208,6 +208,40 @@ button.vzd-btn {
   opacity: 0.5;
 }
 
+/* Pin (sticky) button: when active it stays visible even without a canvas
+   hover, tinted with the accent colour, so the pinned state is legible. */
+.vzd-pin-btn.is-active {
+  opacity: var(--icon-opacity, 0.7);
+  pointer-events: auto;
+  color: var(--text-accent);
+}
+.vizardry-canvas:hover .vzd-pin-btn.is-active {
+  opacity: 1;
+  color: var(--text-accent);
+}
+
+/* Read-only clone pinned to the top of the reading pane while its source canvas
+   is scrolled past (see src/renderer/sticky-pin.ts). Position (top/left/width)
+   is set inline from JS; everything else lives here.
+   - opaque background so the document scrolling underneath does not show through
+   - pointer-events:none so wheel/click pass straight through to the page
+   - height cap keeps a tall canvas from swallowing the reading area */
+.vizardry-canvas--pinned {
+  z-index: var(--layer-popover, 30);
+  max-height: 50vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0.15rem 0.5rem 0.35rem;
+  pointer-events: none;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 8px);
+  box-shadow: var(--shadow-s, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+.vizardry-canvas--pinned .vizardry-header {
+  cursor: default;
+}
+
 /* Minimized state: hide all canvas content except the header.
    Only non-layout properties (background, border-radius) change on the header
    so its geometry stays constant and there is no position jump. */

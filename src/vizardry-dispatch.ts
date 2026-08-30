@@ -78,6 +78,22 @@ export function extractType(source: string): ExtractedType | null {
 }
 
 /**
+ * Blanks (never removes — line numbers must stay put for parser error
+ * messages) any top-level `sticky:` config line, mirroring how `extractType`
+ * blanks the `type:` line. The flag is a presentation concern read from the
+ * full source in `initCanvas` (like `collapsed:`); blanking it centrally here
+ * means no framework parser needs to learn to skip it.
+ */
+export function blankStickyLines(source: string): string {
+  const lines = source.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].search(/\S/) !== 0) continue; // top-level lines only
+    if (lines[i].trim().toLowerCase().startsWith("sticky:")) lines[i] = "";
+  }
+  return lines.join("\n");
+}
+
+/**
  * Splits a fence body into one source string per canvas. Each top-level
  * `type:` line begins a new canvas; any preamble before the first `type:`
  * (blank lines, a stray comment) attaches to the first canvas. A block with a
@@ -136,7 +152,10 @@ function renderSingleCanvas(
     renderError('Missing required "type:" line — e.g. "type: bmc"', el);
     return;
   }
-  const { id, variant, parseSource } = found;
+  const { id, variant } = found;
+  // Strip the presentation-only `sticky:` line before any parser sees it; the
+  // flag itself is read from the full source in initCanvas.
+  const parseSource = blankStickyLines(found.parseSource);
 
   const definition = FRAMEWORKS[id];
   const custom = CUSTOM_RENDERER_MAP[id];

@@ -165,6 +165,35 @@ export async function writeCollapseState(
   container: HTMLElement,
   collapsed: boolean,
 ): Promise<void> {
+  await writeFenceFlag(app, ctx, container, "collapsed", collapsed);
+}
+
+/**
+ * Adds or removes `sticky: true` from the top of a canvas code fence — the
+ * persisted counterpart of the pin toolbar button. Same vault.process strategy
+ * as {@link writeCollapseState} so it works in Reading View and Live Preview.
+ */
+export async function writeStickyState(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  container: HTMLElement,
+  sticky: boolean,
+): Promise<void> {
+  await writeFenceFlag(app, ctx, container, "sticky", sticky);
+}
+
+/**
+ * Shared implementation for the top-of-fence boolean config flags
+ * (`collapsed:`, `sticky:`). Locates the fence whose body matches the
+ * container's `vzSource` snapshot and toggles a `<key>: true` line at the top.
+ */
+async function writeFenceFlag(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  container: HTMLElement,
+  key: string,
+  enabled: boolean,
+): Promise<void> {
   const file = app.vault.getFileByPath(ctx.sourcePath);
   if (!file) return;
 
@@ -172,7 +201,7 @@ export async function writeCollapseState(
   if (source === undefined) return;
 
   await app.vault.process(file, (content) => {
-    const result = patchFenceCollapseState(content, source, collapsed);
+    const result = patchFenceFlag(content, source, key, enabled);
     if (result === null) return content;
     // Keep vzSource in sync so future operations find the updated fence.
     container.dataset.vzSource = result.newSource;
@@ -182,15 +211,17 @@ export async function writeCollapseState(
 
 /**
  * Finds the code fence in `fileContent` whose body matches `source` (trimmed),
- * then adds or removes a `collapsed: true` line at the top of the body.
+ * then adds or removes a `<key>: true` line at the top of the body.
  * Returns null when the fence is not found or is already in the target state.
  */
-function patchFenceCollapseState(
+function patchFenceFlag(
   fileContent: string,
   source: string,
-  collapsed: boolean,
+  key: string,
+  enabled: boolean,
 ): { newContent: string; newSource: string } | null {
   const normalised = source.trim();
+  const prefix = `${key.toLowerCase()}:`;
   const lines = fileContent.split("\n");
 
   for (let i = 0; i < lines.length; i++) {
@@ -207,14 +238,14 @@ function patchFenceCollapseState(
     }
 
     if (bodyLines.join("\n").trim() === normalised) {
-      const collapsedIdx = bodyLines.findIndex(
-        l => l.trimStart().toLowerCase().startsWith("collapsed:")
+      const flagIdx = bodyLines.findIndex(
+        l => l.trimStart().toLowerCase().startsWith(prefix)
       );
       const newBodyLines = [...bodyLines];
-      if (collapsed && collapsedIdx === -1) {
-        newBodyLines.splice(0, 0, "collapsed: true");
-      } else if (!collapsed && collapsedIdx !== -1) {
-        newBodyLines.splice(collapsedIdx, 1);
+      if (enabled && flagIdx === -1) {
+        newBodyLines.splice(0, 0, `${key}: true`);
+      } else if (!enabled && flagIdx !== -1) {
+        newBodyLines.splice(flagIdx, 1);
       } else {
         return null;
       }
@@ -231,6 +262,6 @@ function patchFenceCollapseState(
     i = j;
   }
 
-  console.warn("Vizardry: writeCollapseState — no matching code fence found");
+  console.warn(`Vizardry: writeFenceFlag — no matching code fence found (${key})`);
   return null;
 }

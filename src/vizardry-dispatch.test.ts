@@ -29,7 +29,7 @@ vi.mock("html-to-image", () => ({
   toBlob: vi.fn().mockResolvedValue(new Blob(["png"], { type: "image/png" })),
 }));
 
-import { dispatchVizardry, extractType, splitVizardryCanvases } from "./vizardry-dispatch";
+import { dispatchVizardry, extractType, splitVizardryCanvases, blankStickyLines } from "./vizardry-dispatch";
 
 function container(): HTMLElement {
   const el = document.createElement("div");
@@ -102,6 +102,31 @@ describe("extractType", () => {
   });
 });
 
+// ── blankStickyLines ─────────────────────────────────────────────────────────
+
+describe("blankStickyLines", () => {
+  it("blanks a top-level sticky: line, preserving line count", () => {
+    const source = "sticky: true\nblock: Goal\n  X";
+    const out = blankStickyLines(source);
+    expect(out.split("\n")).toHaveLength(3);
+    expect(out).toBe("\nblock: Goal\n  X");
+  });
+
+  it("is case-insensitive on the key", () => {
+    expect(blankStickyLines("Sticky: TRUE\nblock: Goal")).toBe("\nblock: Goal");
+  });
+
+  it("leaves an indented sticky:-looking line untouched (only top-level counts)", () => {
+    const source = "block: Goal\n  sticky: not a flag";
+    expect(blankStickyLines(source)).toBe(source);
+  });
+
+  it("leaves sources without a sticky line unchanged", () => {
+    const source = "type: bmc\nblock: Goal\n  X";
+    expect(blankStickyLines(source)).toBe(source);
+  });
+});
+
 // ── dispatchVizardry ─────────────────────────────────────────────────────────
 
 describe("dispatchVizardry", () => {
@@ -124,6 +149,15 @@ describe("dispatchVizardry", () => {
     dispatchVizardry("type: swot\nblock: Strengths\n  Fast team", el, fakeCtx(), fakeApp());
     expect(el.querySelector(".vizardry-grid")).toBeTruthy();
     expect(el.classList.contains("vizardry-error")).toBe(false);
+  });
+
+  it("renders normally when a top-level sticky: line is present (flag is stripped before parsing)", () => {
+    const el = container();
+    dispatchVizardry("type: swot\nsticky: true\nblock: Strengths\n  Fast team", el, fakeCtx(), fakeApp());
+    expect(el.classList.contains("vizardry-error")).toBe(false);
+    expect(el.querySelector(".vizardry-grid")).toBeTruthy();
+    // No stray warning chip — the sticky line must not degrade to a warning.
+    expect(el.querySelector(".vzd-canvas-warning-chip")).toBeNull();
   });
 
   it("renders a grid with a warning chip for a recoverable issue instead of erroring", () => {

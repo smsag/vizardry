@@ -7,7 +7,8 @@ import { TITLE_MAX_LENGTH } from "../shared/title-edit";
 import { getPluginVersion } from "../shared/version";
 import type { LinkResolver } from "../shared/links";
 import { attachSectionPreview } from "./section-preview";
-import { writeCollapseState } from "../shared/block-edit";
+import { writeCollapseState, writeStickyState } from "../shared/block-edit";
+import { activateSticky, deactivateSticky } from "./sticky-pin";
 import { createBlurGuard } from "./inline-edit";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
@@ -350,6 +351,10 @@ export function initCanvas(
     source.split("\n").some(l => l.trim().toLowerCase() === "collapsed: true");
   if (isCollapsed) container.addClass("vizardry-canvas--minimized");
 
+  // Restore sticky/pin state from source (written back by the pin button).
+  const isSticky = source !== undefined &&
+    source.split("\n").some(l => l.trim().toLowerCase() === "sticky: true");
+
   const header = container.createEl("div", { cls: "vizardry-header" });
 
   if (onTitleEdit) {
@@ -365,7 +370,7 @@ export function initCanvas(
   const copyText = source !== undefined
     ? fence + 'vizardry' + '\n' + source + '\n' + fence
     : undefined;
-  addHeaderControls(header, container, title, copyText, app, ctx, isCollapsed);
+  addHeaderControls(header, container, title, copyText, app, ctx, isCollapsed, isSticky);
   extraHeaderContent?.(header);
 }
 
@@ -443,6 +448,7 @@ export function addHeaderControls(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
   initiallyCollapsed = false,
+  initiallySticky = false,
 ): void {
   const actions = header.createEl("div", { cls: "vizardry-header-actions" });
 
@@ -605,8 +611,39 @@ export function addHeaderControls(
   presentBtn.setAttribute("aria-label", t("controls.presentFullscreen"));
   presentBtn.addEventListener("click", (e) => { e.stopPropagation(); openPresentation(container, title); });
 
-  // Separator + minimize button — always last in the action bar
+  // Separator, then the pin + minimize buttons — always last in the action bar.
   actions.createEl("span", { cls: "vzd-btn-separator" });
+
+  // Pin (sticky) button — sits immediately left of minimize. Pinning only does
+  // anything in Reading View on desktop, so the button is hidden elsewhere; the
+  // visibility decision waits a frame for the canvas to attach to its view.
+  let sticky = initiallySticky;
+  const pinBtn = actions.createEl("button", { cls: "vzd-pin-btn vzd-btn" }) as HTMLButtonElement;
+  pinBtn.style.display = "none";
+  const syncPinBtn = (): void => {
+    setIcon(pinBtn, sticky ? "pin-off" : "pin");
+    pinBtn.classList.toggle("is-active", sticky);
+    pinBtn.setAttribute("aria-label", t(sticky ? "controls.unpin" : "controls.pin"));
+  };
+  syncPinBtn();
+  pinBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    sticky = !sticky;
+    syncPinBtn();
+    container.toggleClass("vizardry-canvas--sticky", sticky);
+    if (sticky) activateSticky(container); else deactivateSticky(container);
+    if (app && ctx) void writeStickyState(app, ctx, container, sticky);
+  });
+  ownerWindow(container).requestAnimationFrame(() => {
+    const canPin = Platform.isDesktop &&
+      !!container.closest(".markdown-reading-view") &&
+      !container.closest(".cm-editor");
+    pinBtn.style.display = canPin ? "" : "none";
+    if (canPin && sticky) {
+      container.addClass("vizardry-canvas--sticky");
+      activateSticky(container);
+    }
+  });
 
   let collapsed = initiallyCollapsed;
   const minimizeBtn = actions.createEl("button", { cls: "vzd-minimize-btn vzd-btn" });

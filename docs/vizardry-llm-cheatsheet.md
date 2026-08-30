@@ -16,7 +16,7 @@ Full reference: [vizardry-canvas-syntax-reference.md](vizardry-canvas-syntax-ref
 9. One `title:` line per canvas (optional).
 10. Repeat `type:` in one fence → **carousel** with prev/next navigation.
 
-Globals: `collapsed: true` starts minimised. Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`.
+Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas to the top while scrolling (Reading View, desktop). Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`.
 
 ## Framework index
 

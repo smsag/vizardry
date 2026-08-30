@@ -64,6 +64,8 @@ export const en = {
   "controls.exitPresentation":  "Exit presentation",
   "controls.minimize":          "Minimize",
   "controls.expand":            "Expand",
+  "controls.pin":               "Pin canvas to top while scrolling",
+  "controls.unpin":             "Unpin canvas",
 
   // ── Tree node editing ───────────────────────────────────────────────────────
   "tree.addChild":   "Add child node",

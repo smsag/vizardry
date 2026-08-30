@@ -22,7 +22,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { writeBlockContent, moveCardBetweenBlocks } from "./block-edit";
+import { writeBlockContent, moveCardBetweenBlocks, writeStickyState } from "./block-edit";
 import { MarkdownView } from "obsidian";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -335,5 +335,67 @@ describe("moveCardBetweenBlocks", () => {
 
     expect(written).toBe(false);
     expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+});
+
+// ── writeStickyState ─────────────────────────────────────────────────────────
+
+/**
+ * Minimal app whose vault.process runs the transform against an in-memory file
+ * body, so we exercise the fence-patching logic (add/remove the `sticky: true`
+ * line and keep the container's vzSource snapshot in sync) without Obsidian.
+ */
+function makeVaultApp(initialContent: string): { app: any; read: () => string } {
+  let content = initialContent;
+  const file = { path: "note.md" };
+  const app = {
+    vault: {
+      getFileByPath: (p: string) => (p === "note.md" ? file : null),
+      process: async (_f: unknown, fn: (c: string) => string) => { content = fn(content); return content; },
+    },
+  };
+  return { app, read: () => content };
+}
+
+describe("writeStickyState", () => {
+  const fence = "```";
+  const ctx = { sourcePath: "note.md" } as any;
+
+  it("adds `sticky: true` at the top of the matching fence and syncs vzSource", async () => {
+    const body = "type: bmc\nblock: Goal\n  X";
+    const { app, read } = makeVaultApp(`${fence}vizardry\n${body}\n${fence}\n`);
+    const el = document.createElement("div");
+    el.dataset.vzSource = body;
+
+    await writeStickyState(app, ctx, el, true);
+
+    expect(read()).toBe(`${fence}vizardry\nsticky: true\n${body}\n${fence}\n`);
+    expect(el.dataset.vzSource).toBe(`sticky: true\n${body}`);
+  });
+
+  it("removes the `sticky: true` line when toggled off", async () => {
+    const body = "sticky: true\ntype: bmc\nblock: Goal\n  X";
+    const { app, read } = makeVaultApp(`${fence}vizardry\n${body}\n${fence}\n`);
+    const el = document.createElement("div");
+    el.dataset.vzSource = body;
+
+    await writeStickyState(app, ctx, el, false);
+
+    const stripped = "type: bmc\nblock: Goal\n  X";
+    expect(read()).toBe(`${fence}vizardry\n${stripped}\n${fence}\n`);
+    expect(el.dataset.vzSource).toBe(stripped);
+  });
+
+  it("is a no-op when already in the requested state", async () => {
+    const body = "type: bmc\nblock: Goal\n  X";
+    const original = `${fence}vizardry\n${body}\n${fence}\n`;
+    const { app, read } = makeVaultApp(original);
+    const el = document.createElement("div");
+    el.dataset.vzSource = body;
+
+    await writeStickyState(app, ctx, el, false);
+
+    expect(read()).toBe(original);
+    expect(el.dataset.vzSource).toBe(body);
   });
 });

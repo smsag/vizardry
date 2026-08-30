@@ -57,6 +57,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "controls.exitPresentation":  "Präsentation beenden",
   "controls.minimize":          "Minimieren",
   "controls.expand":            "Maximieren",
+  "controls.pin":               "Canvas beim Scrollen oben anheften",
+  "controls.unpin":             "Canvas lösen",
 
   // ── Tree node editing ───────────────────────────────────────────────────────
   "tree.addChild":    "Kindknoten hinzufügen",
