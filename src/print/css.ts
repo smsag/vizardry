@@ -17,7 +17,7 @@ import type {
   PrintOptions,
 } from "./options";
 import { MARGIN_MM, PAGE_SIZE_KEYWORD } from "./options";
-import type { PrintTemplate } from "./templates";
+import type { PrintTemplate, PrintVars } from "./templates";
 import { resolveTemplateVars } from "./templates";
 
 /** Escape a string for use as a CSS `content:` string literal. */
@@ -129,67 +129,65 @@ export function buildPageRule(options: PrintOptions, title: string, ink: MarginI
   );
 }
 
-/** Build the heading page-break rules driven by the H1/H2 toggles. */
-export function buildHeadingBreaks(options: PrintOptions): string {
-  const rules: string[] = [];
-  if (options.h1PageBreak) {
-    // `break-before: page` is the modern property; Paged.js honours it. The
-    // `:not(:first-child)` guard stops the very first heading forcing a blank
-    // leading page.
-    rules.push(
-      `.vzd-print h1:not(:first-child) { break-before: page; }`,
-    );
+/**
+ * Parse the Markdown-notation heading-break field into distinct levels.
+ * `#` = 1, `##` = 2, …, comma-separated (`#,##` → [1, 2]). Whitespace is
+ * ignored; tokens that aren't a run of 1–6 `#` are dropped; duplicates are
+ * collapsed and the result is sorted.
+ */
+export function parseHeadingBreakLevels(input: string): number[] {
+  const levels = new Set<number>();
+  for (const token of input.split(",")) {
+    const t = token.trim();
+    if (/^#{1,6}$/.test(t)) levels.add(t.length);
   }
-  if (options.h2PageBreak) {
-    rules.push(`.vzd-print h2:not(:first-child) { break-before: page; }`);
-  }
-  return rules.join("\n");
+  return Array.from(levels).sort((a, b) => a - b);
 }
 
-/** Emit the template's CSS variables as declarations on the print root. */
-export function buildRootVars(template: PrintTemplate, options: PrintOptions): string {
-  const v = resolveTemplateVars(template, options);
-  return (
-    `.vzd-print {\n` +
-    `  --vzd-print-font: ${v.font};\n` +
-    `  --vzd-print-heading-font: ${v.headingFont};\n` +
-    `  --vzd-print-mono-font: ${v.monoFont};\n` +
-    `  --vzd-print-size: ${v.fontSize};\n` +
-    `  --vzd-print-line: ${v.lineHeight};\n` +
-    `  --vzd-print-color: ${v.color};\n` +
-    `  --vzd-print-heading-color: ${v.headingColor};\n` +
-    `  --vzd-print-accent: ${v.accent};\n` +
-    `  --vzd-print-measure: ${v.measure};\n` +
-    `}`
-  );
+/** Build the heading page-break rules from the `headingBreakLevels` field. */
+export function buildHeadingBreaks(options: PrintOptions): string {
+  // `break-before: page` is the modern property; Paged.js honours it. The
+  // `:not(:first-child)` guard stops the very first heading forcing a blank
+  // leading page.
+  return parseHeadingBreakLevels(options.headingBreakLevels)
+    .map((n) => `.vzd-print h${n}:not(:first-child) { break-before: page; }`)
+    .join("\n");
 }
 
 /**
- * The static base rules shared by every template — typography wiring plus the
- * "keep visuals whole" rules that stop Vizardry canvases and images being
- * sliced across a page boundary.
+ * The base rules shared by every template — typography plus the "keep visuals
+ * whole" rules that stop Vizardry canvases and images being sliced across a
+ * page boundary.
+ *
+ * Values are emitted *concretely*, not via `var(--…)`. CSS custom properties do
+ * not resolve reliably across all of Paged.js's cloned/chunked page contexts —
+ * the first page in particular ended up without the variable and fell back to
+ * the browser default serif — so the whole sheet was inconsistent. Concrete
+ * values (like the resolved ink already used in the @page margin boxes) apply
+ * uniformly on every page.
  */
-const BASE_RULES = `.vzd-print {
-  font-family: var(--vzd-print-font);
-  font-size: var(--vzd-print-size);
-  line-height: var(--vzd-print-line);
-  color: var(--vzd-print-color);
+function baseRules(v: PrintVars): string {
+  return `.vzd-print {
+  font-family: ${v.font};
+  font-size: ${v.fontSize};
+  line-height: ${v.lineHeight};
+  color: ${v.color};
 }
 .vzd-print .vzd-print-body {
-  max-width: var(--vzd-print-measure);
+  max-width: ${v.measure};
   margin: 0 auto;
 }
 .vzd-print h1, .vzd-print h2, .vzd-print h3,
 .vzd-print h4, .vzd-print h5, .vzd-print h6 {
-  font-family: var(--vzd-print-heading-font);
-  color: var(--vzd-print-heading-color);
+  font-family: ${v.headingFont};
+  color: ${v.headingColor};
   line-height: 1.2;
 }
 /* Don't strand a heading at the foot of a page. */
 .vzd-print h1, .vzd-print h2, .vzd-print h3 { break-after: avoid; }
 .vzd-print p { orphans: 2; widows: 2; }
-.vzd-print a { color: var(--vzd-print-accent); }
-.vzd-print code, .vzd-print pre { font-family: var(--vzd-print-mono-font); }
+.vzd-print a { color: ${v.accent}; }
+.vzd-print code, .vzd-print pre { font-family: ${v.monoFont}; }
 .vzd-print pre { break-inside: avoid; white-space: pre-wrap; }
 /* Vizardry canvases, Mermaid SVGs and images print whole and never overflow. */
 .vzd-print .vizardry-root,
@@ -202,7 +200,38 @@ const BASE_RULES = `.vzd-print {
   max-width: 100%;
 }
 .vzd-print .vizardry-root svg,
-.vzd-print .mermaid svg { height: auto; }`;
+.vzd-print .mermaid svg { height: auto; }
+/* Visualizations are scaled to 75% and centered by wrapping each SVG in a
+   .vzd-print-scaled box sized to the scaled dimensions (see scaleVisualizations
+   in export.ts). The wrapper is what Paged.js measures, so pagination is
+   correct; overflow:hidden trims the empty corner the top-left scale leaves. */
+.vzd-print .vizardry-root,
+.vzd-print .mermaid { text-align: center; }
+.vzd-print .vzd-print-scaled {
+  margin: 0 auto;
+  overflow: hidden;
+  /* Keep the whole scaled diagram on one page — never split the wrapper (e.g.
+     a sequence diagram's lifelines from its messages). */
+  break-inside: avoid;
+}
+/* Shade the header row and zebra-stripe the body rows, for readability, in
+   every template. Scoped to .pagedjs_page (Paged.js's per-page wrapper), NOT
+   .vzd-print: that scope doesn't reach Paged.js's first page — which is where
+   the first table sits — so the first table went unstyled. The header is always
+   shaded; nth-child(even) leaves the first body row white. print-color-adjust
+   is required — Chromium drops backgrounds when printing unless it's forced. */
+.pagedjs_page table { border-collapse: collapse; }
+.pagedjs_page thead th {
+  background: #d9d9d9;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pagedjs_page tbody tr:nth-child(even) {
+  background: #efefef;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}`;
+}
 
 /**
  * Full print stylesheet for a template + options + note title.
@@ -218,14 +247,20 @@ export function buildPrintCss(
 ): string {
   const vars = resolveTemplateVars(template, options);
   const parts = [
-    buildRootVars(template, options),
-    BASE_RULES,
+    baseRules(vars),
     buildPageRule(options, title, { font: vars.font, accent: vars.accent }),
     buildHeadingBreaks(options),
   ];
   // The title block is always present in the rendered content; toggle its
   // visibility here so switching it on/off only re-paginates, never re-renders.
-  if (!options.showTitle) parts.push(".vzd-print .vzd-print-title { display: none; }");
+  // Unscoped selector (not `.vzd-print .vzd-print-title`): the `.vzd-print`
+  // scope doesn't reliably apply to Paged.js's first page — which is exactly
+  // where the title is — so a scoped rule never hid it.
+  if (!options.showTitle) parts.push(".vzd-print-title { display: none !important; }");
+  // Treat a horizontal rule as a page break: don't draw the line, break after it.
+  if (options.hrPageBreak) {
+    parts.push(".vzd-print hr { border: 0; height: 0; margin: 0; break-after: page; }");
+  }
   if (template.css) parts.push(template.css);
   return parts.filter(Boolean).join("\n\n");
 }

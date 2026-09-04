@@ -5281,20 +5281,32 @@ body.vizardry-sketch .vzd-tree-rename-input {
   position: fixed;
   left: -99999px;
   top: 0;
-  width: 800px;
-  visibility: hidden;
+  /* Approximate an A4 content column (210mm − 40mm ≈ 643px) so diagrams size
+     close to how they'll appear on the page and the 75% scale is accurate.
+     Paged.js re-flows text to the real page width during pagination anyway. */
+  width: 640px;
+  /* Off-screen but NOT visibility:hidden — Mermaid measures text via getBBox,
+     which returns zero for hidden elements, so its diagrams would size wrong
+     and then resize during pagination (a Paged.js reflow that can crash). */
   pointer-events: none;
 }
 
-/* The print portal is parked offscreen on screen and only revealed — and the
-   rest of the app hidden — while the print sheet is being produced. */
+/* The pages are paginated into this offscreen container, then their HTML is
+   moved into the print iframe (see src/print/export.ts). */
 .vzd-print-portal { position: fixed; left: -99999px; top: 0; }
 
-@media print {
-  body.vzd-printing > *:not(.vzd-print-portal) { display: none !important; }
-  body.vzd-printing .vzd-print-portal {
-    position: static;
-    left: 0;
-  }
-  body.vzd-printing .vzd-print-portal .pagedjs_page { box-shadow: none; }
+/* The hidden iframe the paginated pages are actually printed from, in isolation
+   from the rest of the Obsidian window. Kept on-screen but fully transparent and
+   non-interactive (rather than off-screen) so Chromium keeps its layout and
+   timers active — an off-screen iframe has its rAF/paint throttled, and a
+   display:none one wouldn't render for print at all. */
+.vzd-print-frame {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
 }

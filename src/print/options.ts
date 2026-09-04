@@ -31,10 +31,13 @@ export interface PrintOptions {
   pageSize: PageSize;
   landscape: boolean;
   margins: MarginPreset;
-  /** Start every top-level heading (H1) on a fresh page. */
-  h1PageBreak: boolean;
-  /** Start every H2 on a fresh page too. */
-  h2PageBreak: boolean;
+  /**
+   * Which heading levels start on a fresh page, in Markdown notation:
+   * `#` = H1, `##` = H2, …, comma-separated (e.g. `#,##`). Empty = none.
+   */
+  headingBreakLevels: string;
+  /** Treat a horizontal rule (`---`) as a page break instead of drawing it. */
+  hrPageBreak: boolean;
   pageNumbers: PageNumberFormat;
   pageNumberPosition: PageNumberPosition;
   /** Repeat the note title in a margin box on every page. */
@@ -50,8 +53,8 @@ export const DEFAULT_PRINT_OPTIONS: PrintOptions = {
   pageSize: "A4",
   landscape: false,
   margins: "normal",
-  h1PageBreak: false,
-  h2PageBreak: false,
+  headingBreakLevels: "",
+  hrPageBreak: false,
   pageNumbers: "page-n",
   pageNumberPosition: "bottom-center",
   runningHeader: false,
@@ -79,7 +82,7 @@ export const PAGE_SIZE_KEYWORD: Record<PageSize, string> = {
  * defaults so older saved settings (missing newly-added keys) stay valid.
  */
 export function normalizePrintOptions(raw: Partial<PrintOptions> | undefined): PrintOptions {
-  return {
+  const merged = {
     ...DEFAULT_PRINT_OPTIONS,
     ...(raw ?? {}),
     // templateValues is a nested object — a shallow spread would drop the
@@ -87,4 +90,14 @@ export function normalizePrintOptions(raw: Partial<PrintOptions> | undefined): P
     // against a null slipping through from hand-edited data.json.
     templateValues: { ...(raw?.templateValues ?? {}) },
   };
+
+  // Migrate 0.64.0's separate h1/h2 booleans to the Markdown-notation field.
+  if (raw && merged.headingBreakLevels === "") {
+    const legacy = raw as { h1PageBreak?: boolean; h2PageBreak?: boolean };
+    const levels: string[] = [];
+    if (legacy.h1PageBreak) levels.push("#");
+    if (legacy.h2PageBreak) levels.push("##");
+    if (levels.length) merged.headingBreakLevels = levels.join(",");
+  }
+  return merged;
 }

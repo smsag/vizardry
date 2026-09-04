@@ -12,8 +12,10 @@
  *      `@page` margin boxes (page numbers, running header) that Chromium's
  *      print path ignores. Re-paginating on an option change reuses the master,
  *      so only the (cheap) layout pass re-runs — not the markdown render.
- *   3. Show those pages in a preview container, or drop them into an offscreen
- *      print portal and call `window.print()`.
+ *   3. Show those pages in a preview container, or move them into a hidden
+ *      iframe and print that in isolation — printing the iframe prints only its
+ *      own document, so the host Obsidian window doesn't need `@media print`
+ *      isolation (which proved unreliable in Electron).
  *
  * Note on styling: the plugin's own styles.css is already loaded globally in the
  * Obsidian document, and both the preview pages and the print portal live in
@@ -23,16 +25,22 @@
  */
 
 import type { App, TFile } from "obsidian";
-import { Component, MarkdownRenderer, Notice } from "obsidian";
+import { Component, MarkdownRenderer, Notice, normalizePath } from "obsidian";
 import { Previewer } from "pagedjs";
 import type { PrintOptions } from "./options";
-import { getPrintTemplate } from "./templates";
+import { getPrintTemplate, resolveTemplateVars } from "./templates";
 import { buildPrintCss } from "./css";
 import { stripFrontmatter } from "./frontmatter";
 import { t } from "../i18n";
 
 export interface PrintContext {
   app: App;
+  /**
+   * Plugin install dir. Used to inline the plugin's own styles.css into the
+   * print iframe, which is a separate document where the globally-loaded
+   * styles.css does not apply.
+   */
+  pluginDir?: string;
 }
 
 /**
@@ -43,11 +51,11 @@ export interface PrintContext {
  */
 export const PRINT_SCRATCH_CLASS = "vzd-print-scratch";
 
-/** Offscreen container holding the paginated pages while the system dialog prints. */
+/** Offscreen container the pages are paginated into before moving to the print iframe. */
 export const PRINT_PORTAL_CLASS = "vzd-print-portal";
 
-/** Body class that flips on the `@media print` isolation rules in styles.css. */
-export const PRINTING_CLASS = "vzd-printing";
+/** The hidden iframe the paginated pages are printed from in isolation. */
+export const PRINT_FRAME_CLASS = "vzd-print-frame";
 
 /** Guards against two overlapping print runs (see printPrepared). */
 let printInProgress = false;
@@ -144,7 +152,49 @@ async function settle(el: HTMLElement): Promise<void> {
   await nextFrame();
   await nextFrame();
   await Promise.all(Array.from(el.querySelectorAll("img")).map(whenImageSettled));
-  await waitForQuiescence(el, 120, 2500);
+  // A longer quiet window / cap than a plain settle: Mermaid renders its
+  // diagrams' SVGs in async bursts, and pagination must not start until they
+  // have their final size — otherwise Paged.js re-flows on the later resize
+  // (wrong page count, and an occasional console crash in its resize handler).
+  await waitForQuiescence(el, 250, 5000);
+}
+
+/**
+ * Scale each visualization's SVG to `factor`, centered.
+ *
+ * The SVG is `transform: scale()`d inside a wrapper sized to the *scaled*
+ * dimensions. Two problems this solves at once:
+ *  - Paged.js measures the wrapper (the real, smaller footprint), so pages fill
+ *    correctly — a plain CSS transform/zoom on the SVG left it mis-measuring
+ *    and producing near-empty pages.
+ *  - transform renders the whole SVG at `factor`, so nothing is clipped —
+ *    setting only the SVG width clipped diagrams whose internal coordinates
+ *    don't rescale (e.g. wide multi-subgraph Mermaid), which showed as solid
+ *    black boxes.
+ * Run after settle(), when the SVGs have their natural size.
+ */
+function scaleVisualizations(el: HTMLElement, factor: number): void {
+  el.querySelectorAll<SVGSVGElement>(".vizardry-root svg, .mermaid svg").forEach((svg) => {
+    const rect = svg.getBoundingClientRect();
+    const parent = svg.parentElement;
+    if (rect.width <= 0 || rect.height <= 0 || !parent) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "vzd-print-scaled";
+    wrap.style.width = `${Math.round(rect.width * factor)}px`;
+    wrap.style.height = `${Math.round(rect.height * factor)}px`;
+
+    // Pin the SVG's current display size so scale() is relative to it, and
+    // scale from the top-left corner so it fills the wrapper exactly.
+    svg.style.width = `${Math.round(rect.width)}px`;
+    svg.style.height = `${Math.round(rect.height)}px`;
+    svg.style.maxWidth = "none";
+    svg.style.transformOrigin = "top left";
+    svg.style.transform = `scale(${factor})`;
+
+    parent.insertBefore(wrap, svg);
+    wrap.appendChild(svg);
+  });
 }
 
 /**
@@ -186,6 +236,7 @@ export async function prepareDocument(ctx: PrintContext, file: TFile): Promise<P
   try {
     await MarkdownRenderer.render(ctx.app, markdown, scratch, file.path, component);
     await settle(scratch);
+    scaleVisualizations(scratch, 0.75);
     const master = wrapContent(scratch, title);
     scratch.remove();
     return { master, title, destroy: () => component.unload() };
@@ -216,7 +267,9 @@ async function paginate(
   const flow = await previewer.preview(content, [{ "vzd-print": printCss }], renderTo);
   const added = Array.from(document.head.querySelectorAll("style")).filter((s) => !before.has(s));
   return {
-    pageCount: flow?.total ?? renderTo.querySelectorAll(".pagedjs_page").length,
+    // Count the actual page boxes rather than trusting flow.total, which Paged.js
+    // reports before any late resize-reflow settles.
+    pageCount: renderTo.querySelectorAll(".pagedjs_page").length || (flow?.total ?? 0),
     removeStyles: () => added.forEach((s) => s.remove()),
   };
 }
@@ -244,59 +297,135 @@ export function paginatePrepared(
   return paginateCss(doc, buildDocCss(doc, options), renderTo);
 }
 
+/** Serialize a `<style>` element's rules, including any added via CSSOM insertRule. */
+function serializeStyle(style: HTMLStyleElement): string {
+  // Paged.js populates part of its styles via `sheet.insertRule`, which never
+  // shows up in `textContent`. Read the live CSSOM first so the @page sizing it
+  // computes actually reaches the iframe; fall back to textContent otherwise.
+  try {
+    const sheet = style.sheet;
+    if (sheet && sheet.cssRules.length) {
+      return Array.from(sheet.cssRules).map((r) => r.cssText).join("\n");
+    }
+  } catch {
+    // A detached/cross-origin sheet throws on access — use textContent.
+  }
+  return style.textContent ?? "";
+}
+
 /**
- * Paginate a prepared doc into an offscreen portal and open the system print
- * dialog. The portal is only revealed — and the surrounding Obsidian UI hidden —
- * by the `@media print` rules in styles.css, so the sheet contains just the
- * note. Does NOT own `doc`; the caller destroys it.
+ * Print `bodyHtml` (paginated pages) from a hidden, isolated iframe.
+ *
+ * Printing an iframe prints only that frame's document, so there is no need to
+ * hide the host Obsidian UI with `@media print` (which proved unreliable in
+ * Electron) — and Paged.js's print CSS gets the clean `<body> → .pagedjs_pages
+ * → .pagedjs_page` height chain it assumes, instead of one broken by a wrapper.
  */
-export async function printPrepared(doc: PreparedDoc, options: PrintOptions): Promise<void> {
-  // One print at a time: a second run would append another portal and toggle
-  // the shared `vzd-printing` class / head-style bookkeeping out from under the
-  // first. Rare (the dialog closes before printing), but cheap to rule out.
+function printViaIframe(
+  rootCss: string,
+  pluginCss: string,
+  pagedCss: string,
+  bodyHtml: string,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.className = PRINT_FRAME_CLASS;
+    document.body.appendChild(iframe);
+
+    const win = iframe.contentWindow;
+    const idoc = iframe.contentDocument;
+    if (!win || !idoc) {
+      iframe.remove();
+      resolve();
+      return;
+    }
+
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      iframe.remove();
+      resolve();
+    };
+
+    // document.write (synchronous, same-origin) rather than srcdoc + the load
+    // event, and setTimeout rather than requestAnimationFrame — an off-screen /
+    // invisible iframe has its rAF throttled by Chromium, which is why the
+    // earlier version never fired print(). The iframe keeps the parent origin,
+    // so app:// / https images still resolve.
+    idoc.open();
+    // rootCss first: it sets the base font on html/body so EVERY page inherits
+    // it. Paged.js's first page doesn't reliably carry the `.vzd-print` scope,
+    // which left page 1 in the browser's default serif; a body-level base fixes
+    // it regardless (the more-specific `.vzd-print` rules in pagedCss still win
+    // where they apply).
+    idoc.write(
+      `<!doctype html><html><head><meta charset="utf-8">` +
+        `<style>${rootCss}</style><style>${pluginCss}</style><style>${pagedCss}</style>` +
+        `</head><body>${bodyHtml}</body></html>`,
+    );
+    idoc.close();
+
+    win.addEventListener("afterprint", finish, { once: true });
+    // Fallback: afterprint isn't guaranteed on every platform.
+    setTimeout(finish, 60_000);
+    // Give the written document a beat to lay out, then print.
+    setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+      } catch (err) {
+        console.error("Vizardry: iframe print failed", err);
+        finish();
+      }
+    }, 250);
+  });
+}
+
+/**
+ * Paginate a prepared doc offscreen, then print it from an isolated iframe.
+ * `pluginCss` is inlined into that iframe so canvases keep their styling.
+ * Does NOT own `doc`; the caller destroys it.
+ */
+export async function printPrepared(
+  doc: PreparedDoc,
+  options: PrintOptions,
+  pluginCss: string,
+): Promise<void> {
   if (printInProgress) {
     new Notice(t("print.notice.inProgress"));
     return;
   }
   printInProgress = true;
-
-  const portal = document.body.createDiv({ cls: PRINT_PORTAL_CLASS });
-  let removeStyles: () => void;
   try {
-    ({ removeStyles } = await paginatePrepared(doc, options, portal));
-  } catch (err) {
-    // Pagination failed before we armed any cleanup — remove the empty portal
-    // so it doesn't linger, and release the lock.
-    portal.remove();
+    // Paginate in the main document (Paged.js needs real layout), capturing the
+    // pages' HTML and the CSS Paged.js computed (its base styles + our processed
+    // print stylesheet, page-number margin boxes and all).
+    const staging = document.body.createDiv({ cls: PRINT_PORTAL_CLASS });
+    let pagesHtml = "";
+    let pagedCss = "";
+    try {
+      const before = new Set(Array.from(document.head.querySelectorAll("style")));
+      await paginatePrepared(doc, options, staging);
+      const added = Array.from(document.head.querySelectorAll("style")).filter((s) => !before.has(s));
+      pagedCss = added.map(serializeStyle).join("\n");
+      pagesHtml = staging.innerHTML;
+      added.forEach((s) => s.remove());
+    } finally {
+      staging.remove();
+    }
+
+    if (!pagesHtml.trim()) return;
+    await printViaIframe(buildRootCss(options), pluginCss, pagedCss, pagesHtml);
+  } finally {
     printInProgress = false;
-    throw err;
   }
+}
 
-  document.body.addClass(PRINTING_CLASS);
-
-  let torndown = false;
-  const cleanup = (): void => {
-    // afterprint plus the fallback timeout can both fire — run once.
-    if (torndown) return;
-    torndown = true;
-    document.body.removeClass(PRINTING_CLASS);
-    portal.remove();
-    removeStyles();
-    window.removeEventListener("afterprint", cleanup);
-    printInProgress = false;
-  };
-  window.addEventListener("afterprint", cleanup);
-  // Fallback: some platforms never fire afterprint — tear down anyway.
-  setTimeout(cleanup, 60_000);
-
-  try {
-    window.print();
-  } catch (err) {
-    // A synchronous failure from print() would otherwise leave the lock held
-    // until the 60s fallback — tear down now instead.
-    cleanup();
-    throw err;
-  }
+/** Base typography on html/body for the print iframe (see printViaIframe). */
+function buildRootCss(options: PrintOptions): string {
+  const v = resolveTemplateVars(getPrintTemplate(options.templateId), options);
+  return `html, body { font-family: ${v.font}; font-size: ${v.fontSize}; line-height: ${v.lineHeight}; color: ${v.color}; }`;
 }
 
 /**
@@ -312,14 +441,24 @@ export async function printNote(
   let doc: PreparedDoc | null = null;
   try {
     doc = await prepareDocument(ctx, file);
-    await printPrepared(doc, options);
-    // Ownership: printPrepared cloned the master, so the source can be released
-    // now; the printed clone lives on in the portal until afterprint.
+    const pluginCss = await loadPluginCss(ctx);
+    await printPrepared(doc, options, pluginCss);
     doc.destroy();
   } catch (err) {
     console.error("Vizardry: print export failed", err);
-    document.body.removeClass(PRINTING_CLASS);
     doc?.destroy();
     new Notice(t("print.notice.failed"));
+  }
+}
+
+/** Read the plugin's own styles.css to inline into the print iframe. */
+async function loadPluginCss(ctx: PrintContext): Promise<string> {
+  if (!ctx.pluginDir) return "";
+  try {
+    return await ctx.app.vault.adapter.read(normalizePath(`${ctx.pluginDir}/styles.css`));
+  } catch {
+    // Non-fatal: canvases fall back to browser defaults for any rule only in
+    // styles.css; the note still prints.
+    return "";
   }
 }

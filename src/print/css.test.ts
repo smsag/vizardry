@@ -8,6 +8,7 @@ import {
   buildPrintCss,
   cssStringLiteral,
   pageNumberContent,
+  parseHeadingBreakLevels,
   runningHeaderBox,
 } from "./css";
 
@@ -97,21 +98,30 @@ describe("runningHeaderBox", () => {
   });
 });
 
+describe("parseHeadingBreakLevels", () => {
+  it("maps # runs to levels, comma-separated", () => {
+    expect(parseHeadingBreakLevels("#,##")).toEqual([1, 2]);
+    expect(parseHeadingBreakLevels("###")).toEqual([3]);
+  });
+  it("ignores whitespace, dedupes and sorts", () => {
+    expect(parseHeadingBreakLevels(" ## , # , ## ")).toEqual([1, 2]);
+  });
+  it("drops non-# tokens and empty input", () => {
+    expect(parseHeadingBreakLevels("")).toEqual([]);
+    expect(parseHeadingBreakLevels("#, h2, 2, #######")).toEqual([1]);
+  });
+});
+
 describe("buildHeadingBreaks", () => {
-  it("is empty when no break toggles are set", () => {
-    expect(buildHeadingBreaks(opts())).toBe("");
+  it("is empty when the field is blank", () => {
+    expect(buildHeadingBreaks(opts({ headingBreakLevels: "" }))).toBe("");
   });
 
-  it("forces H1 (but not the first) onto a new page", () => {
-    const css = buildHeadingBreaks(opts({ h1PageBreak: true }));
+  it("forces the named levels (but not the first) onto a new page", () => {
+    const css = buildHeadingBreaks(opts({ headingBreakLevels: "#,##" }));
     expect(css).toContain(".vzd-print h1:not(:first-child) { break-before: page; }");
-    expect(css).not.toContain("h2");
-  });
-
-  it("can force H2 as well", () => {
-    const css = buildHeadingBreaks(opts({ h1PageBreak: true, h2PageBreak: true }));
-    expect(css).toContain("h1:not(:first-child)");
-    expect(css).toContain("h2:not(:first-child)");
+    expect(css).toContain(".vzd-print h2:not(:first-child) { break-before: page; }");
+    expect(css).not.toContain("h3");
   });
 });
 
@@ -119,7 +129,9 @@ describe("buildPrintCss", () => {
   it("wires the template accent override through to the root vars", () => {
     const template = getPrintTemplate("manuscript");
     const css = buildPrintCss(template, opts({ templateValues: { accent: "#ff0000" } }), "T");
-    expect(css).toContain("--vzd-print-accent: #ff0000;");
+    // Accent is emitted concretely (no var()), e.g. on links.
+    expect(css).toContain(".vzd-print a { color: #ff0000; }");
+    expect(css).not.toContain("var(--vzd-print");
   });
 
   it("keeps Vizardry canvases from splitting across pages", () => {
@@ -128,16 +140,49 @@ describe("buildPrintCss", () => {
     expect(css).toContain("break-inside: avoid;");
   });
 
+  it("centers visualizations in every template (scaling is applied to the SVGs in JS)", () => {
+    for (const id of ["manuscript", "technical", "minimal"]) {
+      const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
+      expect(css).toContain(".vzd-print .mermaid { text-align: center; }");
+      expect(css).not.toContain("transform: scale");
+    }
+  });
+
+  it("shades the header and zebra-stripes body rows (scoped to .pagedjs_page so the first table styles too)", () => {
+    for (const id of ["manuscript", "technical", "minimal"]) {
+      const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
+      expect(css).toContain(".pagedjs_page thead th {");
+      expect(css).toContain(".pagedjs_page tbody tr:nth-child(even) {");
+      expect(css).toContain("print-color-adjust: exact;");
+    }
+  });
+
+  it("renders visualizations greyscale only in the Minimal template", () => {
+    const minimal = buildPrintCss(getPrintTemplate("minimal"), opts(), "T");
+    expect(minimal).toContain("filter: grayscale(1);");
+    const manuscript = buildPrintCss(getPrintTemplate("manuscript"), opts(), "T");
+    expect(manuscript).not.toContain("grayscale");
+  });
+
   it("falls back to the first template for an unknown id and still builds", () => {
     const css = buildPrintCss(getPrintTemplate("does-not-exist"), opts(), "T");
     expect(css).toContain("@page {");
-    expect(css).toContain("--vzd-print-font:");
+    expect(css).toContain(".vzd-print {");
+    expect(css).toContain("font-family:");
+  });
+
+  it("turns hr into a page break (no line) only when hrPageBreak is on", () => {
+    expect(buildPrintCss(getPrintTemplate("minimal"), opts({ hrPageBreak: false }), "T"))
+      .not.toContain(".vzd-print hr {");
+    const on = buildPrintCss(getPrintTemplate("minimal"), opts({ hrPageBreak: true }), "T");
+    expect(on).toContain(".vzd-print hr { border: 0; height: 0; margin: 0; break-after: page; }");
   });
 
   it("hides the title block only when showTitle is off", () => {
     const shown = buildPrintCss(getPrintTemplate("minimal"), opts({ showTitle: true }), "T");
     expect(shown).not.toContain(".vzd-print-title { display: none; }");
     const hidden = buildPrintCss(getPrintTemplate("minimal"), opts({ showTitle: false }), "T");
-    expect(hidden).toContain(".vzd-print .vzd-print-title { display: none; }");
+    // Unscoped so it applies on Paged.js's first page too.
+    expect(hidden).toContain(".vzd-print-title { display: none !important; }");
   });
 });
