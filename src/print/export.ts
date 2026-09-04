@@ -28,7 +28,7 @@ import type { App, TFile } from "obsidian";
 import { Component, MarkdownRenderer, Notice, normalizePath } from "obsidian";
 import { Previewer } from "pagedjs";
 import type { PrintOptions } from "./options";
-import { getPrintTemplate } from "./templates";
+import { getPrintTemplate, resolveTemplateVars } from "./templates";
 import { buildPrintCss } from "./css";
 import { stripFrontmatter } from "./frontmatter";
 import { t } from "../i18n";
@@ -282,7 +282,12 @@ function serializeStyle(style: HTMLStyleElement): string {
  * Electron) — and Paged.js's print CSS gets the clean `<body> → .pagedjs_pages
  * → .pagedjs_page` height chain it assumes, instead of one broken by a wrapper.
  */
-function printViaIframe(pluginCss: string, pagedCss: string, bodyHtml: string): Promise<void> {
+function printViaIframe(
+  rootCss: string,
+  pluginCss: string,
+  pagedCss: string,
+  bodyHtml: string,
+): Promise<void> {
   return new Promise((resolve) => {
     const iframe = document.createElement("iframe");
     iframe.className = PRINT_FRAME_CLASS;
@@ -310,9 +315,14 @@ function printViaIframe(pluginCss: string, pagedCss: string, bodyHtml: string): 
     // earlier version never fired print(). The iframe keeps the parent origin,
     // so app:// / https images still resolve.
     idoc.open();
+    // rootCss first: it sets the base font on html/body so EVERY page inherits
+    // it. Paged.js's first page doesn't reliably carry the `.vzd-print` scope,
+    // which left page 1 in the browser's default serif; a body-level base fixes
+    // it regardless (the more-specific `.vzd-print` rules in pagedCss still win
+    // where they apply).
     idoc.write(
       `<!doctype html><html><head><meta charset="utf-8">` +
-        `<style>${pluginCss}</style><style>${pagedCss}</style>` +
+        `<style>${rootCss}</style><style>${pluginCss}</style><style>${pagedCss}</style>` +
         `</head><body>${bodyHtml}</body></html>`,
     );
     idoc.close();
@@ -367,10 +377,16 @@ export async function printPrepared(
     }
 
     if (!pagesHtml.trim()) return;
-    await printViaIframe(pluginCss, pagedCss, pagesHtml);
+    await printViaIframe(buildRootCss(options), pluginCss, pagedCss, pagesHtml);
   } finally {
     printInProgress = false;
   }
+}
+
+/** Base typography on html/body for the print iframe (see printViaIframe). */
+function buildRootCss(options: PrintOptions): string {
+  const v = resolveTemplateVars(getPrintTemplate(options.templateId), options);
+  return `html, body { font-family: ${v.font}; font-size: ${v.fontSize}; line-height: ${v.lineHeight}; color: ${v.color}; }`;
 }
 
 /**

@@ -143,8 +143,8 @@ describe("buildPrintCss", () => {
   it("centers and scales visualizations to 75% in every template", () => {
     for (const id of ["manuscript", "technical", "minimal"]) {
       const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
-      expect(css).toContain("zoom: 0.75;");
-      expect(css).toContain("margin-inline: auto;");
+      expect(css).toContain("transform: scale(0.75);");
+      expect(css).toContain("transform-origin: top center;");
     }
   });
 

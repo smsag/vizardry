@@ -201,21 +201,20 @@ function baseRules(v: PrintVars): string {
 }
 .vzd-print .vizardry-root svg,
 .vzd-print .mermaid svg { height: auto; }
-/* Visualizations are centered and scaled to 75%. zoom (not transform) so the
-   layout box shrinks too — pagination stays correct and there's no leftover
-   gap below the diagram. */
+/* Visualizations are centered and scaled to 75%. transform (not zoom) leaves
+   the layout box untouched, so Paged.js measures the real height and pagination
+   is unaffected; transform-origin centres the shrunk diagram horizontally. */
 .vzd-print .vizardry-root,
 .vzd-print .mermaid {
-  zoom: 0.75;
-  width: fit-content;
-  margin-inline: auto;
+  transform: scale(0.75);
+  transform-origin: top center;
 }
 /* Zebra-stripe table body rows for readability, in every template. The
    print-color-adjust is required — Chromium drops backgrounds when printing
    unless it's forced. */
 .vzd-print table { border-collapse: collapse; }
 .vzd-print tbody tr:nth-child(even) {
-  background: #f3f3f3;
+  background: #e6e6e6;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }`;
