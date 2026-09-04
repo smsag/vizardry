@@ -16,6 +16,8 @@ import { setPluginVersion } from "./shared/version";
 import { generateCanvasTemplate } from "./templates";
 import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
+import { PrintExportModal } from "./print/modal";
+import { PRINT_SCRATCH_CLASS } from "./print/export";
 import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
 import { ALL_FRAMEWORKS } from "./frameworks-registry";
 import { dispatchVizardry } from "./vizardry-dispatch";
@@ -100,11 +102,15 @@ export default class VizardryPlugin extends Plugin {
     // Sort order 1000 ensures this runs after all code-block processors (sort 0),
     // so vizardry canvases are fully rendered before we scan for Linear keys.
     this.registerMarkdownPostProcessor((el) => {
+      // Skip the offscreen print render: keys print as plain text, with no
+      // badges, popovers, summaries, or enrichment network calls.
+      if (el.closest(`.${PRINT_SCRATCH_CLASS}`)) return;
       if (getLinearService()?.isEnabled()) enrichLinearKeys(el);
     }, 1000);
 
     // ── Global Upvoty key enrichment ───────────────────────────────────
     this.registerMarkdownPostProcessor((el) => {
+      if (el.closest(`.${PRINT_SCRATCH_CLASS}`)) return;
       if (getUpvotyService()?.isEnabled()) enrichUpvotyKeys(el);
     }, 1001);
 
@@ -154,6 +160,21 @@ export default class VizardryPlugin extends Plugin {
       callback: () => withActiveMarkdownEditor((editor) => {
         new CanvasInsertModal(this.app, editor, frameworkOptions).open();
       }),
+    });
+
+    // ── Command: export / print the active note ────────────────────────
+    // Opens Vizardry's own print dialog (template + page-layout settings),
+    // renders the note with all canvases/Mermaid, paginates via Paged.js and
+    // hands off to the system print dialog. See src/print/.
+    this.addCommand({
+      id: "export-print-note",
+      name: t("commands.exportPrint"),
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || file.extension !== "md") return false;
+        if (!checking) new PrintExportModal(this.app, this).open();
+        return true;
+      },
     });
 
     // ── Commands: one per framework ────────────────────────────────────

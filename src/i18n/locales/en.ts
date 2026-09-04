@@ -164,6 +164,46 @@ export const en = {
   "commands.insertCanvas":           "Insert canvas…",
   "commands.insertVizardryCanvas":   "Insert Vizardry canvas…",
   "commands.insertFramework":        "Insert {{label}}",
+  "commands.exportPrint":            "Export / print note (with visualizations)…",
+
+  // ── Print / PDF export dialog ────────────────────────────────────────────────
+  "print.title":            "Export / print note",
+  "print.noFile":           "Open a Markdown note first.",
+  "print.print":            "Print / Save PDF",
+  "print.cancel":           "Cancel",
+  "print.previewFailed":    "Couldn't render the preview.",
+  "print.pageCount":        "{{n}} pages",
+  "print.pageCountOne":     "1 page",
+  "print.templateOptions":  "Template options",
+  "print.notice.failed":    "Vizardry: export failed — see the developer console.",
+  "print.notice.inProgress": "An export is already in progress.",
+
+  "print.opt.template":            "Template",
+  "print.opt.pageSize":            "Page size",
+  "print.opt.landscape":           "Landscape",
+  "print.opt.margins":             "Margins",
+  "print.opt.h1Break":             "Start each heading 1 on a new page",
+  "print.opt.h1BreakDesc":         "Each top-level heading begins a fresh page.",
+  "print.opt.h2Break":             "Start each heading 2 on a new page",
+  "print.opt.pageNumbers":         "Page numbers",
+  "print.opt.pageNumberPosition":  "Page-number position",
+  "print.opt.runningHeader":       "Running header",
+  "print.opt.runningHeaderDesc":   "Repeat the note title in a page margin.",
+
+  "print.margins.narrow": "Narrow",
+  "print.margins.normal": "Normal",
+  "print.margins.wide":   "Wide",
+
+  "print.pageNumbers.none":     "None",
+  "print.pageNumbers.plain":    "1, 2, 3",
+  "print.pageNumbers.pageN":    "Page 1",
+  "print.pageNumbers.nOfTotal": "1 of N",
+
+  "print.position.bottomCenter": "Bottom centre",
+  "print.position.bottomRight":  "Bottom right",
+  "print.position.bottomLeft":   "Bottom left",
+  "print.position.topRight":     "Top right",
+  "print.position.topCenter":    "Top centre",
 
   // ── RACI Matrix column labels ─────────────────────────────────────────────
   "raci.col.task":        "Task",

@@ -131,14 +131,19 @@ export function dispatchVizardry(
   const segments = splitVizardryCanvases(source);
   if (segments.length <= 1) {
     renderSingleCanvas(source, el, ctx, app);
-    return;
+  } else {
+    // Several canvases share one code fence. Per-canvas write-back can't target
+    // the right source lines through one shared section range, so the whole
+    // carousel renders read-only in this first release (edit each as text).
+    renderMultiCanvas(segments, el, (segment, panelEl) =>
+      renderReadOnly(() => renderSingleCanvas(segment, panelEl, ctx, app)),
+    );
   }
-  // Several canvases share one code fence. Per-canvas write-back can't target
-  // the right source lines through one shared section range, so the whole
-  // carousel renders read-only in this first release (edit each as text).
-  renderMultiCanvas(segments, el, (segment, panelEl) =>
-    renderReadOnly(() => renderSingleCanvas(segment, panelEl, ctx, app)),
-  );
+  // Deterministic "this block is done" signal. Rendering above is synchronous,
+  // so the marker is set the moment the code-block processor returns — used by
+  // the print pipeline (and available to screenshot/settle logic) to know a
+  // canvas has finished without guessing at a timeout.
+  el.dataset.vizardryRendered = "1";
 }
 
 function renderSingleCanvas(
