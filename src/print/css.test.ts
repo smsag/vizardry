@@ -133,4 +133,11 @@ describe("buildPrintCss", () => {
     expect(css).toContain("@page {");
     expect(css).toContain("--vzd-print-font:");
   });
+
+  it("hides the title block only when showTitle is off", () => {
+    const shown = buildPrintCss(getPrintTemplate("minimal"), opts({ showTitle: true }), "T");
+    expect(shown).not.toContain(".vzd-print-title { display: none; }");
+    const hidden = buildPrintCss(getPrintTemplate("minimal"), opts({ showTitle: false }), "T");
+    expect(hidden).toContain(".vzd-print .vzd-print-title { display: none; }");
+  });
 });

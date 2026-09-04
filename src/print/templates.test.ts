@@ -48,4 +48,23 @@ describe("resolveTemplateVars", () => {
     });
     expect(vars.accent).toBe(t.vars.accent);
   });
+
+  it("wires any option whose id names a style var, not just accent", () => {
+    const t = getPrintTemplate("technical");
+    const vars = resolveTemplateVars(t, {
+      ...DEFAULT_PRINT_OPTIONS,
+      templateValues: { fontSize: "12pt", accent: "#abcdef" },
+    });
+    expect(vars.fontSize).toBe("12pt");
+    expect(vars.accent).toBe("#abcdef");
+  });
+
+  it("ignores option ids that aren't style vars", () => {
+    const t = getPrintTemplate("technical");
+    const vars = resolveTemplateVars(t, {
+      ...DEFAULT_PRINT_OPTIONS,
+      templateValues: { notAVar: "x" },
+    });
+    expect(vars).toEqual(t.vars);
+  });
 });

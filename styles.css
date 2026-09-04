@@ -5246,10 +5246,13 @@ body.vizardry-sketch .vzd-tree-rename-input {
 .vzd-print-preview .pagedjs_page {
   background: #fff;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
-  /* Shrink oversized sheets to fit the pane; the print path is unaffected. */
-  transform: scale(0.7);
+  /* Scale each sheet to fit the pane's width, whatever the page size. The scale
+     and the height it shaves out of the flow are measured in JS (fitPreview)
+     and fed in as variables; the print path is unaffected. Transform (not zoom)
+     so offsetWidth/offsetHeight stay the true sheet size when measuring. */
+  transform: scale(var(--vzd-preview-scale, 0.7));
   transform-origin: top center;
-  margin-bottom: -30%;
+  margin-bottom: calc(-1 * var(--vzd-preview-shave, 30%));
 }
 
 .vzd-print-footer {
@@ -5267,6 +5270,10 @@ body.vizardry-sketch .vzd-tree-rename-input {
   display: flex;
   gap: 0.5rem;
   margin-left: auto;
+}
+.vzd-print-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Offscreen scratch space where the note is rendered before pagination. */

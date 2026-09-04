@@ -19,8 +19,7 @@
  * Obsidian document, and both the preview pages and the print portal live in
  * that document — so `.vzd-print`-scoped canvas rules already apply. We do NOT
  * re-load styles.css or push it through Paged.js; only the small generated print
- * stylesheet goes to the polisher. (The standalone-file exporter in ./html is
- * the exception — it inlines styles.css because it is a separate document.)
+ * stylesheet goes to the polisher.
  */
 
 import type { App, TFile } from "obsidian";
@@ -29,6 +28,7 @@ import { Previewer } from "pagedjs";
 import type { PrintOptions } from "./options";
 import { getPrintTemplate } from "./templates";
 import { buildPrintCss } from "./css";
+import { stripFrontmatter } from "./frontmatter";
 import { t } from "../i18n";
 
 export interface PrintContext {
@@ -42,6 +42,12 @@ export interface PrintContext {
  * network calls — keys print as plain text.
  */
 export const PRINT_SCRATCH_CLASS = "vzd-print-scratch";
+
+/** Offscreen container holding the paginated pages while the system dialog prints. */
+export const PRINT_PORTAL_CLASS = "vzd-print-portal";
+
+/** Body class that flips on the `@media print` isolation rules in styles.css. */
+export const PRINTING_CLASS = "vzd-printing";
 
 /** Guards against two overlapping print runs (see printPrepared). */
 let printInProgress = false;
@@ -146,11 +152,13 @@ async function settle(el: HTMLElement): Promise<void> {
  * around the freshly rendered note nodes, with an optional leading title block.
  * Done on live DOM (not the pure ./html builder) so inline SVG is preserved.
  */
-function wrapContent(rendered: HTMLElement, title: string, showTitle: boolean): HTMLElement {
+function wrapContent(rendered: HTMLElement, title: string): HTMLElement {
   const root = document.createElement("div");
   root.className = "vzd-print";
   const body = root.createDiv({ cls: "vzd-print-body" });
-  if (showTitle && title.trim()) {
+  // Always emit the title block; the `showTitle` option toggles its visibility
+  // via generated CSS (see buildPrintCss), so it can change without re-rendering.
+  if (title.trim()) {
     const header = body.createEl("header", { cls: "vzd-print-title" });
     header.createEl("h1", { text: title.trim() });
   }
@@ -166,7 +174,7 @@ function wrapContent(rendered: HTMLElement, title: string, showTitle: boolean): 
  * paginate many times.
  */
 export async function prepareDocument(ctx: PrintContext, file: TFile): Promise<PreparedDoc> {
-  const markdown = await ctx.app.vault.cachedRead(file);
+  const markdown = stripFrontmatter(await ctx.app.vault.cachedRead(file));
   const title = file.basename;
 
   // Offscreen scratch element: must be in the document for renderers that
@@ -178,7 +186,7 @@ export async function prepareDocument(ctx: PrintContext, file: TFile): Promise<P
   try {
     await MarkdownRenderer.render(ctx.app, markdown, scratch, file.path, component);
     await settle(scratch);
-    const master = wrapContent(scratch, title, /* showTitle */ true);
+    const master = wrapContent(scratch, title);
     scratch.remove();
     return { master, title, destroy: () => component.unload() };
   } catch (err) {
@@ -213,15 +221,27 @@ async function paginate(
   };
 }
 
+/** The print stylesheet a prepared doc would paginate with for these options. */
+export function buildDocCss(doc: PreparedDoc, options: PrintOptions): string {
+  return buildPrintCss(getPrintTemplate(options.templateId), options, doc.title);
+}
+
+/** Paginate a clone of the prepared doc's master with an already-built stylesheet. */
+export function paginateCss(
+  doc: PreparedDoc,
+  printCss: string,
+  renderTo: HTMLElement,
+): Promise<PaginateResult> {
+  return paginate(doc.master, printCss, renderTo);
+}
+
 /** Paginate a prepared doc for the given options into `renderTo`. */
 export function paginatePrepared(
   doc: PreparedDoc,
   options: PrintOptions,
   renderTo: HTMLElement,
 ): Promise<PaginateResult> {
-  const template = getPrintTemplate(options.templateId);
-  const printCss = buildPrintCss(template, options, doc.title);
-  return paginate(doc.master, printCss, renderTo);
+  return paginateCss(doc, buildDocCss(doc, options), renderTo);
 }
 
 /**
@@ -240,7 +260,7 @@ export async function printPrepared(doc: PreparedDoc, options: PrintOptions): Pr
   }
   printInProgress = true;
 
-  const portal = document.body.createDiv({ cls: "vzd-print-portal" });
+  const portal = document.body.createDiv({ cls: PRINT_PORTAL_CLASS });
   let removeStyles: () => void;
   try {
     ({ removeStyles } = await paginatePrepared(doc, options, portal));
@@ -252,14 +272,14 @@ export async function printPrepared(doc: PreparedDoc, options: PrintOptions): Pr
     throw err;
   }
 
-  document.body.addClass("vzd-printing");
+  document.body.addClass(PRINTING_CLASS);
 
   let torndown = false;
   const cleanup = (): void => {
     // afterprint plus the fallback timeout can both fire — run once.
     if (torndown) return;
     torndown = true;
-    document.body.removeClass("vzd-printing");
+    document.body.removeClass(PRINTING_CLASS);
     portal.remove();
     removeStyles();
     window.removeEventListener("afterprint", cleanup);
@@ -269,7 +289,14 @@ export async function printPrepared(doc: PreparedDoc, options: PrintOptions): Pr
   // Fallback: some platforms never fire afterprint — tear down anyway.
   setTimeout(cleanup, 60_000);
 
-  window.print();
+  try {
+    window.print();
+  } catch (err) {
+    // A synchronous failure from print() would otherwise leave the lock held
+    // until the 60s fallback — tear down now instead.
+    cleanup();
+    throw err;
+  }
 }
 
 /**
@@ -291,7 +318,7 @@ export async function printNote(
     doc.destroy();
   } catch (err) {
     console.error("Vizardry: print export failed", err);
-    document.body.removeClass("vzd-printing");
+    document.body.removeClass(PRINTING_CLASS);
     doc?.destroy();
     new Notice(t("print.notice.failed"));
   }
