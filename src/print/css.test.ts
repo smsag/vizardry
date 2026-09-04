@@ -140,11 +140,11 @@ describe("buildPrintCss", () => {
     expect(css).toContain("break-inside: avoid;");
   });
 
-  it("centers and scales visualizations to 75% in every template", () => {
+  it("centers visualizations in every template (scaling is applied to the SVGs in JS)", () => {
     for (const id of ["manuscript", "technical", "minimal"]) {
       const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
-      expect(css).toContain("transform: scale(0.75);");
-      expect(css).toContain("transform-origin: top center;");
+      expect(css).toContain(".vzd-print .mermaid { text-align: center; }");
+      expect(css).not.toContain("transform: scale");
     }
   });
 
@@ -181,6 +181,7 @@ describe("buildPrintCss", () => {
     const shown = buildPrintCss(getPrintTemplate("minimal"), opts({ showTitle: true }), "T");
     expect(shown).not.toContain(".vzd-print-title { display: none; }");
     const hidden = buildPrintCss(getPrintTemplate("minimal"), opts({ showTitle: false }), "T");
-    expect(hidden).toContain(".vzd-print .vzd-print-title { display: none; }");
+    // Unscoped so it applies on Paged.js's first page too.
+    expect(hidden).toContain(".vzd-print-title { display: none !important; }");
   });
 });

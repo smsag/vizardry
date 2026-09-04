@@ -160,6 +160,21 @@ async function settle(el: HTMLElement): Promise<void> {
 }
 
 /**
+ * Scale each visualization's SVG to `factor` by setting an explicit width (its
+ * height is `auto` in the print CSS, so the viewBox keeps the aspect ratio).
+ * Doing it as a real size change — rather than a CSS transform/zoom — means
+ * Paged.js measures the smaller diagram and lays pages out correctly; the
+ * transform/zoom approaches left it mis-measuring and producing near-empty
+ * pages. Run after settle(), when the SVGs have their natural size.
+ */
+function scaleVisualizations(el: HTMLElement, factor: number): void {
+  el.querySelectorAll<SVGSVGElement>(".vizardry-root svg, .mermaid svg").forEach((svg) => {
+    const width = svg.getBoundingClientRect().width;
+    if (width > 0) svg.style.width = `${Math.round(width * factor)}px`;
+  });
+}
+
+/**
  * Build the print-scoped content wrapper (`.vzd-print` → `.vzd-print-body`)
  * around the freshly rendered note nodes, with an optional leading title block.
  * Done on live DOM (not the pure ./html builder) so inline SVG is preserved.
@@ -198,6 +213,7 @@ export async function prepareDocument(ctx: PrintContext, file: TFile): Promise<P
   try {
     await MarkdownRenderer.render(ctx.app, markdown, scratch, file.path, component);
     await settle(scratch);
+    scaleVisualizations(scratch, 0.75);
     const master = wrapContent(scratch, title);
     scratch.remove();
     return { master, title, destroy: () => component.unload() };

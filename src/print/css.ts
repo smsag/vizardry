@@ -201,14 +201,12 @@ function baseRules(v: PrintVars): string {
 }
 .vzd-print .vizardry-root svg,
 .vzd-print .mermaid svg { height: auto; }
-/* Visualizations are centered and scaled to 75%. transform (not zoom) leaves
-   the layout box untouched, so Paged.js measures the real height and pagination
-   is unaffected; transform-origin centres the shrunk diagram horizontally. */
+/* Visualizations are centered; the 75% scaling is applied to the SVGs
+   themselves before pagination (see scaleVisualizations in export.ts), NOT via
+   a CSS transform/zoom — those leave Paged.js mis-measuring the height, which
+   pushed diagrams onto the next page and left near-empty pages. */
 .vzd-print .vizardry-root,
-.vzd-print .mermaid {
-  transform: scale(0.75);
-  transform-origin: top center;
-}
+.vzd-print .mermaid { text-align: center; }
 /* Zebra-stripe table body rows for readability, in every template. The
    print-color-adjust is required — Chromium drops backgrounds when printing
    unless it's forced. */
@@ -240,7 +238,10 @@ export function buildPrintCss(
   ];
   // The title block is always present in the rendered content; toggle its
   // visibility here so switching it on/off only re-paginates, never re-renders.
-  if (!options.showTitle) parts.push(".vzd-print .vzd-print-title { display: none; }");
+  // Unscoped selector (not `.vzd-print .vzd-print-title`): the `.vzd-print`
+  // scope doesn't reliably apply to Paged.js's first page — which is exactly
+  // where the title is — so a scoped rule never hid it.
+  if (!options.showTitle) parts.push(".vzd-print-title { display: none !important; }");
   // Treat a horizontal rule as a page break: don't draw the line, break after it.
   if (options.hrPageBreak) {
     parts.push(".vzd-print hr { border: 0; height: 0; margin: 0; break-after: page; }");
