@@ -289,7 +289,14 @@ export async function printPrepared(doc: PreparedDoc, options: PrintOptions): Pr
   // Fallback: some platforms never fire afterprint — tear down anyway.
   setTimeout(cleanup, 60_000);
 
-  window.print();
+  try {
+    window.print();
+  } catch (err) {
+    // A synchronous failure from print() would otherwise leave the lock held
+    // until the 60s fallback — tear down now instead.
+    cleanup();
+    throw err;
+  }
 }
 
 /**
