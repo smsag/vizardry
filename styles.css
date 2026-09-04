@@ -5292,9 +5292,16 @@ body.vizardry-sketch .vzd-tree-rename-input {
 
 @media print {
   body.vzd-printing > *:not(.vzd-print-portal) { display: none !important; }
+  /* Paged.js's own print CSS sizes .pagedjs_page with height:100% — a
+     percentage that needs an unbroken 100%-height chain from <body>. It styles
+     body and .pagedjs_pages, but not our portal wrapper in between, so without
+     these the chain breaks, the pages collapse to zero height, and the printed
+     PDF comes out blank. Restore the link. */
   body.vzd-printing .vzd-print-portal {
     position: static;
     left: 0;
+    width: 100% !important;
+    height: 100% !important;
   }
   body.vzd-printing .vzd-print-portal .pagedjs_page { box-shadow: none; }
 }
