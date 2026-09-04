@@ -456,8 +456,15 @@ function attachEditBehavior(
 
 const NODEMAP_SWATCHES = ["red", "orange", "yellow", "green", "teal", "blue", "purple", "pink", "gray"] as const;
 
+// Per-wrap teardown for the currently-open colour popover's outside-click
+// listener, so every close path (outside click, swatch pick, reopen) removes it
+// — not only the outside-click path.
+const colorPopoverCleanups = new WeakMap<HTMLElement, () => void>();
+
 function closeColorPopover(wrap: HTMLElement): void {
   wrap.querySelector(".vzd-nodemap-color-popover")?.remove();
+  colorPopoverCleanups.get(wrap)?.();
+  colorPopoverCleanups.delete(wrap);
 }
 
 function openColorPopover(
@@ -489,12 +496,15 @@ function openColorPopover(
   popover.appendChild(clearBtn);
 
   wrap.appendChild(popover);
+  // Bind to the wrap's own document so outside-click dismissal works in a
+  // pop-out window, and register the removal so any close path tears it down.
+  const doc = wrap.ownerDocument;
   const onDocClick = (e: MouseEvent): void => {
     if (e.target instanceof Node && popover.contains(e.target)) return;
     closeColorPopover(wrap);
-    document.removeEventListener("mousedown", onDocClick, true);
   };
-  document.addEventListener("mousedown", onDocClick, true);
+  doc.addEventListener("mousedown", onDocClick, true);
+  colorPopoverCleanups.set(wrap, () => doc.removeEventListener("mousedown", onDocClick, true));
 }
 
 function attachBoxControls(

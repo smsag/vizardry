@@ -75,6 +75,17 @@ export function enrichKeys(
   enrichedClass: string,
   makeBadge: (doc: Document, key: string) => HTMLElement,
 ): void {
+  // Fast path for the common case — this runs on every rendered note when an
+  // integration is enabled, most of which contain no keys. A single native
+  // regex test over the concatenated text skips the recursive JS tree walk and
+  // its allocations. A key can't match a text node without also matching here
+  // (a node's text is a substring of `textContent`), so there are no false
+  // negatives; the rare cross-node false positive just falls through to a no-op
+  // walk. `test` advances lastIndex on a global regex, so reset it after.
+  re.lastIndex = 0;
+  if (!re.test(container.textContent ?? "")) return;
+  re.lastIndex = 0;
+
   const nodes: Text[] = [];
   collectTextNodes(container, re, enrichedClass, nodes);
   for (const node of nodes) wrapTextNode(node, re, makeBadge);
