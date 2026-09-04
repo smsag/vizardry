@@ -280,6 +280,15 @@ function printViaIframe(pluginCss: string, pagedCss: string, bodyHtml: string): 
   return new Promise((resolve) => {
     const iframe = document.createElement("iframe");
     iframe.className = PRINT_FRAME_CLASS;
+    document.body.appendChild(iframe);
+
+    const win = iframe.contentWindow;
+    const idoc = iframe.contentDocument;
+    if (!win || !idoc) {
+      iframe.remove();
+      resolve();
+      return;
+    }
 
     let done = false;
     const finish = (): void => {
@@ -289,39 +298,32 @@ function printViaIframe(pluginCss: string, pagedCss: string, bodyHtml: string): 
       resolve();
     };
 
-    iframe.addEventListener(
-      "load",
-      () => {
-        const win = iframe.contentWindow;
-        if (!win) {
-          finish();
-          return;
-        }
-        win.addEventListener("afterprint", finish, { once: true });
-        // Fallback: afterprint isn't guaranteed on every platform.
-        setTimeout(finish, 60_000);
-        // Two frames so styles and layout settle before the print snapshot.
-        win.requestAnimationFrame(() =>
-          win.requestAnimationFrame(() => {
-            try {
-              win.focus();
-              win.print();
-            } catch (err) {
-              console.error("Vizardry: iframe print failed", err);
-              finish();
-            }
-          }),
-        );
-      },
-      { once: true },
-    );
-
-    document.body.appendChild(iframe);
-    // srcdoc inherits the parent origin, so app:// / https images still resolve.
-    iframe.srcdoc =
+    // document.write (synchronous, same-origin) rather than srcdoc + the load
+    // event, and setTimeout rather than requestAnimationFrame — an off-screen /
+    // invisible iframe has its rAF throttled by Chromium, which is why the
+    // earlier version never fired print(). The iframe keeps the parent origin,
+    // so app:// / https images still resolve.
+    idoc.open();
+    idoc.write(
       `<!doctype html><html><head><meta charset="utf-8">` +
-      `<style>${pluginCss}</style><style>${pagedCss}</style>` +
-      `</head><body>${bodyHtml}</body></html>`;
+        `<style>${pluginCss}</style><style>${pagedCss}</style>` +
+        `</head><body>${bodyHtml}</body></html>`,
+    );
+    idoc.close();
+
+    win.addEventListener("afterprint", finish, { once: true });
+    // Fallback: afterprint isn't guaranteed on every platform.
+    setTimeout(finish, 60_000);
+    // Give the written document a beat to lay out, then print.
+    setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+      } catch (err) {
+        console.error("Vizardry: iframe print failed", err);
+        finish();
+      }
+    }, 250);
   });
 }
 

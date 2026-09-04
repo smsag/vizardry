@@ -5290,14 +5290,18 @@ body.vizardry-sketch .vzd-tree-rename-input {
    moved into the print iframe (see src/print/export.ts). */
 .vzd-print-portal { position: fixed; left: -99999px; top: 0; }
 
-/* The hidden iframe the paginated pages are actually printed from, in
-   isolation from the rest of the Obsidian window. Off-screen but full-size so
-   its document lays out (a display:none iframe wouldn't render for print). */
+/* The hidden iframe the paginated pages are actually printed from, in isolation
+   from the rest of the Obsidian window. Kept on-screen but fully transparent and
+   non-interactive (rather than off-screen) so Chromium keeps its layout and
+   timers active — an off-screen iframe has its rAF/paint throttled, and a
+   display:none one wouldn't render for print at all. */
 .vzd-print-frame {
   position: fixed;
-  left: -99999px;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
 }
