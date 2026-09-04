@@ -129,21 +129,29 @@ export function buildPageRule(options: PrintOptions, title: string, ink: MarginI
   );
 }
 
-/** Build the heading page-break rules driven by the H1/H2 toggles. */
+/**
+ * Parse the Markdown-notation heading-break field into distinct levels.
+ * `#` = 1, `##` = 2, …, comma-separated (`#,##` → [1, 2]). Whitespace is
+ * ignored; tokens that aren't a run of 1–6 `#` are dropped; duplicates are
+ * collapsed and the result is sorted.
+ */
+export function parseHeadingBreakLevels(input: string): number[] {
+  const levels = new Set<number>();
+  for (const token of input.split(",")) {
+    const t = token.trim();
+    if (/^#{1,6}$/.test(t)) levels.add(t.length);
+  }
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
+/** Build the heading page-break rules from the `headingBreakLevels` field. */
 export function buildHeadingBreaks(options: PrintOptions): string {
-  const rules: string[] = [];
-  if (options.h1PageBreak) {
-    // `break-before: page` is the modern property; Paged.js honours it. The
-    // `:not(:first-child)` guard stops the very first heading forcing a blank
-    // leading page.
-    rules.push(
-      `.vzd-print h1:not(:first-child) { break-before: page; }`,
-    );
-  }
-  if (options.h2PageBreak) {
-    rules.push(`.vzd-print h2:not(:first-child) { break-before: page; }`);
-  }
-  return rules.join("\n");
+  // `break-before: page` is the modern property; Paged.js honours it. The
+  // `:not(:first-child)` guard stops the very first heading forcing a blank
+  // leading page.
+  return parseHeadingBreakLevels(options.headingBreakLevels)
+    .map((n) => `.vzd-print h${n}:not(:first-child) { break-before: page; }`)
+    .join("\n");
 }
 
 /**
@@ -216,6 +224,10 @@ export function buildPrintCss(
   // The title block is always present in the rendered content; toggle its
   // visibility here so switching it on/off only re-paginates, never re-renders.
   if (!options.showTitle) parts.push(".vzd-print .vzd-print-title { display: none; }");
+  // Treat a horizontal rule as a page break: don't draw the line, break after it.
+  if (options.hrPageBreak) {
+    parts.push(".vzd-print hr { border: 0; height: 0; margin: 0; break-after: page; }");
+  }
   if (template.css) parts.push(template.css);
   return parts.filter(Boolean).join("\n\n");
 }

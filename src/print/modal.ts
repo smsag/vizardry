@@ -183,6 +183,28 @@ export class PrintExportModal extends Modal {
     });
   }
 
+  /** One text-input row wired to a getter/setter. */
+  private textRow(
+    root: HTMLElement,
+    name: string,
+    placeholder: string,
+    get: () => string,
+    set: (v: string) => void,
+    desc?: string,
+  ): void {
+    const setting = new Setting(root).setName(name);
+    if (desc) setting.setDesc(desc);
+    setting.addText((text) =>
+      text
+        .setPlaceholder(placeholder)
+        .setValue(get())
+        .onChange((v) => {
+          set(v);
+          this.commit();
+        }),
+    );
+  }
+
   /** One toggle row wired to a typed getter/setter. */
   private toggleRow(
     root: HTMLElement,
@@ -241,14 +263,22 @@ export class PrintExportModal extends Modal {
 
     this.toggleRow(root, t("print.opt.showTitle"), () => o.showTitle, (v) => (o.showTitle = v));
 
+    this.textRow(
+      root,
+      t("print.opt.headingBreaks"),
+      "#, ##",
+      () => o.headingBreakLevels,
+      (v) => (o.headingBreakLevels = v),
+      t("print.opt.headingBreaksDesc"),
+    );
+
     this.toggleRow(
       root,
-      t("print.opt.h1Break"),
-      () => o.h1PageBreak,
-      (v) => (o.h1PageBreak = v),
-      t("print.opt.h1BreakDesc"),
+      t("print.opt.hrBreak"),
+      () => o.hrPageBreak,
+      (v) => (o.hrPageBreak = v),
+      t("print.opt.hrBreakDesc"),
     );
-    this.toggleRow(root, t("print.opt.h2Break"), () => o.h2PageBreak, (v) => (o.h2PageBreak = v));
 
     this.dropdownRow<PageNumberFormat>(
       root,
