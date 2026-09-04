@@ -22,7 +22,7 @@ vi.mock("obsidian", () => ({
   },
 }));
 
-import { writeBlockContent, moveCardBetweenBlocks, writeStickyState } from "./block-edit";
+import { writeBlockContent, moveCardBetweenBlocks, writeStickyState, patchFenceFlag } from "./block-edit";
 import { MarkdownView } from "obsidian";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -397,5 +397,51 @@ describe("writeStickyState", () => {
 
     expect(read()).toBe(original);
     expect(el.dataset.vzSource).toBe(body);
+  });
+});
+
+describe("patchFenceFlag — line-ending round-trip", () => {
+  // LF snapshot of the fence body, as Obsidian hands it to the renderer (and as
+  // it lands in el.dataset.vzSource). The FILE on disk may use CRLF.
+  const body = "type: bmc\nblock: Foo\n  a\n  b";
+  const withFlag = "sticky: true\n" + body;
+
+  /** Build a file with the given end-of-line, fence body, and trailing content. */
+  const build = (eol: string, sticky = false): string =>
+    ["```vizardry", ...(sticky ? withFlag : body).split("\n"), "```", "", "after"].join(eol);
+
+  it("adds the flag and preserves LF endings", () => {
+    const r = patchFenceFlag(build("\n"), body, "sticky", true);
+    expect(r).not.toBeNull();
+    expect(r!.newContent).toBe(build("\n", true));
+    expect(r!.newContent).not.toContain("\r");
+  });
+
+  it("matches a CRLF file against the LF snapshot and preserves CRLF (regression)", () => {
+    // Before the fix, split("\n") left a \r on every line, so the body never
+    // equalled the LF snapshot → patchFenceFlag returned null → silent no-op.
+    const r = patchFenceFlag(build("\r\n"), body, "sticky", true);
+    expect(r).not.toBeNull();
+    expect(r!.newContent).toBe(build("\r\n", true));
+    // Every logical line still ends in exactly one \r (no stray/duplicated \r).
+    expect(r!.newContent.split("\r\n").every((l) => !l.includes("\r"))).toBe(true);
+    // The snapshot handed back for future edits stays LF.
+    expect(r!.newSource).toBe(withFlag);
+    expect(r!.newSource).not.toContain("\r");
+  });
+
+  it("removes the flag and round-trips back to the original CRLF file", () => {
+    const r = patchFenceFlag(build("\r\n", true), withFlag, "sticky", false);
+    expect(r).not.toBeNull();
+    expect(r!.newContent).toBe(build("\r\n"));
+  });
+
+  it("no-ops when the fence is already in the requested state", () => {
+    expect(patchFenceFlag(build("\n"), body, "sticky", false)).toBeNull();
+    expect(patchFenceFlag(build("\n", true), withFlag, "sticky", true)).toBeNull();
+  });
+
+  it("returns null when no fence body matches the source", () => {
+    expect(patchFenceFlag(build("\r\n"), "type: swot\nother", "sticky", true)).toBeNull();
   });
 });

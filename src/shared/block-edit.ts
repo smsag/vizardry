@@ -213,8 +213,16 @@ async function writeFenceFlag(
  * Finds the code fence in `fileContent` whose body matches `source` (trimmed),
  * then adds or removes a `<key>: true` line at the top of the body.
  * Returns null when the fence is not found or is already in the target state.
+ *
+ * Line endings: the whole file is split on `\r?\n` and re-joined with the
+ * file's detected ending, so a CRLF file both matches the (LF-normalised)
+ * `source` snapshot and is written back with its CRLF endings preserved. The
+ * previous `split("\n")` left a `\r` on every line, which broke the body match
+ * on CRLF files and silently no-op'd the toggle.
+ *
+ * @internal exported for round-trip testing.
  */
-function patchFenceFlag(
+export function patchFenceFlag(
   fileContent: string,
   source: string,
   key: string,
@@ -222,7 +230,8 @@ function patchFenceFlag(
 ): { newContent: string; newSource: string } | null {
   const normalised = source.trim();
   const prefix = `${key.toLowerCase()}:`;
-  const lines = fileContent.split("\n");
+  const eol = fileContent.includes("\r\n") ? "\r\n" : "\n";
+  const lines = fileContent.split(/\r?\n/);
 
   for (let i = 0; i < lines.length; i++) {
     const openMatch = lines[i].trim().match(/^(`{3,})/);
@@ -256,7 +265,9 @@ function patchFenceFlag(
         ...(j < lines.length ? [lines[j]] : []),
         ...lines.slice(j + 1),
       ];
-      return { newContent: newLines.join("\n"), newSource: newBodyLines.join("\n") };
+      // Re-join with the file's own ending so a CRLF file stays CRLF; newSource
+      // stays LF to match the LF-normalised vzSource snapshot future edits use.
+      return { newContent: newLines.join(eol), newSource: newBodyLines.join("\n") };
     }
 
     i = j;
