@@ -160,17 +160,40 @@ async function settle(el: HTMLElement): Promise<void> {
 }
 
 /**
- * Scale each visualization's SVG to `factor` by setting an explicit width (its
- * height is `auto` in the print CSS, so the viewBox keeps the aspect ratio).
- * Doing it as a real size change — rather than a CSS transform/zoom — means
- * Paged.js measures the smaller diagram and lays pages out correctly; the
- * transform/zoom approaches left it mis-measuring and producing near-empty
- * pages. Run after settle(), when the SVGs have their natural size.
+ * Scale each visualization's SVG to `factor`, centered.
+ *
+ * The SVG is `transform: scale()`d inside a wrapper sized to the *scaled*
+ * dimensions. Two problems this solves at once:
+ *  - Paged.js measures the wrapper (the real, smaller footprint), so pages fill
+ *    correctly — a plain CSS transform/zoom on the SVG left it mis-measuring
+ *    and producing near-empty pages.
+ *  - transform renders the whole SVG at `factor`, so nothing is clipped —
+ *    setting only the SVG width clipped diagrams whose internal coordinates
+ *    don't rescale (e.g. wide multi-subgraph Mermaid), which showed as solid
+ *    black boxes.
+ * Run after settle(), when the SVGs have their natural size.
  */
 function scaleVisualizations(el: HTMLElement, factor: number): void {
   el.querySelectorAll<SVGSVGElement>(".vizardry-root svg, .mermaid svg").forEach((svg) => {
-    const width = svg.getBoundingClientRect().width;
-    if (width > 0) svg.style.width = `${Math.round(width * factor)}px`;
+    const rect = svg.getBoundingClientRect();
+    const parent = svg.parentElement;
+    if (rect.width <= 0 || rect.height <= 0 || !parent) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "vzd-print-scaled";
+    wrap.style.width = `${Math.round(rect.width * factor)}px`;
+    wrap.style.height = `${Math.round(rect.height * factor)}px`;
+
+    // Pin the SVG's current display size so scale() is relative to it, and
+    // scale from the top-left corner so it fills the wrapper exactly.
+    svg.style.width = `${Math.round(rect.width)}px`;
+    svg.style.height = `${Math.round(rect.height)}px`;
+    svg.style.maxWidth = "none";
+    svg.style.transformOrigin = "top left";
+    svg.style.transform = `scale(${factor})`;
+
+    parent.insertBefore(wrap, svg);
+    wrap.appendChild(svg);
   });
 }
 

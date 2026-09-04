@@ -201,12 +201,16 @@ function baseRules(v: PrintVars): string {
 }
 .vzd-print .vizardry-root svg,
 .vzd-print .mermaid svg { height: auto; }
-/* Visualizations are centered; the 75% scaling is applied to the SVGs
-   themselves before pagination (see scaleVisualizations in export.ts), NOT via
-   a CSS transform/zoom — those leave Paged.js mis-measuring the height, which
-   pushed diagrams onto the next page and left near-empty pages. */
+/* Visualizations are scaled to 75% and centered by wrapping each SVG in a
+   .vzd-print-scaled box sized to the scaled dimensions (see scaleVisualizations
+   in export.ts). The wrapper is what Paged.js measures, so pagination is
+   correct; overflow:hidden trims the empty corner the top-left scale leaves. */
 .vzd-print .vizardry-root,
 .vzd-print .mermaid { text-align: center; }
+.vzd-print .vzd-print-scaled {
+  margin: 0 auto;
+  overflow: hidden;
+}
 /* Zebra-stripe table body rows for readability, in every template. The
    print-color-adjust is required — Chromium drops backgrounds when printing
    unless it's forced. */
