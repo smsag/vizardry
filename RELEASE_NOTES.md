@@ -1,3 +1,27 @@
+## 0.64.0
+
+- **New: Export / print a note to PDF** — a desktop command ("Export / print
+  note (with visualizations)") that renders the whole note — including every
+  Vizardry canvas and Mermaid diagram — and paginates it for printing or
+  Save-as-PDF. A dedicated dialog offers typographic **templates** (Manuscript,
+  Technical, Minimal), **page size** and orientation, **margins**, **start each
+  heading 1 / heading 2 on a new page**, **page numbers** (format and position),
+  a **running header**, and a title toggle — with a **live page-by-page preview**
+  and a page count. Page numbers use real CSS paged-media counters (via Paged.js),
+  which the browser's own print can't produce. Linear / Upvoty issue keys print
+  as plain text: their preview popovers and AI summaries are never included, and
+  no enrichment network calls fire during export.
+- **Fix: Sketch (hand-drawn) mode now works in pop-out windows** — the sketch
+  styling and the SVG filter it relies on are applied to every open window, not
+  only the main one, so a canvas dragged into a pop-out no longer loses the
+  hand-drawn look.
+- **Fix: Node Map colour picker in pop-out windows** — its click-outside
+  dismissal now works in a pop-out window, and it no longer leaves a stray
+  document listener behind after closing.
+- **Fix: pin / collapse now persists on CRLF notes** — toggling `sticky:` or
+  `collapsed:` on a note saved with Windows (CRLF) line endings silently did
+  nothing; it now writes correctly and preserves the file's line endings.
+
 ## 0.63.0
 
 - **New: Pin a canvas while you scroll (`sticky: true`)** — a new pin button in
