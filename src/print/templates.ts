@@ -156,6 +156,8 @@ const MINIMAL: PrintTemplate = {
     accent: "#000000",
     measure: "none",
   },
+  // Render every visualization in greyscale for the printer-friendly template.
+  css: `.vzd-print .vizardry-root, .vzd-print .mermaid { filter: grayscale(1); }`,
 };
 
 export const BUILTIN_PRINT_TEMPLATES: readonly PrintTemplate[] = [

@@ -140,6 +140,29 @@ describe("buildPrintCss", () => {
     expect(css).toContain("break-inside: avoid;");
   });
 
+  it("centers and scales visualizations to 75% in every template", () => {
+    for (const id of ["manuscript", "technical", "minimal"]) {
+      const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
+      expect(css).toContain("zoom: 0.75;");
+      expect(css).toContain("margin-inline: auto;");
+    }
+  });
+
+  it("zebra-stripes table rows (with forced background) in every template", () => {
+    for (const id of ["manuscript", "technical", "minimal"]) {
+      const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
+      expect(css).toContain(".vzd-print tbody tr:nth-child(even) {");
+      expect(css).toContain("print-color-adjust: exact;");
+    }
+  });
+
+  it("renders visualizations greyscale only in the Minimal template", () => {
+    const minimal = buildPrintCss(getPrintTemplate("minimal"), opts(), "T");
+    expect(minimal).toContain("filter: grayscale(1);");
+    const manuscript = buildPrintCss(getPrintTemplate("manuscript"), opts(), "T");
+    expect(manuscript).not.toContain("grayscale");
+  });
+
   it("falls back to the first template for an unknown id and still builds", () => {
     const css = buildPrintCss(getPrintTemplate("does-not-exist"), opts(), "T");
     expect(css).toContain("@page {");

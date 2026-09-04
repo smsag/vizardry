@@ -200,7 +200,25 @@ function baseRules(v: PrintVars): string {
   max-width: 100%;
 }
 .vzd-print .vizardry-root svg,
-.vzd-print .mermaid svg { height: auto; }`;
+.vzd-print .mermaid svg { height: auto; }
+/* Visualizations are centered and scaled to 75%. zoom (not transform) so the
+   layout box shrinks too — pagination stays correct and there's no leftover
+   gap below the diagram. */
+.vzd-print .vizardry-root,
+.vzd-print .mermaid {
+  zoom: 0.75;
+  width: fit-content;
+  margin-inline: auto;
+}
+/* Zebra-stripe table body rows for readability, in every template. The
+   print-color-adjust is required — Chromium drops backgrounds when printing
+   unless it's forced. */
+.vzd-print table { border-collapse: collapse; }
+.vzd-print tbody tr:nth-child(even) {
+  background: #f3f3f3;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}`;
 }
 
 /**
