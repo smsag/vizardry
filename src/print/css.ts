@@ -210,6 +210,9 @@ function baseRules(v: PrintVars): string {
 .vzd-print .vzd-print-scaled {
   margin: 0 auto;
   overflow: hidden;
+  /* Keep the whole scaled diagram on one page — never split the wrapper (e.g.
+     a sequence diagram's lifelines from its messages). */
+  break-inside: avoid;
 }
 /* Shade the header row and zebra-stripe the body rows, for readability, in
    every template. Scoped to .pagedjs_page (Paged.js's per-page wrapper), NOT
