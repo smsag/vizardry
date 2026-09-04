@@ -21,7 +21,14 @@ import type {
 import { normalizePrintOptions } from "./options";
 import { BUILTIN_PRINT_TEMPLATES, getPrintTemplate } from "./templates";
 import type { PreparedDoc, PrintContext } from "./export";
-import { paginatePrepared, prepareDocument, printNote } from "./export";
+import { buildDocCss, paginateCss, prepareDocument, printNote } from "./export";
+import { SerialScheduler } from "./preview-scheduler";
+
+/** A choice for a dropdown control. */
+interface Choice<T extends string> {
+  value: T;
+  label: string;
+}
 
 export class PrintExportModal extends Modal {
   private plugin: VizardryPlugin;
@@ -32,17 +39,26 @@ export class PrintExportModal extends Modal {
   private templateOptionsEl!: HTMLElement;
   private tplDescEl!: HTMLElement;
   private pageInfoEl!: HTMLElement;
+  private printBtn!: HTMLButtonElement;
+
   /** The note rendered once, reused for every preview re-pagination. */
   private prepared: PreparedDoc | null = null;
   /** Removes the head `<style>` nodes from the most recent preview pagination. */
   private clearPreviewStyles: (() => void) | null = null;
+  /** The stylesheet the current preview was paginated with — memo to skip no-ops. */
+  private lastPrintCss: string | null = null;
+  /** True once a preview with ≥1 page has rendered — gates the Print action. */
+  private canPrint = false;
   private closed = false;
-  private previewTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Serialises preview renders so two paginations never overlap. */
-  private previewChain: Promise<void> = Promise.resolve();
+
+  /** Debounced + serialised preview renders (see SerialScheduler). */
+  private readonly preview = new SerialScheduler(() => this.runPreview(), 250);
   /** Watches the open note so an external edit refreshes the cached render. */
   private modifyRef: EventRef | null = null;
   private invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Debounced settings persist so dragging a control doesn't thrash data.json. */
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private settingsDirty = false;
 
   constructor(app: App, plugin: VizardryPlugin) {
     super(app);
@@ -70,15 +86,31 @@ export class PrintExportModal extends Modal {
     this.buildControls(controls);
     this.buildFooter(contentEl);
     this.watchFile();
-    this.schedulePreview(true);
+    // Enter prints — but let a focused control (dropdown, colour input, a
+    // button) handle its own Enter first. Listener dies with the modal element.
+    this.modalEl.addEventListener("keydown", (evt) => {
+      if (evt.key !== "Enter") return;
+      const el = document.activeElement;
+      if (
+        el instanceof HTMLSelectElement ||
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLButtonElement
+      ) {
+        return;
+      }
+      evt.preventDefault();
+      this.triggerPrint();
+    });
+    this.preview.schedule(true);
   }
 
   onClose(): void {
     this.closed = true;
-    if (this.previewTimer) clearTimeout(this.previewTimer);
+    this.preview.dispose();
     if (this.invalidateTimer) clearTimeout(this.invalidateTimer);
     if (this.modifyRef) this.app.vault.offref(this.modifyRef);
     this.modifyRef = null;
+    this.flushSave();
     this.clearPreviewStyles?.();
     this.clearPreviewStyles = null;
     this.prepared?.destroy();
@@ -98,7 +130,8 @@ export class PrintExportModal extends Modal {
       this.invalidateTimer = setTimeout(() => {
         this.prepared?.destroy();
         this.prepared = null;
-        this.schedulePreview();
+        this.lastPrintCss = null; // content changed — force a re-paginate
+        this.preview.schedule();
       }, 500);
     });
   }
@@ -107,128 +140,152 @@ export class PrintExportModal extends Modal {
 
   private commit(rerenderTemplateOptions = false): void {
     this.plugin.settings.printOptions = this.options;
-    void this.plugin.saveSettings();
+    this.persistSoon();
     if (rerenderTemplateOptions) this.renderTemplateOptions();
-    this.schedulePreview();
+    this.preview.schedule();
+  }
+
+  private persistSoon(): void {
+    this.settingsDirty = true;
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => this.flushSave(), 400);
+  }
+
+  private flushSave(): void {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    if (!this.settingsDirty) return;
+    this.settingsDirty = false;
+    void this.plugin.saveSettings();
   }
 
   // ── Controls ─────────────────────────────────────────────────────────────────
 
-  private buildControls(root: HTMLElement): void {
-    // Template picker
-    new Setting(root)
-      .setName(t("print.opt.template"))
-      .addDropdown((drop) => {
-        for (const tpl of BUILTIN_PRINT_TEMPLATES) drop.addOption(tpl.id, tpl.name);
-        drop.setValue(this.options.templateId).onChange((v) => {
-          this.options.templateId = v;
-          // Reset per-template values — a new template declares its own options.
-          this.options.templateValues = {};
-          this.tplDescEl.setText(getPrintTemplate(v).description);
-          this.commit(true);
-        });
+  /** One dropdown row wired to a typed getter/setter. Centralises the cast. */
+  private dropdownRow<T extends string>(
+    root: HTMLElement,
+    name: string,
+    choices: Choice<T>[],
+    get: () => T,
+    set: (v: T) => void,
+    desc?: string,
+  ): void {
+    const setting = new Setting(root).setName(name);
+    if (desc) setting.setDesc(desc);
+    setting.addDropdown((drop) => {
+      for (const c of choices) drop.addOption(c.value, c.label);
+      drop.setValue(get()).onChange((v) => {
+        set(v as T);
+        this.commit();
       });
+    });
+  }
 
-    // Template description — kept in sync by the picker's onChange above.
+  /** One toggle row wired to a typed getter/setter. */
+  private toggleRow(
+    root: HTMLElement,
+    name: string,
+    get: () => boolean,
+    set: (v: boolean) => void,
+    desc?: string,
+  ): void {
+    const setting = new Setting(root).setName(name);
+    if (desc) setting.setDesc(desc);
+    setting.addToggle((tg) =>
+      tg.setValue(get()).onChange((v) => {
+        set(v);
+        this.commit();
+      }),
+    );
+  }
+
+  private buildControls(root: HTMLElement): void {
+    const o = this.options;
+
+    // Template picker (special: resets per-template values + updates the blurb).
+    new Setting(root).setName(t("print.opt.template")).addDropdown((drop) => {
+      for (const tpl of BUILTIN_PRINT_TEMPLATES) drop.addOption(tpl.id, tpl.name);
+      drop.setValue(o.templateId).onChange((v) => {
+        o.templateId = v;
+        o.templateValues = {};
+        this.tplDescEl.setText(getPrintTemplate(v).description);
+        this.commit(true);
+      });
+    });
     this.tplDescEl = root.createEl("p", {
-      text: getPrintTemplate(this.options.templateId).description,
+      text: getPrintTemplate(o.templateId).description,
       cls: "vzd-print-tpl-desc",
     });
 
-    // Page size
-    new Setting(root).setName(t("print.opt.pageSize")).addDropdown((drop) => {
-      const sizes: PageSize[] = ["A4", "A5", "Letter", "Legal"];
-      for (const s of sizes) drop.addOption(s, s);
-      drop.setValue(this.options.pageSize).onChange((v) => {
-        this.options.pageSize = v as PageSize;
-        this.commit();
-      });
-    });
+    const sizes: Choice<PageSize>[] = ["A4", "A5", "Letter", "Legal"].map((s) => ({
+      value: s as PageSize,
+      label: s,
+    }));
+    this.dropdownRow(root, t("print.opt.pageSize"), sizes, () => o.pageSize, (v) => (o.pageSize = v));
 
-    // Orientation
-    new Setting(root).setName(t("print.opt.landscape")).addToggle((tg) =>
-      tg.setValue(this.options.landscape).onChange((v) => {
-        this.options.landscape = v;
-        this.commit();
-      }),
-    );
+    this.toggleRow(root, t("print.opt.landscape"), () => o.landscape, (v) => (o.landscape = v));
 
-    // Margins
-    new Setting(root).setName(t("print.opt.margins")).addDropdown((drop) => {
-      const presets: { value: MarginPreset; label: string }[] = [
+    this.dropdownRow<MarginPreset>(
+      root,
+      t("print.opt.margins"),
+      [
         { value: "narrow", label: t("print.margins.narrow") },
         { value: "normal", label: t("print.margins.normal") },
         { value: "wide", label: t("print.margins.wide") },
-      ];
-      for (const p of presets) drop.addOption(p.value, p.label);
-      drop.setValue(this.options.margins).onChange((v) => {
-        this.options.margins = v as MarginPreset;
-        this.commit();
-      });
-    });
-
-    // Start H1 on a new page
-    new Setting(root)
-      .setName(t("print.opt.h1Break"))
-      .setDesc(t("print.opt.h1BreakDesc"))
-      .addToggle((tg) =>
-        tg.setValue(this.options.h1PageBreak).onChange((v) => {
-          this.options.h1PageBreak = v;
-          this.commit();
-        }),
-      );
-
-    // Start H2 on a new page
-    new Setting(root).setName(t("print.opt.h2Break")).addToggle((tg) =>
-      tg.setValue(this.options.h2PageBreak).onChange((v) => {
-        this.options.h2PageBreak = v;
-        this.commit();
-      }),
+      ],
+      () => o.margins,
+      (v) => (o.margins = v),
     );
 
-    // Page numbers
-    new Setting(root).setName(t("print.opt.pageNumbers")).addDropdown((drop) => {
-      const formats: { value: PageNumberFormat; label: string }[] = [
+    this.toggleRow(root, t("print.opt.showTitle"), () => o.showTitle, (v) => (o.showTitle = v));
+
+    this.toggleRow(
+      root,
+      t("print.opt.h1Break"),
+      () => o.h1PageBreak,
+      (v) => (o.h1PageBreak = v),
+      t("print.opt.h1BreakDesc"),
+    );
+    this.toggleRow(root, t("print.opt.h2Break"), () => o.h2PageBreak, (v) => (o.h2PageBreak = v));
+
+    this.dropdownRow<PageNumberFormat>(
+      root,
+      t("print.opt.pageNumbers"),
+      [
         { value: "none", label: t("print.pageNumbers.none") },
         { value: "plain", label: t("print.pageNumbers.plain") },
         { value: "page-n", label: t("print.pageNumbers.pageN") },
         { value: "n-of-total", label: t("print.pageNumbers.nOfTotal") },
-      ];
-      for (const f of formats) drop.addOption(f.value, f.label);
-      drop.setValue(this.options.pageNumbers).onChange((v) => {
-        this.options.pageNumbers = v as PageNumberFormat;
-        this.commit();
-      });
-    });
+      ],
+      () => o.pageNumbers,
+      (v) => (o.pageNumbers = v),
+    );
 
-    // Page-number position
-    new Setting(root).setName(t("print.opt.pageNumberPosition")).addDropdown((drop) => {
-      const positions: { value: PageNumberPosition; label: string }[] = [
+    this.dropdownRow<PageNumberPosition>(
+      root,
+      t("print.opt.pageNumberPosition"),
+      [
         { value: "bottom-center", label: t("print.position.bottomCenter") },
         { value: "bottom-right", label: t("print.position.bottomRight") },
         { value: "bottom-left", label: t("print.position.bottomLeft") },
         { value: "top-right", label: t("print.position.topRight") },
         { value: "top-center", label: t("print.position.topCenter") },
-      ];
-      for (const p of positions) drop.addOption(p.value, p.label);
-      drop.setValue(this.options.pageNumberPosition).onChange((v) => {
-        this.options.pageNumberPosition = v as PageNumberPosition;
-        this.commit();
-      });
-    });
+      ],
+      () => o.pageNumberPosition,
+      (v) => (o.pageNumberPosition = v),
+    );
 
-    // Running header (note title)
-    new Setting(root)
-      .setName(t("print.opt.runningHeader"))
-      .setDesc(t("print.opt.runningHeaderDesc"))
-      .addToggle((tg) =>
-        tg.setValue(this.options.runningHeader).onChange((v) => {
-          this.options.runningHeader = v;
-          this.commit();
-        }),
-      );
+    this.toggleRow(
+      root,
+      t("print.opt.runningHeader"),
+      () => o.runningHeader,
+      (v) => (o.runningHeader = v),
+      t("print.opt.runningHeaderDesc"),
+    );
 
-    // Per-template declared options
+    // Per-template declared options.
     this.templateOptionsEl = root.createDiv({ cls: "vzd-print-template-options" });
     this.renderTemplateOptions();
   }
@@ -243,16 +300,8 @@ export class PrintExportModal extends Modal {
     host.createEl("h4", { text: t("print.templateOptions") });
     for (const opt of template.options) {
       const setting = new Setting(host).setName(opt.label);
-      if (opt.type === "toggle") {
-        const current = (this.options.templateValues[opt.id] as boolean | undefined) ?? opt.default;
-        setting.addToggle((tg) =>
-          tg.setValue(current).onChange((v) => {
-            this.options.templateValues[opt.id] = v;
-            this.commit();
-          }),
-        );
-      } else if (opt.type === "select") {
-        const current = (this.options.templateValues[opt.id] as string | undefined) ?? opt.default;
+      const current = (this.options.templateValues[opt.id] as string | undefined) ?? opt.default;
+      if (opt.type === "select") {
         setting.addDropdown((drop) => {
           for (const c of opt.choices) drop.addOption(c.value, c.label);
           drop.setValue(current).onChange((v) => {
@@ -261,8 +310,6 @@ export class PrintExportModal extends Modal {
           });
         });
       } else {
-        // color
-        const current = (this.options.templateValues[opt.id] as string | undefined) ?? opt.default;
         setting.addColorPicker((cp) =>
           cp.setValue(current).onChange((v) => {
             this.options.templateValues[opt.id] = v;
@@ -276,31 +323,15 @@ export class PrintExportModal extends Modal {
   // ── Preview ──────────────────────────────────────────────────────────────────
 
   /**
-   * Debounce a preview refresh. Rapid option changes collapse to a single
-   * render, and each render is chained onto the previous one so two Paged.js
-   * paginations never run concurrently (they share the document head and the
-   * preview container). Pass `immediate` for the first render on open.
-   */
-  private schedulePreview(immediate = false): void {
-    if (this.previewTimer) clearTimeout(this.previewTimer);
-    const enqueue = (): void => {
-      this.previewTimer = null;
-      this.previewChain = this.previewChain.catch(() => {}).then(() => this.runPreview());
-    };
-    if (immediate) enqueue();
-    else this.previewTimer = setTimeout(enqueue, 250);
-  }
-
-  /**
-   * Re-paginate the note into the preview pane. Only ever runs one at a time.
-   * The expensive markdown render happens once (cached in `this.prepared`);
-   * subsequent option changes only re-run Paged.js on a clone of it.
+   * Re-paginate the note into the preview pane. Only ever runs one at a time
+   * (serialised by the scheduler). The expensive markdown render happens once
+   * (cached in `this.prepared`); an option change only re-runs Paged.js on a
+   * clone of it — and is skipped entirely when the stylesheet is unchanged.
    */
   private async runPreview(): Promise<void> {
     if (this.closed || !this.file) return;
     const file = this.file;
-    // Snapshot the options: paginate reads them after async work, so a later
-    // toggle must not bleed into this render.
+    // Snapshot the values the async work depends on.
     const opts: PrintOptions = {
       ...this.options,
       templateValues: { ...this.options.templateValues },
@@ -309,28 +340,53 @@ export class PrintExportModal extends Modal {
     try {
       if (!this.prepared) this.prepared = await prepareDocument(this.ctx, file);
       if (this.closed) return;
-      // Drop the previous pagination's pages and its head stylesheets before
-      // laying out the new one.
+
+      const css = buildDocCss(this.prepared, opts);
+      // Nothing that affects layout changed and a preview is already up — skip.
+      if (css === this.lastPrintCss && this.clearPreviewStyles) return;
+
       this.clearPreviewStyles?.();
       this.clearPreviewStyles = null;
       this.previewEl.empty();
-      const { removeStyles, pageCount } = await paginatePrepared(this.prepared, opts, this.previewEl);
+      const { removeStyles, pageCount } = await paginateCss(this.prepared, css, this.previewEl);
       if (this.closed) {
         removeStyles();
         return;
       }
       this.clearPreviewStyles = removeStyles;
+      this.lastPrintCss = css;
+      this.fitPreview();
       this.setPageInfo(pageCount);
+      this.setCanPrint(pageCount > 0);
     } catch (err) {
       console.error("Vizardry: preview render failed", err);
       if (!this.closed) {
         this.previewEl.empty();
         this.previewEl.createEl("p", { text: t("print.previewFailed"), cls: "vzd-print-empty" });
+        this.lastPrintCss = null;
         this.setPageInfo(null);
+        this.setCanPrint(false);
       }
     } finally {
       if (!this.closed) this.previewEl.removeClass("is-loading");
     }
+  }
+
+  /**
+   * Scale the paginated pages to fit the preview pane's width, whatever the
+   * chosen page size. Uses `offsetWidth`/`offsetHeight` (unaffected by the CSS
+   * transform) to measure the true sheet, then feeds the scale and the height
+   * to shave back into the flow to CSS variables.
+   */
+  private fitPreview(): void {
+    const page = this.previewEl.querySelector<HTMLElement>(".pagedjs_page");
+    if (!page) return;
+    const available = this.previewEl.clientWidth - 24; // padding allowance
+    const width = page.offsetWidth;
+    if (available <= 0 || width <= 0) return;
+    const scale = Math.min(1, available / width);
+    this.previewEl.style.setProperty("--vzd-preview-scale", String(scale));
+    this.previewEl.style.setProperty("--vzd-preview-shave", `${Math.round(page.offsetHeight * (1 - scale))}px`);
   }
 
   /** Update the footer page-count label (blank when there's nothing to show). */
@@ -345,6 +401,11 @@ export class PrintExportModal extends Modal {
     );
   }
 
+  private setCanPrint(can: boolean): void {
+    this.canPrint = can;
+    if (this.printBtn) this.printBtn.disabled = !can;
+  }
+
   // ── Footer ───────────────────────────────────────────────────────────────────
 
   private buildFooter(root: HTMLElement): void {
@@ -355,26 +416,28 @@ export class PrintExportModal extends Modal {
     const cancel = actions.createEl("button", { text: t("print.cancel") });
     cancel.addEventListener("click", () => this.close());
 
-    const print = actions.createEl("button", { text: t("print.print"), cls: "mod-cta" });
-    print.addEventListener("click", () => {
-      if (!this.file) return;
-      const file = this.file;
-      const options = this.options;
-      // Any preview pagination already in flight must finish before we start
-      // the print one — the two share the document head, and overlapping runs
-      // would cross-attribute the injected stylesheets. close() stops further
-      // preview renders; awaiting the chain drains the in-flight one.
-      const pending = this.previewChain;
-      // Tear down the modal first so its preview DOM isn't caught in the print
-      // portal, then hand off to the system dialog.
-      this.close();
-      void pending
-        .catch(() => {})
-        .then(() => printNote(this.ctx, file, options))
-        .catch((err) => {
-          console.error("Vizardry: print failed", err);
-          new Notice(t("print.notice.failed"));
-        });
-    });
+    this.printBtn = actions.createEl("button", { text: t("print.print"), cls: "mod-cta" });
+    this.printBtn.disabled = true; // enabled once a preview with pages renders
+    this.printBtn.addEventListener("click", () => this.triggerPrint());
+  }
+
+  private triggerPrint(): void {
+    if (!this.file || !this.canPrint) return;
+    const file = this.file;
+    const options = this.options;
+    // Any preview pagination already in flight must finish before we start the
+    // print one — they share the document head, and overlapping runs would
+    // cross-attribute the injected stylesheets. close() stops further preview
+    // renders; awaiting the scheduler drains the in-flight one.
+    const pending = this.preview.idle();
+    // Tear down the modal first so its preview DOM isn't caught in the print
+    // portal, then hand off to the system dialog.
+    this.close();
+    void pending
+      .then(() => printNote(this.ctx, file, options))
+      .catch((err) => {
+        console.error("Vizardry: print failed", err);
+        new Notice(t("print.notice.failed"));
+      });
   }
 }

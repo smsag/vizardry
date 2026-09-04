@@ -39,6 +39,8 @@ export interface PrintOptions {
   pageNumberPosition: PageNumberPosition;
   /** Repeat the note title in a margin box on every page. */
   runningHeader: boolean;
+  /** Render the note title as a heading block at the top of the document. */
+  showTitle: boolean;
   /** Values for the chosen template's own declared options (option id → value). */
   templateValues: Record<string, string | boolean>;
 }
@@ -53,6 +55,7 @@ export const DEFAULT_PRINT_OPTIONS: PrintOptions = {
   pageNumbers: "page-n",
   pageNumberPosition: "bottom-center",
   runningHeader: false,
+  showTitle: true,
   templateValues: {},
 };
 

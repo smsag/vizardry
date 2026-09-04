@@ -182,6 +182,7 @@ export const en = {
   "print.opt.pageSize":            "Page size",
   "print.opt.landscape":           "Landscape",
   "print.opt.margins":             "Margins",
+  "print.opt.showTitle":           "Show title",
   "print.opt.h1Break":             "Start each heading 1 on a new page",
   "print.opt.h1BreakDesc":         "Each top-level heading begins a fresh page.",
   "print.opt.h2Break":             "Start each heading 2 on a new page",

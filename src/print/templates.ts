@@ -11,12 +11,18 @@
 
 import type { PrintOptions } from "./options";
 
-/** A declared, template-specific option surfaced in the export dialog. */
+/**
+ * A declared, template-specific option surfaced in the export dialog.
+ *
+ * An option's `id` MUST name a `PrintVars` key (e.g. "accent", "font",
+ * "fontSize"): its chosen value overrides that style variable at render time
+ * (see `resolveTemplateVars`). Both variants carry a string value, so every
+ * declared option actually affects the output — there is no write-only knob.
+ */
 export type TemplateOption =
-  | { id: string; label: string; type: "toggle"; default: boolean }
-  | { id: string; label: string; type: "color"; default: string }
+  | { id: PrintVarKey; label: string; type: "color"; default: string }
   | {
-      id: string;
+      id: PrintVarKey;
       label: string;
       type: "select";
       default: string;
@@ -61,6 +67,27 @@ export interface PrintVars {
   measure: string;
 }
 
+export type PrintVarKey = keyof PrintVars;
+
+/**
+ * Runtime list of the `PrintVars` keys — the set of ids a `TemplateOption` may
+ * target. The `satisfies` clause rejects a typo'd key; keep it in sync when
+ * adding a var (an unlisted var simply can't be targeted by a template option).
+ */
+export const PRINT_VAR_KEYS = [
+  "font",
+  "headingFont",
+  "monoFont",
+  "fontSize",
+  "lineHeight",
+  "color",
+  "headingColor",
+  "accent",
+  "measure",
+] satisfies PrintVarKey[];
+
+const PRINT_VAR_KEY_SET = new Set<string>(PRINT_VAR_KEYS);
+
 // ── Built-in templates ────────────────────────────────────────────────────────
 
 const MANUSCRIPT: PrintTemplate = {
@@ -100,6 +127,17 @@ const TECHNICAL: PrintTemplate = {
   },
   options: [
     { id: "accent", label: "Accent colour", type: "color", default: "#2563eb" },
+    {
+      id: "fontSize",
+      label: "Body size",
+      type: "select",
+      default: "10.5pt",
+      choices: [
+        { value: "10pt", label: "Compact" },
+        { value: "10.5pt", label: "Normal" },
+        { value: "12pt", label: "Comfortable" },
+      ],
+    },
   ],
 };
 
@@ -138,9 +176,13 @@ export function getPrintTemplate(id: string): PrintTemplate {
  */
 export function resolveTemplateVars(template: PrintTemplate, options: PrintOptions): PrintVars {
   const vars: PrintVars = { ...template.vars };
-  const accent = options.templateValues["accent"];
-  if (typeof accent === "string" && accent.trim()) {
-    vars.accent = accent.trim();
+  // Apply every chosen option value that names a style variable. Because a
+  // TemplateOption's id is a PrintVarKey, this wires all declared options
+  // (accent, a font select, …) — not just a hardcoded "accent".
+  for (const [id, value] of Object.entries(options.templateValues)) {
+    if (typeof value === "string" && value.trim() && PRINT_VAR_KEY_SET.has(id)) {
+      vars[id as PrintVarKey] = value.trim();
+    }
   }
   return vars;
 }

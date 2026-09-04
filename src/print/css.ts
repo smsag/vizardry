@@ -223,6 +223,9 @@ export function buildPrintCss(
     buildPageRule(options, title, { font: vars.font, accent: vars.accent }),
     buildHeadingBreaks(options),
   ];
+  // The title block is always present in the rendered content; toggle its
+  // visibility here so switching it on/off only re-paginates, never re-renders.
+  if (!options.showTitle) parts.push(".vzd-print .vzd-print-title { display: none; }");
   if (template.css) parts.push(template.css);
   return parts.filter(Boolean).join("\n\n");
 }

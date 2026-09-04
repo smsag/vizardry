@@ -1,5 +1,5 @@
 import type { Editor, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView, Notice, Plugin } from "obsidian";
+import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
 import type { PluginSettings } from "./settings";
 import { initLinearService, getLinearService } from "./linear";
@@ -170,6 +170,9 @@ export default class VizardryPlugin extends Plugin {
       id: "export-print-note",
       name: t("commands.exportPrint"),
       checkCallback: (checking: boolean) => {
+        // Desktop only: the export relies on window.print()/Paged.js, which are
+        // unreliable on Obsidian mobile.
+        if (!Platform.isDesktop) return false;
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") return false;
         if (!checking) new PrintExportModal(this.app, this).open();

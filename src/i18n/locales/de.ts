@@ -173,6 +173,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "print.opt.pageSize":            "Seitengröße",
   "print.opt.landscape":           "Querformat",
   "print.opt.margins":             "Ränder",
+  "print.opt.showTitle":           "Titel anzeigen",
   "print.opt.h1Break":             "Jede Überschrift 1 auf neuer Seite beginnen",
   "print.opt.h1BreakDesc":         "Jede oberste Überschrift beginnt eine neue Seite.",
   "print.opt.h2Break":             "Jede Überschrift 2 auf neuer Seite beginnen",
