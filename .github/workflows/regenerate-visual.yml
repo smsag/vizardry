@@ -5,15 +5,10 @@ name: Regenerate visual baselines
 # baselines inside the SAME pinned Playwright container the `visual` check uses
 # (so the PNGs line up with CI's Chromium), then commits any changes back to the
 # branch it was dispatched from. Dispatch it on a throwaway branch, then open a
-# PR of the resulting baseline changes to main.
-#
-# Triggered by a push to the throwaway branch (workflow_dispatch only registers
-# from the default branch, so it can't launch this from a feature branch). The
-# regenerated PNGs are pushed back with GITHUB_TOKEN, whose pushes don't
-# re-trigger workflows — so there's no loop.
+# PR of the resulting baseline changes to main. The regenerated PNGs are pushed
+# back to the dispatched branch with GITHUB_TOKEN, whose pushes don't re-trigger
+# workflows — so there's no loop.
 on:
-  push:
-    branches: [chore/regenerate-visual-baselines]
   workflow_dispatch:
 
 permissions:
