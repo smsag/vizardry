@@ -148,10 +148,11 @@ describe("buildPrintCss", () => {
     }
   });
 
-  it("zebra-stripes table rows (with forced background) in every template", () => {
+  it("shades the header and zebra-stripes body rows (scoped to .pagedjs_page so the first table styles too)", () => {
     for (const id of ["manuscript", "technical", "minimal"]) {
       const css = buildPrintCss(getPrintTemplate(id), opts(), "T");
-      expect(css).toContain(".vzd-print tbody tr:nth-child(even) {");
+      expect(css).toContain(".pagedjs_page thead th {");
+      expect(css).toContain(".pagedjs_page tbody tr:nth-child(even) {");
       expect(css).toContain("print-color-adjust: exact;");
     }
   });

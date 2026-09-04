@@ -211,12 +211,20 @@ function baseRules(v: PrintVars): string {
   margin: 0 auto;
   overflow: hidden;
 }
-/* Zebra-stripe table body rows for readability, in every template. The
-   print-color-adjust is required — Chromium drops backgrounds when printing
-   unless it's forced. */
-.vzd-print table { border-collapse: collapse; }
-.vzd-print tbody tr:nth-child(even) {
-  background: #e6e6e6;
+/* Shade the header row and zebra-stripe the body rows, for readability, in
+   every template. Scoped to .pagedjs_page (Paged.js's per-page wrapper), NOT
+   .vzd-print: that scope doesn't reach Paged.js's first page — which is where
+   the first table sits — so the first table went unstyled. The header is always
+   shaded; nth-child(even) leaves the first body row white. print-color-adjust
+   is required — Chromium drops backgrounds when printing unless it's forced. */
+.pagedjs_page table { border-collapse: collapse; }
+.pagedjs_page thead th {
+  background: #d9d9d9;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pagedjs_page tbody tr:nth-child(even) {
+  background: #efefef;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }`;
