@@ -155,6 +155,46 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "commands.insertCanvas":         "Canvas einfügen…",
   "commands.insertVizardryCanvas": "Vizardry-Canvas einfügen…",
   "commands.insertFramework":      "{{label}} einfügen",
+  "commands.exportPrint":          "Notiz exportieren / drucken (mit Visualisierungen)…",
+
+  // ── Druck-/PDF-Export-Dialog ─────────────────────────────────────────────────
+  "print.title":            "Notiz exportieren / drucken",
+  "print.noFile":           "Öffne zuerst eine Markdown-Notiz.",
+  "print.print":            "Drucken / PDF speichern",
+  "print.cancel":           "Abbrechen",
+  "print.previewFailed":    "Vorschau konnte nicht gerendert werden.",
+  "print.pageCount":        "{{n}} Seiten",
+  "print.pageCountOne":     "1 Seite",
+  "print.templateOptions":  "Vorlagenoptionen",
+  "print.notice.failed":    "Vizardry: Export fehlgeschlagen — siehe Entwicklerkonsole.",
+  "print.notice.inProgress": "Ein Export läuft bereits.",
+
+  "print.opt.template":            "Vorlage",
+  "print.opt.pageSize":            "Seitengröße",
+  "print.opt.landscape":           "Querformat",
+  "print.opt.margins":             "Ränder",
+  "print.opt.h1Break":             "Jede Überschrift 1 auf neuer Seite beginnen",
+  "print.opt.h1BreakDesc":         "Jede oberste Überschrift beginnt eine neue Seite.",
+  "print.opt.h2Break":             "Jede Überschrift 2 auf neuer Seite beginnen",
+  "print.opt.pageNumbers":         "Seitenzahlen",
+  "print.opt.pageNumberPosition":  "Position der Seitenzahl",
+  "print.opt.runningHeader":       "Kopfzeile",
+  "print.opt.runningHeaderDesc":   "Notiztitel im Seitenrand wiederholen.",
+
+  "print.margins.narrow": "Schmal",
+  "print.margins.normal": "Normal",
+  "print.margins.wide":   "Breit",
+
+  "print.pageNumbers.none":     "Keine",
+  "print.pageNumbers.plain":    "1, 2, 3",
+  "print.pageNumbers.pageN":    "Seite 1",
+  "print.pageNumbers.nOfTotal": "1 von N",
+
+  "print.position.bottomCenter": "Unten mittig",
+  "print.position.bottomRight":  "Unten rechts",
+  "print.position.bottomLeft":   "Unten links",
+  "print.position.topRight":     "Oben rechts",
+  "print.position.topCenter":    "Oben mittig",
 
   // ── RACI Matrix column labels ─────────────────────────────────────────────
   "raci.col.task":        "Aufgabe",

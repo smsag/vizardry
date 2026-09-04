@@ -5204,3 +5204,90 @@ body.vizardry-sketch .vzd-tree-rename-input {
 }
 .vzd-compass-add:hover { opacity: 1; color: var(--interactive-accent); }
 .vzd-compass-inline-input, .vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }
+
+/* ── Print / PDF export ──────────────────────────────────────────────────────
+   The export dialog (src/print/modal.ts) and the offscreen portal that carries
+   the Paged.js output to the system print dialog (src/print/export.ts). */
+
+.vzd-print-modal { width: min(1000px, 92vw); }
+.vzd-print-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.vzd-print-controls { min-width: 0; }
+.vzd-print-controls .setting-item { padding: 0.5rem 0; }
+.vzd-print-tpl-desc {
+  margin: -0.25rem 0 0.75rem;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.vzd-print-template-options h4 { margin: 0.75rem 0 0.25rem; }
+.vzd-print-empty { color: var(--text-muted); }
+
+/* Preview pane — a scrollable, neutral "paper" surface. Paged.js sizes each
+   .pagedjs_page to the chosen sheet; scale them down to fit the pane. */
+.vzd-print-preview {
+  max-height: 60vh;
+  overflow: auto;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+.vzd-print-preview.is-loading { opacity: 0.5; }
+.vzd-print-preview .pagedjs_pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.vzd-print-preview .pagedjs_page {
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+  /* Shrink oversized sheets to fit the pane; the print path is unaffected. */
+  transform: scale(0.7);
+  transform-origin: top center;
+  margin-bottom: -30%;
+}
+
+.vzd-print-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.vzd-print-pageinfo {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.vzd-print-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Offscreen scratch space where the note is rendered before pagination. */
+.vzd-print-scratch {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 800px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The print portal is parked offscreen on screen and only revealed — and the
+   rest of the app hidden — while the print sheet is being produced. */
+.vzd-print-portal { position: fixed; left: -99999px; top: 0; }
+
+@media print {
+  body.vzd-printing > *:not(.vzd-print-portal) { display: none !important; }
+  body.vzd-printing .vzd-print-portal {
+    position: static;
+    left: 0;
+  }
+  body.vzd-printing .vzd-print-portal .pagedjs_page { box-shadow: none; }
+}
