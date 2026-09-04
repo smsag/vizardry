@@ -1,0 +1,59 @@
+name: Regenerate visual baselines
+
+# Maintenance workflow — run on demand (Actions ▸ Regenerate visual baselines ▸
+# Run workflow, or `gh workflow run`). Rebuilds the committed visual-regression
+# baselines inside the SAME pinned Playwright container the `visual` check uses
+# (so the PNGs line up with CI's Chromium), then commits any changes back to the
+# branch it was dispatched from. Dispatch it on a throwaway branch, then open a
+# PR of the resulting baseline changes to main. The regenerated PNGs are pushed
+# back to the dispatched branch with GITHUB_TOKEN, whose pushes don't re-trigger
+# workflows — so there's no loop.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.0-noble
+    env:
+      # Browsers are preinstalled in the container; don't re-download on npm ci.
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # persist-credentials defaults to true so the push below is authenticated.
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Build the harness bundle, then let Playwright rewrite every baseline it
+      # renders. `|| true` because a snapshot *update* can still surface as a
+      # non-zero exit in some Playwright versions — the real signal is whether
+      # the committed PNGs changed, checked below.
+      - name: Build harness
+        run: node visual/build.mjs
+
+      - name: Regenerate snapshots
+        run: npx playwright test --update-snapshots || true
+
+      - name: Commit regenerated baselines
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git status --porcelain -- visual/visual.spec.ts-snapshots | grep -q .; then
+            git add visual/visual.spec.ts-snapshots
+            git commit -m "chore(visual): regenerate baselines in pinned container"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            echo "Pushed regenerated baselines."
+          else
+            echo "No baseline changes — the committed PNGs already match this container."
+          fi
