@@ -152,7 +152,11 @@ async function settle(el: HTMLElement): Promise<void> {
   await nextFrame();
   await nextFrame();
   await Promise.all(Array.from(el.querySelectorAll("img")).map(whenImageSettled));
-  await waitForQuiescence(el, 120, 2500);
+  // A longer quiet window / cap than a plain settle: Mermaid renders its
+  // diagrams' SVGs in async bursts, and pagination must not start until they
+  // have their final size — otherwise Paged.js re-flows on the later resize
+  // (wrong page count, and an occasional console crash in its resize handler).
+  await waitForQuiescence(el, 250, 5000);
 }
 
 /**
@@ -224,7 +228,9 @@ async function paginate(
   const flow = await previewer.preview(content, [{ "vzd-print": printCss }], renderTo);
   const added = Array.from(document.head.querySelectorAll("style")).filter((s) => !before.has(s));
   return {
-    pageCount: flow?.total ?? renderTo.querySelectorAll(".pagedjs_page").length,
+    // Count the actual page boxes rather than trusting flow.total, which Paged.js
+    // reports before any late resize-reflow settles.
+    pageCount: renderTo.querySelectorAll(".pagedjs_page").length || (flow?.total ?? 0),
     removeStyles: () => added.forEach((s) => s.remove()),
   };
 }

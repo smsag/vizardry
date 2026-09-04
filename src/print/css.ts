@@ -17,7 +17,7 @@ import type {
   PrintOptions,
 } from "./options";
 import { MARGIN_MM, PAGE_SIZE_KEYWORD } from "./options";
-import type { PrintTemplate } from "./templates";
+import type { PrintTemplate, PrintVars } from "./templates";
 import { resolveTemplateVars } from "./templates";
 
 /** Escape a string for use as a CSS `content:` string literal. */
@@ -146,50 +146,40 @@ export function buildHeadingBreaks(options: PrintOptions): string {
   return rules.join("\n");
 }
 
-/** Emit the template's CSS variables as declarations on the print root. */
-export function buildRootVars(template: PrintTemplate, options: PrintOptions): string {
-  const v = resolveTemplateVars(template, options);
-  return (
-    `.vzd-print {\n` +
-    `  --vzd-print-font: ${v.font};\n` +
-    `  --vzd-print-heading-font: ${v.headingFont};\n` +
-    `  --vzd-print-mono-font: ${v.monoFont};\n` +
-    `  --vzd-print-size: ${v.fontSize};\n` +
-    `  --vzd-print-line: ${v.lineHeight};\n` +
-    `  --vzd-print-color: ${v.color};\n` +
-    `  --vzd-print-heading-color: ${v.headingColor};\n` +
-    `  --vzd-print-accent: ${v.accent};\n` +
-    `  --vzd-print-measure: ${v.measure};\n` +
-    `}`
-  );
-}
-
 /**
- * The static base rules shared by every template — typography wiring plus the
- * "keep visuals whole" rules that stop Vizardry canvases and images being
- * sliced across a page boundary.
+ * The base rules shared by every template — typography plus the "keep visuals
+ * whole" rules that stop Vizardry canvases and images being sliced across a
+ * page boundary.
+ *
+ * Values are emitted *concretely*, not via `var(--…)`. CSS custom properties do
+ * not resolve reliably across all of Paged.js's cloned/chunked page contexts —
+ * the first page in particular ended up without the variable and fell back to
+ * the browser default serif — so the whole sheet was inconsistent. Concrete
+ * values (like the resolved ink already used in the @page margin boxes) apply
+ * uniformly on every page.
  */
-const BASE_RULES = `.vzd-print {
-  font-family: var(--vzd-print-font);
-  font-size: var(--vzd-print-size);
-  line-height: var(--vzd-print-line);
-  color: var(--vzd-print-color);
+function baseRules(v: PrintVars): string {
+  return `.vzd-print {
+  font-family: ${v.font};
+  font-size: ${v.fontSize};
+  line-height: ${v.lineHeight};
+  color: ${v.color};
 }
 .vzd-print .vzd-print-body {
-  max-width: var(--vzd-print-measure);
+  max-width: ${v.measure};
   margin: 0 auto;
 }
 .vzd-print h1, .vzd-print h2, .vzd-print h3,
 .vzd-print h4, .vzd-print h5, .vzd-print h6 {
-  font-family: var(--vzd-print-heading-font);
-  color: var(--vzd-print-heading-color);
+  font-family: ${v.headingFont};
+  color: ${v.headingColor};
   line-height: 1.2;
 }
 /* Don't strand a heading at the foot of a page. */
 .vzd-print h1, .vzd-print h2, .vzd-print h3 { break-after: avoid; }
 .vzd-print p { orphans: 2; widows: 2; }
-.vzd-print a { color: var(--vzd-print-accent); }
-.vzd-print code, .vzd-print pre { font-family: var(--vzd-print-mono-font); }
+.vzd-print a { color: ${v.accent}; }
+.vzd-print code, .vzd-print pre { font-family: ${v.monoFont}; }
 .vzd-print pre { break-inside: avoid; white-space: pre-wrap; }
 /* Vizardry canvases, Mermaid SVGs and images print whole and never overflow. */
 .vzd-print .vizardry-root,
@@ -203,6 +193,7 @@ const BASE_RULES = `.vzd-print {
 }
 .vzd-print .vizardry-root svg,
 .vzd-print .mermaid svg { height: auto; }`;
+}
 
 /**
  * Full print stylesheet for a template + options + note title.
@@ -218,8 +209,7 @@ export function buildPrintCss(
 ): string {
   const vars = resolveTemplateVars(template, options);
   const parts = [
-    buildRootVars(template, options),
-    BASE_RULES,
+    baseRules(vars),
     buildPageRule(options, title, { font: vars.font, accent: vars.accent }),
     buildHeadingBreaks(options),
   ];

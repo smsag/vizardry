@@ -119,7 +119,9 @@ describe("buildPrintCss", () => {
   it("wires the template accent override through to the root vars", () => {
     const template = getPrintTemplate("manuscript");
     const css = buildPrintCss(template, opts({ templateValues: { accent: "#ff0000" } }), "T");
-    expect(css).toContain("--vzd-print-accent: #ff0000;");
+    // Accent is emitted concretely (no var()), e.g. on links.
+    expect(css).toContain(".vzd-print a { color: #ff0000; }");
+    expect(css).not.toContain("var(--vzd-print");
   });
 
   it("keeps Vizardry canvases from splitting across pages", () => {
@@ -131,7 +133,8 @@ describe("buildPrintCss", () => {
   it("falls back to the first template for an unknown id and still builds", () => {
     const css = buildPrintCss(getPrintTemplate("does-not-exist"), opts(), "T");
     expect(css).toContain("@page {");
-    expect(css).toContain("--vzd-print-font:");
+    expect(css).toContain(".vzd-print {");
+    expect(css).toContain("font-family:");
   });
 
   it("hides the title block only when showTitle is off", () => {
