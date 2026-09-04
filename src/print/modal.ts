@@ -65,7 +65,7 @@ export class PrintExportModal extends Modal {
     this.plugin = plugin;
     this.file = app.workspace.getActiveFile();
     this.options = normalizePrintOptions(plugin.settings.printOptions);
-    this.ctx = { app };
+    this.ctx = { app, pluginDir: plugin.manifest.dir };
   }
 
   onOpen(): void {

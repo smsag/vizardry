@@ -5286,22 +5286,18 @@ body.vizardry-sketch .vzd-tree-rename-input {
   pointer-events: none;
 }
 
-/* The print portal is parked offscreen on screen and only revealed — and the
-   rest of the app hidden — while the print sheet is being produced. */
+/* The pages are paginated into this offscreen container, then their HTML is
+   moved into the print iframe (see src/print/export.ts). */
 .vzd-print-portal { position: fixed; left: -99999px; top: 0; }
 
-@media print {
-  body.vzd-printing > *:not(.vzd-print-portal) { display: none !important; }
-  /* Paged.js's own print CSS sizes .pagedjs_page with height:100% — a
-     percentage that needs an unbroken 100%-height chain from <body>. It styles
-     body and .pagedjs_pages, but not our portal wrapper in between, so without
-     these the chain breaks, the pages collapse to zero height, and the printed
-     PDF comes out blank. Restore the link. */
-  body.vzd-printing .vzd-print-portal {
-    position: static;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-  }
-  body.vzd-printing .vzd-print-portal .pagedjs_page { box-shadow: none; }
+/* The hidden iframe the paginated pages are actually printed from, in
+   isolation from the rest of the Obsidian window. Off-screen but full-size so
+   its document lays out (a display:none iframe wouldn't render for print). */
+.vzd-print-frame {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  border: 0;
 }
