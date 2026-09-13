@@ -1,5 +1,15 @@
 ## 0.65.0
 
+- **Removed: the built-in "Export / print note" command.** Vizardry no longer
+  paginates and prints notes itself. That feature relied on Paged.js, which cost
+  more than half the plugin's download — removing it takes the bundle from
+  1.70 MB to 0.73 MB, a saving every user pays for on every update whether or not
+  they ever printed. PDF export now belongs to the typesetting plugins that do it
+  properly, fed by the new export API below. If you used the command: the
+  equivalent is a print/PDF plugin that renders through this API; Obsidian's own
+  "Export to PDF" also still works, without Vizardry's templates and page
+  numbers. Your last-used print settings stay in the plugin's data file, unread.
+
 - **New: a public export API for other plugins** — Vizardry now exposes the same
   canvas-to-PNG capture its download button uses, so another plugin (a PDF or
   document pipeline, say) can place a canvas as an image instead of
