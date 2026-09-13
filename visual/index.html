@@ -7,8 +7,14 @@
 <style>
   /* A fixed, minimal subset of the Obsidian theme variables the plugin reads,
      so rendering is deterministic across runs (the real theme is injected by
-     the host at runtime; here we only need run-to-run stability). */
-  :root {
+     the host at runtime; here we only need run-to-run stability).
+
+     Declared on `.theme-light` as well as `:root`, mirroring how Obsidian scopes
+     its palettes: that is what lets a forced-light capture put `theme-light` on
+     a single canvas root inside an otherwise dark page and have every variable
+     resolve light for that subtree (see prepareForCapture in
+     src/renderer/controls.ts). */
+  :root, .theme-light {
     --background-primary: #ffffff;
     --background-primary-alt: #f6f6f6;
     --background-secondary: #f2f3f5;
@@ -36,7 +42,22 @@
     --font-ui-large: 20px;
     --font-interface: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
-  html, body { margin: 0; background: #ffffff; color: var(--text-normal);
+  /* Obsidian's dark palette, same subset. Applied to <body> by the harness for
+     the ?dark fixtures, so a canvas that leaks a dark variable into a
+     forced-light capture shows up as a snapshot diff. */
+  .theme-dark {
+    --background-primary: #1e1e1e;
+    --background-primary-alt: #1a1a1a;
+    --background-secondary: #252525;
+    --background-secondary-alt: #161616;
+    --background-modifier-border: #3f3f3f;
+    --background-modifier-hover: #2d2d2d;
+    --text-normal: #dadada;
+    --text-muted: #9a9a9a;
+    --text-faint: #6b6b6b;
+    --text-on-accent: #ffffff;
+  }
+  html, body { margin: 0; background: var(--background-primary); color: var(--text-normal);
     font-family: var(--font-interface); }
   #app { display: flex; flex-direction: column; gap: 24px; padding: 20px; }
   section { border: 1px dashed #ccc; padding: 12px; }

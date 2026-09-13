@@ -5,6 +5,7 @@ import { initCanvas, markInteractive } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
+import { ownerWindow } from "../shared/lifecycle";
 
 // Obsidian exposes its App instance on window.app, but there is no official
 // type declaration for this undocumented property. We describe only the minimal
@@ -45,7 +46,7 @@ function hexToHsl(hex: string): [number, number, number] {
  * Read Obsidian's current accent color and return [h, s, l].
  * Priority: vault config hex → --interactive-accent CSS var → fallback blue.
  */
-function getAccentHsl(doc: Document): [number, number, number] {
+function getAccentHsl(el: HTMLElement): [number, number, number] {
   // 1. Obsidian vault config stores the accent as a hex string. `app` is a
   // vault-wide singleton exposed on the main window regardless of which
   // window is calling, so this doesn't need to go through `doc`.
@@ -56,7 +57,10 @@ function getAccentHsl(doc: Document): [number, number, number] {
 
   // 2. CSS variable --interactive-accent (may be rgb(), hsl(), or hex)
   try {
-    const raw = (doc.defaultView ?? window).getComputedStyle(doc.body)
+    // Read through the element rather than `document.body`: custom properties
+    // inherit, so this sees the same value the canvas renders with — including
+    // when a capture scopes a theme class to the canvas root (export-api.ts).
+    const raw = ownerWindow(el).getComputedStyle(el)
       .getPropertyValue("--interactive-accent").trim();
 
     const rgb = raw.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -107,7 +111,7 @@ export function renderVennDiagram(
   const diagramIdx = leaf.querySelectorAll(".vzd-venn-wrap").length;
 
   // ── Accent palette ────────────────────────────────────────────────────
-  const [accentH, accentS, accentL] = getAccentHsl(container.ownerDocument);
+  const [accentH, accentS, accentL] = getAccentHsl(container);
   const is3 = venn.circles.length === 3;
 
   let hues: number[];

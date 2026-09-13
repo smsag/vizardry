@@ -2,7 +2,7 @@ import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
-import { initCanvas, markInteractive } from "./controls";
+import { initCanvas, markInteractive, AUTO_TEXT_ATTR } from "./controls";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { activateInlineEdit } from "./inline-edit";
@@ -196,6 +196,9 @@ export function renderRoadmap(
     // is color-mix(accent, secondary) so the right choice depends on the user's
     // accent — we read the computed background after the element is in the DOM.
     header.style.color = bestTextColor(header);
+    // A forced-light export re-decides this against the light background —
+    // white baked in a dark vault would vanish on light paper.
+    header.setAttribute(AUTO_TEXT_ATTR, "");
 
     const list = colEl.createEl("div", { cls: "vzd-roadmap-card-list" });
 

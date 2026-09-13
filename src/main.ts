@@ -18,6 +18,8 @@ import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { PrintExportModal } from "./print/modal";
 import { PRINT_SCRATCH_CLASS } from "./print/export";
+import { createApi, VIZARDRY_NO_ENRICH_CLASS } from "./renderer/export-api";
+import type { VizardryApi } from "./renderer/export-api";
 import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
 import { ALL_FRAMEWORKS } from "./frameworks-registry";
 import { dispatchVizardry } from "./vizardry-dispatch";
@@ -34,6 +36,12 @@ export default class VizardryPlugin extends Plugin {
   // scheduled just before unload would still fire afterwards and touch
   // module-level relink state from a torn-down plugin instance.
   private relinkTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /**
+   * Public API for other plugins — see src/renderer/export-api.ts. Set early in
+   * onload() and cleared in onunload() so a caller holding a stale plugin
+   * reference cannot capture through a torn-down instance.
+   */
+  api: VizardryApi | null = null;
 
   async saveSettings(): Promise<void> {
     // Routed through updatePersistedData so this can't race LinearCache's or
@@ -51,6 +59,10 @@ export default class VizardryPlugin extends Plugin {
     initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
     const upvotyCache = rawData.upvotyCache as Record<string, UpvotyCacheEntry> | undefined;
     if (upvotyCache) getUpvotyService()?.cache.init(upvotyCache);
+    // Before any registration that could fail: the export API depends on nothing
+    // else being wired up, and a caller's fallback shouldn't hinge on whether an
+    // unrelated processor registered.
+    this.api = createApi();
     this.addSettingTab(new VizardrySettingTab(this.app, this));
     // Expose version on body for bug reports (manual devtools inspection).
     document.body.dataset.vizardryVersion = this.manifest.version;
@@ -107,15 +119,18 @@ export default class VizardryPlugin extends Plugin {
     // Sort order 1000 ensures this runs after all code-block processors (sort 0),
     // so vizardry canvases are fully rendered before we scan for Linear keys.
     this.registerMarkdownPostProcessor((el) => {
-      // Skip the offscreen print render: keys print as plain text, with no
-      // badges, popovers, summaries, or enrichment network calls.
-      if (el.closest(`.${PRINT_SCRATCH_CLASS}`)) return;
+      // Skip our own offscreen print render and any host another plugin marked
+      // with the public opt-out class: keys render as plain text, with no
+      // badges, popovers, summaries, or enrichment network calls. This is the
+      // only point at which that can be decided — by the time a canvas is
+      // exported, the requests would already have been made.
+      if (el.closest(`.${PRINT_SCRATCH_CLASS}, .${VIZARDRY_NO_ENRICH_CLASS}`)) return;
       if (getLinearService()?.isEnabled()) enrichLinearKeys(el);
     }, 1000);
 
     // ── Global Upvoty key enrichment ───────────────────────────────────
     this.registerMarkdownPostProcessor((el) => {
-      if (el.closest(`.${PRINT_SCRATCH_CLASS}`)) return;
+      if (el.closest(`.${PRINT_SCRATCH_CLASS}, .${VIZARDRY_NO_ENRICH_CLASS}`)) return;
       if (getUpvotyService()?.isEnabled()) enrichUpvotyKeys(el);
     }, 1001);
 
@@ -226,6 +241,7 @@ export default class VizardryPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.api = null;
     for (const timer of this.relinkTimers.values()) clearTimeout(timer);
     this.relinkTimers.clear();
     closeSectionPreview();

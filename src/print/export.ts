@@ -29,6 +29,7 @@ import type { PrintOptions } from "./options";
 import { getPrintTemplate } from "./templates";
 import { buildPrintCss } from "./css";
 import { stripFrontmatter } from "./frontmatter";
+import { whenSettled } from "../shared/settle";
 import { t } from "../i18n";
 
 export interface PrintContext {
@@ -77,77 +78,6 @@ export interface PaginateResult {
 }
 
 /**
- * Resolve on the next animation frame, but never hang: `requestAnimationFrame`
- * is throttled (or paused entirely) while the window is backgrounded, so we
- * race it against a timeout to guarantee the export keeps moving.
- */
-const nextFrame = (): Promise<void> =>
-  new Promise((resolve) => {
-    let done = false;
-    const finish = (): void => {
-      if (done) return;
-      done = true;
-      resolve();
-    };
-    requestAnimationFrame(finish);
-    setTimeout(finish, 100);
-  });
-
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** Resolve once an image has loaded (or immediately if already complete/broken). */
-function whenImageSettled(img: HTMLImageElement): Promise<void> {
-  if (img.complete) return Promise.resolve();
-  return new Promise((resolve) => {
-    const done = (): void => resolve();
-    img.addEventListener("load", done, { once: true });
-    img.addEventListener("error", done, { once: true });
-  });
-}
-
-/**
- * Resolve once `el`'s subtree has stopped mutating for `quietMs`, or `maxMs`
- * elapses — whichever comes first. This adapts to however long asynchronous
- * rendering actually takes (chiefly Mermaid, which swaps in its SVG after the
- * markdown pass) instead of guessing a fixed delay: quick notes settle almost
- * immediately, slow ones get up to the cap.
- */
-function waitForQuiescence(el: HTMLElement, quietMs: number, maxMs: number): Promise<void> {
-  return new Promise((resolve) => {
-    let quietTimer = 0;
-    let capTimer = 0;
-    const finish = (): void => {
-      clearTimeout(quietTimer);
-      clearTimeout(capTimer);
-      observer.disconnect();
-      resolve();
-    };
-    const observer = new MutationObserver(() => {
-      clearTimeout(quietTimer);
-      quietTimer = window.setTimeout(finish, quietMs);
-    });
-    // Hard ceiling so a canvas that never stops animating can't hang the export.
-    capTimer = window.setTimeout(finish, maxMs);
-    // If nothing ever mutates, this fires and we resolve after one quiet window.
-    quietTimer = window.setTimeout(finish, quietMs);
-    observer.observe(el, { childList: true, subtree: true, attributes: true, characterData: true });
-  });
-}
-
-/**
- * Wait for async rendering to settle: two animation frames (so synchronously
- * inserted Vizardry canvases lay out — they mark themselves `data-vizardry-
- * rendered` on completion), then any images, then DOM quiescence to catch
- * Mermaid's asynchronous SVG swap.
- */
-async function settle(el: HTMLElement): Promise<void> {
-  await nextFrame();
-  await nextFrame();
-  await Promise.all(Array.from(el.querySelectorAll("img")).map(whenImageSettled));
-  await waitForQuiescence(el, 120, 2500);
-}
-
-/**
  * Build the print-scoped content wrapper (`.vzd-print` → `.vzd-print-body`)
  * around the freshly rendered note nodes, with an optional leading title block.
  * Done on live DOM (not the pure ./html builder) so inline SVG is preserved.
@@ -185,7 +115,7 @@ export async function prepareDocument(ctx: PrintContext, file: TFile): Promise<P
   component.load();
   try {
     await MarkdownRenderer.render(ctx.app, markdown, scratch, file.path, component);
-    await settle(scratch);
+    await whenSettled(scratch);
     const master = wrapContent(scratch, title);
     scratch.remove();
     return { master, title, destroy: () => component.unload() };

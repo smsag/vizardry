@@ -14,6 +14,7 @@
 import "../src/test-setup"; // Obsidian HTMLElement polyfills (createEl, addClass, …)
 import { Platform } from "obsidian"; // -> visual/obsidian.shim.ts (aliased by build.mjs)
 import { dispatchVizardry } from "../src/vizardry-dispatch";
+import { prepareForCapture } from "../src/renderer/controls";
 import { generateCanvasTemplate } from "../src/templates";
 import { ALL_FRAMEWORKS } from "../src/frameworks-registry";
 import {
@@ -156,6 +157,9 @@ function render(): void {
     document.body.classList.add("vizardry-sketch");
     injectSketchDefs();
   }
+  // A dark vault. Combined with ?capturelight this is the case the export API
+  // has to get right: the note is dark, the PDF page is white.
+  if (location.search.includes("dark")) document.body.classList.add("theme-dark");
 
   const root = document.getElementById("app")!;
   for (const [name, source] of Object.entries(FIXTURES)) {
@@ -166,6 +170,20 @@ function render(): void {
       dispatchVizardry(source, host, ctx, app);
     } catch (err) {
       host.createEl("pre", { text: `render error: ${(err as Error).message}` });
+    }
+  }
+
+  // Show what `api.exportCanvas(el, { light: true })` would capture: the same
+  // preparation the real capture applies, left in place so Playwright can
+  // photograph it. Deliberately not restored — this page is a fixture.
+  if (location.search.includes("capturelight")) {
+    for (const canvas of Array.from(root.querySelectorAll<HTMLElement>(".vizardry-canvas"))) {
+      prepareForCapture(canvas, { light: true });
+      // html-to-image paints `backgroundColor` behind the whole capture, and
+      // several canvases tint with a partly transparent colour-mix. Without the
+      // same ground here the dark page would show through those and the
+      // snapshot would accuse the palette of a leak it doesn't have.
+      canvas.style.background = "#ffffff";
     }
   }
 
