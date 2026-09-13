@@ -4,8 +4,6 @@ import type VizardryPlugin from "./main";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
 import { getLinearService } from "./linear";
 import { getUpvotyService } from "./upvoty";
-import type { PrintOptions } from "./print/options";
-import { DEFAULT_PRINT_OPTIONS } from "./print/options";
 import { t } from "./i18n";
 
 function debounce<T extends (...args: unknown[]) => unknown>(fn: T, ms: number): (...args: Parameters<T>) => void {
@@ -52,8 +50,6 @@ export interface PluginSettings {
   upvotyStatusTtlMinutes: number;
 
   // Print / PDF export
-  /** Last-used options for the "Export / print note" dialog. */
-  printOptions: PrintOptions;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -73,7 +69,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   upvotyKeyPrefix: "UPV",
   upvotySecretName: "vzd-upvoty-key",
   upvotyStatusTtlMinutes: 5,
-  printOptions: DEFAULT_PRINT_OPTIONS,
 };
 
 const ANTHROPIC_MODELS = [

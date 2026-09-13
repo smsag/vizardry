@@ -1,16 +1,13 @@
 /**
- * "Has this subtree finished rendering?" — shared by the print/PDF export and
- * the public canvas export API.
+ * "Has this subtree finished rendering?" — the wait every capture needs before
+ * it measures, and the one exposed to other plugins as `api.whenSettled`.
  *
- * Both need the same answer before they measure or capture: Vizardry canvases
- * lay out one frame after insertion, images load whenever they load, and
- * Mermaid swaps its SVG in asynchronously after the markdown pass. Waiting a
- * fixed delay would be either too short for a slow note or wasted on a fast
- * one, so this adapts: frames, then images, then DOM quiescence with a hard
- * ceiling so a canvas that never stops animating cannot hang the caller.
- *
- * Lives in `shared/` rather than `print/` on purpose: `print/export.ts` imports
- * Paged.js at module scope, and the canvas export path must not pull that in.
+ * Vizardry canvases lay out one frame after insertion, images load whenever
+ * they load, and an asynchronous diagram renderer swaps its SVG in after the
+ * markdown pass. Waiting a fixed delay would be either too short for a slow
+ * note or wasted on a fast one, so this adapts: frames, then images, then DOM
+ * quiescence with a hard ceiling so a subtree that never stops animating cannot
+ * hang the caller.
  */
 
 import { ownerWindow } from "./lifecycle";
