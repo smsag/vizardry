@@ -1,14 +1,23 @@
 ## 0.65.0
 
-- **Removed: the built-in "Export / print note" command.** Vizardry no longer
-  paginates and prints notes itself. That feature relied on Paged.js, which cost
-  more than half the plugin's download — removing it takes the bundle from
-  1.70 MB to 0.73 MB, a saving every user pays for on every update whether or not
-  they ever printed. PDF export now belongs to the typesetting plugins that do it
-  properly, fed by the new export API below. If you used the command: the
-  equivalent is a print/PDF plugin that renders through this API; Obsidian's own
-  "Export to PDF" also still works, without Vizardry's templates and page
-  numbers. Your last-used print settings stay in the plugin's data file, unread.
+- **BREAKING — removed: the "Export / print note (with visualizations)" command.**
+  Shipped in 0.64.0, removed here. It is gone entirely: the command, its dialog,
+  the templates, page numbers and running headers.
+
+  **Why.** The feature was built on Paged.js, a CSS paged-media polyfill that
+  cost 846 kB of a 1.70 MB plugin — more than half the download, paid by every
+  user on every update whether or not they ever printed a note. In the weeks
+  after 0.64.0 it also needed a continuous stream of integration fixes (blank
+  PDFs, a first page in the wrong font, diagrams mis-measured, torn or rendered
+  as black boxes), each one a fight with how Paged.js paginates rather than a
+  problem with the notes being printed. Removing it takes the plugin to 0.73 MB
+  and hands PDF export to plugins that typeset properly — which the new export
+  API below exists to feed.
+
+  **If you used it.** Stay on 0.64.0 until a print/PDF plugin you use supports
+  this API; nothing in 0.65.0 is required for canvases to render. Obsidian's own
+  "Export to PDF" still works, without Vizardry's templates and page numbers.
+  Your saved print settings stay in the plugin's data file, unread and harmless.
 
 - **New: a public export API for other plugins** — Vizardry now exposes the same
   canvas-to-PNG capture its download button uses, so another plugin (a PDF or
@@ -21,8 +30,9 @@
 - **New: offscreen renders can switch off key enrichment** — a plugin that
   renders a note into its own offscreen host can mark that host so Linear /
   Upvoty keys render as plain text, with no badges, popovers, AI summaries or
-  network calls. The same guarantee Vizardry's own PDF export has had, now
-  available to other plugins — which keeps an offline document build offline.
+  network calls — which is what keeps an offline document build offline. The
+  guarantee Vizardry's own PDF export used to make for itself, now available to
+  the plugins that took over the job.
 - **Fix: exporting a collapsed canvas produced an empty title bar** — a canvas
   saved with `collapsed: true` is now expanded for the capture, so the PNG
   contains the drawing rather than just its header.
@@ -31,6 +41,9 @@
   producing an oversized image that can exhaust memory on a phone.
 
 ## 0.64.0
+
+> **Note (added later):** the print/PDF export described below was removed in
+> 0.65.0. See that entry for why and for what replaces it.
 
 - **New: Export / print a note to PDF** — a desktop command ("Export / print
   note (with visualizations)") that renders the whole note — including every
