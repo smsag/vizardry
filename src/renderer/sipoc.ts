@@ -3,7 +3,7 @@ import type {
   SIPOCColumn, SIPOCData, SIPOCFlowLink, SIPOCFlowNode, SIPOCRow,
 } from "../types";
 import { t } from "../i18n";
-import { initCanvas } from "./controls";
+import { initCanvas, AUTO_TEXT_ATTR } from "./controls";
 import { renderError } from "./canvas";
 import { activateTextareaEdit } from "./inline-edit";
 import { insertSIPOCRowAfter, writeSIPOCCell } from "../shared/sipoc-edit";
@@ -185,6 +185,9 @@ function renderSIPOCTable(
       th.style.color = "var(--interactive-accent)";
     } else if (th.hasClass("vzd-sipoc-th--tier-hi")) {
       th.style.color = bestTextColor(th);
+      // A forced-light export re-decides this against the light background —
+      // white baked in a dark vault would vanish on light paper.
+      th.setAttribute(AUTO_TEXT_ATTR, "");
     }
   }
 }

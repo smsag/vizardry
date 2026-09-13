@@ -63,3 +63,29 @@ test("canvases render in sketch mode", async ({ page }, testInfo) => {
     await expect(el).toHaveScreenshot(`${name}-sketch.png`);
   }
 });
+
+// The export API's forced-light capture, in a dark vault — the case the PDF
+// pipeline lives on. SIPOC and Roadmap are the two frameworks that pick a text
+// colour at render time against their own background (bestTextColor), so they
+// are where a wrongly-ordered or missing re-resolve shows up as white-on-light.
+// The `-dark` pair is the control: it shows the same canvas as the vault renders
+// it, so the light pair can be read as "no dark variable survived".
+const FORCED_LIGHT = ["sipoc", "roadmap"];
+
+test("dark vault: a canvas renders dark, and a forced-light capture does not", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "one platform is enough for a palette check");
+  const base = pathToFileURL(path.resolve(__dirname, "index.html")).href;
+
+  for (const [suffix, query] of [["dark", "?dark"], ["capturelight", "?dark&capturelight"]] as const) {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(base + query);
+    await page.waitForSelector("body[data-ready]");
+    expect(errors, `page errors:\n${errors.join("\n")}`).toEqual([]);
+
+    for (const name of FORCED_LIGHT) {
+      const el = page.locator(`[data-fixture="${name}"]`);
+      await expect(el).toHaveScreenshot(`${name}-${suffix}.png`);
+    }
+  }
+});

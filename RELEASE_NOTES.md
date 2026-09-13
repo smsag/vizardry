@@ -1,3 +1,25 @@
+## 0.65.0
+
+- **New: a public export API for other plugins** — Vizardry now exposes the same
+  canvas-to-PNG capture its download button uses, so another plugin (a PDF or
+  document pipeline, say) can place a canvas as an image instead of
+  reimplementing the capture. Callers get the canvases in a rendered note, a
+  settle hook to wait for rendering, and per-canvas capture with a scale, a pixel
+  ceiling, an optional forced-light rendering for white paper, a background
+  colour and a choice about the canvas title row. See
+  [docs/vizardry-export-api.md](docs/vizardry-export-api.md).
+- **New: offscreen renders can switch off key enrichment** — a plugin that
+  renders a note into its own offscreen host can mark that host so Linear /
+  Upvoty keys render as plain text, with no badges, popovers, AI summaries or
+  network calls. The same guarantee Vizardry's own PDF export has had, now
+  available to other plugins — which keeps an offline document build offline.
+- **Fix: exporting a collapsed canvas produced an empty title bar** — a canvas
+  saved with `collapsed: true` is now expanded for the capture, so the PNG
+  contains the drawing rather than just its header.
+- **Fix: a very wide canvas is scaled down rather than failing to export** — the
+  capture reduces its resolution to stay within a pixel ceiling instead of
+  producing an oversized image that can exhaust memory on a phone.
+
 ## 0.64.0
 
 - **New: Export / print a note to PDF** — a desktop command ("Export / print

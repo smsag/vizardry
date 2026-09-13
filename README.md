@@ -1879,6 +1879,23 @@ Each canvas has a **download icon** in its title bar, revealed on hover. Clickin
 
 ---
 
+## For other plugins
+
+Vizardry exposes a small versioned API so another plugin can capture a rendered canvas as a PNG — the same capture the download button uses — instead of reimplementing it. It was built for document pipelines: a plugin that typesets a note as a PDF can place the canvas as an image.
+
+```ts
+const api = (app.plugins.plugins.vizardry as { api?: { version: number } } | undefined)?.api;
+if (api && api.version >= 1) {
+  for (const canvas of api.getCanvases(renderedNote)) {
+    const { blob, width, height } = await api.exportCanvas(canvas, { maxEdge: 4000 });
+  }
+}
+```
+
+A missing API means Vizardry is absent, disabled, or too old — callers fall back to their own capture. Options cover scale, a pixel ceiling, a forced-light capture for white paper, the background, and whether to keep the canvas title row; there is also a settle hook and a class that switches off Linear/Upvoty enrichment for an offscreen render. Full contract: [export API reference](docs/vizardry-export-api.md).
+
+---
+
 ## Presentation mode
 
 Each canvas has an **expand icon** in its title bar. Tapping it opens a full-screen overlay — useful when presenting from your notes or mirroring to an external display.

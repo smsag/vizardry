@@ -12,6 +12,8 @@ import { activateSticky, deactivateSticky } from "./sticky-pin";
 import { createBlurGuard } from "./inline-edit";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
+import { bestTextColor } from "../shared/color-utils";
+import { VizardryExportError } from "../shared/export-error";
 
 let nextId = 0;
 
@@ -115,10 +117,11 @@ function revealColumnCarousel(
  * `vizardry-capturing` class re-establishes the real grid and un-hides every
  * panel (CSS, via the `--vzd-*` custom props the renderer stamps on the
  * grid/blocks — see styles.css), and the Story / Journey column carousels are
- * reset via the shared {@link revealColumnCarousel}. Every mutation is
+ * reset via the shared {@link revealColumnCarousel}. A canvas minimized via
+ * `collapsed: true` is expanded, and the pinned tint dropped. Every mutation is
  * snapshotted so the returned callback restores the exact prior markup after
- * capture. On desktop nothing is collapsed, so this changes no computed layout —
- * a no-op, leaving the desktop export path unchanged.
+ * capture. On desktop, for an expanded canvas, this changes no computed layout —
+ * a no-op, leaving that export path unchanged.
  */
 export function revealForCapture(container: HTMLElement): () => void {
   const saved: Array<{ el: HTMLElement; style: string | null; cls: string | null }> = [];
@@ -131,6 +134,13 @@ export function revealForCapture(container: HTMLElement): () => void {
   // styles.css) — no per-panel bookkeeping needed.
   touch(container);
   container.classList.add("vizardry-capturing");
+
+  // A canvas saved with `collapsed: true` renders minimized — everything but
+  // the header is `display: none` (styles.css) — so capturing it as-is would
+  // yield a bare title bar rather than the drawing. Same for the pinned state,
+  // whose header tint is a reading affordance, not content. Both are class-only,
+  // so the snapshot above restores them.
+  container.classList.remove("vizardry-canvas--minimized", "vizardry-canvas--sticky");
 
   // Story / Journey collapse via inline styles a stylesheet can't reach.
   const story = container.querySelector<HTMLElement>(".vzd-story-grid");
@@ -188,6 +198,215 @@ function isExportChrome(node: Node): boolean {
   if (!cl) return false; // text nodes and the like have no classList
   for (const c of EXPORT_CHROME_CLASSES) if (cl.contains(c)) return true;
   return false;
+}
+
+/** The canvas's own title row — `initCanvas` here and the image carousel both use it. */
+function isCanvasTitleRow(node: Node): boolean {
+  const cl = (node as Element).classList;
+  return !!cl && cl.contains("vizardry-header");
+}
+
+/** Default ceiling on the longer edge of a capture, in pixels. */
+export const DEFAULT_MAX_EDGE = 8000;
+
+/** Lowest scale we fall back to before declaring a canvas too large to capture. */
+export const MIN_CAPTURE_SCALE = 0.25;
+
+/** Marks an element whose text colour is chosen against its own rendered background. */
+export const AUTO_TEXT_ATTR = "data-vzd-autotext";
+
+/** Fully resolved capture inputs. The public API normalises; the button fills its own in. */
+export interface CaptureOptions {
+  /** Device pixels per CSS pixel. Reduced if `maxEdge` would be exceeded. */
+  scale: number;
+  /** Hard ceiling on the longer edge after scaling. */
+  maxEdge: number;
+  /** Capture as if the light theme were active, whatever the vault uses. */
+  light: boolean;
+  /** Colour painted behind the canvas. */
+  background: string;
+  /** Keep the canvas's own title row. */
+  header: boolean;
+}
+
+export interface CaptureOutcome {
+  blob: Blob;
+  /** Actual pixel dimensions of the returned image. */
+  width: number;
+  height: number;
+  /** The scale actually used — below `options.scale` when `maxEdge` bit. */
+  scale: number;
+}
+
+/**
+ * Swap the canvas root onto the light palette for the duration of a capture.
+ *
+ * Obsidian defines its colours on `.theme-light` / `.theme-dark` and Vizardry's
+ * own stylesheet has no theme-scoped rules, so the nearest ancestor that defines
+ * a variable wins — putting the class on the root reaches every descendant
+ * without a second, hand-maintained palette to keep in step with the app.
+ */
+function forceLightTheme(root: HTMLElement): () => void {
+  const hadLight = root.classList.contains("theme-light");
+  const hadDark = root.classList.contains("theme-dark");
+  root.classList.add("theme-light");
+  root.classList.remove("theme-dark");
+  return () => {
+    if (!hadLight) root.classList.remove("theme-light");
+    if (hadDark) root.classList.add("theme-dark");
+  };
+}
+
+/**
+ * Re-decide the text colours that were chosen at *render* time against the
+ * then-current background (see {@link bestTextColor}): a SIPOC Process header
+ * or a Roadmap column header rendered in a dark vault has white baked into its
+ * inline style, which on the light ground of a forced-light capture would be
+ * invisible.
+ *
+ * Must run **after** {@link forceLightTheme} — `bestTextColor` reads each
+ * element's own computed background, so re-resolving first would read the dark
+ * mix, bake white again, and then capture it on light. And after the reveal: a
+ * minimized canvas hides its body, and a hidden element has no background worth
+ * measuring.
+ */
+function reresolveAutoText(root: HTMLElement): () => void {
+  const saved: Array<{ el: HTMLElement; color: string }> = [];
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>(`[${AUTO_TEXT_ATTR}]`))) {
+    saved.push({ el, color: el.style.color });
+    el.style.color = bestTextColor(el);
+  }
+  return () => {
+    for (const { el, color } of saved) el.style.color = color;
+  };
+}
+
+/**
+ * Put a live canvas into the state it should be captured in, and return the
+ * callback that puts it back. Order is the contract:
+ *
+ *   1. reveal   — un-collapse, un-carousel (a hidden panel exports as nothing)
+ *   2. light    — swap the root onto the light palette
+ *   3. re-resolve — re-decide the colours that were baked at render time
+ *
+ * Step 2 before step 3 because those colours are chosen against the element's
+ * own background; step 1 before both because a minimized canvas has no visible
+ * body to measure. Exported so the visual harness can show exactly what a
+ * capture would contain without going through html-to-image.
+ */
+export function prepareForCapture(root: HTMLElement, options: { light: boolean }): () => void {
+  const restore: Array<() => void> = [];
+  const undo = (): void => {
+    for (let i = restore.length - 1; i >= 0; i--) restore[i]();
+  };
+  try {
+    // On mobile the "only the visible part is saved" bug has two causes, so undo
+    // both before sizing the capture: reveal any carousel-collapsed or minimized
+    // panels here, then expand the scroll wrappers (the caller's next step) so the
+    // *whole* canvas is measured, not just the on-screen slice.
+    restore.push(revealForCapture(root));
+    if (options.light) {
+      restore.push(forceLightTheme(root));
+      restore.push(reresolveAutoText(root));
+    }
+  } catch (err) {
+    // Never leave a half-prepared canvas on screen: the caller has no restore
+    // callback to call if this throws before returning one.
+    undo();
+    throw err;
+  }
+  return undo;
+}
+
+// Captures are serialised through one chain. Every step mutates the *live*
+// canvas and restores it by rewriting whole `style` / `class` attributes, so two
+// overlapping captures would interleave their snapshots and the second restore
+// would put back the first one's mutations. The download button self-serialises
+// by disabling itself; the public API has no such guard, and a caller printing a
+// note walks every canvas in it.
+let captureChain: Promise<unknown> = Promise.resolve();
+
+/**
+ * Capture one rendered canvas to a PNG blob — the single path behind both the
+ * download button and `api.exportCanvas`.
+ *
+ * {@link prepareForCapture} → expand to full scroll size and measure → capture →
+ * restore in reverse. The order is part of the contract; see there.
+ */
+export function captureCanvas(root: HTMLElement, options: CaptureOptions): Promise<CaptureOutcome> {
+  const run = (): Promise<CaptureOutcome> => runCapture(root, options);
+  // `then(run, run)` so one caller's failure doesn't sink the queue behind it.
+  const next = captureChain.then(run, run);
+  captureChain = next.then(() => undefined, () => undefined);
+  return next;
+}
+
+async function runCapture(root: HTMLElement, options: CaptureOptions): Promise<CaptureOutcome> {
+  if (!root.isConnected) {
+    throw new VizardryExportError(
+      "not-rendered",
+      "The canvas is not in the document, so it has no layout to capture. Render it into a visible (or offscreen but laid out) host first.",
+    );
+  }
+  // Lazy-load html-to-image so its initialisation cost is deferred to the first
+  // capture rather than paid at plugin startup. esbuild's CJS __commonJS factory
+  // means the module code runs on first require(), not at bundle eval.
+  const { toBlob } = await import("html-to-image");
+  const win = ownerWindow(root);
+  const restore: Array<() => void> = [];
+  try {
+    restore.push(prepareForCapture(root, options));
+    restore.push(expandForCapture(root, win));
+
+    // `|| offset*` keeps a test/jsdom-style environment that reports no scroll
+    // size from collapsing the capture to zero.
+    const cssWidth = root.scrollWidth || root.offsetWidth;
+    const cssHeight = root.scrollHeight || root.offsetHeight;
+    const longerEdge = Math.max(cssWidth, cssHeight);
+    let scale = options.scale;
+    if (longerEdge > 0) {
+      const fitted = options.maxEdge / longerEdge;
+      if (fitted < MIN_CAPTURE_SCALE) {
+        throw new VizardryExportError(
+          "too-large",
+          `The canvas is ${longerEdge} CSS px on its longer edge, which cannot be captured within a ${options.maxEdge} px limit even at the lowest scale.`,
+        );
+      }
+      // Shrink rather than refuse: a slightly soft picture beats none at all in
+      // a document, and the caller is told which scale it actually got.
+      if (fitted < scale) scale = fitted;
+    }
+
+    let blob: Blob | null;
+    try {
+      // Render to a Blob rather than a data: URL — base64 data URLs can exceed
+      // the WebView's URL-length cap and fail silently on large canvases.
+      blob = await toBlob(root, {
+        pixelRatio: scale,
+        backgroundColor: options.background,
+        // `|| undefined` lets html-to-image fall back to the element's own size
+        // when layout isn't measurable.
+        width: cssWidth || undefined,
+        height: cssHeight || undefined,
+        // Strip interaction chrome (toolbar, carousel nav, inline edit
+        // affordances) so the exported image is content-only, and the canvas's
+        // own title row when the caller supplies its own caption.
+        filter: (node) => !isExportChrome(node) && (options.header || !isCanvasTitleRow(node)),
+      });
+    } catch (err) {
+      throw new VizardryExportError("capture-failed", "Rendering the canvas to an image failed.", err);
+    }
+    if (!blob) throw new VizardryExportError("capture-failed", "Rendering the canvas to an image produced no data.");
+
+    return {
+      blob,
+      width: Math.round(cssWidth * scale),
+      height: Math.round(cssHeight * scale),
+      scale,
+    };
+  } finally {
+    for (let i = restore.length - 1; i >= 0; i--) restore[i]();
+  }
 }
 
 /**
@@ -504,47 +723,26 @@ export function addHeaderControls(
   const handleDownload = async (): Promise<void> => {
     downloadBtn.disabled = true;
     try {
-      // Lazy-load html-to-image so its initialisation cost is deferred to the
-      // first click rather than paid at plugin startup. esbuild's CJS __commonJS
-      // factory means the module code runs on first require(), not at bundle eval.
-      const { toBlob } = await import("html-to-image");
       // Derive doc/window from the container itself — it may live in a
       // pop-out Obsidian window, which has its own theme styles and DPI.
       const doc = container.ownerDocument;
       const win = doc.defaultView ?? window;
-      const bg = win.getComputedStyle(doc.body).getPropertyValue("--background-primary").trim() || "#ffffff";
+      // Read the background off the canvas, not the body: a custom property
+      // inherits, so this picks up any theme scoping between the two.
+      const bg = win.getComputedStyle(container).getPropertyValue("--background-primary").trim() || "#ffffff";
       // Cap the pixel ratio: unchanged on desktop, but bounded on high-DPI
       // phones where devicePixelRatio*2 (≈6) makes oversized PNGs that can OOM.
       const pixelRatio = Math.min((win.devicePixelRatio || 1) * 2, 4);
-      // On mobile the "only the visible part is saved" bug has two causes, so
-      // undo both before sizing the capture. First reveal any carousel-collapsed
-      // panels (grid / roadmap / pace-layers / story / journey show only the
-      // active panel on a narrow viewport); then expand any scroll wrappers so
-      // the *whole* canvas is captured, not just the on-screen slice. Reveal
-      // first so the now-full (possibly wider) layout is what gets expanded and
-      // measured. Both are restored in finally, in reverse order.
-      const restoreReveal = revealForCapture(container);
-      const restoreLayout = expandForCapture(container, win);
-      let blob: Blob | null;
-      try {
-        // Render to a Blob rather than a data: URL — base64 data URLs can exceed
-        // the WebView's URL-length cap and fail silently on large canvases.
-        blob = await toBlob(container, {
-          pixelRatio,
-          backgroundColor: bg,
-          // Full expanded size; `|| undefined` lets html-to-image fall back to
-          // the element's own size when layout isn't measurable (e.g. jsdom).
-          width: container.scrollWidth || undefined,
-          height: container.scrollHeight || undefined,
-          // Strip interaction chrome (toolbar, carousel nav, inline edit
-          // affordances) so the exported image is content-only.
-          filter: (node) => !isExportChrome(node),
-        });
-      } finally {
-        restoreLayout();
-        restoreReveal();
-      }
-      if (!blob) throw new Error("html-to-image returned an empty blob");
+      // Same capture path the public API uses (src/renderer/export-api.ts); the
+      // button keeps the vault's own theme and its title row, and owns delivery
+      // — filename, share sheet, download anchor — from here on.
+      const { blob } = await captureCanvas(container, {
+        scale: pixelRatio,
+        maxEdge: DEFAULT_MAX_EDGE,
+        light: false,
+        background: bg,
+        header: true,
+      });
 
       const filename = `${title}.png`;
 
