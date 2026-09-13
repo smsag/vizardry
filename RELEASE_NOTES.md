@@ -1,3 +1,16 @@
+## 0.65.1
+
+- **Fix: exported PNGs of SVG canvases were mostly black** — a Wardley map saved
+  with the download button came out with solid black bands covering the drawing,
+  and the same flaw affected every SVG-based canvas (Wardley, Mind Map,
+  Opportunity Solution Tree, Fishbone, Venn, Radar, Node Map, Concept Map). The
+  image library used for the export copies styling onto the element it captures
+  but not onto the shapes inside an SVG, and the captured copy can't see the
+  plugin's stylesheet — so every shape fell back to the SVG default of opaque
+  black. The paint of each shape is now carried into the capture explicitly.
+  Affects `api.exportCanvas` for other plugins too. Present since PNG export was
+  added; found by a real-vault export of 0.65.0.
+
 ## 0.65.0
 
 - **BREAKING — removed: the "Export / print note (with visualizations)" command.**
