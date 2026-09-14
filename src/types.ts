@@ -15,7 +15,6 @@ export * from "./types/venn-diagram";
 export * from "./types/shared-tree-node";
 export * from "./types/sipoc";
 export * from "./types/customer-journey-map-service-blueprint";
-export * from "./types/carousel";
 export * from "./types/wardley-map";
 export * from "./types/raci-matrix";
 export * from "./types/now-next-later-roadmap";

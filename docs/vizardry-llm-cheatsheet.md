@@ -14,7 +14,6 @@ Full reference: [vizardry-canvas-syntax-reference.md](vizardry-canvas-syntax-ref
 7. Grid block labels must match exactly (case-insensitive); typos silently dropped.
 8. Don't quote values: `title: My Map`, not `title: "My Map"`.
 9. One `title:` line per canvas (optional).
-10. Repeat `type:` in one fence → **carousel** with prev/next navigation.
 
 Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas to the top while scrolling (Reading View, desktop). Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`.
 
@@ -46,7 +45,6 @@ Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas to t
 | `matrix, scenario` | Scenario Matrix (2×2) | Matrix |
 | `scqa` | SCQA Narrative | Grid / Tree |
 | `scr` | SCR Narrative | Grid / Tree |
-| `carousel` | Image Carousel | Gallery |
 | `conceptmap` | Concept Map | SVG graph |
 | `nodemap` | Node Map | SVG graph |
 | `fishbone` | Fishbone Diagram | SVG tree |
@@ -185,18 +183,6 @@ situation: Conversion flat at 3%
       answer: Ship express checkout in Q3
     question: Build or buy the wallet layer?
       answer: Pilot a third-party wallet first
-```
-~~~
-
-## Image Carousel (`carousel`)
-
-One Markdown image per line, minimum 2.
-
-~~~
-```vizardry
-type: carousel
-![Caption one](image-one.png)
-![Caption two](image-two.png)
 ```
 ~~~
 

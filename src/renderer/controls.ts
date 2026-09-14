@@ -200,7 +200,7 @@ function isExportChrome(node: Node): boolean {
   return false;
 }
 
-/** The canvas's own title row — `initCanvas` here and the image carousel both use it. */
+/** The canvas's own title row, set up by `initCanvas`. */
 function isCanvasTitleRow(node: Node): boolean {
   const cl = (node as Element).classList;
   return !!cl && cl.contains("vizardry-header");

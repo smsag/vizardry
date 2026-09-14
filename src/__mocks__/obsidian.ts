@@ -9,7 +9,7 @@
  * Add stubs here as needed when new Obsidian APIs are used.
  */
 
-// setIcon is called by controls.ts, canvas.ts, story.ts, carousel.ts.
+// setIcon is called by controls.ts, canvas.ts, story.ts.
 // In tests we don't care about icon rendering — the no-op is sufficient.
 export const setIcon = (_el: HTMLElement, _iconId: string): void => {};
 

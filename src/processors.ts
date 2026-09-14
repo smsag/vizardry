@@ -10,9 +10,8 @@
  *
  * Most renderers share one of two pipelines — `linked` (strip inline links,
  * parse, render with a heading-link resolver) and `plain` (parse raw, no
- * resolver) — so an entry is usually a single declarative row. Only Venn and
- * the image carousel, which need bespoke link/asset handling, spell their
- * processor out in full.
+ * resolver) — so an entry is usually a single declarative row. Only Venn,
+ * which needs bespoke link handling, spells its processor out in full.
  *
  * Adding a new non-grid renderer:
  *   1. Add types to types.ts
@@ -25,15 +24,6 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { extractInlineLinks, buildLinkSupport } from "./shared/links";
-function resolveVaultPath(sourcePath: string, rel: string): string {
-  const parts = (sourcePath.replace(/[^/]+$/, "") + rel).split("/");
-  const out: string[] = [];
-  for (const p of parts) {
-    if (p === "..") out.pop();
-    else if (p !== ".") out.push(p);
-  }
-  return out.join("/");
-}
 import { parseFishbone } from "./fishbone";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
@@ -42,7 +32,6 @@ import { parseOST } from "./frameworks/ost";
 import { parseVennDiagram } from "./venn";
 import { parseWardleyMap } from "./wardley";
 import { parseSIPOC } from "./sipoc";
-import { parseCarouselBlock } from "./carousel";
 import { parseRACIMatrix } from "./raci";
 import { parseRoadmap } from "./roadmap";
 import { parsePaceLayers } from "./pacelayers";
@@ -70,12 +59,11 @@ import {
   renderCompass, renderStrategyCanvas, renderBuyerUtilityMap,
   renderError,
 } from "./renderer";
-import { renderCarouselBlock } from "./renderer/carousel";
 import type { RenderContext } from "./renderer/render-context";
 import {
   FISHBONE_TEMPLATE, FISHBONE_6M_TEMPLATE, FISHBONE_SERVICE_TEMPLATE, FISHBONE_MARKETING_TEMPLATE,
   IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
-  OST_TEMPLATE, VENN_TEMPLATE, CAROUSEL_TEMPLATE,
+  OST_TEMPLATE, VENN_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
@@ -195,28 +183,6 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   },
 
   { id: "ost", label: "Opportunity Solution Tree", template: OST_TEMPLATE, createProcessor: linked(parseOST, renderOST) },
-
-  // Carousel resolves image paths to vault resource URLs — its own render shape.
-  {
-    id: "carousel",
-    label: "Image Carousel",
-    template: CAROUSEL_TEMPLATE,
-    createProcessor: (app) => (parseSource, _fullSource, _variant, el, ctx) => {
-      const { strippedSource: carouselSrc } = extractInlineLinks(parseSource);
-      const result = parseCarouselBlock(carouselSrc);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderCarouselBlock(result.data, el, (src) => {
-        const file =
-          app.metadataCache.getFirstLinkpathDest(src, ctx.sourcePath) ??
-          app.vault.getFileByPath(resolveVaultPath(ctx.sourcePath, src));
-        if (!file) {
-          console.warn(`Vizardry: carousel image not found in vault: ${src}`);
-          return "";
-        }
-        return app.vault.getResourcePath(file);
-      });
-    },
-  },
 
   { id: "sipoc",      label: "SIPOC Diagram",          template: SIPOC_TEMPLATE,       createProcessor: linked(parseSIPOC, renderSIPOC) },
   { id: "wardley",    label: "Wardley Map",            template: WARDLEY_TEMPLATE,     createProcessor: linked(parseWardleyMap, renderWardleyMap) },

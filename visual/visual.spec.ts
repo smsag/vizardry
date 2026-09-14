@@ -8,7 +8,7 @@ const ALL = [
   "sipoc", "sipocflow", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
   "matrix", "scqa", "journey", "wheeloflife", "odyssey",
   "circleofinfluence", "wholeperson", "futureself", "radar", "problem",
-  "multicanvas", "testcard", "canvaslink",
+  "testcard", "canvaslink",
   // NOTE: `fishbone` is intentionally not snapshotted — the herringbone renderer
   // lays out native-SVG text whose metrics differ enough between this repo's
   // Playwright container and other environments to trip a hard dimension

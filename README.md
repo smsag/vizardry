@@ -20,10 +20,6 @@ block: Label
 
 **In Live Preview**, click any block body to edit it inline. Changes are written back to the source file automatically when you click away (or press Escape to discard).
 
-**Multiple canvases in one block** — repeat the `type:` line to stack several canvases (of any mix of types) in a single fence; they render as a **carousel** with prev/next arrows and dots (arrow keys and swipe work too). A block with one `type:` line renders a single canvas exactly as before. Carousel canvases are read-only — edit them as text. See the [syntax reference](docs/vizardry-canvas-syntax-reference.md#multiple-canvases-in-one-fence-carousel).
-
----
-
 ## Supported frameworks
 
 Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside picks the framework. A few frameworks have their own further variant, given as a second, comma-separated value (`type: matrix, pain`).
@@ -33,7 +29,6 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `adkar` | ADKAR Model | Grid |
 | `bmc` | Business Model Canvas | Grid |
 | `fourls` | 4Ls Retrospective | Grid |
-| `carousel` | Image Carousel | Gallery |
 | `experiment` | Experiment Canvas | Grid |
 | `errc` | ERRC Grid (Blue Ocean Four Actions) | Grid |
 | `fishbone` | Fishbone Diagram | Tree |
@@ -207,26 +202,6 @@ block: Actions
   - [ ] Involve design from ticket creation -- owner: Sam
 ```
 ~~~
-
----
-
-### Image Carousel
-
-~~~
-```vizardry
-type: carousel
-![](image-one.png)
-![](image-two.png)
-![](image-three.png)
-```
-~~~
-
-**Rules:**
-- One image per line using standard Markdown image syntax
-- Blank lines and `//` comment lines are ignored
-- Fewer than 2 images shows a visible error message
-
-**Controls:** left/right arrow buttons, dot indicators, keyboard `←`/`→`, swipe on mobile. A **fullscreen** button (expand icon) in the title bar opens the current image full-screen with its caption — dismiss with ✕, Escape, or swipe.
 
 ---
 
@@ -1931,14 +1906,6 @@ It's a global toggle that applies live to all rendered canvases — no re-render
 | `block: Label [[#Heading]]` | Link block to a heading in this note (wiki-link annotation) |
 | `block: Label [text](#Anchor%20Text)` | Link block to a heading via Markdown anchor (URL-decoded) |
 | `// comment` | Ignored |
-
-### Image Carousel (type: carousel)
-
-| Syntax | Meaning |
-|---|---|
-| One image per line | Standard Markdown: `![](image.png)` or `![Alt](image.png)` |
-| Blank lines / `//` comments | Ignored |
-| Fewer than 2 images | Error |
 
 ### Impact Map (type: impact)
 

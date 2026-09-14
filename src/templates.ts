@@ -226,14 +226,6 @@ outcome: 2x the rental listings on the platform in mid-west areas of the US
 \`\`\`
 `;
 
-export const CAROUSEL_TEMPLATE = `\`\`\`vizardry
-type: carousel
-![](image-one.png)
-![](image-two.png)
-![](image-three.png)
-\`\`\`
-`;
-
 export const SIPOC_TEMPLATE = `\`\`\`vizardry
 type: sipoc
 title: SIPOC Diagram

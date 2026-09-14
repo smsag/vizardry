@@ -32,7 +32,6 @@ export function resetLocaleCache(): void {
  * @example
  *   t("controls.downloadPng")
  *   t("nav.jumpTo", { heading: "Strategy" })
- *   t("nav.goToImage", { n: 3 })
  */
 export function t(key: TranslationKey, vars?: Record<string, string | number>): string {
   const locale = resolvedLocale();

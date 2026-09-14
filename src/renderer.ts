@@ -5,7 +5,6 @@ export { renderStoryMap } from "./renderer/story";
 export { renderVennDiagram } from "./renderer/venn";
 export { renderSIPOC } from "./renderer/sipoc";
 export { renderWardleyMap } from "./renderer/wardley";
-export { renderCarouselBlock } from "./renderer/carousel";
 export { renderRACIMatrix } from "./renderer/raci";
 export { renderRoadmap } from "./renderer/roadmap";
 export { renderPaceLayers } from "./renderer/pacelayers";
