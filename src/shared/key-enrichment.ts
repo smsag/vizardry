@@ -55,7 +55,14 @@ export function bringKeyPopoverToFront(popover: HTMLElement): void {
 // ── Time formatting ──────────────────────────────────────────────────────────
 
 export function formatKeyAge(dateStr: string, prefix: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const parsed = new Date(dateStr).getTime();
+  // An absent or unparseable timestamp (an API that omitted the field, an
+  // empty string from the client's `?? ""` fallbacks) makes every arithmetic
+  // result NaN, which renders in the popover footer as "Updated NaNd ago".
+  if (!Number.isFinite(parsed)) return "";
+  // A timestamp in the future — clock skew between the vault and the API —
+  // would otherwise read as "Updated -1h ago".
+  const diffMs = Math.max(0, Date.now() - parsed);
   const diffH = Math.floor(diffMs / 3_600_000);
   if (diffH < 1)  return `${prefix} just now`;
   if (diffH < 24) return `${prefix} ${diffH}h ago`;

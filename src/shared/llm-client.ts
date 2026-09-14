@@ -74,7 +74,12 @@ export async function callLlm(
   systemPrompt: string,
   userMessage: string,
 ): Promise<string> {
+  // `provider` is typed as the union, but it originates in data.json, which a
+  // user can edit. Without this, an unrecognised value reads as `undefined`
+  // here and the next line throws a bare TypeError with no hint of the cause
+  // — the settings schema clamps it on load, and this is the backstop.
   const adapter = ADAPTERS[provider];
+  if (!adapter) throw new Error(`Unknown AI provider "${String(provider)}" — check the Vizardry settings`);
   const { label } = adapter;
 
   let resp;

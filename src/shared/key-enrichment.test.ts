@@ -26,6 +26,7 @@ vi.mock("../upvoty", () => ({
   }),
 }));
 
+import { formatKeyAge } from "./key-enrichment";
 import { enrichLinearKeys } from "./linear-enrichment";
 import { enrichUpvotyKeys } from "./upvoty-enrichment";
 
@@ -66,3 +67,27 @@ describe("Linear/Upvoty popovers share one z-index stacking order", () => {
     expect(zIndexOf(linearPopover)).toBeGreaterThan(zIndexOf(upvotyPopover));
   });
 });
+
+describe("formatKeyAge", () => {
+  it("formats recent, hour-scale and day-scale ages", () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-01-10T12:00:00Z"));
+    expect(formatKeyAge("2026-01-10T11:30:00Z", "Updated")).toBe("Updated just now");
+    expect(formatKeyAge("2026-01-10T06:00:00Z", "Updated")).toBe("Updated 6h ago");
+    expect(formatKeyAge("2026-01-07T12:00:00Z", "Created")).toBe("Created 3d ago");
+    now.mockRestore();
+  });
+
+  it("returns nothing for an absent or unparseable timestamp", () => {
+    // Both API clients fall back to "" for a missing date; that used to render
+    // in the popover footer as "Updated NaNd ago".
+    expect(formatKeyAge("", "Updated")).toBe("");
+    expect(formatKeyAge("not a date", "Updated")).toBe("");
+  });
+
+  it("does not render a negative age when the clock is skewed", () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-01-10T12:00:00Z"));
+    expect(formatKeyAge("2026-01-10T13:00:00Z", "Updated")).toBe("Updated just now");
+    now.mockRestore();
+  });
+});
+

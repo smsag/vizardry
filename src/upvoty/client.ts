@@ -17,18 +17,26 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * same numeric value — that's correct positional-notation behaviour, not
  * data loss: a UUID with leading zero bytes is exactly what makes its
  * base62 encoding shorter (or zero-padded) in the first place, and
- * `padStart(32, "0")` below restores those bytes on the way back out.
+ * the zero-padding below restores those bytes on the way back out.
  */
 export function toUuid(id: string): string {
   if (UUID_RE.test(id)) return id;
+  if (id === "") return id;
   let n = BigInt(0);
   for (const c of id) {
     const i = B62.indexOf(c);
     if (i < 0) return id; // unrecognised char — pass through, API will reject
     n = n * BigInt(62) + BigInt(i);
   }
-  const hex = n.toString(16).padStart(32, "0");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  const hex = n.toString(16);
+  // A UUID is exactly 128 bits. A longer base62 run decodes to a bigger
+  // number, and `padStart` only ever pads — it never truncates — so the
+  // slices below would silently build a malformed, over-long "UUID" and send
+  // it to the API. Pass the original through instead and let the API reject
+  // it with its own message.
+  if (hex.length > 32) return id;
+  const padded = hex.padStart(32, "0");
+  return `${padded.slice(0, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}-${padded.slice(16, 20)}-${padded.slice(20)}`;
 }
 
 /**
@@ -118,12 +126,17 @@ export async function fetchUpvotyComments(
 export function stripHtml(html: string): string {
   return html
     .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
+    // `&amp;` is decoded LAST, not first. Decoding it first turns the escaped
+    // text "&amp;lt;" into "&lt;", which the next rule then decodes again into
+    // a literal "<" — so escaped markup in a feedback post reappears as
+    // markup. Decoding the named entities first leaves no `&`-prefixed
+    // sequence for the final rule to create.
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
     .replace(/\s{2,}/g, " ")
     .trim();
 }

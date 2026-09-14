@@ -60,7 +60,7 @@ describe("LinearCache", () => {
     const plugin = fakePlugin();
     const cache = new LinearCache(plugin as any);
     cache.init({ "ENG-1": { state: STATE, summary: "X", issueUpdatedAt: "2026-01-01T00:00:00Z", summarizedAt: Date.now() } });
-    cache.setStatus("ENG-1", STATE);
+    cache.setStatus("ENG-1", { state: STATE } as any);
 
     await cache.clearAndPersist();
 
@@ -79,9 +79,9 @@ describe("LinearCache", () => {
 
     expect(cache.getEntry("OLD-1")).toBeUndefined();
     expect(cache.getEntry("NEW-1")).toEqual(fresh);
-    // Trimmed cache was written back so data.json actually shrinks. The persist
-    // is fire-and-forget through the async queue, so flush the task queue first.
-    await new Promise((r) => setTimeout(r));
+    // Trimmed cache was written back so data.json actually shrinks. Persists
+    // are coalesced (see IntegrationCache.schedulePersist), so flush first.
+    await cache.flush();
     expect(plugin.saveData).toHaveBeenCalledWith(
       expect.objectContaining({ linearCache: { "NEW-1": fresh } }),
     );

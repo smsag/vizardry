@@ -64,8 +64,9 @@ describe("UpvotyCache", () => {
 
     expect(cache.getEntry("old-1")).toBeUndefined();
     expect(cache.getEntry("new-1")).toEqual(fresh);
-    // Persist is fire-and-forget through the async queue — flush it first.
-    await new Promise((r) => setTimeout(r));
+    // Persists are coalesced (see IntegrationCache.schedulePersist) — flush
+    // the pending write rather than waiting out the timer.
+    await cache.flush();
     expect(plugin.saveData).toHaveBeenCalledWith(
       expect.objectContaining({ upvotyCache: { "new-1": fresh } }),
     );

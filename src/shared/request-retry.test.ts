@@ -61,4 +61,19 @@ describe("withRetry429", () => {
 
     expect(result).toEqual({ status: 200 });
   });
+
+  it("honours Retry-After whatever casing the transport used", async () => {
+    // HTTP header names are case-insensitive and transports disagree on the
+    // casing they hand back; only two spellings used to be checked.
+    for (const name of ["retry-after", "Retry-After", "RETRY-AFTER"]) {
+      const fn = vi.fn()
+        .mockResolvedValueOnce({ status: 429, headers: { [name]: "2" } })
+        .mockResolvedValueOnce({ status: 200 });
+
+      const promise = withRetry429(fn, { maxRetries: 1, baseDelayMs: 10_000 });
+      await vi.advanceTimersByTimeAsync(2000); // the header's 2s, not the 10s backoff
+      await expect(promise).resolves.toEqual({ status: 200 });
+    }
+  });
 });
+

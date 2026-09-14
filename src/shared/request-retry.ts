@@ -32,6 +32,17 @@ function parseRetryAfterMs(value: string | undefined): number | null {
   return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
 }
 
+/** HTTP header names are case-insensitive; transports disagree on the casing
+ *  they hand back, so match on the lowercased name rather than guessing at
+ *  two of the spellings. */
+function headerValue(headers: Record<string, string> | undefined, name: string): string | undefined {
+  if (!headers) return undefined;
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === name) return value;
+  }
+  return undefined;
+}
+
 export async function withRetry429<T extends RetryableResponse>(
   fn: () => Promise<T>,
   options: RetryOptions = {},
@@ -43,7 +54,7 @@ export async function withRetry429<T extends RetryableResponse>(
     const resp = await fn();
     if (resp.status !== 429 || attempt >= maxRetries) return resp;
 
-    const retryAfter = parseRetryAfterMs(resp.headers?.["retry-after"] ?? resp.headers?.["Retry-After"]);
+    const retryAfter = parseRetryAfterMs(headerValue(resp.headers, "retry-after"));
     await sleep(retryAfter ?? baseDelayMs * Math.pow(2, attempt));
   }
 }

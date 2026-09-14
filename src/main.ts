@@ -1,33 +1,31 @@
 import type { Editor, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
-import { DEFAULT_SETTINGS, VizardrySettingTab } from "./settings";
-import type { PluginSettings } from "./settings";
-import { initLinearService, getLinearService } from "./linear";
-import type { CacheEntry } from "./linear/types";
+import { VizardrySettingTab } from "./settings";
+import { normalizeSettings, serializeSettings } from "./settings-schema";
+import type { PluginSettings } from "./settings-schema";
+import { initLinearService, getLinearService, destroyLinearService } from "./linear";
 import { enrichLinearKeys } from "./shared/linear-enrichment";
 import { initUpvotyService, getUpvotyService, destroyUpvotyService } from "./upvoty";
-import type { UpvotyCacheEntry } from "./upvoty/types";
 import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
 import { triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
 import { closeSectionPreview } from "./renderer/section-preview";
 import { closeAllKeyPopovers } from "./shared/key-enrichment";
 import { setPluginVersion } from "./shared/version";
-import { generateCanvasTemplate } from "./templates";
-import type { FrameworkOption } from "./modal";
 import { CanvasInsertModal } from "./modal";
 import { createApi, VIZARDRY_NO_ENRICH_CLASS } from "./renderer/export-api";
 import type { VizardryApi } from "./renderer/export-api";
-import { CUSTOM_RENDERERS, EXTRA_OPTIONS } from "./processors";
-import { ALL_FRAMEWORKS } from "./frameworks-registry";
+import { getInsertOptions } from "./catalog";
 import { dispatchVizardry } from "./vizardry-dispatch";
 import { insertTemplateAtCursor } from "./shared/editor";
 import { VizardryHeadingSuggest } from "./heading-suggest";
 import { updatePersistedData } from "./shared/persisted-data";
-import { t, tFrameworkDescription } from "./i18n";
+import { t } from "./i18n";
 
 export default class VizardryPlugin extends Plugin {
-  settings: PluginSettings = DEFAULT_SETTINGS;
+  // A fresh normalized object, never the shared frozen DEFAULT_SETTINGS —
+  // the settings tab mutates this in place.
+  settings: PluginSettings = normalizeSettings({});
   // Per-file debounce timers for the heading-change relink pass. An instance
   // field (not a local in onload()) so onunload() can cancel any still
   // pending when the plugin is disabled/reloaded — otherwise a timer
@@ -45,18 +43,25 @@ export default class VizardryPlugin extends Plugin {
     // Routed through updatePersistedData so this can't race LinearCache's or
     // UpvotyCache's own read-modify-write persist() calls and clobber them
     // (or be clobbered by them) — see shared/persisted-data.ts.
-    await updatePersistedData(this, (existing) => ({ ...existing, ...this.settings }));
+    //
+    // Only schema keys are merged in (serializeSettings), never the whole
+    // settings object: data.json also holds the two cache blobs, and writing
+    // back a snapshot of those taken at onload would discard every summary
+    // cached since — see settings-schema.ts.
+    await updatePersistedData(this, (existing) => ({ ...existing, ...serializeSettings(this.settings) }));
   }
 
   async onload(): Promise<void> {
     const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
-    this.settings = { ...DEFAULT_SETTINGS, ...rawData } as PluginSettings;
+    // Coerced and clamped rather than spread: data.json is user-editable and
+    // also carries the cache blobs, neither of which belong in settings.
+    this.settings = normalizeSettings(rawData);
+    // `init` validates the blob itself (a malformed or non-object value is
+    // dropped), so no cast or shape check is needed here.
     initLinearService(this as Parameters<typeof initLinearService>[0]);
-    const linearCache = rawData.linearCache as Record<string, CacheEntry> | undefined;
-    if (linearCache) getLinearService()?.cache.init(linearCache);
+    getLinearService()?.cache.init(rawData.linearCache);
     initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
-    const upvotyCache = rawData.upvotyCache as Record<string, UpvotyCacheEntry> | undefined;
-    if (upvotyCache) getUpvotyService()?.cache.init(upvotyCache);
+    getUpvotyService()?.cache.init(rawData.upvotyCache);
     // Before any registration that could fail: the export API depends on nothing
     // else being wired up, and a caller's fallback shouldn't hinge on whether an
     // unrelated processor registered.
@@ -132,26 +137,10 @@ export default class VizardryPlugin extends Plugin {
     }, 1001);
 
     // ── Framework options (modal + commands) ───────────────────────────
-    const frameworkOptions: FrameworkOption[] = [
-      ...ALL_FRAMEWORKS.map(def => ({
-        id: def.id,
-        label: def.label,
-        template: generateCanvasTemplate(def),
-        description: tFrameworkDescription(def.id),
-      })),
-      ...CUSTOM_RENDERERS.map(r => ({
-        id: r.id,
-        label: r.label,
-        template: r.template,
-        description: tFrameworkDescription(r.id),
-      })),
-      ...EXTRA_OPTIONS.map(o => ({
-        id: o.id,
-        label: o.label,
-        template: o.template,
-        description: tFrameworkDescription(o.id),
-      })),
-    ];
+    // One list built from the catalog — grid frameworks, custom renderers and
+    // modal-only presets alike, with ids already checked for collisions so two
+    // entries can never claim the same `insert-<id>` command.
+    const frameworkOptions = getInsertOptions();
 
     const withActiveMarkdownEditor = (run: (editor: Editor) => void): void => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -226,7 +215,7 @@ export default class VizardryPlugin extends Plugin {
     closeSectionPreview();
     closeAllKeyPopovers();
     resetInteractiveIdCounter();
-    initLinearService(null);
+    destroyLinearService();
     destroyUpvotyService();
     for (const doc of this.sketchDocuments()) {
       doc.body.removeClass("vizardry-sketch");

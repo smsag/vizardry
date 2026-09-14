@@ -27,9 +27,22 @@ export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-// ParseResult has two sibling payload fields (data + links) on the success
-// variant, which doesn't fit the single-data Result<T> pattern, so it is
-// kept as a standalone definition.
-export type ParseResult =
-  | { ok: true; data: Record<string, string>; links: Record<string, string>; cardBlocks: Set<string>; allCards: boolean; warnings?: string[] }
-  | { ok: false; error: string };
+/**
+ * What `parseFrameworkSource` returns for a grid framework.
+ *
+ * Unlike the bespoke parsers it has no failure variant: every malformed line
+ * is recoverable (skipped with a warning shown under the canvas), so a grid
+ * block always renders. `ok` is kept — it is what the shared `Result<T>`
+ * call sites destructure — but it is always `true`.
+ */
+export interface ParseResult {
+  ok: true;
+  /** Block label, lowercased, to its raw content. */
+  data: Record<string, string>;
+  /** Labels of blocks whose content renders as draggable cards. */
+  cardBlocks: Set<string>;
+  /** `cards: all` — every block renders as cards, whatever its own modifier. */
+  allCards: boolean;
+  /** Recoverable syntax problems, shown under the canvas. Absent when clean. */
+  warnings?: string[];
+}

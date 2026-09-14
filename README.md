@@ -40,7 +40,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `lean` | Lean Canvas | Grid |
 | `leanux` | Lean UX Canvas | Grid |
 | `matrix` | Matrix — blank two-axis chart | Grid |
-| `matrix, pain` · `opportunity` · `impact` · `assumption` · `scenario` | Matrix presets (Pain, Opportunity, Impact/Effort, Assumption Map, Scenario 2×2) | Grid |
+| `matrix, pain` · `opportunity` · `impact` · `assumption` · `scenario` | Matrix presets (Pain, Opportunity, Impact/Effort, Assumption Map, Scenario 2×2) — see [preset aliases](#preset-aliases) | Grid |
 | `mindmap` | Mind Map | Tree |
 | `nodemap` | Node Map | Graph |
 | `opportunity` | Opportunity Canvas | Grid |
@@ -87,6 +87,26 @@ Three ways to insert a fully structured empty template at your cursor:
 **Ribbon icon** — tap the template icon in the left sidebar to open the same fuzzy picker.
 
 On **mobile**, add any Vizardry command to the editor toolbar via Settings → Mobile → Edit toolbar for one-tap access above the keyboard.
+
+### Preset aliases
+
+Some canvases are reached through a variant of another `type:` rather than an
+id of their own. Each still gets its own picker entry and its own insert
+command, under the alias below — that alias is an *insert* name only; the
+block it produces carries the `type:` line in the right-hand column.
+
+| Insert alias | Inserts | Kind |
+|---|---|---|
+| `fishbone-6m` | `type: fishbone, 6m` — 6M cause analysis (manufacturing) | Tree |
+| `fishbone-service` | `type: fishbone, service` — 4S cause analysis (service) | Tree |
+| `fishbone-marketing` | `type: fishbone, marketing` — 7P cause analysis (marketing) | Tree |
+| `pain-matrix` | `type: matrix, pain` — Pain Point Matrix | Grid |
+| `opportunity-matrix` | `type: matrix, opportunity` — Opportunity Matrix | Grid |
+| `impact-matrix` | `type: matrix, impact` — Impact / Effort Matrix | Grid |
+| `assumption-matrix` | `type: matrix, assumption` — Assumption Map | Grid |
+| `scenario-matrix` | `type: matrix, scenario` — Scenario 2×2 | Grid |
+| `sipoc-flow` | `type: sipoc, flow` — SIPOC flow view | SVG flow |
+| `service-blueprint` | `type: journey, blueprint` — Service Blueprint | Grid |
 
 ---
 
