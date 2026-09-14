@@ -2794,7 +2794,36 @@ code:has(.vzd-upvoty-key) {
 
 /* ── Upvoty enrichment ───────────────────────────────────────────────────── */
 
-/* Badge — inline clickable key, blue/purple to distinguish from Linear green */
+/*
+ * Pill styling — the inline key badge and the popover's status chip.
+ *
+ * Both derive from Obsidian's tag tokens (`--tag-*`), the variables every
+ * theme already styles for its own inline chips, so a pill inherits the host
+ * theme's chip shape, weight and colour instead of imposing Vizardry's. They
+ * are then stepped down one notch: a key badge sits inside running prose,
+ * where a full-strength accent outline competes with the sentence around it.
+ *
+ * `--vzd-upvoty-tint` is how much of the theme's tag colour survives; the
+ * remainder blends toward `--text-muted`. Hover and keyboard focus restore
+ * the theme colour in full — that recovery is what marks the badge as
+ * clickable, replacing the old hover that only faded it further.
+ *
+ * Each blended colour is declared twice: the flat value first, as a fallback
+ * for any webview without `color-mix()`, then the blend. A browser that
+ * cannot parse the second declaration keeps the first.
+ */
+.vzd-upvoty-key,
+.vzd-upvoty-preview-status {
+  --vzd-upvoty-tint: 45%;
+  /* `--color-accent` and `--interactive-accent` chain behind the tag tokens so
+     the pill still resolves to something sane in a host (or a test harness)
+     that defines only part of the palette. */
+  --vzd-upvoty-tag-color: var(--tag-color, var(--color-accent, var(--interactive-accent)));
+  --vzd-upvoty-tag-bg: var(--tag-background, var(--background-modifier-hover));
+  --vzd-upvoty-tag-border: var(--tag-border-color, var(--background-modifier-border));
+}
+
+/* Badge — inline clickable key */
 .vzd-upvoty-key {
   -webkit-appearance: none;
   appearance: none;
@@ -2802,19 +2831,39 @@ code:has(.vzd-upvoty-key) {
   box-sizing: border-box;
   font-family: var(--font-monospace);
   font-size: 0.7em;
-  font-weight: 600;
+  font-weight: var(--tag-weight, 600);
   letter-spacing: 0.03em;
-  color: var(--interactive-accent);
-  background: none;
-  border: 1.5px solid var(--interactive-accent);
-  border-radius: 999px;
-  padding: 2px 8px;
+
+  color: var(--text-muted);
+  color: color-mix(in srgb, var(--vzd-upvoty-tag-color) var(--vzd-upvoty-tint), var(--text-muted));
+
+  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--vzd-upvoty-tag-bg) 70%, transparent);
+
+  border: var(--tag-border-width, 1px) solid var(--background-modifier-border);
+  border: var(--tag-border-width, 1px) solid color-mix(in srgb, var(--vzd-upvoty-tag-border) 70%, transparent);
+
+  border-radius: var(--tag-radius, 999px);
+  /* The theme's own chip padding — this badge is an inline chip in prose,
+     which is exactly what those tokens are sized for. */
+  padding: var(--tag-padding-y, 2px) var(--tag-padding-x, 8px);
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.1s;
+  transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
 }
-.vzd-upvoty-key:hover {
-  opacity: 0.75;
+
+.vzd-upvoty-key:hover,
+.vzd-upvoty-key:focus-visible {
+  color: var(--vzd-upvoty-tag-color);
+  background: var(--vzd-upvoty-tag-bg);
+  border-color: var(--vzd-upvoty-tag-border);
+}
+
+/* `all: unset` above drops the focus ring too, so keyboard users get one back
+   explicitly — the colour recovery alone is not a sufficient focus indicator. */
+.vzd-upvoty-key:focus-visible {
+  outline: 2px solid var(--vzd-upvoty-tag-color);
+  outline-offset: 2px;
 }
 
 /* Popover — structurally identical to .vzd-linear-preview */
@@ -2874,17 +2923,26 @@ code:has(.vzd-upvoty-key) {
   align-items: center;
   justify-content: center;
   font-size: 0.7em;
-  font-weight: 600;
+  font-weight: var(--tag-weight, 600);
   line-height: 1;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  border-radius: 999px;
+  border-radius: var(--tag-radius, 999px);
+  /* Roomier than the theme's inline-chip padding on purpose: this one stands
+     alone in the popover header rather than inside a line of prose. */
   padding: 4px 12px;
   white-space: nowrap;
   flex-shrink: 0;
-  background: none;
-  border: 1.5px solid var(--interactive-accent);
-  color: var(--interactive-accent);
+
+  color: var(--text-muted);
+  color: color-mix(in srgb, var(--vzd-upvoty-tag-color) var(--vzd-upvoty-tint), var(--text-muted));
+
+  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--vzd-upvoty-tag-bg) 70%, transparent);
+
+  border: var(--tag-border-width, 1px) solid var(--background-modifier-border);
+  border: var(--tag-border-width, 1px) solid color-mix(in srgb, var(--vzd-upvoty-tag-border) 70%, transparent);
+
   box-shadow: none;
 }
 .vzd-upvoty-preview-status:empty { display: none; }
