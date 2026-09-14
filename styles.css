@@ -2629,30 +2629,124 @@ code:has(.vzd-upvoty-key) {
   padding: 0;
 }
 
-/* ── Linear key badge (global — any canvas or code fence) ───────────────── */
-/* Key badge — inline in text, itself the button that requests the fetch */
-.vzd-linear-key {
+/* ── Pill family (Linear + Upvoty) ───────────────────────────────────────── */
+/*
+ * One recipe for every integration pill — the two inline key badges and the
+ * two popover status chips. They were four near-identical copies that had
+ * already drifted (Linear on --color-accent, Upvoty on --interactive-accent;
+ * Linear with a focus state, Upvoty without); this is the single definition
+ * they all draw from now.
+ *
+ * SHAPE comes from Obsidian's --tag-* tokens — the variables every theme
+ * already styles for its own inline chips — so a pill inherits the host
+ * theme's chip radius, weight and padding instead of imposing Vizardry's own.
+ * A theme that draws tags as flat grey rectangles gets flat grey rectangles.
+ *
+ * COLOUR is one hue, --vzd-pill-hue, stepped down one notch: --vzd-pill-tint
+ * is how much of it survives, the rest blending toward --text-muted, over a
+ * background and border at --vzd-pill-fill opacity. A key badge sits inside
+ * running prose, where a full-strength accent outline competes with the
+ * sentence around it for attention.
+ *
+ * Each blended colour is declared twice — flat value first, blend second — so
+ * a webview without color-mix() keeps the flat fallback.
+ *
+ * Deliberately NOT part of this family: pills whose colour is data rather
+ * than decoration — the matrix item pills (hue = quadrant), the Circle of
+ * Influence chips (border strength = ring), the odyssey year badges (hue =
+ * plan) and the parse-warning chip (orange = severity). Muting those to one
+ * shared hue would erase what they encode.
+ */
+
+/* The reset comes first, in its own rule: `all: unset` resets every regular
+   property regardless of which rule set it, so folding it in below — or
+   leaving it in a later rule — would wipe the recipe itself. Custom
+   properties are unaffected by `all`. */
+.vzd-linear-key,
+.vzd-upvoty-key {
   -webkit-appearance: none;
   appearance: none;
   all: unset;
   box-sizing: border-box;
-  font-family: var(--font-monospace);
+}
+
+.vzd-linear-key,
+.vzd-linear-preview-status,
+.vzd-upvoty-key,
+.vzd-upvoty-preview-status {
+  /* How much of the hue survives; the rest blends toward --text-muted. */
+  --vzd-pill-tint: 45%;
+  /* Opacity applied to the chip's background and border. */
+  --vzd-pill-fill: 70%;
+  /* --color-accent and --interactive-accent chain behind the tag tokens so a
+     pill still resolves to something sane in a host (or a test harness) that
+     defines only part of the palette. */
+  --vzd-pill-hue: var(--tag-color, var(--color-accent, var(--interactive-accent)));
+  --vzd-pill-bg: var(--tag-background, var(--background-modifier-hover));
+  --vzd-pill-border: var(--tag-border-color, var(--background-modifier-border));
+
   font-size: 0.7em;
-  font-weight: 600;
+  font-weight: var(--tag-weight, 600);
   letter-spacing: 0.03em;
-  color: var(--color-accent);
-  background: none;
-  border: 1.5px solid var(--color-accent);
-  border-radius: 999px;
-  padding: 2px 8px;
+  border-radius: var(--tag-radius, 999px);
   white-space: nowrap;
+
+  color: var(--text-muted);
+  color: color-mix(in srgb, var(--vzd-pill-hue) var(--vzd-pill-tint), var(--text-muted));
+
+  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--vzd-pill-bg) var(--vzd-pill-fill), transparent);
+
+  border: var(--tag-border-width, 1px) solid var(--background-modifier-border);
+  border: var(--tag-border-width, 1px) solid color-mix(in srgb, var(--vzd-pill-border) var(--vzd-pill-fill), transparent);
+
+  box-shadow: none;
+}
+
+/* Inline key badges: monospace, and the theme's own chip padding — these are
+   inline chips in prose, which is exactly what those tokens are sized for. */
+.vzd-linear-key,
+.vzd-upvoty-key {
+  font-family: var(--font-monospace);
+  padding: var(--tag-padding-y, 2px) var(--tag-padding-x, 8px);
   cursor: pointer;
-  transition: opacity 0.1s;
+  transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
 }
+
+/* Hover and keyboard focus restore the theme colour in full. That recovery is
+   what marks a badge as clickable now that its resting state is quiet — it
+   replaces a hover that only faded the badge further, which shrank the
+   affordance on the one element here that is actually interactive. */
 .vzd-linear-key:hover,
-.vzd-linear-key:focus-visible {
-  opacity: 0.75;
+.vzd-linear-key:focus-visible,
+.vzd-upvoty-key:hover,
+.vzd-upvoty-key:focus-visible {
+  color: var(--vzd-pill-hue);
+  background: var(--vzd-pill-bg);
+  border-color: var(--vzd-pill-border);
 }
+
+/* `all: unset` drops the default focus ring too, so keyboard users get one
+   back explicitly — the colour recovery alone is not a focus indicator. */
+.vzd-linear-key:focus-visible,
+.vzd-upvoty-key:focus-visible {
+  outline: 2px solid var(--vzd-pill-hue);
+  outline-offset: 2px;
+}
+
+/* Popover status chips: uppercase, and roomier than the theme's inline-chip
+   padding on purpose — each stands alone in a popover header rather than
+   inside a line of prose. */
+.vzd-linear-preview-status,
+.vzd-upvoty-preview-status {
+  line-height: 1;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  flex-shrink: 0;
+}
+.vzd-linear-preview-status:empty,
+.vzd-upvoty-preview-status:empty { display: none; }
+
 
 /* ── Linear popover ──────────────────────────────────────────────────────── */
 .vzd-linear-preview {
@@ -2715,21 +2809,7 @@ code:has(.vzd-upvoty-key) {
   align-items: center;
   justify-content: center;
   align-self: center;
-  font-size: 0.7em;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  padding: 4px 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  background: none;
-  border: 1.5px solid var(--color-accent);
-  color: var(--color-accent);
-  box-shadow: none;
 }
-.vzd-linear-preview-status:empty { display: none; }
 
 /* Key — looks like plain text, acts as a link */
 .vzd-linear-preview-key {
@@ -2793,78 +2873,7 @@ code:has(.vzd-upvoty-key) {
 }
 
 /* ── Upvoty enrichment ───────────────────────────────────────────────────── */
-
-/*
- * Pill styling — the inline key badge and the popover's status chip.
- *
- * Both derive from Obsidian's tag tokens (`--tag-*`), the variables every
- * theme already styles for its own inline chips, so a pill inherits the host
- * theme's chip shape, weight and colour instead of imposing Vizardry's. They
- * are then stepped down one notch: a key badge sits inside running prose,
- * where a full-strength accent outline competes with the sentence around it.
- *
- * `--vzd-upvoty-tint` is how much of the theme's tag colour survives; the
- * remainder blends toward `--text-muted`. Hover and keyboard focus restore
- * the theme colour in full — that recovery is what marks the badge as
- * clickable, replacing the old hover that only faded it further.
- *
- * Each blended colour is declared twice: the flat value first, as a fallback
- * for any webview without `color-mix()`, then the blend. A browser that
- * cannot parse the second declaration keeps the first.
- */
-.vzd-upvoty-key,
-.vzd-upvoty-preview-status {
-  --vzd-upvoty-tint: 45%;
-  /* `--color-accent` and `--interactive-accent` chain behind the tag tokens so
-     the pill still resolves to something sane in a host (or a test harness)
-     that defines only part of the palette. */
-  --vzd-upvoty-tag-color: var(--tag-color, var(--color-accent, var(--interactive-accent)));
-  --vzd-upvoty-tag-bg: var(--tag-background, var(--background-modifier-hover));
-  --vzd-upvoty-tag-border: var(--tag-border-color, var(--background-modifier-border));
-}
-
-/* Badge — inline clickable key */
-.vzd-upvoty-key {
-  -webkit-appearance: none;
-  appearance: none;
-  all: unset;
-  box-sizing: border-box;
-  font-family: var(--font-monospace);
-  font-size: 0.7em;
-  font-weight: var(--tag-weight, 600);
-  letter-spacing: 0.03em;
-
-  color: var(--text-muted);
-  color: color-mix(in srgb, var(--vzd-upvoty-tag-color) var(--vzd-upvoty-tint), var(--text-muted));
-
-  background: var(--background-modifier-hover);
-  background: color-mix(in srgb, var(--vzd-upvoty-tag-bg) 70%, transparent);
-
-  border: var(--tag-border-width, 1px) solid var(--background-modifier-border);
-  border: var(--tag-border-width, 1px) solid color-mix(in srgb, var(--vzd-upvoty-tag-border) 70%, transparent);
-
-  border-radius: var(--tag-radius, 999px);
-  /* The theme's own chip padding — this badge is an inline chip in prose,
-     which is exactly what those tokens are sized for. */
-  padding: var(--tag-padding-y, 2px) var(--tag-padding-x, 8px);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
-}
-
-.vzd-upvoty-key:hover,
-.vzd-upvoty-key:focus-visible {
-  color: var(--vzd-upvoty-tag-color);
-  background: var(--vzd-upvoty-tag-bg);
-  border-color: var(--vzd-upvoty-tag-border);
-}
-
-/* `all: unset` above drops the focus ring too, so keyboard users get one back
-   explicitly — the colour recovery alone is not a sufficient focus indicator. */
-.vzd-upvoty-key:focus-visible {
-  outline: 2px solid var(--vzd-upvoty-tag-color);
-  outline-offset: 2px;
-}
+/* The key badge and status chip are drawn by the shared pill family above. */
 
 /* Popover — structurally identical to .vzd-linear-preview */
 .vzd-upvoty-preview {
@@ -2922,30 +2931,7 @@ code:has(.vzd-upvoty-key) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7em;
-  font-weight: var(--tag-weight, 600);
-  line-height: 1;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  border-radius: var(--tag-radius, 999px);
-  /* Roomier than the theme's inline-chip padding on purpose: this one stands
-     alone in the popover header rather than inside a line of prose. */
-  padding: 4px 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  color: var(--text-muted);
-  color: color-mix(in srgb, var(--vzd-upvoty-tag-color) var(--vzd-upvoty-tint), var(--text-muted));
-
-  background: var(--background-modifier-hover);
-  background: color-mix(in srgb, var(--vzd-upvoty-tag-bg) 70%, transparent);
-
-  border: var(--tag-border-width, 1px) solid var(--background-modifier-border);
-  border: var(--tag-border-width, 1px) solid color-mix(in srgb, var(--vzd-upvoty-tag-border) 70%, transparent);
-
-  box-shadow: none;
 }
-.vzd-upvoty-preview-status:empty { display: none; }
 
 .vzd-upvoty-preview-key {
   display: inline-flex;
