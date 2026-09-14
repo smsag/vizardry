@@ -2,11 +2,7 @@
 .el-pre:has(> .vizardry-canvas),
 .el-pre:has(> .vizardry-canvas):hover,
 .cm-embed-block:has(.vizardry-canvas),
-.cm-embed-block:has(.vizardry-canvas):hover,
-.el-pre:has(> .vzd-carousel),
-.el-pre:has(> .vzd-carousel):hover,
-.cm-embed-block:has(.vzd-carousel),
-.cm-embed-block:has(.vzd-carousel):hover {
+.cm-embed-block:has(.vizardry-canvas):hover {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
@@ -16,9 +12,7 @@
 
 /* ── Hide Obsidian's native "Edit block" button overlay on vizardry blocks ── */
 .cm-embed-block:has(.vizardry-canvas) .edit-block-button,
-.cm-embed-block:has(.vizardry-canvas) .block-flair,
-.cm-embed-block:has(.vzd-carousel) .edit-block-button,
-.cm-embed-block:has(.vzd-carousel) .block-flair {
+.cm-embed-block:has(.vizardry-canvas) .block-flair {
   display: none !important;
 }
 
@@ -586,74 +580,6 @@ button.vzd-btn {
     cursor: default;
   }
 
-}
-
-/* ══ Multi-canvas carousel ═══════════════════════════════════════════
-   Several canvases in one ```vizardry fence, shown one at a time on every
-   viewport. Panels stack in a single grid cell so the frame is as tall as the
-   tallest canvas and swiping never shifts content below it; only the active
-   panel is visible. The nav (reusing .vizardry-nav-* children) is always on,
-   unlike the mobile-only grid carousel.
-   ══════════════════════════════════════════════════════════════════ */
-.vzd-multi {
-  outline: none;
-}
-
-.vzd-multi-track {
-  display: grid;
-  grid-template-columns: 1fr;
-  position: relative;
-}
-
-.vzd-multi-panel {
-  grid-area: 1 / 1; /* stack every panel in the same cell */
-  min-width: 0;
-  visibility: hidden;
-}
-
-.vzd-multi-panel.is-active {
-  visibility: visible;
-}
-
-/* Always-visible nav (the shared .vizardry-nav is display:none off-mobile). */
-.vizardry-nav.vzd-multi-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.vzd-multi-nav .vizardry-nav-btn {
-  min-width: 32px;
-  min-height: 32px;
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.vzd-multi-nav .vizardry-nav-dots {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.vzd-multi-nav .vizardry-nav-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--background-modifier-border);
-  transition: background 0.15s ease;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.vzd-multi-nav .vizardry-nav-dot.is-active {
-  background: var(--text-muted);
-}
-
-.vzd-multi-nav .vizardry-nav-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
 }
 
 /* ══ User Story Map ══════════════════════════════════════════════════
@@ -1375,154 +1301,6 @@ button.vzd-btn {
 .vizardry-capturing .vzd-story-nav,
 .vizardry-capturing .vzd-journey-nav {
   display: none !important;
-}
-
-/* ══ Carousel ════════════════════════════════════════════════════════
-   Opt-in image carousel for Read View. Activated via frontmatter:
-     carousel: true
-   Groups of ≥2 consecutive images (no other content between them)
-   are wrapped automatically; isolated single images are unchanged.
-   ══════════════════════════════════════════════════════════════════ */
-
-/* Obsidian adds a border/outline to .block-language-* containers on hover.
-   Cancel it for the carousel — the image itself is the visual boundary. */
-.block-language-carousel:hover {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.vzd-carousel {
-  margin: 1rem 0;
-  outline: none;
-}
-
-.vzd-carousel:focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 4px;
-  border-radius: var(--radius-m);
-}
-
-.vzd-carousel-track {
-  position: relative;
-  width: 100%;
-  /* aspect-ratio is set once via JS after preloading all images,
-     locking the height to the tallest image before any src is assigned. */
-}
-
-.vzd-carousel-slide {
-  display: none;
-  position: absolute;
-  inset: 0;
-  justify-content: center;
-  align-items: center;
-}
-
-.vzd-carousel-slide-active {
-  display: flex;
-  animation: vzd-carousel-fade 0.2s ease;
-}
-
-@keyframes vzd-carousel-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.vzd-carousel-slide img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  display: block;
-  border-radius: var(--radius-s);
-  object-fit: contain;
-}
-
-/* .vzd-carousel-desc carries the current image alt text; visual styling
-   comes from .vizardry-title which is co-applied in the renderer. */
-
-/* ── Carousel fullscreen overlay ── */
-.vzd-carousel-fs {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3.5rem 4rem 3.5rem;
-}
-
-.vzd-carousel-fs-img {
-  max-width: 90vw;
-  max-height: 85vh;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: var(--radius-m);
-  display: block;
-  user-select: none;
-}
-
-.vzd-carousel-fs-caption {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: var(--font-ui-small);
-  text-align: center;
-  max-width: 60vw;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
-.vzd-carousel-fs-counter {
-  position: absolute;
-  top: 1.25rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.55);
-  font-size: var(--font-ui-small);
-  pointer-events: none;
-}
-
-.vzd-carousel-fs-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 2.5rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 1rem;
-  user-select: none;
-  transition: color 0.1s ease;
-}
-
-.vzd-carousel-fs-btn:hover {
-  color: #fff;
-}
-
-.vzd-carousel-fs-btn--prev { left: 0.5rem; }
-.vzd-carousel-fs-btn--next { right: 0.5rem; }
-
-.vzd-carousel-fs-close {
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1.75rem;
-  line-height: 1;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.1s ease;
-}
-
-.vzd-carousel-fs-close:hover {
-  color: #fff;
 }
 
 /* ══ SVG Tree Renderers (OST, Impact Map, Mind Map) ═════════════════

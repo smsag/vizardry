@@ -53,7 +53,6 @@ import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
 import { renderVennDiagram } from "./venn";
-import { renderCarouselBlock } from "./carousel";
 import { renderConceptMap } from "./conceptmap";
 import { renderWheelOfLife } from "./wheeloflife";
 import { renderOdyssey } from "./odyssey";
@@ -77,7 +76,6 @@ import type {
   RACIData,
   SIPOCData,
   VennDiagram,
-  CarouselBlock,
   ConceptMap,
   WheelOfLifeData,
   OdysseyData,
@@ -1981,83 +1979,5 @@ describe("renderRadar", () => {
     const el = container();
     renderRadar({ axes: data.axes, warnings: ["Line 2: something"] }, el);
     expect(el.querySelector(".vzd-canvas-warning-chip")).toBeTruthy();
-  });
-});
-
-// ── renderCarouselBlock ────────────────────────────────────────────────────────
-
-describe("renderCarouselBlock", () => {
-  const data: CarouselBlock = {
-    images: [
-      { src: "a.png", alt: "Slide 1" },
-      { src: "b.png", alt: "Slide 2" },
-      { src: "c.png", alt: "Slide 3" },
-    ],
-  };
-  const resolvePath = (src: string) => `/vault/${src}`;
-
-  it("renders carousel wrapper without throwing", () => {
-    const el = container();
-    expect(() => renderCarouselBlock(data, el, resolvePath)).not.toThrow();
-    expect(el.querySelector(".vzd-carousel")).toBeTruthy();
-  });
-
-  it("renders one slide per image", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const slides = el.querySelectorAll(".vzd-carousel-slide");
-    expect(slides).toHaveLength(3);
-  });
-
-  it("sets first slide active, others inactive", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const slides = el.querySelectorAll(".vzd-carousel-slide");
-    expect(slides[0].classList.contains("vzd-carousel-slide-active")).toBe(true);
-    expect(slides[1].classList.contains("vzd-carousel-slide-active")).toBe(false);
-  });
-
-  it("resolves image src via the provided callback", () => {
-    const el = container();
-    const spy = vi.fn((src: string) => `/vault/${src}`);
-    renderCarouselBlock(data, el, spy);
-    expect(spy).toHaveBeenCalledWith("a.png");
-    expect(spy).toHaveBeenCalledWith("b.png");
-    expect(spy).toHaveBeenCalledWith("c.png");
-  });
-
-  it("renders description from first image alt", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const desc = el.querySelector(".vzd-carousel-desc");
-    expect(desc?.textContent).toBe("Slide 1");
-  });
-
-  it("updates description to current slide alt on navigation", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const nextBtn = el.querySelector<HTMLButtonElement>('[data-action="next"]');
-    nextBtn?.click();
-    const desc = el.querySelector(".vzd-carousel-desc");
-    expect(desc?.textContent).toBe("Slide 2");
-  });
-
-  it("advances to next slide on next button click", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const nextBtn = el.querySelector<HTMLButtonElement>('[data-action="next"]');
-    nextBtn?.click();
-    const slides = el.querySelectorAll(".vzd-carousel-slide");
-    expect(slides[0].classList.contains("vzd-carousel-slide-active")).toBe(false);
-    expect(slides[1].classList.contains("vzd-carousel-slide-active")).toBe(true);
-  });
-
-  it("wraps around to last slide when prev clicked from first", () => {
-    const el = container();
-    renderCarouselBlock(data, el, resolvePath);
-    const prevBtn = el.querySelector<HTMLButtonElement>('[data-action="prev"]');
-    prevBtn?.click();
-    const slides = el.querySelectorAll(".vzd-carousel-slide");
-    expect(slides[2].classList.contains("vzd-carousel-slide-active")).toBe(true);
   });
 });

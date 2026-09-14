@@ -1,4 +1,18 @@
-## 0.65.1
+## 0.66.0
+
+- **BREAKING — removed: the image carousel (`type: carousel`).** The gallery
+  that showed two or more images one at a time, with prev/next, a caption and a
+  fullscreen view, is gone: the `type: carousel` block now renders "Unknown
+  type". The feature moved to the Schreibstube plugin, which hosts it as its own
+  ` ```schreibstube-slideshow ` code block. If you used it, keep the images in
+  the note and reach for Schreibstube's slideshow, or lay the images out by hand.
+
+- **BREAKING — removed: stacking several canvases in one fence.** Repeating the
+  `type:` line inside one ` ```vizardry ` fence used to render the canvases as a
+  navigable carousel. That is gone; a fence is one canvas again. A block with
+  more than one top-level `type:` line now renders only the first — split the
+  rest into their own fences. This removes the read-only limitation that came
+  with the stacked view: a lone canvas stays editable in Live Preview as before.
 
 - **Fix: exported PNGs of SVG canvases were mostly black** — a Wardley map saved
   with the download button came out with solid black bands covering the drawing,

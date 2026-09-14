@@ -90,9 +90,8 @@ export interface VizardryApi {
   readonly noEnrichClass: string;
   /**
    * Every Vizardry canvas inside `root`, in document order — including the ones
-   * a `collapsed: true` line minimized and the off-screen panels of a
-   * multi-canvas fence, both of which export in full. `root` itself is included
-   * when it is a canvas.
+   * a `collapsed: true` line minimized, which export in full. `root` itself is
+   * included when it is a canvas.
    */
   getCanvases(root: HTMLElement): HTMLElement[];
   /**
