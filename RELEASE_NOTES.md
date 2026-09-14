@@ -1,4 +1,4 @@
-## Unreleased
+## 0.66.0
 
 - **BREAKING — removed: the image carousel (`type: carousel`).** The gallery
   that showed two or more images one at a time, with prev/next, a caption and a
