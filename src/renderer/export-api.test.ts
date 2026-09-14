@@ -299,6 +299,60 @@ describe("contrast-checked colours", () => {
   });
 });
 
+describe("SVG paint", () => {
+  // html-to-image deep-clones an <svg> and styles only the node it cloned, never
+  // its descendants — and the clone is serialized into a document this plugin's
+  // stylesheet doesn't reach. Without the inline pass, every SVG child falls back
+  // to SVG's initial values, which is how an exported Wardley map arrived with
+  // solid black evolution bands.
+  function svgCanvas(): { root: HTMLElement; band: SVGElement } {
+    document.head.innerHTML = `<style>.band { fill: rgb(234, 234, 234); opacity: 0.5; }</style>`;
+    const root = canvas();
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const band = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    band.setAttribute("class", "band");
+    svg.appendChild(band);
+    root.appendChild(svg);
+    return { root, band };
+  }
+
+  it("carries a class-styled fill into the capture as an inline style", async () => {
+    const { root, band } = svgCanvas();
+    let during: string | null = null;
+    mockToBlob.mockImplementationOnce(() => {
+      during = band.getAttribute("style");
+      return Promise.resolve(new Blob(["png"]));
+    });
+
+    await exportCanvas(root);
+
+    expect(during).toContain("fill: rgb(234, 234, 234)");
+    expect(during).toContain("opacity: 0.5");
+  });
+
+  it("leaves the live canvas exactly as it found it", async () => {
+    const { root, band } = svgCanvas();
+    band.setAttribute("style", "stroke: red");
+    const before = root.outerHTML;
+
+    await exportCanvas(root);
+
+    expect(band.getAttribute("style")).toBe("stroke: red");
+    expect(root.outerHTML).toBe(before);
+  });
+
+  it("restores the SVG even when the capture throws", async () => {
+    const { root, band } = svgCanvas();
+    const before = root.outerHTML;
+    mockToBlob.mockRejectedValueOnce(new Error("boom"));
+
+    await expect(exportCanvas(root)).rejects.toMatchObject({ code: "capture-failed" });
+
+    expect(band.getAttribute("style")).toBeNull();
+    expect(root.outerHTML).toBe(before);
+  });
+});
+
 describe("concurrency", () => {
   it("serialises captures instead of interleaving their restores", async () => {
     const first = canvas({ title: "First" });

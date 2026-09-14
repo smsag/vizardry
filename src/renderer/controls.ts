@@ -258,6 +258,61 @@ function forceLightTheme(root: HTMLElement): () => void {
 }
 
 /**
+ * Paint and text properties an SVG child needs carried as an inline style for
+ * the capture. Deliberately not `filter`: the sketch-mode wobble is a
+ * `url(#vzd-sketch-rough)` reference to defs that do not exist inside the
+ * serialized clone, and an unresolvable filter reference means the element is
+ * not rendered at all — losing the wobble is acceptable, losing the drawing is
+ * not. Inherited-only properties are still listed because a class can set them
+ * on a single node (a smaller stage label, say), and inheritance alone would
+ * carry the wrong value.
+ */
+const SVG_CAPTURE_PROPS: readonly string[] = [
+  "fill", "fill-opacity", "fill-rule",
+  "stroke", "stroke-width", "stroke-opacity", "stroke-dasharray",
+  "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit",
+  "opacity", "color", "display", "visibility", "paint-order", "mix-blend-mode",
+  "font-family", "font-size", "font-weight", "font-style", "letter-spacing",
+];
+
+/**
+ * Inline the computed paint of every element inside an `<svg>`, for the
+ * duration of the capture.
+ *
+ * html-to-image deep-clones an `<svg>` in one step and only applies computed
+ * styles to the node it cloned — never to its descendants — and the clone is
+ * serialized into a standalone document where this plugin's stylesheet does not
+ * apply. Every SVG child therefore falls back to SVG's initial values: black
+ * fill, full opacity, no stroke. That is why an exported Wardley map arrived
+ * with solid black evolution bands, and why the text looked right (SVG's
+ * default fill is black) while the shapes did not.
+ *
+ * Copying the computed values onto the elements themselves puts the paint
+ * somewhere the clone carries. The snapshot restores each element's exact prior
+ * inline style, so the live canvas is untouched.
+ */
+function inlineSvgStyles(root: HTMLElement): () => void {
+  const saved: Array<{ el: SVGElement; style: string | null }> = [];
+  const win = ownerWindow(root);
+  for (const el of Array.from(root.querySelectorAll<SVGElement>("svg, svg *"))) {
+    // `style` is absent on a few SVG nodes (e.g. <title>); skip rather than throw.
+    if (!el.style) continue;
+    saved.push({ el, style: el.getAttribute("style") });
+    const computed = win.getComputedStyle(el);
+    for (const prop of SVG_CAPTURE_PROPS) {
+      const value = computed.getPropertyValue(prop);
+      if (value) el.style.setProperty(prop, value);
+    }
+  }
+  return () => {
+    for (const { el, style } of saved) {
+      if (style === null) el.removeAttribute("style");
+      else el.setAttribute("style", style);
+    }
+  };
+}
+
+/**
  * Re-decide the text colours that were chosen at *render* time against the
  * then-current background (see {@link bestTextColor}): a SIPOC Process header
  * or a Roadmap column header rendered in a dark vault has white baked into its
@@ -288,6 +343,7 @@ function reresolveAutoText(root: HTMLElement): () => void {
  *   1. reveal   — un-collapse, un-carousel (a hidden panel exports as nothing)
  *   2. light    — swap the root onto the light palette
  *   3. re-resolve — re-decide the colours that were baked at render time
+ *   4. inline SVG paint — put it where the capture's clone can carry it
  *
  * Step 2 before step 3 because those colours are chosen against the element's
  * own background; step 1 before both because a minimized canvas has no visible
@@ -309,6 +365,10 @@ export function prepareForCapture(root: HTMLElement, options: { light: boolean }
       restore.push(forceLightTheme(root));
       restore.push(reresolveAutoText(root));
     }
+    // Last: it reads computed values, so everything that changes them — the
+    // reveal, the light palette, the re-resolved text colours — has to be in
+    // place first.
+    restore.push(inlineSvgStyles(root));
   } catch (err) {
     // Never leave a half-prepared canvas on screen: the caller has no restore
     // callback to call if this throws before returning one.
