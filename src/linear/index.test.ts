@@ -87,3 +87,60 @@ describe("LinearService.getStatus", () => {
     expect(entry?.summarizedAt).toBe(summarizedAt);
   });
 });
+
+describe("LinearService issue caching", () => {
+  it("serves a second lookup from cache instead of re-fetching", async () => {
+    // `statusTtlMinutes` used to be inert on the path users actually hit:
+    // only the uncalled getStatus consulted the cache, so every popover open
+    // meant a fresh Linear round-trip regardless of the configured interval.
+    mockedFetch.mockResolvedValue(makeIssue() as any);
+    initLinearService(fakePlugin());
+    const svc = getLinearService()!;
+
+    await svc.getStatus("ENG-1");
+    await svc.getStatus("ENG-1");
+
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-fetches once the status TTL has elapsed", async () => {
+    mockedFetch.mockResolvedValue(makeIssue() as any);
+    initLinearService(fakePlugin());
+    const svc = getLinearService()!;
+
+    const now = vi.spyOn(Date, "now");
+    now.mockReturnValue(0);
+    await svc.getStatus("ENG-1");
+    now.mockReturnValue(6 * 60_000); // TTL is 5 minutes
+    await svc.getStatus("ENG-1");
+    now.mockRestore();
+
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("de-duplicates concurrent lookups of the same issue", async () => {
+    // Ten badges for the same ticket in one note must cost one round-trip,
+    // not ten (and, on the summary path, one LLM call rather than ten).
+    let release: (v: unknown) => void = () => {};
+    const pending = new Promise((r) => { release = r; });
+    mockedFetch.mockReturnValue(pending as any);
+    initLinearService(fakePlugin());
+    const svc = getLinearService()!;
+
+    const both = Promise.all([svc.getStatus("ENG-1"), svc.getStatus("ENG-1")]);
+    // Let both calls get past their awaited key lookup and into getIssue.
+    await Promise.resolve();
+    await Promise.resolve();
+    release(makeIssue());
+    await both;
+
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns null without touching the network when the integration is off", async () => {
+    initLinearService(fakePlugin({ linearEnabled: false }));
+    await expect(getLinearService()!.getStatus("ENG-1")).resolves.toBeNull();
+    expect(mockedFetch).not.toHaveBeenCalled();
+  });
+});
+

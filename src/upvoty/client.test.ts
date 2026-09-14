@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toUuid } from "./client";
+import { toUuid, stripHtml } from "./client";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -53,5 +53,34 @@ describe("toUuid", () => {
     // Both forms represent the same numeric value/UUID — decoding must
     // agree, since the padding character carries no independent meaning.
     expect(toUuid("0ABCDEFGH12345678901z")).toBe(toUuid("ABCDEFGH12345678901z"));
+  });
+
+  it("passes through a base62 run too long to be a 128-bit UUID", () => {
+    // 32 base62 chars decode to ~190 bits. padStart only ever pads, so the
+    // slices below it would have produced a longer-than-legal "UUID" and sent
+    // it to the API as if it were real.
+    const tooLong = "z".repeat(32);
+    expect(toUuid(tooLong)).toBe(tooLong);
+  });
+
+  it("passes an empty id through untouched", () => {
+    expect(toUuid("")).toBe("");
+  });
+});
+
+describe("stripHtml", () => {
+  it("strips tags and collapses whitespace", () => {
+    expect(stripHtml("<p>Hello   <b>world</b></p>")).toBe("Hello world");
+  });
+
+  it("decodes &amp; last, so escaped markup is not decoded twice", () => {
+    // "&amp;lt;" is the escaped text "&lt;". Decoding &amp; first turned it
+    // into "&lt;", which the next rule then turned into a literal "<" — so
+    // markup a user deliberately escaped came back as markup.
+    expect(stripHtml("&amp;lt;script&amp;gt;")).toBe("&lt;script&gt;");
+  });
+
+  it("still decodes a plain ampersand", () => {
+    expect(stripHtml("Tom &amp; Jerry")).toBe("Tom & Jerry");
   });
 });

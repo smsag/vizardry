@@ -4,7 +4,7 @@ import { parseFrameworkSource } from "./parser";
 describe("parseFrameworkSource", () => {
   it("parses a single block", () => {
     const result = parseFrameworkSource("block: Goal\n  Make money");
-    expect(result).toEqual({ ok: true, data: { goal: "Make money" }, links: {}, cardBlocks: new Set(), allCards: false });
+    expect(result).toEqual({ ok: true, data: { goal: "Make money" }, cardBlocks: new Set(), allCards: false, warnings: undefined });
   });
 
   it("parses multiple blocks", () => {
@@ -62,7 +62,7 @@ describe("parseFrameworkSource", () => {
 
   it("allows empty block content", () => {
     const result = parseFrameworkSource("block: Goal\n");
-    expect(result).toEqual({ ok: true, data: { goal: "" }, links: {}, cardBlocks: new Set(), allCards: false });
+    expect(result).toEqual({ ok: true, data: { goal: "" }, cardBlocks: new Set(), allCards: false, warnings: undefined });
   });
 
   it("parses | card modifier and strips it from the key", () => {

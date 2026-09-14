@@ -66,8 +66,8 @@ import {
   OST_TEMPLATE, VENN_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
-  MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE, MATRIX_ASSUMPTION_TEMPLATE,
-  MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
+  MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
+  MATRIX_ASSUMPTION_TEMPLATE, MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
   JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
@@ -148,11 +148,15 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "fishbone-6m",        label: "Fishbone — 6M (Manufacturing)", template: FISHBONE_6M_TEMPLATE },
   { id: "fishbone-service",   label: "Fishbone — 4S (Service)",       template: FISHBONE_SERVICE_TEMPLATE },
   { id: "fishbone-marketing", label: "Fishbone — 7P (Marketing)",     template: FISHBONE_MARKETING_TEMPLATE },
+  // One entry per documented `type: matrix, <variant>` preset. The Pain
+  // Point Matrix is documented in the README and both docs/ references but
+  // had no entry here, so its template was unreachable — no insert command,
+  // no modal row, and the only way to get one was to type the block by hand.
+  { id: "pain-matrix",        label: "Pain Point Matrix",     template: MATRIX_PAIN_TEMPLATE },
   { id: "opportunity-matrix", label: "Opportunity Matrix",    template: MATRIX_OPP_TEMPLATE },
   { id: "impact-matrix",      label: "Impact / Effort Matrix", template: MATRIX_IMPACT_TEMPLATE },
   { id: "assumption-matrix",  label: "Assumption Map",        template: MATRIX_ASSUMPTION_TEMPLATE },
   { id: "scenario-matrix",    label: "Scenario Matrix",       template: MATRIX_SCENARIO_TEMPLATE },
-  { id: "plot-matrix",        label: "Plotted Matrix",        template: MATRIX_PLOT_TEMPLATE },
   { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
   { id: "service-blueprint",  label: "Service Blueprint",     template: SERVICE_BLUEPRINT_TEMPLATE },
 ];
@@ -195,7 +199,13 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   { id: "conceptmap", label: "Concept Map", template: CONCEPT_MAP_TEMPLATE, createProcessor: plain(parseConceptMap, renderConceptMap) },
   { id: "nodemap",    label: "Node Map",    template: NODE_MAP_TEMPLATE,    createProcessor: plain(parseNodeMap, renderNodeMap) },
 
-  { id: "matrix",  label: "Matrix",              template: MATRIX_IMPACT_TEMPLATE, createProcessor: linked(parseMatrix, renderMatrix) },
+  // The bare `matrix` type is the blank two-axis chart (own axes, own
+  // thresholds, free-positioned items) — so it seeds MATRIX_PLOT_TEMPLATE.
+  // It used to seed MATRIX_IMPACT_TEMPLATE, which made "Matrix" and
+  // "Impact / Effort Matrix" insert byte-identical blocks and left the plain
+  // chart reachable only through a separate "Plotted Matrix" alias for the
+  // very same type — that alias is now this entry.
+  { id: "matrix",  label: "Matrix",              template: MATRIX_PLOT_TEMPLATE, createProcessor: linked(parseMatrix, renderMatrix) },
   { id: "scqa",    label: "SCQA Narrative",      template: SCQA_TEMPLATE,          createProcessor: linked((src) => parseSCQA(src, "scqa"), renderSCQA) },
   { id: "scr",     label: "SCR Narrative",       template: SCR_TEMPLATE,           createProcessor: linked((src) => parseSCQA(src, "scr"), renderSCQA) },
   { id: "journey", label: "Customer Journey Map", template: JOURNEY_TEMPLATE,      createProcessor: linked(parseJourney, renderJourneyMap) },

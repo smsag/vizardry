@@ -24,14 +24,8 @@ import { parseFrameworkSource } from "./parser";
 import { renderCanvas, renderError } from "./renderer";
 import { renderCanvasWarnings } from "./renderer/controls";
 import { registerCanvasRelink, relinkCanvas } from "./renderer/canvas";
-import { FRAMEWORKS } from "./frameworks-registry";
-import { CUSTOM_RENDERERS } from "./processors";
-import type { CustomRenderer } from "./processors";
+import { FRAMEWORKS_BY_ID, CUSTOM_RENDERERS_BY_ID } from "./catalog";
 import { getPluginVersion } from "./shared/version";
-
-const CUSTOM_RENDERER_MAP: Record<string, CustomRenderer> = Object.fromEntries(
-  CUSTOM_RENDERERS.map(r => [r.id, r]),
-);
 
 type ExtractedType = {
   id: string;
@@ -121,8 +115,8 @@ function renderSingleCanvas(
   // flag itself is read from the full source in initCanvas.
   const parseSource = blankStickyLines(found.parseSource);
 
-  const definition = FRAMEWORKS[id];
-  const custom = CUSTOM_RENDERER_MAP[id];
+  const definition = FRAMEWORKS_BY_ID[id];
+  const custom = CUSTOM_RENDERERS_BY_ID[id];
   if (!definition && !custom) {
     renderError(`Unknown type "${id}"`, el);
     return;
@@ -131,8 +125,9 @@ function renderSingleCanvas(
   try {
     if (definition) {
       const { strippedSource, inlineLinks, inlineTicketLinks, inlineCanvasLinks } = extractInlineLinks(parseSource);
+      // No failure branch: parseFrameworkSource recovers from every malformed
+      // line and reports it through `warnings` below.
       const result = parseFrameworkSource(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks, inlineCanvasLinks);
       renderCanvas(definition, result.data, result.cardBlocks, el, resolver, navigateTo, app, ctx, source, result.allCards);
       renderCanvasWarnings(el, result.warnings);

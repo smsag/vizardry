@@ -37,6 +37,13 @@ export function updatePersistedData(
     const updated = mutate(existing) ?? existing;
     await plugin.saveData(updated);
   });
-  queues.set(plugin, next);
+  // The tail the *next* call chains onto must never be a rejected promise it
+  // then has to swallow silently: park a caught copy there and log the
+  // failure once, so a vault that can't be written to (read-only sync folder,
+  // full disk) shows up in the console instead of settings simply never
+  // sticking. The rejection is still delivered to this call's own caller.
+  queues.set(plugin, next.catch((err: unknown) => {
+    console.error("Vizardry: failed to write data.json", err);
+  }));
   return next;
 }

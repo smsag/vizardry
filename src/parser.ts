@@ -18,12 +18,13 @@ import type { ParseResult } from "./types";
  *                  any per-block modifier
  *
  * Rules:
- * - `block:` keyword followed by the block label (case-insensitive match at render time)
+ * - `block:` keyword (case-insensitive, like every other config keyword)
+ *   followed by the block label (case-insensitively matched at render time)
  * - Content is indented below the block line — no `|` scalar needed
  * - Lines starting with `//` are comments (ignored)
  * - Unknown block labels are stored but silently ignored at render time
- * - A block label declared twice is a parse error (would otherwise silently
- *   discard the first occurrence's content)
+ * - A block label declared twice keeps the first occurrence and warns; the
+ *   later one is skipped rather than silently discarding the first's content
  * - Blank lines between blocks are ignored
  * - Heading links use inline [[#Heading]] annotations on block lines (see shared/links.ts)
  */
@@ -69,7 +70,7 @@ export function parseFrameworkSource(source: string): ParseResult {
       continue;
     }
 
-    if (trimmed.startsWith("block:")) {
+    if (trimmed.toLowerCase().startsWith("block:")) {
       const headerLine = i + 1;
       const rawLabel = trimmed.slice("block:".length).trim();
 
@@ -127,5 +128,5 @@ export function parseFrameworkSource(source: string): ParseResult {
     }
   }
 
-  return { ok: true, data, links: {}, cardBlocks, allCards, warnings: warnings.length ? warnings : undefined };
+  return { ok: true, data, cardBlocks, allCards, warnings: warnings.length ? warnings : undefined };
 }

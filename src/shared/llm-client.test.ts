@@ -98,3 +98,16 @@ describe("truncateSummary", () => {
     expect(truncateSummary("one two three four", 11)).toBe("one two…");
   });
 });
+
+describe("callLlm — provider validation", () => {
+  it("names the bad provider instead of throwing a bare TypeError", async () => {
+    // `llmProvider` comes out of data.json, which the user can edit. An
+    // unrecognised value used to index ADAPTERS to undefined and blow up on
+    // the next property read with nothing pointing at the cause.
+    await expect(
+      callLlm("gemini" as never, "key", "model", "system", "user"),
+    ).rejects.toThrow(/Unknown AI provider "gemini"/);
+    expect(mockedRequestUrl).not.toHaveBeenCalled();
+  });
+});
+

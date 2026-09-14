@@ -20,6 +20,17 @@ ERRORS=0
 fail() { echo "❌  $*"; ERRORS=$((ERRORS + 1)); }
 ok()   { echo "✅  $*"; }
 
+# Every `id: "…"` in processors.ts — custom renderers and modal-only presets.
+#
+# The anchored form this replaced (`^\s+id: "…"`) required `id:` to be the
+# first thing on its line, which is true of exactly one entry (Venn, the only
+# one spelled out multi-line). Every other id — 35 of 36 — was silently
+# skipped, so the README / syntax-reference / cheatsheet coverage checks below
+# passed without ever looking at them.
+processor_ids() {
+  grep -oE '\bid: "[a-z0-9-]+"' src/processors.ts | grep -oE '"[a-z0-9-]+"' | tr -d '"'
+}
+
 # ── 1. Version sync ──────────────────────────────────────────────────────────
 
 MV=$(jq -r '.version' manifest.json)
@@ -53,7 +64,7 @@ done
 while IFS= read -r id; do
   [ -z "$id" ] && continue
   grep -qi "\b${id}\b" README.md || MISSING+=("$id")
-done < <(grep -E '^\s+id: "[a-z-]+"' src/processors.ts | grep -oE '"[a-z-]+"' | tr -d '"')
+done < <(processor_ids)
 
 if [ ${#MISSING[@]} -eq 0 ]; then
   ok "README.md mentions all framework IDs"
@@ -84,7 +95,7 @@ else
     [ -z "$id" ] && continue
     case "$id" in *-*) continue ;; esac
     grep -qi "\b${id}\b" "$REF" || REF_MISSING+=("$id")
-  done < <(grep -E '^\s+id: "[a-z-]+"' src/processors.ts | grep -oE '"[a-z-]+"' | tr -d '"')
+  done < <(processor_ids)
 
   if [ ${#REF_MISSING[@]} -eq 0 ]; then
     ok "$REF documents all framework type: IDs"
@@ -118,7 +129,7 @@ else
     [ -z "$id" ] && continue
     case "$id" in *-*) continue ;; esac
     grep -qi "\b${id}\b" "$CHEAT" || CHEAT_MISSING+=("$id")
-  done < <(grep -E '^\s+id: "[a-z-]+"' src/processors.ts | grep -oE '"[a-z-]+"' | tr -d '"')
+  done < <(processor_ids)
 
   if [ ${#CHEAT_MISSING[@]} -eq 0 ]; then
     ok "$CHEAT documents all framework type: IDs"

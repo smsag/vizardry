@@ -1,6 +1,7 @@
 import type { App , DropdownComponent} from "obsidian";
 import { Modal, Notice, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
+import { DEFAULT_SETTINGS } from "./settings-schema";
 import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
 import { getLinearService } from "./linear";
 import { getUpvotyService } from "./upvoty";
@@ -14,62 +15,12 @@ function debounce<T extends (...args: unknown[]) => unknown>(fn: T, ms: number):
   };
 }
 
-export interface PluginSettings {
-  // Appearance
-  /** Render canvases with a handwriting font + monochrome ink (whiteboard look). */
-  sketchMode: boolean;
-  /** Optional font-family override for sketch mode; blank = the bundled font. */
-  sketchFont: string;
-
-  // Linear
-  linearEnabled: boolean;
-  linearBaseUrl: string;
-  /** Logical name under which the Linear API key is stored in app.secretStorage. */
-  linearSecretName: string;
-
-  // LLM
-  llmProvider: "anthropic" | "openai";
-  llmModel: string;
-  /** Logical name under which the LLM API key is stored in app.secretStorage. */
-  llmSecretName: string;
-
-  // Cache TTLs
-  summaryTtlHours: number;
-  statusTtlMinutes: number;
-
-  // Upvoty
-  upvotyEnabled: boolean;
-  upvotyBaseUrl: string;
-  /** Public dashboard URL used to build "Open in Upvoty" links — distinct from
-   *  upvotyBaseUrl (the REST API endpoint), since self-hosted/white-labelled
-   *  instances can have the two on entirely different domains. */
-  upvotyAppUrl: string;
-  upvotyKeyPrefix: string;
-  /** Logical name under which the Upvoty API key is stored in app.secretStorage. */
-  upvotySecretName: string;
-  upvotyStatusTtlMinutes: number;
-
-  // Print / PDF export
-}
-
-export const DEFAULT_SETTINGS: PluginSettings = {
-  sketchMode: false,
-  sketchFont: "",
-  linearEnabled: false,
-  linearBaseUrl: "https://api.linear.app/graphql",
-  linearSecretName: "vzd-linear-key",
-  llmProvider: "anthropic",
-  llmModel: "claude-haiku-4-5-latest",
-  llmSecretName: "vzd-llm-key",
-  summaryTtlHours: 24,
-  statusTtlMinutes: 5,
-  upvotyEnabled: false,
-  upvotyBaseUrl: "https://api.upvotyfeedback.com/v1",
-  upvotyAppUrl: "https://app.upvoty.com/feedback",
-  upvotyKeyPrefix: "UPV",
-  upvotySecretName: "vzd-upvoty-key",
-  upvotyStatusTtlMinutes: 5,
-};
+// The persisted schema (interface, defaults, validation) lives in
+// ./settings-schema so it can be loaded and unit-tested without pulling in
+// Obsidian's UI classes. Re-exported here because ~10 call sites already
+// import `PluginSettings` / `DEFAULT_SETTINGS` from "./settings".
+export type { PluginSettings } from "./settings-schema";
+export { DEFAULT_SETTINGS, normalizeSettings, serializeSettings } from "./settings-schema";
 
 const ANTHROPIC_MODELS = [
   { value: "claude-haiku-4-5-latest",  label: "Claude Haiku 4.5 (fast, cheap)" },
