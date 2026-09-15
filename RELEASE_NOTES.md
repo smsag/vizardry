@@ -1,3 +1,108 @@
+## 0.69.0
+
+A quality and security review of the whole codebase and the browser
+extension: about 90 fixes, and three principles written down in
+`CONTRIBUTING.md` so the same classes of bug do not return.
+
+- **Security: the browser extension no longer renders raw HTML from a
+  Markdown file.** Prose between canvases went straight from `marked` into
+  the page, so a `<script>` or an `onerror=` in a dropped file ran with the
+  extension's origin. Prose now passes an allow-list sanitiser; links open in
+  a new tab with `rel=noopener`. Reference-style links (`[text][ref]`)
+  resolved to nothing in the viewer and work now. The viewer reports a
+  file it could not read or one that is too large instead of staying blank.
+
+- **Security: integration base URLs must be https.** The Linear and Upvoty
+  API keys travel in a request header, so an `http://` or arbitrary base URL
+  (typeable in settings, or arriving via a synced `data.json`) would have
+  sent the key in clear or to the wrong host. Anything but an absolute
+  https URL falls back to the default on load.
+
+- **Fix: AI summaries were broken out of the box.** The Anthropic model ids
+  carried a `-latest` suffix that the API rejects with 404. The list is now
+  `claude-haiku-4-5`, `claude-sonnet-5` and `claude-opus-5`, an old id in
+  `data.json` is healed on load, and opening the settings tab no longer
+  silently rewrites a model id it does not recognise. Provider errors now
+  carry the provider's own message instead of "unexpected response 400".
+
+- **Fix: canvases leaked on every re-render.** The disconnect watcher that
+  releases relink registrations, key badges, sticky-pin controllers and
+  media-query listeners only observed the leaf root's direct children, so
+  in a real Obsidian leaf it practically never fired. It now watches the
+  subtree with coalesced sweeps. Key badges register their watcher after
+  they are in the DOM (they used to fall back to `document.body`).
+
+- **Fix: a crafted line could freeze Obsidian.** The inline-link regexes
+  backtracked cubically on a keyword line with a long run of spaces and an
+  unclosed `[[`; a few thousand spaces took seconds on the render path.
+  They are linear now and a test times the pathological input.
+
+- **Fix: write-back could corrupt or mis-edit a note.** Deleting a Node Map
+  box left a `link: A --> B` line behind (the `-->` arrow was unknown to the
+  editor) and the canvas then failed to parse; a SIPOC cell inserted after a
+  top-level `link:` landed outside its row; editing a pace-layers cell wrote
+  into the *next* pace-layers canvas when this one lacked the layer; a
+  `block:Label` header rendered but could not be edited; a column-0 comment
+  inside a block duplicated the line after it on edit; deleting a tree node
+  took the comment before its sibling with it; and enabling `collapsed:`
+  over a `collapsed: false` line did nothing.
+
+- **Fix: parse problems are shown, not logged.** Pace layers, story maps and
+  RACI reported unknown layers, unknown steps and multiple accountables to
+  the developer console only; they use the warning chip under the canvas
+  like every other framework. `root:`, `box:`, `link:` and the Wardley
+  keywords are case-insensitive like the rest; an indented `title:` is
+  content, not the canvas title; a block labelled `constructor` is no longer
+  a "duplicate".
+
+- **Fix: interactions that lost work or wrote when they should not.**
+  A click inside an SVG rename box dismissed the edit; a plain click on a
+  Wardley node or Node Map box rewrote its position and ate the rename;
+  a Flow heading committed twice; Escape on a card-mode block re-rendered it
+  as plain lines; clicking into and out of a block wrote an unchanged value;
+  edit affordances appeared where there was no editor to write to; Node Map
+  collapse and pin state was never persisted; Journey titles were editable
+  in Reading View. Write failures in SIPOC, RACI, Test Card, the period
+  field, Wardley unlink and Node Map now say so instead of showing a value
+  the note never received.
+
+- **Fix: presentation mode opened empty for Matrix, Concept Map, Test Card
+  and Product Compass.** The overlay is now a dialog that takes focus and
+  hands it back. Matrix pills answer the keyboard in edit mode and survive a
+  cancelled touch; touch drags handle `touchcancel`; the item menu no longer
+  opens twice on Android; Venn colours no longer flip between renders; the
+  export API no longer returns a pinned clone as a second canvas.
+
+- **Fix: settings and sideleaf.** Saving the secret picker without a change
+  wiped the integration's cache; tabbing through the API-key field rewrote
+  the keychain entry; a settings write failure was invisible; the heading
+  suggester produced `[[#Heading]]]]` with bracket auto-pairing; a double
+  click could open two Vizardry tabs; card state is saved after each
+  change; copy-key reports success or failure; a Linear card showed the
+  Upvoty error text; a post URL broke on an app URL with a query string;
+  a prefix containing a dash (`MY-APP`) mis-cut the key.
+
+- **Reliability: bounded waits.** A server's `Retry-After` is capped at five
+  seconds with jitter (a rate-limited canvas used to wait out a two-minute
+  penalty, every key in lock-step); the settle hook no longer waits forever
+  on an image that never loads; a cache flush settles the writes it folds
+  in; changing a credential also drops in-flight requests for the old one.
+
+- **Build and CI.** The extension is type-checked, linted and tested (it
+  was none of these), and its manifest version is bumped and asserted with
+  the plugin's (it had drifted to 0.61.1). Tests are linted. Compiler
+  strictness: unused symbols, implicit returns, switch fall-through and
+  missing `override` fail the build; 34 dead symbols and ~100 lines of dead
+  CSS went, and `scripts/css-check.mjs` keeps it that way. Coverage
+  thresholds sit just under the real numbers. The release workflow attaches
+  only the tag's own notes and no longer interpolates inputs into shell;
+  baseline regeneration fails loudly and never pushes to `main`; the visual
+  suite reports every mismatched fixture. One es2020 target for all bundles.
+
+- **Docs.** The sideleaf is documented in the README; the export API
+  reference the README linked to exists; the PR template lists real files;
+  the syntax reference no longer claims v0.45.1.
+
 ## 0.68.1
 
 - **Fix: a key could go missing and the settings said only "Not set".** The

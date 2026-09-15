@@ -2166,6 +2166,12 @@ The `assumption` preset uses a gated heat (importance × evidence) so only the t
 
 ---
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the three principles that guide development, the checks that enforce them, and the everyday commands. `npm run check` runs everything CI runs.
+
+---
+
 ## License
 
 MIT © [Steffen Seitz](mailto:vizardry@grembl.de)
