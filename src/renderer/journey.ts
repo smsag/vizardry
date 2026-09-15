@@ -10,6 +10,7 @@ import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { activateInlineEdit } from "./inline-edit";
 import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { JOURNEY_DIVIDERS, lanesForVariant } from "../journey";
 import {
@@ -221,15 +222,15 @@ export function renderJourneyMap(
         });
       });
 
-      const delBtn = cardEl.createEl("button", {
-        cls: "vzd-journey-card-delete vzd-btn",
-        attr: { "aria-label": t("journey.deleteCard") },
-      });
-      delBtn.textContent = "×";
-      delBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        deleteJourneyCard(app, ctx, container, phaseName, laneKey, index);
+      attachItemMenu(cardEl, {
+        label: t("menu.actionsFor", { name: card.name }),
+        button: { parent: cardEl, cls: "vzd-journey-card-delete vzd-btn" },
+        actions: () => [{
+          title: t("journey.deleteCard"),
+          icon: "trash-2",
+          destructive: true,
+          onChoose: () => deleteJourneyCard(app, ctx, container, phaseName, laneKey, index),
+        }],
       });
 
       enableDragGesture(cardEl, {

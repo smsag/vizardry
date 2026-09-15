@@ -1,3 +1,57 @@
+## 0.68.0
+
+- **New: one actions menu for every item on a canvas.** A Story Map task, a
+  Journey card, an SCQA card, a Problem card, a Compass entry, an Impact Map /
+  Mind Map / Opportunity Solution Tree node, a Fishbone node and a Node Map box
+  now all carry the same `⋯` control. It opens a menu — right-click does the
+  same on desktop, and a long press does it on a phone.
+
+  **Why.** Each of those canvases had grown its own delete: a 16-pixel red
+  circle perched on the item's corner, which appeared only while the mouse was
+  over it. Nine near-identical copies, and every one of them carried the same
+  two faults described below. A menu is the one shape that works on all of
+  them — including the SVG canvases, where there is no box to hang a button
+  off — and it leaves room for the other per-item actions those canvases will
+  want, instead of a growing row of tiny icons.
+
+  The control itself is now neutral: it opens a menu rather than deleting, so
+  the red has moved to the **Delete** row inside the menu, in whatever red your
+  theme uses for a destructive action.
+
+- **Fix: deleting an item was impossible on a phone or tablet.** Every one of
+  those controls was hidden until the item was hovered, and a touch screen
+  never hovers — so on mobile there was simply no way to delete a card, a node
+  or a box. They are now permanently visible on touch.
+
+- **Fix: deleting an item was impossible by keyboard, on every platform.** The
+  same controls were hidden in a way that also removed them from the tab order,
+  so they could not be reached by keyboard and were invisible to screen
+  readers even on desktop. Each is now focusable, becomes visible when tabbed
+  to, and the SVG ones answer Enter and Space.
+
+- **Fix: the controls were too small to hit reliably.** A 16-pixel target is
+  two thirds of the 24 pixels the accessibility guidelines ask for. The badge
+  still looks the same size — six canvases keep their appearance — but its
+  clickable area now extends to 24 pixels.
+
+- **New: swipe a sideleaf card aside to remove it.** Drag a Linear or Upvoty
+  card left or right and it follows your finger; carry it far enough and it
+  goes. The card's `⋯` menu does the same thing, so nothing depends on the
+  gesture. It is offered in the sideleaf and nowhere else: on the card canvases
+  a horizontal drag already means *move this card to another column*, and
+  taking that over would break the thing those boards are for.
+
+- **New: ten seconds to undo a removed card.** Closing a card — or using
+  **Clear all** — leaves a short **Undo** in the panel header. Several removals
+  inside the window collapse into one offer, so clearing the panel and then
+  closing one more card gives you a single Undo rather than a queue to work
+  back through.
+
+  Canvas deletions deliberately do *not* get this bar: they change the note
+  itself, so the editor's own undo already restores them (Cmd/Ctrl+Z, or the
+  undo button on mobile). Offering a second, separate undo for the same action
+  would let both fire and put the item back twice.
+
 ## 0.67.0
 
 - **New: the Vizardry sideleaf — Linear and Upvoty items open as cards in a side

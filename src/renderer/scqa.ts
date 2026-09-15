@@ -9,6 +9,7 @@ import { activateInlineEdit } from "./inline-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import type { RenderContext } from "./render-context";
@@ -168,11 +169,17 @@ function renderGrid(
 
     // "×" delete (any node except the situation root).
     if (node.level > 0) {
-      const delBtn = card.createEl("button", { cls: "vzd-scqa-card-del vzd-btn", text: "×" });
-      delBtn.setAttribute("aria-label", t("tree.deleteNode"));
-      delBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!deleteSCQANode(app!, ctx!, el, data.variant, node.level, node.text)) showWriteFailedNotice(el);
+      attachItemMenu(card, {
+        label: t("menu.actionsFor", { name: node.text }),
+        button: { parent: card, cls: "vzd-scqa-card-del vzd-btn" },
+        actions: () => [{
+          title: t("tree.deleteNode"),
+          icon: "trash-2",
+          destructive: true,
+          onChoose: () => {
+            if (!deleteSCQANode(app!, ctx!, el, data.variant, node.level, node.text)) showWriteFailedNotice(el);
+          },
+        }],
       });
 
       // Drag to reorder among siblings (reorder-only — never re-parents).

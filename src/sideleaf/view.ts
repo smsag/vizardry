@@ -5,6 +5,8 @@ import type { CardHandles } from "./card";
 import type { TicketRef } from "./types";
 import { cardId, parseCardId } from "./types";
 import { setKeyOpen, clearAllKeyOpen } from "../shared/key-open-state";
+import { UndoWindow } from "./undo";
+import { enableSwipeToRemove } from "./swipe";
 import { VIZARDRY_VIEW_TYPE } from "./view-type";
 import type { SideleafHost } from "./view-type";
 import { registerSideleafView, unregisterSideleafView } from "./index";
@@ -37,6 +39,9 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
   /** Card id → its handles, in insertion order (newest first in the DOM). */
   private cards = new Map<string, CardHandles>();
   private visibility: IntersectionObserver | null = null;
+  private undoEl!: HTMLElement;
+  /** Removals are reversible for ten seconds — see undo.ts for why only here. */
+  private undo = new UndoWindow<TicketRef>(() => this.syncUndo());
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -57,6 +62,7 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
     clearBtn.setAttribute("aria-label", t("sideleaf.clearAll"));
     clearBtn.addEventListener("click", () => this.clearAll());
 
+    this.undoEl = root.createEl("div", { cls: "vzd-sideleaf-undo" });
     this.listEl = root.createEl("div", { cls: "vzd-sideleaf-list" });
     this.emptyEl = root.createEl("div", { cls: "vzd-sideleaf-empty" });
     const emptyIcon = this.emptyEl.createEl("div", { cls: "vzd-sideleaf-empty-icon" });
@@ -64,6 +70,7 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
     this.emptyEl.createEl("p", { text: t("sideleaf.emptyBody") });
 
     this.syncChrome();
+    this.syncUndo();
     this.watchVisibility();
     registerSideleafView(this);
     return Promise.resolve();
@@ -71,6 +78,7 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
 
   onClose(): Promise<void> {
     unregisterSideleafView(this);
+    this.undo.discard();
     this.visibility?.disconnect();
     this.visibility = null;
     return Promise.resolve();
@@ -112,6 +120,9 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
       return;
     }
     const card = createCard(ref, () => this.closeCard(id));
+    // The fast path; the card's ⋯ menu does the same thing and is what a
+    // keyboard user has. See swipe.ts for why only the sideleaf gets this.
+    enableSwipeToRemove(card.el, { onRemove: () => this.closeCard(id) });
     this.cards.set(id, card);
     // Newest first, so a card opened now is where the eye already is.
     this.listEl.prepend(card.el);
@@ -120,19 +131,46 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
   }
 
   closeCard(id: string): void {
+    const ref = parseCardId(id);
+    this.dropCard(id);
+    if (ref) this.offerUndo([ref]);
+    this.syncChrome();
+  }
+
+  clearAll(): void {
+    // Restored newest-last so replaying through openCard rebuilds the order.
+    const removed = this.cardIds().map(parseCardId).filter((r): r is TicketRef => r !== null).reverse();
+    for (const id of [...this.cards.keys()]) this.dropCard(id);
+    clearAllKeyOpen();
+    this.offerUndo(removed);
+    this.syncChrome();
+  }
+
+  /** Removes one card and its marker, with no undo bookkeeping. */
+  private dropCard(id: string): void {
     const card = this.cards.get(id);
     if (!card) return;
     card.el.remove();
     this.cards.delete(id);
     setKeyOpen(id, false);
-    this.syncChrome();
   }
 
-  clearAll(): void {
-    for (const card of this.cards.values()) card.el.remove();
-    this.cards.clear();
-    clearAllKeyOpen();
-    this.syncChrome();
+  private offerUndo(refs: TicketRef[]): void {
+    this.undo.offer(refs, (items) => {
+      for (const ref of items) this.openCard(ref);
+      this.syncChrome();
+    });
+  }
+
+  private syncUndo(): void {
+    const n = this.undo.pending();
+    this.undoEl.empty();
+    this.undoEl.toggleClass("is-visible", n > 0);
+    if (n === 0) return;
+    const key = n === 1 ? "sideleaf.removed" : "sideleaf.removedPlural";
+    this.undoEl.createEl("span", { text: t(key, { n: String(n) }) });
+    const btn = this.undoEl.createEl("button", { cls: "vzd-sideleaf-undo-btn", text: t("sideleaf.undo") });
+    btn.addEventListener("click", () => this.undo.undo());
   }
 
   refreshAll(): void {
@@ -163,13 +201,18 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
   setState(state: unknown, result: unknown): Promise<void> {
     const ids = (state as SideleafState | null)?.cards;
     if (Array.isArray(ids)) {
-      this.clearAll();
+      // Not clearAll(): restoring a workspace is not a removal the user made,
+      // so it must not leave an "Undo" offering to put back the cards that
+      // were on screen a moment ago.
+      for (const id of [...this.cards.keys()]) this.dropCard(id);
+      this.undo.discard();
       // The list is stored newest-first, and openCard prepends — so it has to
       // be replayed oldest-first, or a restored stack comes back inverted.
       for (const id of [...ids].reverse()) {
         const ref = parseCardId(id);
         if (ref) this.openCard(ref);
       }
+      this.syncChrome();
     }
     return super.setState(state, result as never);
   }

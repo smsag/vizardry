@@ -28,6 +28,8 @@ import {
   writeNodeMapBoxPosition, addNodeMapBox, removeNodeMapBox, renameNodeMapBox,
   writeNodeMapBoxBody, setNodeMapBoxColor, addNodeMapLink, removeNodeMapLink,
 } from "../shared/nodemap-edit";
+import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 
 const PAD = 40;
 const CHAR_W = 7;
@@ -524,9 +526,30 @@ function attachBoxControls(
     deleteBtn.setAttribute("transform", `translate(${bx - 10}, ${by + 10})`);
     deleteBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-nodemap-unlink-circle" }));
     const xText = createSvgEl("text", { x: "0", y: "0", class: "vzd-nodemap-unlink-icon", "text-anchor": "middle", "dominant-baseline": "central" });
-    xText.textContent = "×";
+    xText.textContent = "⋯";
     deleteBtn.appendChild(xText);
-    deleteBtn.addEventListener("click", (e) => { e.stopPropagation(); removeNodeMapBox(app, ctx, wrap, ref.box.name); });
+    deleteBtn.setAttribute("aria-label", t("menu.actions"));
+    deleteBtn.setAttribute("role", "button");
+    deleteBtn.setAttribute("tabindex", "0");
+    const boxMenu = attachItemMenu(deleteBtn, {
+      label: t("menu.actionsFor", { name: ref.box.name }),
+      actions: () => [{
+        title: t("tree.deleteNode"),
+        icon: "trash-2",
+        destructive: true,
+        onChoose: () => removeNodeMapBox(app, ctx, wrap, ref.box.name),
+      }],
+    });
+    const openBoxMenu = (): void => {
+      const r = deleteBtn.getBoundingClientRect();
+      boxMenu.open(r.left, r.bottom);
+    };
+    deleteBtn.addEventListener("click", (e) => { e.stopPropagation(); openBoxMenu(); });
+    deleteBtn.addEventListener("keydown", (e) => {
+      const evt = e as KeyboardEvent;
+      if (evt.key !== "Enter" && evt.key !== " ") return;
+      evt.preventDefault(); evt.stopPropagation(); openBoxMenu();
+    });
     controls.appendChild(deleteBtn);
 
     const colorBtn = createSvgEl("g", { class: "vzd-nodemap-box-color-btn" });

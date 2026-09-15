@@ -14,6 +14,8 @@
  */
 import type { FlowEdge, FlowNode, StageDef } from "../types/problem";
 import type { RenderContext } from "./render-context";
+import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import { renderHeadingLink } from "./controls";
 import { createSvgEl } from "../shared/svg";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
@@ -216,11 +218,16 @@ function renderCard(svg: SVGElement, node: Placed, rc: RenderContext, edit?: Flo
     const bodyEl = host.createEl("div", { cls: "vzd-flow-body vzd-flow-body--edit", text: node.body ?? "" });
     makeEditable(bodyEl, node.body ?? "", (b) => edit.editText(node, node.heading, b));
 
-    const del = host.createEl("button", {
-      cls: "vzd-flow-card-delete", attr: { "aria-label": "Delete card", type: "button" },
+    attachItemMenu(host, {
+      label: t("menu.actionsFor", { name: node.heading }),
+      button: { parent: host, cls: "vzd-flow-card-delete" },
+      actions: () => [{
+        title: t("flow.deleteCard"),
+        icon: "trash-2",
+        destructive: true,
+        onChoose: () => edit.deleteCard(node),
+      }],
     });
-    del.textContent = "×";
-    del.addEventListener("click", (e) => { e.stopPropagation(); edit.deleteCard(node); });
   } else {
     if (node.heading) {
       const headEl = host.createEl("div", { cls: "vzd-flow-heading", text: node.heading });

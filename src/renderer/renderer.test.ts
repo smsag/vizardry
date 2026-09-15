@@ -454,7 +454,7 @@ describe("renderTree", () => {
     expect(mainText?.textContent?.length).toBeLessThanOrEqual(MINDMAP_OPTS.maxLabelChars);
   });
 
-  it("shows a delete button on every non-root node (incl. branches with children), never on the root", () => {
+  it("shows an actions trigger on every non-root node (incl. branches with children), never on the root", () => {
     const el = container();
     const branch = makeNode("Branch", 1, [makeNode("Sub", 2)]); // has a child
     const leaf = makeNode("Leaf", 1);
@@ -463,12 +463,18 @@ describe("renderTree", () => {
     renderTree({ root }, CLASSIC_OPTS, el, undefined, undefined,
       { onRename: vi.fn(), onAddChild: vi.fn(), onDelete });
 
-    // Branch (with child), Sub, Leaf → 3 delete buttons; none on the root.
-    const delButtons = el.querySelectorAll<SVGGElement>(".vzd-tree-edit-del");
-    expect(delButtons).toHaveLength(3);
+    // Branch (with child), Sub, Leaf → 3 triggers; none on the root.
+    const triggers = el.querySelectorAll<SVGGElement>(".vzd-tree-edit-del");
+    expect(triggers).toHaveLength(3);
 
-    delButtons[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(onDelete).toHaveBeenCalledTimes(1);
+    // Delete moved behind the shared actions menu, so the trigger opens a menu
+    // rather than deleting on click. It is keyboard-operable, which an SVG
+    // group is not by default. The menu's own behaviour — including that the
+    // Delete row is destructive and runs its action — lives in
+    // shared/item-menu.test.ts.
+    expect(triggers[0].getAttribute("role")).toBe("button");
+    expect(triggers[0].getAttribute("tabindex")).toBe("0");
+    expect(onDelete).not.toHaveBeenCalled();
   });
 
   it("opens a first-level rename field carrying the classes the sketch-mode legibility fix targets", () => {

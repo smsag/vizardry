@@ -12,11 +12,11 @@
  * a loader that fills it.
  */
 
-import { setIcon } from "obsidian";
 import { getLinearService } from "../linear";
 import { getUpvotyService } from "../upvoty";
 import { setStatusColor, formatKeyAge } from "../shared/key-format";
 import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import type { TicketRef } from "./types";
 import { cardId } from "./types";
 
@@ -55,10 +55,6 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
   el.dataset.cardId = cardId(ref);
   el.setAttribute("role", "article");
 
-  const closeBtn = el.createEl("button", { cls: "vzd-card-close vzd-btn" });
-  setIcon(closeBtn, "x");
-  closeBtn.setAttribute("aria-label", t("sideleaf.closeCard", { key: ref.key }));
-  closeBtn.addEventListener("click", (e) => { e.stopPropagation(); onClose(); });
 
   const header = el.createEl("div", { cls: "vzd-card-header" });
   const statusEl = header.createEl("span", { cls: "vzd-card-status" });
@@ -96,6 +92,19 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
       showError(shell, (err as Error)?.message ?? t("upvoty.error.network"));
     });
   };
+
+  // The same actions menu every canvas item uses. "Remove card" is not marked
+  // destructive: it takes the card off this panel and changes nothing in the
+  // vault — clicking the key again brings it straight back.
+  attachItemMenu(el, {
+    label: t("menu.actionsFor", { name: ref.key }),
+    button: { parent: el, cls: "vzd-card-menu vzd-btn" },
+    actions: () => [
+      { title: t("sideleaf.refresh"), icon: "refresh-cw", onChoose: refresh },
+      { title: t("sideleaf.copyKey"), icon: "copy", onChoose: () => void navigator.clipboard?.writeText(ref.key) },
+      { title: t("sideleaf.removeCard"), icon: "x", onChoose: onClose },
+    ],
+  });
 
   summaryEl.createEl("span", { cls: "vzd-card-loading", text: t("roadmap.linear.loading") });
   refresh();

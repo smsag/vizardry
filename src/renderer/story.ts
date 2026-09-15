@@ -10,6 +10,7 @@ import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { activateInlineEdit } from "./inline-edit";
 import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import {
   addStoryTask,
@@ -267,16 +268,16 @@ export function renderStoryMap(
         });
       });
 
-      // × delete button
-      const delBtn = card.createEl("button", {
-        cls: "vzd-story-task-delete vzd-btn",
-        attr: { "aria-label": t("story.deleteTask") },
-      });
-      delBtn.textContent = "×";
-      delBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        deleteStoryTask(app, ctx, container, task.name);
+      // Actions menu — ⋯ button, right-click, or long-press. See item-menu.ts.
+      attachItemMenu(card, {
+        label: t("menu.actionsFor", { name: task.name }),
+        button: { parent: card, cls: "vzd-story-task-delete vzd-btn" },
+        actions: () => [{
+          title: t("story.deleteTask"),
+          icon: "trash-2",
+          destructive: true,
+          onChoose: () => deleteStoryTask(app, ctx, container, task.name),
+        }],
       });
 
       // Drag to move — only initiates after deliberate movement, so a plain
