@@ -137,12 +137,16 @@ describe("renderFlowGraph — live editing", () => {
     expect(editH).toBeGreaterThan(readH);
   });
 
-  it("clicking delete / add calls the handlers", () => {
+  it("opens the actions menu from the card's trigger, and add still calls its handler", () => {
+    // Delete moved behind the shared actions menu (see shared/item-menu.ts),
+    // so the trigger opens a menu rather than deleting directly. The menu
+    // itself — including that its Delete row is marked destructive and fires
+    // its action — is covered in shared/item-menu.test.ts.
     const el = host();
     const edit: FlowEdit = { editText: vi.fn(), deleteCard: vi.fn(), addCard: vi.fn() };
     renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
-    el.querySelector<HTMLElement>(".vzd-flow-card-delete")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(edit.deleteCard).toHaveBeenCalledWith(expect.objectContaining({ id: "ideal_1" }));
+    const trigger = el.querySelector<HTMLElement>(".vzd-flow-card-delete")!;
+    expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
     el.querySelector<HTMLElement>(".vzd-flow-add")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(edit.addCard).toHaveBeenCalledWith("ideal");
   });

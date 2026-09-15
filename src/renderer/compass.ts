@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { CompassData } from "../types/compass";
@@ -93,11 +95,15 @@ export function renderCompass(
         if (!writeCompassValue(edit.app, edit.ctx, edit.container, key, index, v)) failed();
       });
     });
-    const del = el.createEl("button", { cls: "vzd-compass-del vzd-btn", text: "×" });
-    del.setAttribute("aria-label", "Delete");
-    del.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!removeCompassValue(edit.app, edit.ctx, edit.container, key, index)) failed();
+    attachItemMenu(el, {
+      label: t("menu.actionsFor", { name: text }),
+      button: { parent: el, cls: "vzd-compass-del vzd-btn" },
+      actions: () => [{
+        title: t("compass.deleteEntry"),
+        icon: "trash-2",
+        destructive: true,
+        onChoose: () => { if (!removeCompassValue(edit.app, edit.ctx, edit.container, key, index)) failed(); },
+      }],
     });
   };
 
@@ -131,11 +137,15 @@ export function renderCompass(
           if (!writeCompassValue(edit.app, edit.ctx, edit.container, "insight", i, v)) failed();
         });
       });
-      const del = tile.createEl("button", { cls: "vzd-compass-del vzd-btn", text: "×" });
-      del.setAttribute("aria-label", "Delete");
-      del.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!removeCompassValue(edit.app, edit.ctx, edit.container, "insight", i)) failed();
+      attachItemMenu(tile, {
+        label: t("menu.actionsFor", { name: ins.text }),
+        button: { parent: tile, cls: "vzd-compass-del vzd-btn" },
+        actions: () => [{
+          title: t("compass.deleteEntry"),
+          icon: "trash-2",
+          destructive: true,
+          onChoose: () => { if (!removeCompassValue(edit.app, edit.ctx, edit.container, "insight", i)) failed(); },
+        }],
       });
     });
     addButton(challenge, "insight");

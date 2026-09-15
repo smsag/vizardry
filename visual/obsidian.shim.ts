@@ -38,3 +38,18 @@ export const requestUrl = async (): Promise<{ status: number; json: unknown; tex
   json: {},
   text: "",
 });
+
+/**
+ * Menu — the actions menu every canvas item opens (see shared/item-menu.ts).
+ * The harness renders canvases but never opens a menu, so this only has to
+ * exist and chain; `showAtPosition` deliberately draws nothing, which keeps
+ * the snapshots free of menu chrome.
+ */
+export class Menu {
+  addItem(_cb: (item: unknown) => void): this { return this; }
+  addSeparator(): this { return this; }
+  showAtPosition(_pos: { x: number; y: number }, _doc?: Document): this { return this; }
+  showAtMouseEvent(_evt: MouseEvent): this { return this; }
+  hide(): this { return this; }
+  close(): void {}
+}

@@ -337,4 +337,13 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "sideleaf.upvotyDisabled":   "Upvoty-Integration deaktiviert.",
   "sideleaf.openCommand":      "Vizardry-Sideleaf öffnen",
   "sideleaf.ribbon":           "Vizardry-Sideleaf",
+
+  // ── Item actions menu ───────────────────────────────────────────────────────
+  "menu.actionsFor":           "Aktionen für {{name}}",
+  "menu.actions":              "Aktionen",
+  "sideleaf.refresh":          "Aktualisieren",
+  "sideleaf.copyKey":          "Schlüssel kopieren",
+  "sideleaf.removeCard":       "Karte entfernen",
+  "compass.deleteEntry":       "Eintrag löschen",
+  "flow.deleteCard":           "Karte löschen",
 };

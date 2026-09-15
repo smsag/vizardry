@@ -351,6 +351,15 @@ export const en = {
   "sideleaf.upvotyDisabled":   "Upvoty integration disabled.",
   "sideleaf.openCommand":      "Open the Vizardry sideleaf",
   "sideleaf.ribbon":           "Vizardry sideleaf",
+
+  // ── Item actions menu ───────────────────────────────────────────────────────
+  "menu.actionsFor":           "Actions for {{name}}",
+  "menu.actions":              "Actions",
+  "sideleaf.refresh":          "Refresh",
+  "sideleaf.copyKey":          "Copy key",
+  "sideleaf.removeCard":       "Remove card",
+  "compass.deleteEntry":       "Delete entry",
+  "flow.deleteCard":           "Delete card",
 } as const;
 
 export type TranslationKey = keyof typeof en;

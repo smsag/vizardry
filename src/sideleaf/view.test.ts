@@ -95,11 +95,15 @@ describe("closing cards", () => {
     expect(badge.classList.contains(KEY_OPEN_CLASS)).toBe(false);
   });
 
-  it("closes a card from its own close button", async () => {
+  it("gives each card an actions trigger that announces a menu", async () => {
+    // Removal moved behind the shared actions menu; the menu's own behaviour
+    // is covered in shared/item-menu.test.ts. What matters here is that every
+    // card carries a labelled trigger.
     const v = await makeView();
     v.openCard(LINEAR);
-    (cardEls(v)[0].querySelector(".vzd-card-close") as HTMLElement).click();
-    expect(cardEls(v)).toHaveLength(0);
+    const trigger = cardEls(v)[0].querySelector(".vzd-card-menu")!;
+    expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
+    expect(trigger.getAttribute("aria-label")).toBeTruthy();
   });
 
   it("ignores a close for a card that is not open", async () => {

@@ -769,16 +769,14 @@ button.vzd-btn {
 .vzd-story-task-delete {
   display: flex;
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  top: 1px;
+  right: 1px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-s);
   border: none;
-  background: var(--background-modifier-error);
-  color: #fff;
-  font-size: 11px;
-  line-height: 1;
+  background: none;
+  color: var(--text-faint);
   padding: 0;
   cursor: pointer;
   align-items: center;
@@ -788,7 +786,8 @@ button.vzd-btn {
 
 
 .vzd-story-task-delete:hover {
-  filter: brightness(1.15);
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
 }
 
 .vzd-story-task-card--draggable {
@@ -1030,16 +1029,14 @@ button.vzd-btn {
 .vzd-journey-card-delete {
   display: flex;
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  top: 1px;
+  right: 1px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-s);
   border: none;
-  background: var(--background-modifier-error);
-  color: #fff;
-  font-size: 11px;
-  line-height: 1;
+  background: none;
+  color: var(--text-faint);
   padding: 0;
   cursor: pointer;
   align-items: center;
@@ -1049,7 +1046,8 @@ button.vzd-btn {
 
 
 .vzd-journey-card-delete:hover {
-  filter: brightness(1.15);
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
 }
 
 .vzd-journey-card--draggable {
@@ -2819,26 +2817,6 @@ code:has(.vzd-upvoty-key) {
   font-size: var(--font-ui-small);
 }
 
-.vzd-card-close {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  box-shadow: none;
-  color: var(--text-faint);
-  border-radius: var(--radius-s);
-  cursor: pointer;
-}
-.vzd-card-close svg { width: 12px; height: 12px; }
-.vzd-card-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-
 .vzd-card-header {
   display: flex;
   align-items: center;
@@ -2918,6 +2896,46 @@ code:has(.vzd-upvoty-key) {
 }
 .vzd-card--flash { animation: vzd-card-flash 0.7s ease-out; }
 
+
+/* ── Item actions trigger ────────────────────────────────────────────────── */
+/*
+ * The `⋯` that opens an item's actions menu. It replaced a 16px red circle on
+ * each of these canvases — red was the right colour while the control *was*
+ * the delete, but it now only opens a menu, and the destructive colour has
+ * moved to the menu row that actually deletes (Obsidian paints a warning item
+ * in the theme's own red, so that tracks the vault's palette).
+ *
+ * Visibility, hit area and keyboard reachability are owned by the "Item action
+ * reachability" section below — this is only how the trigger looks.
+ */
+.vzd-story-task-delete svg,
+.vzd-journey-card-delete svg,
+.vzd-scqa-card-del svg,
+.vzd-flow-card-delete svg,
+.vzd-compass-del svg,
+.vzd-card-menu svg {
+  width: 14px;
+  height: 14px;
+}
+
+.vzd-card-menu {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--text-faint);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.vzd-card-menu:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 
 /* ── Item action reachability ────────────────────────────────────────────── */
 /*
@@ -4413,10 +4431,11 @@ code:has(.vzd-upvoty-key) {
 .vzd-scqa-card-add,
 .vzd-scqa-card-del {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-s);
   border: none;
+  background: none;
   padding: 0;
   font-size: 12px;
   line-height: 1;
@@ -4435,10 +4454,13 @@ code:has(.vzd-upvoty-key) {
 }
 
 .vzd-scqa-card-del {
-  top: -6px;
-  right: -6px;
-  background: var(--background-modifier-error);
-  color: #fff;
+  top: 1px;
+  right: 1px;
+  color: var(--text-faint);
+}
+.vzd-scqa-card-del:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
 }
 
 .vzd-scqa-card:hover .vzd-scqa-card-add,
@@ -4619,14 +4641,14 @@ code:has(.vzd-upvoty-key) {
 /* Delete "×" — hover-revealed, top-right of the card. */
 .vzd-flow-card-delete {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 16px;
-  height: 16px;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
   border: none;
-  border-radius: 50%;
-  background: var(--background-modifier-error);
-  color: #fff;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--text-faint);
   font-size: 12px;
   line-height: 1;
   padding: 0;
@@ -4636,7 +4658,7 @@ code:has(.vzd-upvoty-key) {
   justify-content: center;
   z-index: 2;
 }
-.vzd-flow-card-delete:hover { filter: brightness(1.12); }
+.vzd-flow-card-delete:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 
 /* "+ Add" — one per column, revealed on canvas hover. */
 .vzd-flow-add {
