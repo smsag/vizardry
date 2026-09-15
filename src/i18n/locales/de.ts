@@ -326,4 +326,15 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "service.error.upvotyDisabled":        "Upvoty-Integration deaktiviert.",
   "service.notice.linearAuth":           "Vizardry: Linear-API-Schlüssel ist ungültig oder fehlt — prüfe Einstellungen → Vizardry.",
   "service.notice.upvotyAuth":           "Vizardry: Upvoty-API-Schlüssel ist ungültig oder fehlt — prüfe Einstellungen → Vizardry.",
+
+  // ── Sideleaf ────────────────────────────────────────────────────────────────
+  "sideleaf.title":            "Vizardry",
+  "sideleaf.clearAll":         "Alle entfernen",
+  "sideleaf.emptyBody":        "Klicke in einer Notiz auf einen Linear- oder Upvoty-Schlüssel, um ihn hier zu öffnen. Karten bleiben, bis du sie schließt.",
+  "sideleaf.closeCard":        "{{key}} schließen",
+  "sideleaf.openExternal":     "{{key}} im Browser öffnen",
+  "sideleaf.linearDisabled":   "Linear-Integration deaktiviert.",
+  "sideleaf.upvotyDisabled":   "Upvoty-Integration deaktiviert.",
+  "sideleaf.openCommand":      "Vizardry-Sideleaf öffnen",
+  "sideleaf.ribbon":           "Vizardry-Sideleaf",
 };

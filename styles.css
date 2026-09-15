@@ -2746,29 +2746,117 @@ code:has(.vzd-upvoty-key) {
   outline-offset: 2px;
 }
 
-/* ── Status eyebrow (Linear + Upvoty popovers) ───────────────────────────── */
+
+
+/* ── Vizardry sideleaf ───────────────────────────────────────────────────── */
 /*
- * A workflow state is not an identifier, so it is deliberately not drawn as a
- * tag: a key and a state sitting in the same header as two identical lozenges
- * gave no clue which was which. This shares nothing with the tag recipe above.
- *
- * The form is the uppercase eyebrow the Test Card, Compass and Problem
- * canvases already use for their kicker labels, over a rule in the state's own
- * colour — `state.color` from Linear, `status.color` from Upvoty. Both are
- * returned by the API on every fetch and were previously discarded, so the
- * colour costs nothing and turns the rule into information rather than
- * decoration.
- *
- * The colour is never load-bearing: the label always spells the state out in
- * --text-muted, so nothing depends on telling two hues apart (and a missing or
- * unparseable colour simply falls back to --text-muted).
- *
- * A bottom border rather than text-decoration: it sits below the text box with
- * a controllable gap and a weight of its own, so it reads as a rule under a
- * label rather than as an underlined — and therefore clickable — word.
+ * Third-party items open as cards in a sideleaf rather than as floating
+ * popovers. The popover needed fixed positioning, viewport flipping, a shared
+ * z-index counter and teardown when its badge left the DOM; a card is flow
+ * content in a panel and needs none of it, so all of that CSS is gone.
  */
-.vzd-linear-preview-status,
-.vzd-upvoty-preview-status {
+
+.vzd-sideleaf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.75rem;
+}
+
+.vzd-sideleaf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.vzd-sideleaf-heading {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.vzd-sideleaf-clear {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 2px 6px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.vzd-sideleaf-clear:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.vzd-sideleaf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.vzd-sideleaf-list.is-empty { display: none; }
+
+/* Empty state — the leaf can be opened from the command palette with no
+   cards in it, and says what to do rather than showing a blank panel. */
+.vzd-sideleaf-empty {
+  display: none;
+  padding: 1.5rem 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+}
+.vzd-sideleaf-empty.is-visible { display: block; }
+.vzd-sideleaf-empty-icon { color: var(--text-faint); margin-bottom: 0.5rem; }
+.vzd-sideleaf-empty p { margin: 0; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
+.vzd-card {
+  position: relative;
+  padding: 0.6rem 0.7rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  font-size: var(--font-ui-small);
+}
+
+.vzd-card-close {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--text-faint);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.vzd-card-close svg { width: 12px; height: 12px; }
+.vzd-card-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+
+.vzd-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 1.4rem;
+}
+
+/* The status eyebrow — see the note on the popover design this carries over:
+   a state is not an identifier, so it is deliberately not drawn as a tag. The
+   rule takes the state's own colour from the API; the label stays
+   --text-muted, so nothing depends on telling two hues apart. */
+.vzd-card-status {
   --vzd-status-color: var(--text-muted);
   display: inline-block;
   flex-shrink: 0;
@@ -2782,251 +2870,59 @@ code:has(.vzd-upvoty-key) {
   color: var(--text-muted);
   white-space: nowrap;
 }
-.vzd-linear-preview-status:empty,
-.vzd-upvoty-preview-status:empty { display: none; }
+.vzd-card-status:empty { display: none; }
 
-
-/* ── Linear popover ──────────────────────────────────────────────────────── */
-.vzd-linear-preview {
-  position: fixed;
-  z-index: 1000;
-  max-width: 320px;
-  min-width: 240px;
-  padding: 0.75rem;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  font-size: var(--font-ui-small);
-  pointer-events: auto;
-  animation: vzd-fade-in 0.12s ease;
-}
-
-/* Close button — absolute top-right. The popover lives outside
-   .vizardry-canvas (appended to document.body), so it must override
-   .vzd-btn's hover-to-reveal default and stay always visible/clickable.
-   Specificity 0-2-0 beats button.vzd-btn (0-1-1). */
-.vzd-linear-preview .vzd-linear-preview-close {
-  all: unset;
-  -webkit-appearance: none;
-  appearance: none;
-  box-sizing: border-box;
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  box-shadow: none;
-  outline: none;
-  color: var(--text-faint);
-  border-radius: var(--radius-s);
-  cursor: pointer;
-  opacity: 1;
-  pointer-events: auto;
-}
-.vzd-linear-preview .vzd-linear-preview-close svg { width: 12px; height: 12px; }
-.vzd-linear-preview .vzd-linear-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-
-/* Header: status pill (left) + key link (right) */
-.vzd-linear-preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  padding-right: 1.4rem; /* room for close button */
-}
-
-.vzd-linear-preview-status { align-self: center; }
-
-/* Key — looks like plain text, acts as a link */
-.vzd-linear-preview-key {
-  display: flex;
-  align-items: center;
-  align-self: center;
-  font-family: var(--font-monospace);
-  font-size: 0.8em;
-  line-height: 1;
-  color: var(--text-muted);
-  text-decoration: none;
-  cursor: pointer;
-}
-.vzd-linear-preview-key:hover { color: var(--text-accent); text-decoration: underline; }
-
-.vzd-linear-preview-title {
-  font-weight: 600;
-  font-size: var(--font-ui-small);
-  color: var(--text-normal);
-  margin: 0.6rem 0 0;
-  line-height: 1.3;
-}
-
-.vzd-linear-preview-body {
-  margin-top: 0.5rem;
-}
-
-.vzd-linear-preview-summary {
-  color: var(--text-normal);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.vzd-linear-preview-loading {
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-}
-
-.vzd-linear-preview-error {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Footer: "Jane Doe  ·  3d ago" — left-aligned */
-.vzd-linear-preview-footer {
-  display: flex;
-  margin-top: 0.5rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-.vzd-linear-preview-updated {
-  color: var(--text-muted);
-  font-size: 0.82em;
-  text-align: right;
-}
-
-@keyframes vzd-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: none; }
-}
-
-/* ── Upvoty enrichment ───────────────────────────────────────────────────── */
-/* The key badge and status chip are drawn by the shared pill family above. */
-
-/* Popover — structurally identical to .vzd-linear-preview */
-.vzd-upvoty-preview {
-  position: fixed;
-  z-index: 2000;
-  max-width: 320px;
-  min-width: 240px;
-  padding: 0.75rem;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  font-size: var(--font-ui-small);
-  pointer-events: auto;
-  animation: vzd-fade-in 0.12s ease;
-}
-
-.vzd-upvoty-preview .vzd-upvoty-preview-close {
-  all: unset;
-  -webkit-appearance: none;
-  appearance: none;
-  box-sizing: border-box;
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  box-shadow: none;
-  outline: none;
-  color: var(--text-faint);
-  border-radius: var(--radius-s);
-  cursor: pointer;
-  opacity: 1;
-  pointer-events: auto;
-}
-.vzd-upvoty-preview .vzd-upvoty-preview-close svg { width: 12px; height: 12px; }
-.vzd-upvoty-preview .vzd-upvoty-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-
-/* Header: [status pill] [votes] [key link] */
-.vzd-upvoty-preview-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding-right: 1.4rem;
-  flex-wrap: wrap;
-}
-
-.vzd-upvoty-preview-status { align-self: center; }
-
-.vzd-upvoty-preview-key {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-monospace);
-  font-size: 0.8em;
-  line-height: 1;
-  color: var(--text-muted);
-  text-decoration: none;
-  cursor: pointer;
+.vzd-card-key {
   margin-left: auto;
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
 }
-.vzd-upvoty-preview-key:hover { color: var(--text-accent); text-decoration: underline; }
+.vzd-card-key:hover { color: var(--text-accent); text-decoration: underline; }
 
-.vzd-upvoty-preview-title {
+.vzd-card-title {
   font-weight: 600;
-  font-size: var(--font-ui-small);
   color: var(--text-normal);
-  margin: 0.6rem 0 0;
+  margin-top: 0.5rem;
   line-height: 1.3;
 }
 
-.vzd-upvoty-preview-description {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
+.vzd-card-summary {
+  margin: 0.35rem 0 0;
   line-height: 1.5;
-  margin: 0.3rem 0 0;
-}
-
-.vzd-upvoty-preview-body { margin-top: 0.5rem; }
-
-.vzd-upvoty-preview-summary {
   color: var(--text-normal);
-  line-height: 1.5;
-  margin: 0;
 }
 
-.vzd-upvoty-preview-loading {
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-}
+.vzd-card-loading { color: var(--text-muted); letter-spacing: 0.1em; }
+.vzd-card-error   { color: var(--text-muted); font-style: italic; }
 
-.vzd-upvoty-preview-error {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.vzd-upvoty-preview-footer {
+.vzd-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   margin-top: 0.5rem;
-  padding-top: 0.4rem;
+  padding-top: 0.35rem;
   border-top: 1px solid var(--background-modifier-border);
-}
-
-.vzd-upvoty-preview-updated {
-  color: var(--text-muted);
   font-size: 0.82em;
-}
-
-.vzd-upvoty-preview-votes {
-  font-size: 0.75em;
   color: var(--text-muted);
-  white-space: nowrap;
 }
+.vzd-card-footer:has(.vzd-card-meta:empty):has(.vzd-card-extra:empty) { display: none; }
+
+/* A refresh in flight dims the card rather than replacing it: the leaf
+   re-fetches every card whenever it becomes visible, and blanking the content
+   each time would make the panel flicker on every tab switch. */
+.vzd-card--loading { opacity: 0.6; }
+
+/* Clicking a key that already has a card surfaces it instead of stacking a
+   duplicate — this is what says "it's already here". */
+@keyframes vzd-card-flash {
+  from { background: var(--background-modifier-hover); }
+  to   { background: var(--background-primary); }
+}
+.vzd-card--flash { animation: vzd-card-flash 0.7s ease-out; }
 
 /* ── RACI Matrix ────────────────────────────────────────────────────────────── */
 /* The column boxes use vizardry-block/label-row/label/body — no custom

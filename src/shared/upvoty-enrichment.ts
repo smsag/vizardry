@@ -1,11 +1,14 @@
 import { getUpvotyService } from "../upvoty";
-import { t } from "../i18n";
-import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge, setStatusColor } from "./key-enrichment";
+import { enrichKeys, attachKeyTrigger } from "./key-enrichment";
+import type { TicketRef } from "../sideleaf/types";
+
+const ref = (key: string): TicketRef => ({ service: "upvoty", key });
 
 /**
  * Scans `container` for Upvoty post keys (e.g. UPV-1234) in text nodes and
- * replaces each match with a `.vzd-upvoty-key` button. Safe to call multiple
- * times — already-enriched keys are skipped.
+ * replaces each match with a `.vzd-upvoty-key` badge that opens the post's
+ * card in the Vizardry sideleaf. Safe to call multiple times — already-
+ * enriched keys are skipped.
  */
 export function enrichUpvotyKeys(container: HTMLElement): void {
   const svc = getUpvotyService();
@@ -22,7 +25,7 @@ export function enrichUpvotyKeys(container: HTMLElement): void {
 }
 
 /** Shorten display text: keep prefix + first 8 chars of the ID segment + ellipsis. */
-function shortenKey(key: string): string {
+export function shortenKey(key: string): string {
   const dash = key.indexOf("-");
   if (dash === -1) return key;
   const id = key.slice(dash + 1);
@@ -54,84 +57,6 @@ export function renderUpvotyKeyBadge(parent: HTMLElement, key: string): void {
   attachTrigger(btn, key);
 }
 
-// ── Click trigger ────────────────────────────────────────────────────────────
-
 function attachTrigger(btn: HTMLElement, key: string): void {
-  attachKeyTrigger(
-    btn,
-    () => !!getUpvotyService()?.isEnabled(),
-    (onClose) => {
-      // Extract numeric/string ID from "UPV-1234" → "1234"
-      const postId = key.replace(/^[^-]+-/, "");
-      return buildPopover(key, postId, btn, onClose);
-    },
-  );
-}
-
-// ── Popover ──────────────────────────────────────────────────────────────────
-
-function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose: () => void): HTMLElement {
-  const shell = buildKeyPopoverShell({
-    anchor,
-    previewClass: "vzd-upvoty-preview",
-    keyText: shortenKey(key),
-    keyAriaLabel: `Open ${key} in Upvoty`,
-    loadingText: t("upvoty.loading"),
-    onClose,
-  });
-  const { el, statusEl, keyLink, titleEl, summaryEl, footer } = shell;
-  const footerEl = footer.createEl("span", { cls: "vzd-upvoty-preview-updated" });
-  const votesEl = footer.createEl("span", { cls: "vzd-upvoty-preview-votes" });
-
-  // Async fetch + AI summarize
-  const svc = getUpvotyService();
-  if (svc) {
-    svc.getSummary(postId).then(result => {
-      summaryEl.empty();
-
-      if (!result) {
-        summaryEl.createEl("span", { cls: "vzd-upvoty-preview-error", text: "Upvoty integration disabled." });
-        return;
-      }
-      if ("error" in result) {
-        summaryEl.createEl("span", { cls: "vzd-upvoty-preview-error", text: result.error });
-        return;
-      }
-
-      const { post, summary } = result;
-
-      // Upvoty's API doesn't return a public post URL, so it's built from the
-      // feedback item's UUID using the dashboard's lookup pattern.
-      if (post.id) keyLink.dataset.url = `${svc.getAppUrl()}?id=${post.id}`;
-
-      // Upvoty's status colour is nullable — setStatusColor falls back to
-      // --text-muted, so a board with uncoloured statuses still renders.
-      if (post.status?.label) {
-        statusEl.textContent = post.status.label;
-        setStatusColor(statusEl, post.status.color);
-      }
-
-      titleEl.textContent = post.title;
-
-      summaryEl.empty();
-      if (summary) {
-        summaryEl.textContent = summary;
-      } else {
-        summaryEl.createEl("span", { cls: "vzd-upvoty-preview-error", text: t("upvoty.noSummary") });
-      }
-
-      const parts: string[] = [];
-      const aName = post.author?.name;
-      if (aName) parts.push(aName);
-      if (post.created_at) parts.push(formatKeyAge(post.created_at, "Created"));
-      footerEl.textContent = parts.join("  ·  ");
-
-      votesEl.textContent = t("upvoty.votes", { n: String(post.votes_count ?? 0) });
-    }).catch((err: unknown) => {
-      summaryEl.empty();
-      summaryEl.createEl("span", { cls: "vzd-upvoty-preview-error", text: (err as Error).message ?? t("upvoty.error.network") });
-    });
-  }
-
-  return el;
+  attachKeyTrigger(btn, ref(key), () => !!getUpvotyService()?.isEnabled());
 }

@@ -1,15 +1,17 @@
 import { getLinearService } from "../linear";
-import { t } from "../i18n";
-import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge, setStatusColor } from "./key-enrichment";
+import { enrichKeys, attachKeyTrigger } from "./key-enrichment";
+import type { TicketRef } from "../sideleaf/types";
 
 // Matches LINEAR-style identifiers like CORE-1234, PSINT-42, ENG-9999
 export const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 
+const ref = (key: string): TicketRef => ({ service: "linear", key });
+
 /**
  * Scans `container` for Linear issue keys in text nodes and replaces each
- * match with a `.vzd-linear-key` button that fetches and previews the issue
- * when clicked. Safe to call multiple times — already-enriched keys are
- * skipped.
+ * match with a `.vzd-linear-key` badge that opens the issue's card in the
+ * Vizardry sideleaf when clicked. Safe to call multiple times — already-
+ * enriched keys are skipped.
  */
 export function enrichLinearKeys(container: HTMLElement): void {
   enrichKeys(container, LINEAR_KEY_RE, "vzd-linear-key", (doc, key) => {
@@ -38,71 +40,6 @@ export function renderLinearKeyBadge(parent: HTMLElement, key: string): void {
   attachTrigger(btn, key);
 }
 
-// ── Click trigger ────────────────────────────────────────────────────────────
-
 function attachTrigger(btn: HTMLElement, key: string): void {
-  attachKeyTrigger(
-    btn,
-    () => !!getLinearService()?.isEnabled(),
-    (onClose) => buildPopover(key, btn, onClose),
-  );
-}
-
-// ── Popover ──────────────────────────────────────────────────────────────────
-
-function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HTMLElement {
-  const shell = buildKeyPopoverShell({
-    anchor,
-    previewClass: "vzd-linear-preview",
-    keyText: key,
-    keyAriaLabel: `Open ${key} in Linear`,
-    loadingText: t("roadmap.linear.loading"),
-    onClose,
-  });
-  const { el, statusEl, keyLink, titleEl, summaryEl, footer } = shell;
-  const footerEl = footer.createEl("span", { cls: "vzd-linear-preview-updated" });
-
-  // Async fetch — fires immediately on open
-  const svc = getLinearService();
-  if (svc) {
-    svc.getSummary(key).then(result => {
-      summaryEl.empty();
-      if (!result) {
-        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: "Linear integration disabled." });
-        return;
-      }
-      if ("error" in result) {
-        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: result.error });
-        return;
-      }
-
-      // The eyebrow's rule takes Linear's own state colour, which the API
-      // returns on every fetch. The label stays --text-muted, so a state
-      // whose colour is pale grey (Backlog) reads exactly as well as a
-      // saturated one — the colour adds information, it never carries it.
-      statusEl.textContent = result.state.name;
-      setStatusColor(statusEl, result.state.color);
-
-      // Key link URL
-      if (result.url) keyLink.dataset.url = result.url;
-
-      titleEl.textContent = result.title;
-
-      if (result.summary) {
-        summaryEl.textContent = result.summary;
-      } else {
-        summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: t("roadmap.linear.noSummary") });
-      }
-
-      // Footer: "<assignee | Unassigned>  |  <age>"
-      const assignee = result.assignee ?? t("roadmap.linear.unassigned");
-      const age = result.updatedAt ? formatKeyAge(result.updatedAt, "Updated") : "";
-      footerEl.textContent = age ? `${assignee}  ·  ${age}` : assignee;
-    }).catch((err: unknown) => {
-      summaryEl.empty();
-      summaryEl.createEl("span", { cls: "vzd-linear-preview-error", text: (err as Error).message ?? t("roadmap.linear.error") });
-    });
-  }
-
-  return el;
+  attachKeyTrigger(btn, ref(key), () => !!getLinearService()?.isEnabled());
 }

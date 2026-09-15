@@ -10,7 +10,10 @@ import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
 import { triggerRelink } from "./renderer/canvas";
 import { resetInteractiveIdCounter } from "./renderer/controls";
 import { closeSectionPreview } from "./renderer/section-preview";
-import { closeAllKeyPopovers } from "./shared/key-enrichment";
+import { resetKeyOpenState } from "./shared/key-open-state";
+import { initSideleaf, revealSideleaf } from "./sideleaf";
+import { VIZARDRY_VIEW_TYPE } from "./sideleaf/view-type";
+import { VizardrySideleafView } from "./sideleaf/view";
 import { setPluginVersion } from "./shared/version";
 import { CanvasInsertModal } from "./modal";
 import { createApi, VIZARDRY_NO_ENRICH_CLASS } from "./renderer/export-api";
@@ -58,6 +61,11 @@ export default class VizardryPlugin extends Plugin {
     this.settings = normalizeSettings(rawData);
     // `init` validates the blob itself (a malformed or non-object value is
     // dropped), so no cast or shape check is needed here.
+    // Registered before the services so a leaf restored from workspace.json
+    // (Obsidian rebuilds sidebar views during layout-ready) finds its view
+    // type already known.
+    this.registerView(VIZARDRY_VIEW_TYPE, (leaf) => new VizardrySideleafView(leaf));
+    initSideleaf(this.app);
     initLinearService(this as Parameters<typeof initLinearService>[0]);
     getLinearService()?.cache.init(rawData.linearCache);
     initUpvotyService(this as Parameters<typeof initUpvotyService>[0]);
@@ -152,6 +160,15 @@ export default class VizardryPlugin extends Plugin {
       run(editor);
     };
 
+    // ── Command: open the sideleaf ─────────────────────────────────────
+    // Key clicks reveal it on their own; this is for opening it empty, or
+    // getting back to it after the sidebar was collapsed.
+    this.addCommand({
+      id: "open-sideleaf",
+      name: t("sideleaf.openCommand"),
+      callback: () => { void revealSideleaf(); },
+    });
+
     // ── Ribbon icon → opens insert modal ──────────────────────────────
     this.addRibbonIcon("layout-template", t("commands.insertVizardryCanvas"), () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -213,7 +230,11 @@ export default class VizardryPlugin extends Plugin {
     for (const timer of this.relinkTimers.values()) clearTimeout(timer);
     this.relinkTimers.clear();
     closeSectionPreview();
-    closeAllKeyPopovers();
+    // The sideleaf's own cards are left alone: Obsidian keeps the leaf across
+    // a plugin reload, and a card is the user's to close. Only the badge
+    // registry is dropped, since every badge in the DOM is about to go.
+    resetKeyOpenState();
+    initSideleaf(null);
     resetInteractiveIdCounter();
     destroyLinearService();
     destroyUpvotyService();

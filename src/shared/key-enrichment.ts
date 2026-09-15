@@ -1,18 +1,21 @@
 /**
- * Shared plumbing for inline key enrichment (Linear's CORE-1234, Upvoty's
- * UPV-<uuid>): scanning rendered text for key patterns, wrapping matches in
- * a clickable badge, and managing the resulting preview popovers' lifecycle
- * (position, stacking order, dismissal).
+ * Inline key enrichment (Linear's CORE-1234, Upvoty's UPV-<uuid>): scanning
+ * rendered text for key patterns and wrapping each match in a clickable
+ * badge.
  *
- * Linear and Upvoty's popover *content* differs enough (different fields,
- * Upvoty's extra vote count) that this deliberately does NOT try to unify
- * `buildPopover`'s body — each enrichment module still owns that. What's
- * shared here is the mechanical part that was previously duplicated
- * byte-for-byte in both files.
+ * A click used to build a floating popover here — positioned against the
+ * viewport, flipped to stay on screen, stacked by z-index, and torn down when
+ * its badge left the DOM. All of that is gone: a click now opens a card in
+ * the Vizardry sideleaf, which is ordinary flow content that outlives the
+ * note it came from. What is left in this module is the scanning, the badge,
+ * and the open marker.
  */
 
-import { setIcon } from "obsidian";
 import { onDisconnected } from "./lifecycle";
+import { registerKeyBadge, unregisterKeyBadge } from "./key-open-state";
+import { openTicketCard } from "../sideleaf";
+import type { TicketRef } from "../sideleaf/types";
+import { cardId } from "../sideleaf/types";
 
 // Tags whose content should never be enriched.
 // PRE skips multi-line code blocks (and their CODE children). Inline CODE is
@@ -21,95 +24,6 @@ import { onDisconnected } from "./lifecycle";
 // content inside a link — invalid HTML that produces inconsistent
 // click/focus behaviour.
 export const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE", "A"]);
-
-// ── Open popovers ────────────────────────────────────────────────────────────
-// One shared registry across ALL key-enrichment services (Linear, Upvoty),
-// not one per service — otherwise each service's z-index counter starts
-// from its own base and their popovers don't stack predictably relative to
-// each other when both are open at once.
-
-const openPopovers = new Map<HTMLElement, HTMLElement>();
-let topZIndex = 1000;
-
-/** Class marking the key whose popover is currently on screen. */
-export const KEY_OPEN_CLASS = "vzd-key--open";
-
-/**
- * Keeps a key badge's open state in sync with its popover, in both channels:
- * `aria-expanded` for assistive tech (the badge is a disclosure button, and
- * previously announced nothing at all) and a class for the lit styling, so a
- * reader with several popovers open can tell which key opened which.
- */
-function markOpen(anchor: HTMLElement, open: boolean): void {
-  anchor.setAttribute("aria-expanded", open ? "true" : "false");
-  anchor.classList.toggle(KEY_OPEN_CLASS, open);
-}
-
-export function closeKeyPopover(anchor: HTMLElement): void {
-  const popover = openPopovers.get(anchor);
-  if (popover) {
-    popover.remove();
-    openPopovers.delete(anchor);
-  }
-  // Reset unconditionally: an anchor can carry the open marker without a live
-  // popover if the popover was torn down some other way.
-  markOpen(anchor, false);
-}
-
-export function closeAllKeyPopovers(): void {
-  for (const [anchor, popover] of openPopovers) {
-    popover.remove();
-    openPopovers.delete(anchor);
-    markOpen(anchor, false);
-  }
-  topZIndex = 1000;
-}
-
-export function bringKeyPopoverToFront(popover: HTMLElement): void {
-  topZIndex += 1;
-  popover.style.zIndex = String(topZIndex);
-}
-
-// ── Status colour ────────────────────────────────────────────────────────────
-
-/** #rgb, #rgba, #rrggbb or #rrggbbaa — the forms both APIs actually return. */
-const HEX_COLOR_RE = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-
-/**
- * Paints the status eyebrow's rule in the state's own colour.
- *
- * The value comes from a third-party API response and lands in a CSS custom
- * property, so it is matched against a strict hex pattern first rather than
- * passed through: `setProperty` would otherwise accept arbitrary CSS, and a
- * value such as `red; background: url(...)` has no business reaching the
- * stylesheet. Anything that fails the test leaves the property unset, and the
- * eyebrow falls back to --text-muted.
- *
- * Nothing depends on the colour being right — the label always spells the
- * state out — so a rejected value costs no information.
- */
-export function setStatusColor(el: HTMLElement, color: string | null | undefined): void {
-  const trimmed = typeof color === "string" ? color.trim() : "";
-  if (HEX_COLOR_RE.test(trimmed)) el.style.setProperty("--vzd-status-color", trimmed);
-  else el.style.removeProperty("--vzd-status-color");
-}
-
-// ── Time formatting ──────────────────────────────────────────────────────────
-
-export function formatKeyAge(dateStr: string, prefix: string): string {
-  const parsed = new Date(dateStr).getTime();
-  // An absent or unparseable timestamp (an API that omitted the field, an
-  // empty string from the client's `?? ""` fallbacks) makes every arithmetic
-  // result NaN, which renders in the popover footer as "Updated NaNd ago".
-  if (!Number.isFinite(parsed)) return "";
-  // A timestamp in the future — clock skew between the vault and the API —
-  // would otherwise read as "Updated -1h ago".
-  const diffMs = Math.max(0, Date.now() - parsed);
-  const diffH = Math.floor(diffMs / 3_600_000);
-  if (diffH < 1)  return `${prefix} just now`;
-  if (diffH < 24) return `${prefix} ${diffH}h ago`;
-  return `${prefix} ${Math.floor(diffH / 24)}d ago`;
-}
 
 // ── DOM walking ──────────────────────────────────────────────────────────────
 
@@ -182,100 +96,31 @@ function wrapTextNode(node: Text, re: RegExp, makeBadge: (doc: Document, key: st
 // ── Click trigger ────────────────────────────────────────────────────────────
 
 /**
- * Wires a key badge's click to open (or refocus) its preview popover, and
- * cleans up the popover if the badge itself leaves the DOM.
+ * Wires a key badge to open its card in the sideleaf, and keeps the badge's
+ * open marker in sync for as long as it is in the DOM.
+ *
+ * The badge registers under the card's id rather than under itself: one
+ * ticket named in five notes has one card, and every badge for it lights up
+ * together. That could not work while a popover belonged to the single badge
+ * that spawned it.
  */
 export function attachKeyTrigger(
   btn: HTMLElement,
+  ref: TicketRef,
   isEnabled: () => boolean,
-  buildPopover: (onClose: () => void) => HTMLElement,
 ): void {
-  btn.setAttribute("aria-expanded", "false");
+  const id = cardId(ref);
+  registerKeyBadge(id, btn);
 
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
-    const existing = openPopovers.get(btn);
-    if (existing) { bringKeyPopoverToFront(existing); return; }
     if (!isEnabled()) return;
-    const popover = buildPopover(() => closeKeyPopover(btn));
-    btn.ownerDocument.body.appendChild(popover);
-    bringKeyPopoverToFront(popover);
-    openPopovers.set(btn, popover);
-    markOpen(btn, true);
+    openTicketCard(ref);
   });
 
-  onDisconnected(btn, () => closeKeyPopover(btn));
-}
-
-// ── Popover shell ────────────────────────────────────────────────────────────
-
-export interface KeyPopoverShell {
-  el: HTMLElement;
-  header: HTMLElement;
-  /** The status eyebrow. Paint its rule with `setStatusColor`. */
-  statusEl: HTMLElement;
-  keyLink: HTMLAnchorElement;
-  titleEl: HTMLElement;
-  summaryEl: HTMLElement;
-  footer: HTMLElement;
-}
-
-/**
- * Builds the common popover shell — positioning (below-right of the anchor,
- * flipped to stay on-screen), the close button, and the header/title/
- * summary/footer skeleton every service's preview shares. The caller
- * populates `summaryEl`/`footer`/etc. from its own async fetch.
- */
-export function buildKeyPopoverShell(opts: {
-  anchor: HTMLElement;
-  previewClass: string;
-  keyText: string;
-  keyAriaLabel: string;
-  loadingText: string;
-  onClose: () => void;
-}): KeyPopoverShell {
-  const { anchor, previewClass, keyText, keyAriaLabel, loadingText, onClose } = opts;
-  const win = anchor.ownerDocument.defaultView ?? window;
-  const el = anchor.ownerDocument.createElement("div");
-  el.className = previewClass;
-  el.addEventListener("mousedown", () => bringKeyPopoverToFront(el));
-
-  // Position: below-right of anchor, flip as needed to stay on-screen.
-  const rect = anchor.getBoundingClientRect();
-  const width = 320;
-  let left = rect.right + 8;
-  if (left + width > win.innerWidth - 8) left = rect.left - width - 8;
-  let top = rect.bottom + 4;
-  if (top + 240 > win.innerHeight - 8) top = rect.top - 244;
-  el.style.left = `${Math.max(8, left)}px`;
-  el.style.top  = `${Math.max(8, top)}px`;
-
-  // Close button — top-right corner; this is the only way to dismiss the
-  // popover (no auto-close, no click-outside — the user must act on it).
-  const closeBtn = el.createEl("button", { cls: `${previewClass}-close vzd-btn` });
-  setIcon(closeBtn, "x");
-  closeBtn.setAttribute("aria-label", "Close");
-  closeBtn.addEventListener("click", (e) => { e.stopPropagation(); onClose(); });
-
-  const header = el.createEl("div", { cls: `${previewClass}-header` });
-  const statusEl = header.createEl("span", { cls: `${previewClass}-status` });
-  const keyLink = header.createEl("a", { cls: `${previewClass}-key`, text: keyText }) as HTMLAnchorElement;
-  keyLink.setAttribute("href", "#");
-  keyLink.setAttribute("aria-label", keyAriaLabel);
-  keyLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    const url = keyLink.dataset.url;
-    if (url) win.open(url, "_blank", "noopener");
-  });
-
-  const titleEl = el.createEl("div", { cls: `${previewClass}-title` });
-
-  const body = el.createEl("div", { cls: `${previewClass}-body` });
-  const summaryEl = body.createEl("p", { cls: `${previewClass}-summary` });
-  summaryEl.createEl("span", { cls: `${previewClass}-loading`, text: loadingText });
-
-  const footer = el.createEl("div", { cls: `${previewClass}-footer` });
-
-  return { el, header, statusEl, keyLink, titleEl, summaryEl, footer };
+  // Only the registration is released when the badge goes: the card it opened
+  // is the user's to close, and must survive the note being re-rendered or
+  // closed entirely.
+  onDisconnected(btn, () => unregisterKeyBadge(id, btn));
 }
