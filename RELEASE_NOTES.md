@@ -1,5 +1,11 @@
 ## 0.68.0
 
+- **New: the Vizardry sideleaf has its own icon.** The panel used to borrow the
+  same icon as the "insert a canvas" ribbon button, so the two were
+  indistinguishable in the sidebar. It now carries a V with a spark — the
+  monogram, and the wizardry in the name. The ribbon keeps its old icon, since
+  it still means "insert a canvas".
+
 - **New: one actions menu for every item on a canvas.** A Story Map task, a
   Journey card, an SCQA card, a Problem card, a Compass entry, an Impact Map /
   Mind Map / Opportunity Solution Tree node, a Fishbone node and a Node Map box

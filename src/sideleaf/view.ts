@@ -8,6 +8,7 @@ import { setKeyOpen, clearAllKeyOpen } from "../shared/key-open-state";
 import { UndoWindow } from "./undo";
 import { enableSwipeToRemove } from "./swipe";
 import { VIZARDRY_VIEW_TYPE } from "./view-type";
+import { VIZARDRY_ICON_ID } from "./icon";
 import type { SideleafHost } from "./view-type";
 import { registerSideleafView, unregisterSideleafView } from "./index";
 import { t } from "../i18n";
@@ -49,7 +50,7 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
 
   getViewType(): string { return VIZARDRY_VIEW_TYPE; }
   getDisplayText(): string { return t("sideleaf.title"); }
-  getIcon(): string { return "layout-template"; }
+  getIcon(): string { return VIZARDRY_ICON_ID; }
 
   onOpen(): Promise<void> {
     const root = this.contentEl;

@@ -266,3 +266,14 @@ describe("the undo window", () => {
     expect(undoEl(v).classList.contains("is-visible")).toBe(false);
   });
 });
+
+describe("the leaf's identity", () => {
+  it("uses Vizardry's own icon, not the ribbon's", async () => {
+    // The leaf used to borrow layout-template, which is also the "insert a
+    // canvas" ribbon icon — the two were indistinguishable in the sidebar.
+    const v = await makeView();
+    expect(v.getIcon()).toBe("vizardry-v");
+    expect(v.getIcon()).not.toBe("layout-template");
+  });
+});
+
