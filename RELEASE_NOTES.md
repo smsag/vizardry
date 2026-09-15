@@ -1,3 +1,85 @@
+## 0.67.0
+
+- **New: the Vizardry sideleaf — Linear and Upvoty items open as cards in a side
+  panel instead of a floating popover.** Clicking a `CORE-1234` or `UPV-…` key
+  now reveals a panel in the right sidebar and adds a card for that item; the
+  key itself lights up to show it has one. A card stays until you close it, or
+  until you use **Clear all** in the panel header, and it survives closing the
+  note, restarting Obsidian and reloading the plugin.
+
+  **Why.** A popover was the wrong shape for this in Obsidian. It floated over
+  the note, had to be positioned by hand against the window edge, could not be
+  dismissed by clicking away, and — worst of it — was destroyed the moment the
+  note that spawned it was closed or merely scrolled far enough, taking the
+  summary you were reading with it. Comparing two tickets meant two popovers
+  overlapping your writing. Cards sit beside the note instead of on top of it,
+  stack as you open them, and belong to you rather than to the paragraph they
+  came from. A key mentioned in five notes opens one card, not five: clicking
+  it again surfaces and flashes the card that already exists.
+
+  The panel re-checks every card whenever it comes back into view, so a card
+  left open all day is not showing this morning's status. How often that
+  actually reaches the network is still governed by the refresh settings below.
+
+  Open the panel on its own — with no card pending — from the command palette:
+  **Open the Vizardry sideleaf**.
+
+- **Fix: saving a setting could wipe your cached summaries.** The plugin's data
+  file holds the Linear and Upvoty summary caches next to the settings, and
+  every settings save wrote back a copy of those caches taken when Obsidian
+  started — silently discarding every summary generated since. Toggling any
+  setting after a day's work threw away the day's summaries, which then had to
+  be re-generated (and re-billed) on the next look. Settings and caches are now
+  kept strictly apart, and neither can overwrite the other.
+
+- **Fix: "Status refresh" and "Post cache" did nothing.** Both settings were
+  read only by code that nothing called, so every preview fetched from Linear or
+  Upvoty afresh no matter what interval you had set. They now do what they say:
+  within the interval an item is served from memory, and the network is left
+  alone. Opening the same key repeatedly is free.
+
+- **Fix: a corrupted cache entry could serve a stale summary forever.** An entry
+  whose timestamp was missing or unreadable passed every freshness check, so it
+  never expired and never got regenerated. Such entries are now dropped when the
+  cache loads. A hand-edited or out-of-range setting is likewise repaired on
+  load rather than producing silent nonsense — a non-numeric cache lifetime used
+  to make *every* entry read as expired, re-fetching on every hover.
+
+- **Keys now follow your theme's tag styling, a shade quieter.** A Linear or
+  Upvoty key inline in a note is drawn from the same variables your theme uses
+  for its own tags, so it inherits that shape and colour instead of imposing
+  Vizardry's, and sits a step below full strength so it does not shout over the
+  sentence around it. Hovering or focusing it restores the full colour.
+
+- **Statuses are no longer drawn as tags.** A workflow state and a ticket key
+  used to be the same lozenge, with nothing to say which was which. A state is
+  now an underlined label, and the rule beneath it takes the state's own colour
+  from Linear or Upvoty — a colour both APIs were already sending and the plugin
+  was throwing away. The label still spells the state out, so nothing depends on
+  telling two colours apart.
+
+- **New: "Pain Point Matrix" can be inserted from the picker.** The preset was
+  documented and supported as `type: matrix, pain`, but had no entry in the
+  insert modal or the command palette, so the only way to get one was to type
+  the block by hand.
+
+- **Changed: "Matrix" inserts the blank two-axis chart it always described.** It
+  previously seeded the Impact/Effort template, making it a duplicate of
+  "Impact / Effort Matrix", while the plain chart was reachable only through a
+  separate "Plotted Matrix" command. That command is gone — "Matrix" is now the
+  one that gives you the blank chart. If you had a hotkey bound to *Insert
+  Plotted Matrix*, rebind it to *Insert Matrix*.
+
+- **Smaller fixes.** Upvoty posts written as a URL slug and as a UUID are one
+  item again rather than two, halving the fetches and AI summaries for them.
+  Escaped markup in an Upvoty description no longer comes back as markup. A
+  missing date renders as nothing instead of "Updated NaNd ago", and a clock
+  skewed against the API no longer shows a negative age. An unrecognised AI
+  provider now says so instead of failing with an internal error. Rate-limit
+  retries honour the server's requested delay regardless of header casing. Key
+  badges are reachable by keyboard, with a visible focus ring and an announced
+  expanded state.
+
 ## 0.66.0
 
 - **BREAKING — removed: the image carousel (`type: carousel`).** The gallery
