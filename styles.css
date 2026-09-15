@@ -767,7 +767,7 @@ button.vzd-btn {
 
 /* Edit-mode drag states */
 .vzd-story-task-delete {
-  display: none;
+  display: flex;
   position: absolute;
   top: -6px;
   right: -6px;
@@ -786,9 +786,6 @@ button.vzd-btn {
   z-index: 1;
 }
 
-.vzd-story-task-card:hover .vzd-story-task-delete {
-  display: flex;
-}
 
 .vzd-story-task-delete:hover {
   filter: brightness(1.15);
@@ -1031,7 +1028,7 @@ button.vzd-btn {
 }
 
 .vzd-journey-card-delete {
-  display: none;
+  display: flex;
   position: absolute;
   top: -6px;
   right: -6px;
@@ -1050,9 +1047,6 @@ button.vzd-btn {
   z-index: 1;
 }
 
-.vzd-journey-card:hover .vzd-journey-card-delete {
-  display: flex;
-}
 
 .vzd-journey-card-delete:hover {
   filter: brightness(1.15);
@@ -2924,6 +2918,94 @@ code:has(.vzd-upvoty-key) {
 }
 .vzd-card--flash { animation: vzd-card-flash 0.7s ease-out; }
 
+
+/* ── Item action reachability ────────────────────────────────────────────── */
+/*
+ * One place owning when a delete/unlink control is visible, and how big its
+ * hit area is. Previously each canvas spelled this out for itself, and every
+ * copy carried the same two defects.
+ *
+ * WHY THIS EXISTS
+ *
+ * 1. Touch. Each control was hidden with `display: none` until its parent was
+ *    hovered, and this stylesheet contained no `@media (hover: …)` query at
+ *    all. A phone or tablet never produces hover, so deleting a Story Map
+ *    task, a Journey card, an SCQA card or a Problem card was not merely
+ *    awkward on mobile — it was impossible. The `hover: none` block below is
+ *    the fix.
+ *
+ * 2. Keyboard. `display: none` also removes an element from the tab order, so
+ *    the same controls were unreachable by keyboard and invisible to screen
+ *    readers on *every* platform, desktop included. Hiding with opacity keeps
+ *    them focusable; the `:focus-visible` rule then reveals the one the user
+ *    has tabbed to, so the control is visible exactly when it is actionable.
+ *
+ * 3. Target size. The visible badge is 16px, well under the 24px WCAG 2.2
+ *    asks for. Rather than resize every badge — which would change the look of
+ *    six canvases — an invisible inset expands the hit area to 24px and leaves
+ *    the drawing alone. Pace Layers already solved it this way with its
+ *    `.vzd-lane-bullet-del-hit` rect; this generalises that idea.
+ *
+ * `pointer-events` tracks opacity so an invisible control cannot swallow a
+ * click meant for the card beneath it.
+ */
+
+.vzd-story-task-delete,
+.vzd-journey-card-delete,
+.vzd-scqa-card-del,
+.vzd-flow-card-delete,
+.vzd-compass-del {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+/* Revealed by hovering the item the control belongs to. */
+.vzd-story-task-card:hover .vzd-story-task-delete,
+.vzd-journey-card:hover .vzd-journey-card-delete,
+.vzd-scqa-card:hover .vzd-scqa-card-del,
+.vzd-flow-node-g:hover .vzd-flow-card-delete,
+/* …and by tabbing to it, which `display: none` had made impossible. */
+.vzd-story-task-delete:focus-visible,
+.vzd-journey-card-delete:focus-visible,
+.vzd-scqa-card-del:focus-visible,
+.vzd-flow-card-delete:focus-visible,
+.vzd-compass-del:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* An expanded, invisible hit area — 16px badge, 24px target. */
+.vzd-story-task-delete::after,
+.vzd-journey-card-delete::after,
+.vzd-scqa-card-del::after,
+.vzd-flow-card-delete::after,
+.vzd-compass-del::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+
+/*
+ * Touch: no hover exists, so every control is permanently visible — including
+ * the SVG ones, which have the same hover-only problem even though they hide
+ * with opacity rather than display.
+ */
+@media (hover: none) {
+  .vzd-story-task-delete,
+  .vzd-journey-card-delete,
+  .vzd-scqa-card-del,
+  .vzd-flow-card-delete,
+  .vzd-compass-del,
+  .vzd-tree-edit-del,
+  .vzd-wardley-unlink-btn,
+  .vzd-nodemap-box-delete-btn,
+  .vzd-nodemap-unlink-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* ── RACI Matrix ────────────────────────────────────────────────────────────── */
 /* The column boxes use vizardry-block/label-row/label/body — no custom
    structural CSS needed. Only RACI-specific additions below. */
@@ -4339,7 +4421,7 @@ code:has(.vzd-upvoty-key) {
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
@@ -4360,9 +4442,6 @@ code:has(.vzd-upvoty-key) {
 }
 
 .vzd-scqa-card:hover .vzd-scqa-card-add,
-.vzd-scqa-card:hover .vzd-scqa-card-del {
-  display: flex;
-}
 
 .vzd-scqa-card--draggable {
   cursor: grab;
@@ -4552,12 +4631,11 @@ code:has(.vzd-upvoty-key) {
   line-height: 1;
   padding: 0;
   cursor: pointer;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
 }
-.vzd-flow-node-g:hover .vzd-flow-card-delete { display: flex; }
 .vzd-flow-card-delete:hover { filter: brightness(1.12); }
 
 /* "+ Add" — one per column, revealed on canvas hover. */
@@ -4930,7 +5008,6 @@ body.vizardry-sketch .vzd-tree-rename-input {
   transform: translateY(-50%);
   padding: 0 5px;
   color: var(--text-faint);
-  opacity: 0;
   line-height: 1.2;
 }
 .vzd-compass-stat { position: relative; }
