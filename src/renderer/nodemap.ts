@@ -1,7 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { NodeMapBox, NodeMapData, NodeMapColor } from "../types";
 import type { RenderContext } from "./render-context";
-import { initCanvas } from "./controls";
+import { initCanvas, showWriteFailedNotice } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
@@ -268,12 +268,14 @@ function attachDragBehavior(
     svg.classList.remove("vzd-nodemap-svg--dragging");
     const x = parseFloat(ref.rect.getAttribute("x") ?? "0");
     const y = parseFloat(ref.rect.getAttribute("y") ?? "0");
-    writeNodeMapBoxPosition(app, ctx, wrap, ref.box.name, x, y);
+    // A press with no movement is a click, not a move: nothing to write.
+    if (moved && !writeNodeMapBoxPosition(app, ctx, wrap, ref.box.name, x, y)) showWriteFailedNotice(wrap);
     doc.removeEventListener("mousemove", onMouseMove);
     doc.removeEventListener("mouseup", onMouseUp);
   };
 
-  const onMouseMove = (e: MouseEvent): void => { if (ix.drag) moveBox(ix.drag.ref, e.clientX, e.clientY); };
+  let moved = false;
+  const onMouseMove = (e: MouseEvent): void => { if (ix.drag) { moved = true; moveBox(ix.drag.ref, e.clientX, e.clientY); } };
   const onMouseUp = (): void => endDrag();
 
   onDisconnected(wrap, () => {
@@ -284,16 +286,17 @@ function attachDragBehavior(
 
   for (const ref of refs) {
     ref.rect.classList.add("vzd-nodemap-box--draggable");
-    const startDrag = (clientX: number, clientY: number): void => {
+    const startDrag = (): void => {
       if (ix.activeEdit || ix.linkDraw) return;
+      moved = false;
       ix.drag = { ref };
       ref.rect.classList.add("vzd-nodemap-box--dragging");
       svg.classList.add("vzd-nodemap-svg--dragging");
       doc.addEventListener("mousemove", onMouseMove);
       doc.addEventListener("mouseup", onMouseUp);
     };
-    ref.rect.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(e.clientX, e.clientY); });
-    ref.rect.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    ref.rect.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(); });
+    ref.rect.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(); }, { passive: false });
   }
 }
 
@@ -303,7 +306,6 @@ function attachLinkDrawBehavior(
   svg: SVGSVGElement,
   refs: BoxRef[],
   ix: NodeMapIxState,
-  data: NodeMapData,
   app: App,
   ctx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
@@ -402,7 +404,6 @@ function attachLinkDrawBehavior(
 // ── Interaction: double-click to rename / edit body ───────────────────────
 
 function attachEditBehavior(
-  svg: SVGSVGElement,
   refs: BoxRef[],
   ix: NodeMapIxState,
   app: App,
@@ -512,7 +513,6 @@ function openColorPopover(
 function attachBoxControls(
   svg: SVGSVGElement,
   refs: BoxRef[],
-  ix: NodeMapIxState,
   app: App,
   ctx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
@@ -595,7 +595,7 @@ export function renderNodeMap(
   const onTitleEdit = (isEditMode && source !== undefined)
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
-  initCanvas(container, "nodemap", title, undefined, source, onTitleEdit, app);
+  initCanvas(container, "nodemap", title, undefined, source, onTitleEdit, app, ctx);
 
   const wrap = container.createEl("div", { cls: "vzd-nodemap-wrap" });
 
@@ -627,9 +627,9 @@ export function renderNodeMap(
   if (isEditMode) {
     const ix: NodeMapIxState = { drag: null, linkDraw: null, activeEdit: null };
     attachDragBehavior(svg, refs, ix, app!, ctx!, wrap);
-    attachLinkDrawBehavior(svg, refs, ix, data, app!, ctx!, wrap);
-    attachEditBehavior(svg, refs, ix, app!, ctx!, wrap);
-    attachBoxControls(svg, refs, ix, app!, ctx!, wrap);
+    attachLinkDrawBehavior(svg, refs, ix, app!, ctx!, wrap);
+    attachEditBehavior(refs, ix, app!, ctx!, wrap);
+    attachBoxControls(svg, refs, app!, ctx!, wrap);
     attachAddBoxOnEmptySpace(svg, ix, app!, ctx!, wrap);
   }
 }

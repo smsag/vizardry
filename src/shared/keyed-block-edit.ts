@@ -67,10 +67,14 @@ export function writeKeyedSubLine(
       { line: cellLine, ch: raw.length },
     );
   } else {
+    // Only an indented line anchors the insert: a top-level `link:` between
+    // rows lies inside the block's line range, and a cell written after it
+    // would belong to no row ("cell key before any row:").
     let insertAfter = block.blockLineStart;
     for (let ln = block.blockLineStart + 1; ln <= block.blockLineEnd; ln++) {
-      const t = editor.getLine(ln).trim();
-      if (t && !t.startsWith("//") && !t.startsWith("```")) insertAfter = ln;
+      const raw = editor.getLine(ln);
+      const t = raw.trim();
+      if (t && !t.startsWith("//") && !t.startsWith("```") && raw.search(/\S/) > 0) insertAfter = ln;
     }
     const insertLineText = editor.getLine(insertAfter);
     editor.replaceRange(

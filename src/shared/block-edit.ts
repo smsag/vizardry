@@ -15,18 +15,19 @@ type BlockLocation = {
  * matching is on prefix + (end-of-line or pipe).
  */
 function findBlockBody(editor: Editor, lineStart: number, lineEnd: number, blockLabel: string): BlockLocation | null {
-  const targetPrefix = `block: ${blockLabel.toLowerCase()}`;
+  const target = blockLabel.toLowerCase();
   let blockHeaderLine = -1;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw: string = editor.getLine(ln);
-    const normalised = raw.trim().toLowerCase();
-    if (normalised.startsWith(targetPrefix)) {
-      const after = normalised.slice(targetPrefix.length).trimStart();
-      if (after === "" || after.startsWith("|")) {
-        blockHeaderLine = ln;
-        break;
-      }
+    // The parser accepts `block:Label` and `block:   Label` alike; match the
+    // same shapes here or those blocks render but cannot be edited.
+    const m = raw.trim().match(/^block:\s*(.*)$/i);
+    if (!m) continue;
+    const rest = m[1].trim().toLowerCase();
+    if (rest === target || rest.startsWith(target + "|") || rest.startsWith(target + " |")) {
+      blockHeaderLine = ln;
+      break;
     }
   }
   if (blockHeaderLine === -1) return null;
@@ -37,8 +38,14 @@ function findBlockBody(editor: Editor, lineStart: number, lineEnd: number, block
   for (let ln = bodyStart; ln <= lineEnd; ln++) {
     const raw: string = editor.getLine(ln);
     const trimmed = raw.trim();
-    // Stop at next top-level line (zero-indent non-empty, or closing ```)
-    if (trimmed !== "" && !raw.startsWith(" ") && !raw.startsWith("\t")) break;
+    if (trimmed.startsWith("```")) break;
+    // Blank lines and column-0 `//` comments continue the body for the parser
+    // (parser.ts), so the scan must step over them — but they only count as
+    // body when content follows: trailing ones stay in place, so an edit does
+    // not eat the blank line between blocks or a comment before the next one.
+    if (trimmed === "" || (trimmed.startsWith("//") && raw.search(/\S/) === 0)) continue;
+    // Stop at the next top-level line.
+    if (!raw.startsWith(" ") && !raw.startsWith("\t")) break;
     bodyEnd = ln;
   }
 
@@ -253,6 +260,11 @@ export function patchFenceFlag(
       const newBodyLines = [...bodyLines];
       if (enabled && flagIdx === -1) {
         newBodyLines.splice(0, 0, `${key}: true`);
+      } else if (enabled) {
+        // `collapsed: false` (or any value the reader does not treat as true)
+        // is rewritten rather than left alone, or the toggle never sticks.
+        if (bodyLines[flagIdx].trim().toLowerCase() === `${key}: true`) return null;
+        newBodyLines[flagIdx] = `${key}: true`;
       } else if (!enabled && flagIdx !== -1) {
         newBodyLines.splice(flagIdx, 1);
       } else {

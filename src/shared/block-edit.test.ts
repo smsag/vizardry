@@ -10,7 +10,7 @@
  * checks inside block-edit.ts resolve against the same class reference.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 vi.mock("obsidian", () => ({
   // Minimal MarkdownView stand-in — only the shape block-edit.ts touches.
@@ -57,7 +57,6 @@ function makeApp(sourcePath: string, editor: MockEditor | null) {
 }
 
 function makeCtx(sourcePath: string, lineStart: number, lineEnd: number) {
-  const el = document.createElement("div");
   return {
     sourcePath,
     getSectionInfo: (_el: HTMLElement) => ({ lineStart, lineEnd, text: "" }),
@@ -65,7 +64,6 @@ function makeCtx(sourcePath: string, lineStart: number, lineEnd: number) {
 }
 
 function makeCtxNoInfo(sourcePath: string) {
-  const el = document.createElement("div");
   return {
     sourcePath,
     getSectionInfo: (_el: HTMLElement) => null,

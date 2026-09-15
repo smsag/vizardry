@@ -1,6 +1,8 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { escRe } from "./regex";
+import { uniqueName } from "./unique-name";
 
 function resolveUniqueComponentName(
   editor: { getLine: (line: number) => string },
@@ -17,14 +19,7 @@ function resolveUniqueComponentName(
     if (name) existingNames.add(name);
   }
 
-  const normalizedBase = baseName.trim() || "New Component";
-  if (!existingNames.has(normalizedBase.toLowerCase())) return normalizedBase;
-
-  let index = 2;
-  while (existingNames.has(`${normalizedBase} ${index}`.toLowerCase())) {
-    index++;
-  }
-  return `${normalizedBase} ${index}`;
+  return uniqueName(baseName.trim() || "New Component", existingNames);
 }
 
 /**
@@ -133,10 +128,6 @@ export function addWardleyComponent(
 }
 
 /** Escapes a string for use inside a RegExp. */
-function escRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /**
  * Updates the target evolution value on an `evolve: <name> <value>` line after
  * the to-be marker is dragged. The name is matched with a `\s+<number>`

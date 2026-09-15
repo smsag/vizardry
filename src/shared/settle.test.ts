@@ -32,4 +32,16 @@ describe("whenSettled", () => {
       clearInterval(interval);
     }
   });
+
+  it("does not wait forever on an image that never loads", async () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const img = document.createElement("img");
+    // No src, `complete` stays false in happy-dom: neither load nor error fires.
+    Object.defineProperty(img, "complete", { value: false });
+    el.appendChild(img);
+    const started = Date.now();
+    await whenSettled(el, { quietMs: 10, maxMs: 100 });
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
 });

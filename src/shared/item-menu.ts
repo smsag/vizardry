@@ -95,14 +95,18 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHa
     buildMenu(actions).showAtPosition({ x, y }, host.ownerDocument);
   };
 
+  // Android also fires a native contextmenu for the same long press that the
+  // pointer timer already answered; that one must not open a second menu.
+  let longPressedAt = 0;
   host.addEventListener("contextmenu", (e) => {
     const evt = e as MouseEvent;
     evt.preventDefault();
     evt.stopPropagation();
+    if (Date.now() - longPressedAt < LONG_PRESS_ECHO_MS) return;
     open(evt.clientX, evt.clientY);
   });
 
-  attachLongPress(host, open);
+  attachLongPress(host, (x, y) => { longPressedAt = Date.now(); open(x, y); });
 
   if (!opts.button) return { button: null, open };
 
@@ -133,6 +137,9 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHa
  * Any movement past a few pixels cancels: at that point the press is a drag or
  * a scroll, and both of those already mean something on these canvases.
  */
+/** How long after a long press a native contextmenu still counts as its echo. */
+const LONG_PRESS_ECHO_MS = 700;
+
 function attachLongPress(host: Element, open: (x: number, y: number) => void): void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let startX = 0;

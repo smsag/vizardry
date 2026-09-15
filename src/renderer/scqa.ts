@@ -1,6 +1,6 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
-import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings } from "./controls";
+import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { renderTree } from "./tree";
 import { adaptSCQAToTree, scqaTreeOptions } from "./tree-adapters";
@@ -267,10 +267,3 @@ function enableReorderDrag(
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
-function showWriteFailedNotice(container: HTMLElement): void {
-  const notice = container.createEl("div", {
-    cls: "vzd-tree-write-notice",
-    text: t("tree.writeFailed"),
-  });
-  setTimeout(() => notice.remove(), 3000);
-}

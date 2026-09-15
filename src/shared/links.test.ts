@@ -132,6 +132,23 @@ describe("extractInlineLinks", () => {
   });
 });
 
+describe("extractInlineLinks — pathological input", () => {
+  it("stays linear on a keyword line with a long whitespace run and an unclosed annotation", () => {
+    // The old regexes had three adjacent overlapping quantifiers and took
+    // seconds on this shape, freezing the UI from the render path.
+    const source = `type: bmc\nblock: ${" ".repeat(4000)}[[#x\nother: ${" ".repeat(4000)}[y](z`;
+    const started = Date.now();
+    extractInlineLinks(source);
+    expect(Date.now() - started).toBeLessThan(200);
+  });
+
+  it("still strips the annotation and trims the label", () => {
+    const { inlineLinks, strippedSource } = extractInlineLinks("block:   Label here   [[#Head]]  ");
+    expect(inlineLinks["label here"]).toBe("Head");
+    expect(strippedSource).toBe("block: Label here");
+  });
+});
+
 describe("createLinkResolver — resolveTicket", () => {
   it("resolves a ticket annotation case-insensitively", () => {
     const resolver = createLinkResolver({}, [], {

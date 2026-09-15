@@ -1,0 +1,107 @@
+/**
+ * HTML sanitizer for the prose the viewer renders between vizardry blocks.
+ *
+ * `marked` converts Markdown to HTML without sanitising it: raw HTML in the
+ * note passes straight through. A Markdown file is user-supplied input the
+ * viewer opens from disk, the clipboard or a drop — so a `<script>` or an
+ * `onerror=` handler in one would run with the extension's origin. The
+ * extension-page CSP already blocks inline script, but a sanitiser is the
+ * layer that does not depend on the browser's defaults staying that way.
+ *
+ * Allow-list based: known-safe elements keep known-safe attributes; anything
+ * else is dropped (element contents are kept for unknown *elements* so a
+ * stray `<font>` does not swallow its text; unknown *attributes* are simply
+ * removed). URLs are restricted to http(s), mailto and same-document anchors.
+ */
+
+const ALLOWED_TAGS = new Set([
+  "a", "abbr", "b", "blockquote", "br", "code", "dd", "del", "details", "div",
+  "dl", "dt", "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img",
+  "input", "ins", "kbd", "li", "mark", "ol", "p", "pre", "s", "small", "span",
+  "strong", "sub", "summary", "sup", "table", "tbody", "td", "tfoot", "th",
+  "thead", "tr", "u", "ul",
+]);
+
+/** Elements whose entire subtree is dropped, contents included. */
+const DROPPED_WITH_CONTENT = new Set([
+  "script", "style", "iframe", "object", "embed", "template", "noscript",
+  "frame", "frameset", "meta", "link", "base", "form", "textarea", "select",
+  "button",
+]);
+
+const GLOBAL_ATTRS = new Set(["title", "dir", "lang", "align"]);
+
+const TAG_ATTRS: Record<string, Set<string>> = {
+  a: new Set(["href"]),
+  img: new Set(["src", "alt", "width", "height"]),
+  input: new Set(["type", "checked", "disabled"]),
+  ol: new Set(["start", "type"]),
+  td: new Set(["colspan", "rowspan"]),
+  th: new Set(["colspan", "rowspan", "scope"]),
+  details: new Set(["open"]),
+};
+
+const SAFE_URL = /^(?:https?:|mailto:|#|\/(?!\/))/i;
+
+function safeUrl(value: string): boolean {
+  // Strip control characters and whitespace a browser would ignore when
+  // resolving the scheme, so "java<TAB>script:" cannot slip past the check.
+  const cleaned = value.replace(/[\u0000-\u0020\u007f-\u009f]/g, "");
+  return SAFE_URL.test(cleaned);
+}
+
+function sanitizeAttributes(el: Element): void {
+  const tag = el.tagName.toLowerCase();
+  const allowed = TAG_ATTRS[tag];
+  for (const attr of Array.from(el.attributes)) {
+    const name = attr.name.toLowerCase();
+    const ok = GLOBAL_ATTRS.has(name) || (allowed !== undefined && allowed.has(name));
+    if (!ok) { el.removeAttribute(attr.name); continue; }
+    if ((name === "href" || name === "src") && !safeUrl(attr.value)) {
+      el.removeAttribute(attr.name);
+    }
+  }
+  if (tag === "a" && el.hasAttribute("href")) {
+    el.setAttribute("rel", "noopener noreferrer");
+    el.setAttribute("target", "_blank");
+  }
+  if (tag === "input") {
+    // Only task-list checkboxes survive, and only as inert markers.
+    if (el.getAttribute("type") !== "checkbox") el.remove();
+    else el.setAttribute("disabled", "");
+  }
+}
+
+function sanitizeNode(node: Node): void {
+  for (const child of Array.from(node.childNodes)) {
+    if (child.nodeType === Node.COMMENT_NODE) { child.remove(); continue; }
+    if (child.nodeType !== Node.ELEMENT_NODE) continue;
+    const el = child as Element;
+    const tag = el.tagName.toLowerCase();
+    if (DROPPED_WITH_CONTENT.has(tag)) { el.remove(); continue; }
+    if (!ALLOWED_TAGS.has(tag)) {
+      // Unwrap: keep the text, lose the element.
+      sanitizeNode(el);
+      el.replaceWith(...Array.from(el.childNodes));
+      continue;
+    }
+    sanitizeAttributes(el);
+    if (el.parentNode) sanitizeNode(el);
+  }
+}
+
+/**
+ * Parses `html` into an inert <template> and appends the sanitised nodes to
+ * `container`. Nothing in `html` is ever evaluated: template contents belong
+ * to a document with no browsing context, so scripts do not run and images
+ * and frames are not fetched — and the sanitiser removes them before the
+ * nodes are adopted into the live page anyway.
+ */
+export function appendSanitizedHtml(container: HTMLElement, html: string): void {
+  const doc = container.ownerDocument;
+  const template = doc.createElement("template");
+  template.innerHTML = html;
+  const root = template.content;
+  sanitizeNode(root);
+  container.appendChild(doc.importNode(root, true));
+}

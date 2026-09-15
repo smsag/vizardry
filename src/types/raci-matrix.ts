@@ -12,6 +12,8 @@ export interface RACIRow {
 
 export interface RACIData {
   rows: RACIRow[];
+  /** Recoverable problems (several accountable names on one task) shown under the canvas. */
+  warnings?: string[];
 }
 
 export type RACIResult = Result<RACIData>;

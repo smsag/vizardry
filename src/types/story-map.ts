@@ -28,6 +28,8 @@ export interface StoryMap {
   goal: string;
   activities: StoryActivity[];
   slices: StorySlice[];
+  /** Recoverable problems (a slice naming an unknown step or task) shown under the canvas. */
+  warnings?: string[];
 }
 
 export type StoryMapResult = Result<StoryMap>;

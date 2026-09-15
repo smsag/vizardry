@@ -1,5 +1,5 @@
 import type { Editor, MarkdownPostProcessorContext } from "obsidian";
-import { addIcon, MarkdownView, Notice, Platform, Plugin } from "obsidian";
+import { addIcon, MarkdownView, Notice, Plugin } from "obsidian";
 import { VizardrySettingTab } from "./settings";
 import { normalizeSettings, serializeSettings } from "./settings-schema";
 import type { PluginSettings } from "./settings-schema";
@@ -16,6 +16,7 @@ import { VIZARDRY_VIEW_TYPE } from "./sideleaf/view-type";
 import { VIZARDRY_ICON_ID, VIZARDRY_ICON_SVG } from "./sideleaf/icon";
 import { VizardrySideleafView } from "./sideleaf/view";
 import { setPluginVersion } from "./shared/version";
+import { ensureSketchDefs, removeSketchDefs } from "./shared/sketch-defs";
 import { CanvasInsertModal } from "./modal";
 import { createApi, VIZARDRY_NO_ENRICH_CLASS } from "./renderer/export-api";
 import type { VizardryApi } from "./renderer/export-api";
@@ -29,7 +30,7 @@ import { t } from "./i18n";
 export default class VizardryPlugin extends Plugin {
   // A fresh normalized object, never the shared frozen DEFAULT_SETTINGS —
   // the settings tab mutates this in place.
-  settings: PluginSettings = normalizeSettings({});
+  override settings: PluginSettings = normalizeSettings({});
   // Per-file debounce timers for the heading-change relink pass. An instance
   // field (not a local in onload()) so onunload() can cancel any still
   // pending when the plugin is disabled/reloaded — otherwise a timer
@@ -52,10 +53,25 @@ export default class VizardryPlugin extends Plugin {
     // settings object: data.json also holds the two cache blobs, and writing
     // back a snapshot of those taken at onload would discard every summary
     // cached since — see settings-schema.ts.
-    await updatePersistedData(this, (existing) => ({ ...existing, ...serializeSettings(this.settings) }));
+    //
+    // A failed write (read-only vault, full disk) is reported once to the
+    // user rather than as an unhandled rejection in a settings callback:
+    // otherwise settings simply "don't stick" with nothing to explain why.
+    try {
+      await updatePersistedData(this, (existing) => ({ ...existing, ...serializeSettings(this.settings) }));
+    } catch (err) {
+      console.error("Vizardry: could not save settings", err);
+      if (!this.saveFailureShown) {
+        this.saveFailureShown = true;
+        new Notice(t("notices.settingsSaveFailed"));
+      }
+    }
   }
 
-  async onload(): Promise<void> {
+  /** The save-failure Notice is shown once per session, not per keystroke. */
+  private saveFailureShown = false;
+
+  override async onload(): Promise<void> {
     const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     // Coerced and clamped rather than spread: data.json is user-editable and
     // also carries the cache blobs, neither of which belong in settings.
@@ -173,9 +189,7 @@ export default class VizardryPlugin extends Plugin {
 
     // ── Ribbon icon → opens insert modal ──────────────────────────────
     this.addRibbonIcon("layout-template", t("commands.insertVizardryCanvas"), () => {
-      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-      if (!view) return;
-      new CanvasInsertModal(this.app, view.editor, frameworkOptions).open();
+      withActiveMarkdownEditor((editor) => new CanvasInsertModal(this.app, editor, frameworkOptions).open());
     });
 
     // ── Command: fuzzy modal ───────────────────────────────────────────
@@ -227,8 +241,9 @@ export default class VizardryPlugin extends Plugin {
     for (const doc of this.sketchDocuments()) this.applySketchToDoc(doc);
   }
 
-  onunload(): void {
+  override onunload(): void {
     this.api = null;
+    delete document.body.dataset.vizardryVersion;
     for (const timer of this.relinkTimers.values()) clearTimeout(timer);
     this.relinkTimers.clear();
     closeSectionPreview();
@@ -243,42 +258,8 @@ export default class VizardryPlugin extends Plugin {
     for (const doc of this.sketchDocuments()) {
       doc.body.removeClass("vizardry-sketch");
       doc.body.style.removeProperty("--vzd-sketch-font-override");
-      doc.getElementById("vzd-sketch-defs")?.remove();
+      removeSketchDefs(doc);
     }
   }
 }
 
-/**
- * Injects the shared SVG <filter> that gives sketch-mode canvases their
- * hand-drawn line wobble (feTurbulence → feDisplacementMap). Referenced by id
- * from the sketch CSS (`filter: url(#vzd-sketch-rough)`); harmless when sketch
- * mode is off since nothing references it. Injected once into the main document.
- */
-function ensureSketchDefs(doc: Document): void {
-  if (doc.getElementById("vzd-sketch-defs")) return;
-  const NS = "http://www.w3.org/2000/svg";
-  const svg = doc.createElementNS(NS, "svg");
-  svg.setAttribute("id", "vzd-sketch-defs");
-  svg.setAttribute("width", "0");
-  svg.setAttribute("height", "0");
-  svg.setAttribute("aria-hidden", "true");
-  svg.style.position = "absolute";
-  const filter = doc.createElementNS(NS, "filter");
-  filter.setAttribute("id", "vzd-sketch-rough");
-  const turb = doc.createElementNS(NS, "feTurbulence");
-  turb.setAttribute("type", "fractalNoise");
-  turb.setAttribute("baseFrequency", "0.02");
-  turb.setAttribute("numOctaves", "2");
-  turb.setAttribute("seed", "7");
-  turb.setAttribute("result", "noise");
-  const disp = doc.createElementNS(NS, "feDisplacementMap");
-  disp.setAttribute("in", "SourceGraphic");
-  disp.setAttribute("in2", "noise");
-  disp.setAttribute("scale", "1.1");
-  disp.setAttribute("xChannelSelector", "R");
-  disp.setAttribute("yChannelSelector", "G");
-  filter.appendChild(turb);
-  filter.appendChild(disp);
-  svg.appendChild(filter);
-  doc.body.appendChild(svg);
-}

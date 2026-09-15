@@ -11,7 +11,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { classifyTicketTarget, type LinkResolver } from "../shared/links";
 import type { RenderContext } from "./render-context";
 
-const DRAG_THRESHOLD = 4;
+const DRAG_THRESHOLD = 4; // tighter than DRAG_THRESHOLD_PX: pills are small, a 8px dead zone felt stuck
 const pct = (n: number): string => `${(n * 100).toFixed(3)}%`;
 
 const TITLES: Record<MatrixPreset, string> = {
@@ -241,6 +241,10 @@ function wirePill(
   }
 
   pill.classList.add("vzd-mx-item--editable");
+  // A focusable button must answer the keyboard in edit mode too.
+  pill.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetails(); }
+  });
   pill.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest("a, button, textarea, .vzd-card-link-btn")) return;
@@ -274,21 +278,35 @@ function wirePill(
       anchor!.style.top = pct(1 - ny);
     };
 
-    const onUp = (): void => {
+    const teardown = (): void => {
       pill.releasePointerCapture(e.pointerId);
       pill.removeEventListener("pointermove", onMove);
       pill.removeEventListener("pointerup", onUp);
+      pill.removeEventListener("pointercancel", onCancel);
+    };
+    const onUp = (): void => {
+      teardown();
       if (moved) {
         anchor?.classList.remove("vzd-mx-item--dragging");
-        item.x = nx; item.y = ny; item.at = undefined;
-        if (!writeItemPosition(app, ctx, container, item.label, nx, ny)) new Notice(t("edit.writeFailed"));
+        if (writeItemPosition(app, ctx, container, item.label, nx, ny)) {
+          item.x = nx; item.y = ny; item.at = undefined;
+        } else {
+          new Notice(t("edit.writeFailed"));
+        }
       } else {
         openDetails();
       }
     };
+    // A browser-initiated cancel (touch scroll, palm rejection) used to leave
+    // both handlers attached, so the next release fired every onUp so far.
+    const onCancel = (): void => {
+      teardown();
+      anchor?.classList.remove("vzd-mx-item--dragging");
+    };
 
     pill.addEventListener("pointermove", onMove);
     pill.addEventListener("pointerup", onUp);
+    pill.addEventListener("pointercancel", onCancel);
   });
 }
 

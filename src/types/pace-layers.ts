@@ -23,6 +23,8 @@ export interface ParsedPaceLayers {
   context: string;
   type: PaceLayerType;
   layers: Partial<Record<PaceLayerName, PaceLayerCell>>;
+  /** Recoverable problems (unknown type, unknown layer) shown under the canvas. */
+  warnings?: string[];
 }
 
 export type PaceLayersResult = Result<ParsedPaceLayers>;

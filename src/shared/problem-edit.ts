@@ -31,7 +31,7 @@ function cardLines(
   const out: number[] = [];
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const trimmed = editor.getLine(ln).trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(editor.getLine(ln))) continue;
     const colon = trimmed.indexOf(":");
     if (colon === -1) continue;
     const key = trimmed.slice(0, colon).trim().toLowerCase();

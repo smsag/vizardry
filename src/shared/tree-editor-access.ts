@@ -30,7 +30,10 @@ export function subtreeEnd(
   for (let ln = parentLine + 1; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
-    if (trimmed === "" || trimmed.startsWith("//")) { last = ln; continue; }
+    // Blank and comment lines are stepped over but only belong to the subtree
+    // when a deeper node follows them: a `// note` before the next sibling
+    // used to be deleted along with the node above it.
+    if (trimmed === "" || trimmed.startsWith("//")) continue;
     if (trimmed.startsWith("```")) break; // closing fence
     const indent = raw.search(/\S/);
     if (indent <= parentIndent) break;
@@ -61,8 +64,8 @@ export function editorWrite(fn: () => void, el: HTMLElement): void {
 }
 
 /**
- * Deletes lines [fromLine, toLine] inclusive and any immediately following
- * blank lines (so no orphaned blank line remains).
+ * Deletes lines [fromLine, toLine] inclusive. Which blank or comment lines
+ * belong to a node is decided by `subtreeEnd`, not here.
  */
 export function deleteLines(editor: Editor, fromLine: number, toLine: number, el: HTMLElement): void {
   editorWrite(() => {

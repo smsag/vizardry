@@ -1,4 +1,4 @@
-import type { RACIData, RACIResult, RACIRow } from "./types";
+import type { RACIResult, RACIRow } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
 
 const CELL_KEYS = ["responsible", "accountable", "consulted", "informed"] as const;
@@ -24,12 +24,13 @@ function emptyRow(task: string): RACIRow {
 export function parseRACIMatrix(source: string): RACIResult {
   const lines = source.split("\n");
   const rows: RACIRow[] = [];
+  const warnings: string[] = [];
   let current: RACIRow | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
     const indent = raw.search(/\S/);
 
@@ -70,8 +71,11 @@ export function parseRACIMatrix(source: string): RACIResult {
     }
 
     current[key] = value;
+    if (key === "accountable" && value.split(",").filter(n => n.trim()).length > 1) {
+      warnings.push(`Line ${i + 1}: "${current.task}" has more than one accountable person — RACI expects exactly one`);
+    }
   }
 
   // Empty is valid — the renderer shows column definitions as placeholder
-  return { ok: true, data: { rows } };
+  return { ok: true, data: { rows, ...(warnings.length > 0 ? { warnings } : {}) } };
 }

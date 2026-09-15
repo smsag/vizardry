@@ -1,4 +1,4 @@
-import type { ConceptMap, ConceptMapEdge, ConceptMapResult } from "./types";
+import type { ConceptMapEdge, ConceptMapResult } from "./types";
 
 /**
  * Parses Concept Map syntax:

@@ -93,6 +93,12 @@ export async function whenSettled(
   const win = ownerWindow(el);
   await nextFrame(win);
   await nextFrame(win);
-  await Promise.all(Array.from(el.querySelectorAll("img")).map(whenImageSettled));
+  // The image step shares the ceiling: a lazy-loaded image that never scrolls
+  // into view fires neither load nor error, and "settled" must still return.
+  const images = Array.from(el.querySelectorAll("img")).map(whenImageSettled);
+  await Promise.race([
+    Promise.all(images),
+    new Promise<void>(resolve => win.setTimeout(resolve, maxMs)),
+  ]);
   await waitForQuiescence(el, quietMs, maxMs);
 }

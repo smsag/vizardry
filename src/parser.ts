@@ -114,7 +114,9 @@ export function parseFrameworkSource(source: string): ParseResult {
         warnings.push(`Line ${headerLine}: "block:" has no label — skipped`);
         continue;
       }
-      if (key in data) {
+      // Own property only: `in` walks the prototype chain, so a block labelled
+      // "constructor" was reported as a duplicate and dropped.
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         warnings.push(`Line ${headerLine}: duplicate "block: ${label}" — later one skipped`);
         continue;
       }

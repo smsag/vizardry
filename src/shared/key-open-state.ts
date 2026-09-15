@@ -9,8 +9,10 @@
  * which only ever made sense while a popover belonged to the badge that
  * spawned it.
  *
- * Badges are held weakly and unregister themselves when they leave the DOM,
- * so re-rendering a note does not leak elements.
+ * Badges unregister themselves when they leave the DOM (see attachKeyTrigger
+ * and lifecycle.onDisconnected), so re-rendering a note does not leak
+ * elements. The registry itself is a plain Map, so that unregistration is
+ * what keeps it bounded.
  */
 
 /** Class marking a badge whose key has a card in the leaf. */

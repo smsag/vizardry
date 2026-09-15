@@ -1,12 +1,10 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { escRe } from "./regex";
+import { uniqueName } from "./unique-name";
 
 /** Escapes a string for safe use inside a RegExp. */
-function escRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 interface ItemRef {
   titleLine: number;
   /** Full title (without pipe or subtitle). */
@@ -88,12 +86,7 @@ export function addRoadmapItem(
 
   // Deduplicate title
   const existing = new Set(block.items.map(i => i.title.toLowerCase()));
-  let unique = itemTitle.trim() || "New Item";
-  if (existing.has(unique.toLowerCase())) {
-    let idx = 2;
-    while (existing.has(`${unique} ${idx}`.toLowerCase())) idx++;
-    unique = `${unique} ${idx}`;
-  }
+  const unique = uniqueName(itemTitle.trim() || "New Item", existing);
 
   const indentStr = block.indent !== -1 ? " ".repeat(block.indent) : "  ";
   const insertAfterLine = block.items.length > 0

@@ -20,6 +20,7 @@
 
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
+import { uniqueName } from "./unique-name";
 import {
   detectIndentUnit,
   subtreeEnd,
@@ -138,12 +139,7 @@ export function addRootKwTreeChild(
     if (!t || t.startsWith("//") || t.startsWith("```") || rootExcludeRe.test(t)) continue;
     existingTexts.add(t.toLowerCase());
   }
-  let childText = newChildText;
-  if (existingTexts.has(childText.toLowerCase())) {
-    let idx = 2;
-    while (existingTexts.has(`${childText} ${idx}`.toLowerCase())) idx++;
-    childText = `${childText} ${idx}`;
-  }
+  const childText = uniqueName(newChildText, existingTexts);
 
   editorWrite(() => editor.replaceRange(
     `${childIndentStr}${childText}\n`,

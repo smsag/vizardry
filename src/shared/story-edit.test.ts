@@ -9,7 +9,7 @@
  * so that `instanceof MarkdownView` checks resolve against the same class.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 vi.mock("obsidian", () => ({
   MarkdownView: class MockMarkdownView {
@@ -206,7 +206,7 @@ describe("deleteStoryTask", () => {
     const ok = deleteStoryTask(app, ctx, el, "Find Item");
     expect(ok).toBe(true);
     const deleteCalls = editor.replaceRange.mock.calls.filter(
-      ([t, f, to]) => t === "" && to?.ch === 0
+      ([t, , to]) => t === "" && to?.ch === 0
     );
     expect(deleteCalls.length).toBeGreaterThanOrEqual(1);
   });

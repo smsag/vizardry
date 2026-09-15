@@ -66,7 +66,7 @@ export function parseBuyerUtilityMap(source: string): BuyerUtilityMapResult {
   // regardless of ordering).
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(lines[i])) continue;
     const lower = trimmed.toLowerCase();
     if (lower.startsWith("stages:")) {
       stages = parseAxisOverride(trimmed.slice("stages:".length), DEFAULT_STAGES, "stages", i + 1, warnings);
@@ -80,7 +80,7 @@ export function parseBuyerUtilityMap(source: string): BuyerUtilityMapResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(lines[i])) continue;
     const lineNum = i + 1;
     const lower = trimmed.toLowerCase();
 

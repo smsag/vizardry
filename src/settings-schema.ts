@@ -69,6 +69,10 @@ type FieldSpec =
   /** `blankOk: true` keeps an empty string (a meaningful "unset"); otherwise
    *  a blank value falls back to the default. Always trimmed. */
   | { kind: "string"; default: string; blankOk?: boolean }
+  /** An absolute https URL; anything else falls back to the default. A base
+   *  URL carries the API key in a header, so http:// would send it in clear
+   *  and a synced data.json could point it anywhere. */
+  | { kind: "url"; default: string }
   /** Coerced to a finite integer and clamped to [min, max] — the slider range. */
   | { kind: "number"; default: number; min: number; max: number }
   | { kind: "enum"; default: string; values: readonly string[] };
@@ -80,19 +84,19 @@ export const SETTINGS_SCHEMA: Schema = {
   sketchFont:             { kind: "string",  default: "", blankOk: true },
 
   linearEnabled:          { kind: "boolean", default: false },
-  linearBaseUrl:          { kind: "string",  default: "https://api.linear.app/graphql" },
+  linearBaseUrl:          { kind: "url",     default: "https://api.linear.app/graphql" },
   linearSecretName:       { kind: "string",  default: "vzd-linear-key" },
 
   llmProvider:            { kind: "enum",    default: "anthropic", values: ["anthropic", "openai"] },
-  llmModel:               { kind: "string",  default: "claude-haiku-4-5-latest" },
+  llmModel:               { kind: "string",  default: "claude-haiku-4-5" },
   llmSecretName:          { kind: "string",  default: "vzd-llm-key" },
 
   summaryTtlHours:        { kind: "number",  default: 24, min: 1, max: 168 },
   statusTtlMinutes:       { kind: "number",  default: 5,  min: 1, max: 60 },
 
   upvotyEnabled:          { kind: "boolean", default: false },
-  upvotyBaseUrl:          { kind: "string",  default: "https://api.upvotyfeedback.com/v1" },
-  upvotyAppUrl:           { kind: "string",  default: "https://app.upvoty.com/feedback" },
+  upvotyBaseUrl:          { kind: "url",     default: "https://api.upvotyfeedback.com/v1" },
+  upvotyAppUrl:           { kind: "url",     default: "https://app.upvoty.com/feedback" },
   upvotyKeyPrefix:        { kind: "string",  default: "UPV" },
   upvotySecretName:       { kind: "string",  default: "vzd-upvoty-key" },
   upvotyStatusTtlMinutes: { kind: "number",  default: 5,  min: 1, max: 60 },
@@ -111,6 +115,11 @@ function coerce(spec: FieldSpec, value: unknown): unknown {
       if (trimmed === "") return spec.blankOk ? "" : spec.default;
       return trimmed;
     }
+    case "url": {
+      if (typeof value !== "string") return spec.default;
+      const trimmed = value.trim();
+      return isHttpsUrl(trimmed) ? trimmed : spec.default;
+    }
     case "number": {
       // Accept a numeric string too: data.json edited by hand (or written by
       // an older build) can carry "24" where 24 is meant.
@@ -120,6 +129,16 @@ function coerce(spec: FieldSpec, value: unknown): unknown {
     }
     case "enum":
       return typeof value === "string" && spec.values.includes(value) ? value : spec.default;
+  }
+}
+
+/** True for an absolute URL with the https scheme and a host. */
+export function isHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.host !== "";
+  } catch {
+    return false;
   }
 }
 
@@ -137,7 +156,23 @@ export function normalizeSettings(raw: unknown): PluginSettings {
   const source = (raw !== null && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const out = {} as Record<string, unknown>;
   for (const key of SETTINGS_KEYS) out[key] = coerce(SETTINGS_SCHEMA[key], source[key]);
+  out.llmModel = healModelId(out.llmModel as string);
   return out as unknown as PluginSettings;
+}
+
+/**
+ * Model ids persisted by earlier releases that the API no longer accepts.
+ * `claude-*-latest` was never a valid alias for the 4.x models; every request
+ * with one 404'd. Healed on load so an existing data.json starts working
+ * without the user having to know why summaries stopped.
+ */
+const RENAMED_MODELS: Record<string, string> = {
+  "claude-haiku-4-5-latest": "claude-haiku-4-5",
+  "claude-sonnet-4-5-latest": "claude-sonnet-4-5",
+};
+
+function healModelId(model: string): string {
+  return RENAMED_MODELS[model] ?? model;
 }
 
 /**

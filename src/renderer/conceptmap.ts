@@ -1,4 +1,3 @@
-import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { ConceptMap } from "../types";
 import type { RenderContext } from "./render-context";
 import { initCanvas } from "./controls";

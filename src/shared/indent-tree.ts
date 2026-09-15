@@ -6,12 +6,15 @@ export interface IndentLine {
 
 /** True for lines every parser skips outright: blank, `//` comments, the
  *  canvas-title `title:` line, and the global `collapsed:` param (both parsed
- *  separately by initCanvas). */
-export function isSkippableLine(trimmed: string): boolean {
+ *  separately by initCanvas). Takes the raw line: `title:` and `collapsed:`
+ *  are canvas config only at indent 0 — an indented `title: …` is content
+ *  (a mind-map child, a block line) and used to vanish silently. */
+export function isSkippableLine(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (trimmed === "" || trimmed.startsWith("//")) return true;
+  if (raw.search(/\S/) !== 0) return false;
   const lower = trimmed.toLowerCase();
-  return trimmed === "" || trimmed.startsWith("//")
-    || lower.startsWith("title:")
-    || lower.startsWith("collapsed:");
+  return lower.startsWith("title:") || lower.startsWith("collapsed:");
 }
 
 export function extractMeaningfulLines(source: string): IndentLine[] {
@@ -20,7 +23,7 @@ export function extractMeaningfulLines(source: string): IndentLine[] {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
     result.push({ indent: raw.search(/\S/), text: trimmed, lineNum: i + 1 });
   }
   return result;

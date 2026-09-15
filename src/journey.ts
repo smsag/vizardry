@@ -93,7 +93,7 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
     const indent = raw.search(/\S/);
 

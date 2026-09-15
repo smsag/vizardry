@@ -2,7 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { WardleyMap, WardleyComponent } from "../types";
 import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
-import { initCanvas, renderCanvasWarnings } from "./controls";
+import { initCanvas, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
@@ -157,7 +157,7 @@ function renderLinks(
       deleteBtn.appendChild(xText);
       deleteBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        removeWardleyLink(app, mppCtx, wrap, link.from, link.to);
+        if (!removeWardleyLink(app, mppCtx, wrap, link.from, link.to)) showWriteFailedNotice(wrap);
       });
       linkG.appendChild(deleteBtn);
     }

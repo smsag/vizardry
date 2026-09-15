@@ -4,7 +4,7 @@ import "../test-setup";
 
 vi.mock("obsidian", () => ({ setIcon: vi.fn() }));
 const { mockGetUpvotyService } = vi.hoisted(() => ({
-  mockGetUpvotyService: vi.fn((): { isEnabled(): boolean } | null => null),
+  mockGetUpvotyService: vi.fn((): { isEnabled(): boolean; getKeyPrefix(): string } | null => null),
 }));
 vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
 vi.mock("../i18n", () => ({ t: (key: string) => key }));
@@ -42,7 +42,7 @@ describe("buildKeyRegex", () => {
 
 describe("renderUpvotyKeyBadge", () => {
   it("renders a .vzd-upvoty-key badge when the Upvoty integration is enabled", () => {
-    mockGetUpvotyService.mockReturnValue({ isEnabled: () => true });
+    mockGetUpvotyService.mockReturnValue({ isEnabled: () => true, getKeyPrefix: () => "UPV" });
     const el = document.createElement("div");
     renderUpvotyKeyBadge(el, "UPV-abc123");
 
@@ -52,7 +52,7 @@ describe("renderUpvotyKeyBadge", () => {
   });
 
   it("renders nothing when the Upvoty integration is disabled", () => {
-    mockGetUpvotyService.mockReturnValue({ isEnabled: () => false });
+    mockGetUpvotyService.mockReturnValue({ isEnabled: () => false, getKeyPrefix: () => "UPV" });
     const el = document.createElement("div");
     renderUpvotyKeyBadge(el, "UPV-abc123");
 

@@ -1,9 +1,7 @@
 import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
-import { initCanvas, renderHeadingLink } from "./controls";
-import type { LinkResolver } from "../shared/links";
+import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import type { RenderContext } from "./render-context";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
@@ -12,6 +10,8 @@ import { activateInlineEdit } from "./inline-edit";
 import { t } from "../i18n";
 import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { isEditModeActive } from "../shared/editor";
+import { textOnlyClone } from "./card-block";
 import {
   addStoryTask,
   deleteStoryTask,
@@ -33,7 +33,7 @@ export function renderStoryMap(
 ): void {
   const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && source !== undefined)
-    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+    && isEditModeActive(app);
   const defaultTitle = "User Story Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = isEditMode
@@ -51,6 +51,7 @@ export function renderStoryMap(
     renderMetaBadge(meta, "user", t("story.label.user"), map.user, isEditMode, app, ctx, container);
     renderMetaBadge(meta, "goal", t("story.label.goal"), map.goal, isEditMode, app, ctx, container);
   } : undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(container, map.warnings);
 
   const allSteps = map.activities.flatMap(a => a.steps);
   const totalCols = allSteps.length;
@@ -217,7 +218,9 @@ export function renderStoryMap(
     const rect = card.getBoundingClientRect();
     const ghost = doc.body.createEl("div", { cls: "vzd-story-task-card vzd-story-task-card--ghost" });
     ghost.style.width = `${rect.width}px`;
-    ghost.innerHTML = card.innerHTML;
+    // Text only: a clone with the card's buttons and data-vzd-id markers made
+    // the ghost a second target for id lookups mid-drag.
+    ghost.appendChild(textOnlyClone(card));
     ghost.style.left = `${clientX + 8}px`;
     ghost.style.top = `${clientY + 8}px`;
 

@@ -194,9 +194,16 @@ export function activateSticky(container: HTMLElement): void {
   }
   ctrl.add(container);
   // Also drop it when the block is re-rendered/removed, so a stale entry can't
-  // keep a controller (and its listeners) alive.
-  onDisconnected(container, () => controllers.get(scroller)?.remove(container));
+  // keep a controller (and its listeners) alive. Registered once per
+  // container: every pin toggle used to add another registration.
+  if (!watched.has(container)) {
+    watched.add(container);
+    onDisconnected(container, () => { watched.delete(container); controllers.get(scroller)?.remove(container); });
+  }
 }
+
+/** Containers whose disconnect watch is already registered. */
+const watched = new WeakSet<HTMLElement>();
 
 /** Stop pinning `container` and remove its clone if currently pinned. */
 export function deactivateSticky(container: HTMLElement): void {

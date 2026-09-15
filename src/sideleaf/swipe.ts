@@ -82,7 +82,13 @@ export function enableSwipeToRemove(card: HTMLElement, opts: SwipeOptions): void
 
   const end = (e: PointerEvent): void => {
     if (!armed || e.pointerId !== pointerId) return;
-    if (!active) { reset(false); return; }
+    if (!active) {
+      // A plain tap: nothing was moved, so there is nothing to snap back and
+      // no reason to force a synchronous layout on every click on a card.
+      armed = false;
+      pointerId = null;
+      return;
+    }
     const dx = e.clientX - startX;
     if (Math.abs(dx) >= commitDistance(card)) {
       // Carry the card the rest of the way out before it goes, so the removal

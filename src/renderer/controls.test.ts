@@ -143,7 +143,7 @@ describe("renderHeadingLink — ticket fallback", () => {
   });
 
   it("renders an Upvoty ticket badge when resolve() finds nothing but resolveTicket() does", () => {
-    mockGetUpvotyService.mockReturnValue({ isEnabled: () => true });
+    mockGetUpvotyService.mockReturnValue({ isEnabled: () => true, getKeyPrefix: () => "UPV" });
     const el = container();
     const resolver = {
       resolve: () => undefined,
@@ -206,7 +206,7 @@ describe("navigateToCanvas", () => {
   }
 
   it("flashes the canvas whose title matches (falling back to a document scan)", () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (Element.prototype as any).scrollIntoView = vi.fn();
     const a = canvas("First Canvas");
     const b = canvas("Q3 Roadmap");

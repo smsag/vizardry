@@ -36,8 +36,13 @@ describe("subtreeEnd", () => {
     expect(subtreeEnd(editor as any, 1, 2, 3)).toBe(2);
   });
 
-  it("includes trailing blank lines in the subtree", () => {
+  it("leaves trailing blank lines out of the subtree", () => {
     const editor = makeMockEditor(["root: X", "  Branch", "    Leaf", "", "  Other"]);
-    expect(subtreeEnd(editor as any, 1, 2, 4)).toBe(3);
+    expect(subtreeEnd(editor as any, 1, 2, 4)).toBe(2);
+  });
+
+  it("steps over a blank line to reach a deeper node, but never claims a comment before the next sibling", () => {
+    const editor = makeMockEditor(["root: X", "  Branch", "", "    Leaf", "// note for Other", "  Other"]);
+    expect(subtreeEnd(editor as any, 1, 2, 5)).toBe(3);
   });
 });

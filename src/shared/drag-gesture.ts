@@ -109,11 +109,21 @@ export function enableDragGesture(card: HTMLElement, h: DragGestureHandlers): vo
     const end = (): void => {
       doc.removeEventListener("touchmove", move);
       doc.removeEventListener("touchend", end);
+      doc.removeEventListener("touchcancel", cancel);
       if (dragging) h.onEnd();
       else h.onClick?.();
+    };
+    // A system gesture or multi-touch can cancel the touch outright; without
+    // this the document listeners and the ghost stayed until the next tap.
+    const cancel = (): void => {
+      doc.removeEventListener("touchmove", move);
+      doc.removeEventListener("touchend", end);
+      doc.removeEventListener("touchcancel", cancel);
+      if (dragging) h.onEnd();
     };
 
     doc.addEventListener("touchmove", move, { passive: false });
     doc.addEventListener("touchend", end);
+    doc.addEventListener("touchcancel", cancel);
   }, { passive: true });
 }

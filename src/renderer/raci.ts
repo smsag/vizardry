@@ -1,13 +1,13 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RACIData } from "../types";
 import { t } from "../i18n";
-import { initCanvas, renderHeadingLink } from "./controls";
+import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import { activateTextareaEdit } from "./inline-edit";
 import { writeRACICell } from "../shared/raci-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
-import type { LinkResolver } from "../shared/links";
 import type { RenderContext } from "./render-context";
+import { Notice } from "obsidian";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
 
@@ -40,7 +40,7 @@ function activateItemEdit(
   container: HTMLElement,
 ): void {
   activateTextareaEdit(item, item, currentValue, (value) => {
-    writeRACICell(app, ctx, container, rowIndex, cellKey, value);
+    if (!writeRACICell(app, ctx, container, rowIndex, cellKey, value)) new Notice(t("edit.writeFailed"));
   }, {
     editingClass: "vzd-raci-editing",
     textareaClass: "vzd-raci-textarea",
@@ -69,6 +69,7 @@ export function renderRACIMatrix(
     ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   initCanvas(container, "raci", title, undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(container, data?.warnings);
 
   const rows = data?.rows ?? [];
 

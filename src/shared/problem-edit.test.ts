@@ -17,9 +17,9 @@ function makeMockEditor(lines: string[]) {
 }
 type MockEditor = ReturnType<typeof makeMockEditor>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function makeApp(sourcePath: string, editor: MockEditor | null): any {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const view = Object.create((MarkdownView as any).prototype);
   view.file = { path: sourcePath };
   view.editor = editor;

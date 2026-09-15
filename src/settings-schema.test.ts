@@ -94,4 +94,17 @@ describe("serializeSettings", () => {
     const withExtra = { ...DEFAULT_SETTINGS, linearCache: {} } as never;
     expect(Object.keys(serializeSettings(withExtra))).toEqual(SETTINGS_KEYS);
   });
+
+  it("keeps only https base URLs, so a key is never sent in clear or to a made-up host", () => {
+    expect(normalizeSettings({ linearBaseUrl: "http://api.linear.app/graphql" }).linearBaseUrl).toBe(DEFAULT_SETTINGS.linearBaseUrl);
+    expect(normalizeSettings({ upvotyBaseUrl: "not a url" }).upvotyBaseUrl).toBe(DEFAULT_SETTINGS.upvotyBaseUrl);
+    expect(normalizeSettings({ upvotyAppUrl: "javascript:alert(1)" }).upvotyAppUrl).toBe(DEFAULT_SETTINGS.upvotyAppUrl);
+    expect(normalizeSettings({ upvotyBaseUrl: " https://feedback.example.com/v1 " }).upvotyBaseUrl).toBe("https://feedback.example.com/v1");
+  });
+
+  it("heals the -latest model ids earlier releases persisted", () => {
+    expect(normalizeSettings({ llmModel: "claude-haiku-4-5-latest" }).llmModel).toBe("claude-haiku-4-5");
+    expect(normalizeSettings({ llmModel: "claude-sonnet-4-5-latest" }).llmModel).toBe("claude-sonnet-4-5");
+    expect(normalizeSettings({ llmModel: "gpt-4o" }).llmModel).toBe("gpt-4o");
+  });
 });

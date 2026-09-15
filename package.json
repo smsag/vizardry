@@ -1,12 +1,15 @@
 {
   "name": "vizardry",
-  "version": "0.68.1",
+  "version": "0.69.0",
+  "private": true,
   "description": "Renders product management frameworks as visual canvases inline in Read View.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
-    "lint": "eslint src/",
+    "lint": "eslint src/ extension/",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p extension/tsconfig.json",
+    "check": "npm run typecheck && npm run lint && npm test && bash scripts/docs-check.sh && node scripts/css-check.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
@@ -38,7 +41,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.56.0",
-    "@types/node": "^26.1.2",
+    "@types/node": "^20.19.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.60.0",
     "@vitest/coverage-v8": "^4.1.10",
@@ -47,7 +50,6 @@
     "eslint": "^10.8.0",
     "happy-dom": "^20.11.1",
     "obsidian": "1.13.1",
-    "tslib": "2.8.1",
     "typescript": "5.9.3",
     "vitest": "^4.1.7"
   },

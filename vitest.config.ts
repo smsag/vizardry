@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "extension/**/*.test.ts"],
     environment: "node",
     // Per-file environment overrides are declared with the
     // @vitest-environment happy-dom docblock annotation in each renderer test.
@@ -24,15 +24,18 @@ export default defineConfig({
         "src/**/*.test.ts",
         "src/__mocks__/**",
         "src/test-setup.ts",
+        "src/shared/obsidian-dom-polyfill.ts",
       ],
       // Thresholds reflect the reality that renderers require the Obsidian
       // runtime and cannot be fully exercised in unit tests. Parser and
       // shared-utility code is held to higher standards.
+      // Held two points under what the suite achieves so a deleted test fails
+      // CI instead of quietly lowering the bar; raise them as coverage grows.
       thresholds: {
-        statements: 58,
-        branches:   54,
-        functions:  44,
-        lines:      60,
+        statements: 67,
+        branches:   60,
+        functions:  57,
+        lines:      70,
       },
     },
   },

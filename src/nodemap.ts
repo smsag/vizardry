@@ -43,9 +43,9 @@ export function parseNodeMap(source: string): NodeMapResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
-    if (trimmed.startsWith("box:")) {
+    if (trimmed.toLowerCase().startsWith("box:")) {
       const declLine = i + 1;
       const rest = trimmed.slice("box:".length).trim();
       const bracketMatch = rest.match(
@@ -98,7 +98,7 @@ export function parseNodeMap(source: string): NodeMapResult {
       continue;
     }
 
-    if (trimmed.startsWith("link:")) {
+    if (trimmed.toLowerCase().startsWith("link:")) {
       const lineNum = i + 1;
       const rest = trimmed.slice("link:".length).trim();
 

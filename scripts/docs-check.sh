@@ -2,7 +2,7 @@
 # docs-check.sh — Catch documentation drift on every CI run.
 #
 # Checks objective facts that can be verified mechanically:
-#   1. manifest.json version matches package.json version
+#   1. manifest.json and extension/manifest.json versions match package.json
 #   2. manifest.json version has an entry in versions.json
 #   3. README.md mentions every framework (by ID)
 #   4. docs/vizardry-canvas-syntax-reference.md documents every framework type:
@@ -40,6 +40,13 @@ if [ "$MV" = "$PV" ]; then
   ok "Version sync: manifest.json and package.json both at v$MV"
 else
   fail "Version mismatch — manifest.json=$MV, package.json=$PV"
+fi
+
+EV=$(jq -r '.version' extension/manifest.json)
+if [ "$EV" = "$PV" ]; then
+  ok "Version sync: extension/manifest.json at v$EV"
+else
+  fail "Version mismatch — extension/manifest.json=$EV, package.json=$PV (run npm version, which bumps all three)"
 fi
 
 # ── 2. versions.json coverage ────────────────────────────────────────────────

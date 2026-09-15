@@ -1,4 +1,4 @@
-import type { StoryActivity, StoryMap, StoryMapResult, StorySlice, StoryStep, StoryTask } from "./types";
+import type { StoryActivity, StoryMapResult, StorySlice, StoryStep } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
 
 export function parseStoryMap(source: string): StoryMapResult {
@@ -24,7 +24,7 @@ export function parseStoryMap(source: string): StoryMapResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
     const indent = raw.search(/\S/);
 
@@ -142,23 +142,24 @@ export function parseStoryMap(source: string): StoryMapResult {
   }
 
   // Drop slice references to renamed/missing steps or tasks.
-  // Log a warning so typos are diagnosable without making this a hard error —
-  // a renamed step shouldn't break the entire canvas.
+  // A warning (shown under the canvas) so typos are diagnosable without
+  // making this a hard error — a renamed step shouldn't break the entire canvas.
+  const warnings: string[] = [];
   for (const slice of slices) {
     for (const stepKey of Object.keys(slice.cells)) {
       const validKeys = stepTaskKeys.get(stepKey);
       if (!validKeys) {
-        console.warn(`Vizardry: slice "${slice.name}" references unknown step "${stepKey}" — ignored`);
+        warnings.push(`Slice "${slice.name}" names an unknown step "${stepKey}" — ignored`);
         delete slice.cells[stepKey];
       } else {
         const dropped = slice.cells[stepKey].filter(k => !validKeys.has(k));
         if (dropped.length > 0) {
-          console.warn(`Vizardry: slice "${slice.name}" / step "${stepKey}" references unknown tasks: ${dropped.join(", ")} — ignored`);
+          warnings.push(`Slice "${slice.name}" / step "${stepKey}" names unknown tasks: ${dropped.join(", ")} — ignored`);
         }
         slice.cells[stepKey] = slice.cells[stepKey].filter(taskKey => validKeys.has(taskKey));
       }
     }
   }
 
-  return { ok: true, data: { user, goal, activities, slices } };
+  return { ok: true, data: { user, goal, activities, slices, ...(warnings.length > 0 ? { warnings } : {}) } };
 }

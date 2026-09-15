@@ -13,6 +13,7 @@ import { bestTextColor } from "../shared/color-utils";
 import type { RenderContext } from "./render-context";
 import type { FlowNode, FlowEdge, StageDef, FlowRole } from "../types/problem";
 import { renderFlowGraph } from "./flow-graph";
+import { Notice, setIcon } from "obsidian";
 
 export function renderSIPOC(
   data: SIPOCData,
@@ -75,7 +76,7 @@ function activateCellEdit(
     td.clientHeight - parseFloat(tdStyle.paddingTop) - parseFloat(tdStyle.paddingBottom)
   );
   activateTextareaEdit(td, td, currentValue, (value) => {
-    writeSIPOCCell(app, ctx, container, rowIndex, cellKey, value);
+    if (!writeSIPOCCell(app, ctx, container, rowIndex, cellKey, value)) new Notice(t("edit.writeFailed"));
   }, {
     editingClass: "vzd-sipoc-editing",
     textareaClass: "vzd-sipoc-textarea",
@@ -135,7 +136,7 @@ function renderSIPOCTable(
 
   const tbody = table.createEl("tbody");
 
-  const cols = getCols(data.rows);
+  const cols = allCols;
 
   data.rows.forEach((row, rowIdx) => {
     const tr = tbody.createEl("tr", {
@@ -170,9 +171,9 @@ function renderSIPOCTable(
         cls: "vzd-btn vzd-sipoc-add-row",
         attr: { "aria-label": t("sipoc.addRowBelow"), type: "button" },
       });
-      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+      setIcon(btn, "plus");
       btn.addEventListener("click", () => {
-        insertSIPOCRowAfter(app!, ctx!, container, rowIdx);
+        if (!insertSIPOCRowAfter(app!, ctx!, container, rowIdx)) new Notice(t("edit.writeFailed"));
       });
     }
   });

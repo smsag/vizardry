@@ -3,6 +3,7 @@ import type { UpvotyPost, UpvotyStatus, UpvotyAuthor } from "./types";
 import { withTimeout } from "../shared/request-timeout";
 import { withRetry429 } from "../shared/request-retry";
 import { INTEGRATION_REQUEST_TIMEOUT_MS } from "../shared/constants";
+import { IntegrationAuthError } from "../shared/errors";
 
 // Base62 alphabet used by Upvoty (standard: digits, uppercase, lowercase)
 const B62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -63,9 +64,7 @@ export async function fetchUpvotyPost(
     throw new Error(`Upvoty: network error — ${(err as Error).message}`);
   }
 
-  if (resp.status === 401 || resp.status === 403) {
-    throw new Error("Upvoty: invalid or missing API key");
-  }
+  if (resp.status === 401 || resp.status === 403) throw new IntegrationAuthError("Upvoty");
   if (resp.status === 404) {
     throw new Error(`Upvoty: feedback item "${postId}" not found`);
   }
@@ -109,11 +108,17 @@ export async function fetchUpvotyComments(
       headers: { "X-Upvoty-Key": apiKey },
       throw: false,
     }), INTEGRATION_REQUEST_TIMEOUT_MS, "Upvoty"));
-  } catch {
-    return []; // comments are best-effort; don't fail the whole summary
+  } catch (err) {
+    // Comments are best-effort and must not fail the summary — but a summary
+    // quietly generated without them forever is worth one console line.
+    console.warn(`Vizardry: Upvoty comments for "${postId}" unavailable`, err);
+    return [];
   }
 
-  if (resp.status !== 200) return [];
+  if (resp.status !== 200) {
+    console.warn(`Vizardry: Upvoty comments for "${postId}" returned HTTP ${resp.status}`);
+    return [];
+  }
 
   const data = resp.json as { data?: { text?: string; internal?: boolean }[] };
   return (data.data ?? [])

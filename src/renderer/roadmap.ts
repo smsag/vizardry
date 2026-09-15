@@ -1,6 +1,5 @@
 import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive, AUTO_TEXT_ATTR } from "./controls";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
@@ -11,11 +10,13 @@ import { setupSlideCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
-import { type LinkResolver, NULL_RESOLVER } from "../shared/links";
+import { NULL_RESOLVER } from "../shared/links";
 import type { RenderContext } from "./render-context";
 import { bestTextColor } from "../shared/color-utils";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
+import { isEditModeActive } from "../shared/editor";
+import { textOnlyClone } from "./card-block";
 
 const COL_LABELS: Record<string, string> = {
   now:   "roadmap.col.now",
@@ -31,7 +32,7 @@ export function renderRoadmap(
   const { navigateTo, source, app, ctx } = rc;
   const resolver = rc.resolver ?? NULL_RESOLVER;
   const isEditMode = !!(app && ctx && source !== undefined)
-    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+    && isEditModeActive(app);
   const defaultTitle = "Now/Next/Later Roadmap";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = isEditMode
@@ -147,7 +148,9 @@ export function renderRoadmap(
     const rect = card.getBoundingClientRect();
     const ghost = doc.body.createEl("div", { cls: "vzd-roadmap-card vzd-roadmap-card--ghost" });
     ghost.style.width = `${rect.width}px`;
-    ghost.innerHTML = card.innerHTML;
+    // Text only: a clone with the card's buttons and data-vzd-id markers made
+    // the ghost a second target for id lookups mid-drag.
+    ghost.appendChild(textOnlyClone(card));
     ghost.style.left = `${clientX + 8}px`;
     ghost.style.top = `${clientY + 8}px`;
 

@@ -2,7 +2,7 @@
 type:
   - Essential Doc
 ---
-Vizardry renders fenced code blocks as visual canvases in Obsidian Live Preview and Reading View. Use this file as the **authoritative, copy-paste-ready** syntax reference when generating any Vizardry canvas. Everything here matches plugin **v0.45.1**.
+Vizardry renders fenced code blocks as visual canvases in Obsidian Live Preview and Reading View. Use this file as the **authoritative, copy-paste-ready** syntax reference when generating any Vizardry canvas. Everything here matches the current plugin release (see `manifest.json`).
 
 > **If you are an LLM generating a canvas:** read "Hard rules for generating valid syntax" first, then copy the matching framework example and change only the text values. Do not invent keywords, do not reorder the axis grammar, and keep the exact ` ```vizardry ` fence.
 

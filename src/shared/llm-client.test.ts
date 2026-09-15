@@ -31,7 +31,7 @@ describe("callLlm — Anthropic", () => {
   it("reports an invalid API key on a 401 status (not a generic network error)", async () => {
     mockedRequestUrl.mockResolvedValue({ status: 401, json: {} } as any);
     await expect(callLlm("anthropic", "bad-key", "model", "sys", "user"))
-      .rejects.toThrow("Anthropic: invalid API key");
+      .rejects.toThrow("Anthropic: invalid or missing API key");
   });
 
   it("reports the status code for other non-200 responses", async () => {
@@ -66,7 +66,7 @@ describe("callLlm — OpenAI", () => {
   it("reports an invalid API key on a 401 status (not a generic network error)", async () => {
     mockedRequestUrl.mockResolvedValue({ status: 401, json: {} } as any);
     await expect(callLlm("openai", "bad-key", "model", "sys", "user"))
-      .rejects.toThrow("OpenAI: invalid API key");
+      .rejects.toThrow("OpenAI: invalid or missing API key");
   });
 
   it("passes throw: false so requestUrl resolves instead of throwing on non-2xx", async () => {

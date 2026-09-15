@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { setIcon, Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { renderTwoPassCells, buildCardDropTargets, type TwoPassCell } from "./two-pass-cells";
 import { attachSectionPreview } from "./section-preview";
@@ -132,7 +132,7 @@ function renderPeriodField(
     valueEl.addEventListener("click", (e) => {
       e.stopPropagation();
       activateInlineEdit(valueEl, value, (next) => {
-        writeCanvasPeriod(app, ctx, container, next);
+        if (!writeCanvasPeriod(app, ctx, container, next)) new Notice(t("edit.writeFailed"));
       });
     });
   }
@@ -198,7 +198,10 @@ export function renderCanvas(
       linkBtn.dataset.heading = heading;
       markInteractive(linkBtn);
       linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
-      if (app && ctx) attachSectionPreview(app, block, heading, ctx.sourcePath);
+      // On the button, not the block: a relink replaces the button, and a
+      // preview attached to the block would keep the old heading forever
+      // while each relink stacked another set on top.
+      if (app && ctx) attachSectionPreview(app, linkBtn, heading, ctx.sourcePath);
     } else {
       const ticket = resolver.resolveTicket?.(labelKey);
       if (ticket) {

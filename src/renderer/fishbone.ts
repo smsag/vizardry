@@ -1,6 +1,6 @@
 import type { FishboneDiagram } from "../types";
 import type { RenderContext } from "./render-context";
-import { initCanvas, renderCanvasWarnings } from "./controls";
+import { initCanvas, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
@@ -54,7 +54,11 @@ export function renderFishbone(
   // ── Inline-edit plumbing (rename overlay + source mutators) ──────────────────
   let renameFo: SVGForeignObjectElement | null = null;
   const closeRename = (): void => { renameFo?.remove(); renameFo = null; };
-  svg.addEventListener("click", closeRename);
+  svg.addEventListener("click", (e) => {
+    // A click inside the rename input is caret placement, not a dismissal.
+    if (renameFo?.contains(e.target as Node)) return;
+    closeRename();
+  });
 
   const notifyFail = (ok: boolean): void => { if (!ok) showWriteFailedNotice(container); };
   const doRename = (level: number, oldText: string, newText: string): void =>
@@ -129,7 +133,7 @@ export function renderFishbone(
 
   // ── Category bones ───────────────────────────────────────────────────────────
   for (const cat of layout.categories) {
-    renderCategory(svg, cat, color(cat.colorIndex), diagram, resolver, navigateTo, isEditMode, {
+    renderCategory(svg, cat, color(cat.colorIndex), resolver, navigateTo, isEditMode, {
       openRename, doRename, doAddChild, doDelete, closeRename,
     });
   }
@@ -146,7 +150,7 @@ interface EditOps {
 }
 
 function renderCategory(
-  svg: SVGSVGElement, cat: FBCategory, col: string, diagram: FishboneDiagram,
+  svg: SVGSVGElement, cat: FBCategory, col: string,
   resolver: LinkResolver, navigateTo: ((h: string) => void) | undefined,
   editMode: boolean, ops: EditOps,
 ): void {
@@ -304,7 +308,3 @@ function drawDelButton(svg: SVGSVGElement, x: number, y: number, label: string, 
   svg.appendChild(g);
 }
 
-function showWriteFailedNotice(container: HTMLElement): void {
-  const notice = container.createEl("div", { cls: "vzd-tree-write-notice", text: t("tree.writeFailed") });
-  setTimeout(() => notice.remove(), 3000);
-}

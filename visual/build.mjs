@@ -12,7 +12,7 @@ await esbuild.build({
   bundle: true,
   format: "iife",
   platform: "browser",
-  target: "es2018",
+  target: "es2020",
   outfile: path.join(dir, "dist", "harness.js"),
   logLevel: "info",
   alias: { obsidian: path.join(dir, "obsidian.shim.ts") },

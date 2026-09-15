@@ -40,6 +40,10 @@ export function activateBlockEdit(
   container: HTMLElement,
   resolver?: LinkResolver,
   navigateTo?: (heading: string) => void,
+  /** How to draw the block once editing ends. Card-mode blocks pass their own
+   *  renderer; the default draws plain lines. */
+  renderDisplay: (body: HTMLElement, content: string) => void = (b, c) =>
+    renderBlockBody(b, c, resolver, navigateTo, app, ctx.sourcePath),
 ): void {
   // Prevent re-entrancy
   if (body.hasClass("vzd-block-editing")) return;
@@ -75,19 +79,25 @@ export function activateBlockEdit(
     committed = true;
 
     const newValue = textarea.value;
-    const written = writeBlockContent(app, ctx, container, blockLabel, newValue);
-
     body.removeClass("vzd-block-editing");
 
+    // Clicking into and out of a block is not an edit: an unchanged value
+    // used to be written anyway (dirty file, undo entry, full re-render).
+    if (newValue.trim() === currentContent.trim()) {
+      renderDisplay(body, currentContent);
+      return;
+    }
+
+    const written = writeBlockContent(app, ctx, container, blockLabel, newValue);
     if (!written) {
       new Notice(t("edit.writeFailed"));
-      renderBlockBody(body, currentContent, resolver, navigateTo, app, ctx.sourcePath);
+      renderDisplay(body, currentContent);
       return;
     }
 
     // Optimistically re-render so the canvas updates immediately before
     // Obsidian triggers a full re-render from the source change.
-    renderBlockBody(body, newValue.trim(), resolver, navigateTo, app, ctx.sourcePath);
+    renderDisplay(body, newValue.trim());
   };
 
   textarea.addEventListener("blur", commit);
@@ -95,7 +105,7 @@ export function activateBlockEdit(
     if (e.key === "Escape") {
       committed = true;
       body.removeClass("vzd-block-editing");
-      renderBlockBody(body, currentContent, resolver, navigateTo, app, ctx.sourcePath);
+      renderDisplay(body, currentContent);
     }
     // Allow Tab to insert spaces rather than moving focus
     if (e.key === "Tab") {

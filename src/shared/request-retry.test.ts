@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { withRetry429 } from "./request-retry";
+import { withRetry429, MAX_RETRY_DELAY_MS, MAX_JITTER_MS } from "./request-retry";
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -56,7 +56,7 @@ describe("withRetry429", () => {
       .mockResolvedValueOnce({ status: 200 });
 
     const promise = withRetry429(fn, { baseDelayMs: 10_000 }); // would be much slower without Retry-After
-    await vi.advanceTimersByTimeAsync(2000);
+    await vi.advanceTimersByTimeAsync(2000 + MAX_JITTER_MS);
     const result = await promise;
 
     expect(result).toEqual({ status: 200 });
@@ -71,9 +71,32 @@ describe("withRetry429", () => {
         .mockResolvedValueOnce({ status: 200 });
 
       const promise = withRetry429(fn, { maxRetries: 1, baseDelayMs: 10_000 });
-      await vi.advanceTimersByTimeAsync(2000); // the header's 2s, not the 10s backoff
+      await vi.advanceTimersByTimeAsync(2000 + MAX_JITTER_MS); // the header's 2s, not the 10s backoff
       await expect(promise).resolves.toEqual({ status: 200 });
     }
+  });
+
+  it("caps a long Retry-After so a badge never waits on the server's whole penalty", async () => {
+    const fn = vi.fn()
+      .mockResolvedValueOnce({ status: 429, headers: { "retry-after": "120" } })
+      .mockResolvedValueOnce({ status: 200 });
+
+    const promise = withRetry429(fn, { jitter: false });
+    await vi.advanceTimersByTimeAsync(MAX_RETRY_DELAY_MS);
+    expect(await promise).toEqual({ status: 200 });
+  });
+
+  it("adds bounded jitter so many rate-limited keys do not retry in lock-step", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    const fn = vi.fn()
+      .mockResolvedValueOnce({ status: 429 })
+      .mockResolvedValueOnce({ status: 200 });
+
+    const promise = withRetry429(fn, { baseDelayMs: 1000 });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fn).toHaveBeenCalledTimes(1); // still inside the jitter window
+    await vi.advanceTimersByTimeAsync(MAX_JITTER_MS);
+    expect(await promise).toEqual({ status: 200 });
   });
 });
 

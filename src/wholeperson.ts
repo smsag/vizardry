@@ -31,7 +31,7 @@ export function parseWholePerson(source: string): WholePersonResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(lines[i])) continue;
     const lineNum = i + 1;
     const lower = trimmed.toLowerCase();
 

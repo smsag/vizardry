@@ -23,7 +23,42 @@ import { cardId } from "../sideleaf/types";
 // is skipped because wrapping a match in a <button> would nest interactive
 // content inside a link — invalid HTML that produces inconsistent
 // click/focus behaviour.
-export const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE", "A"]);
+// BUTTON, SUMMARY and LABEL for the same reason as A: a badge is a button, and
+// interactive content never nests (a Linear-shaped id inside an Upvoty badge
+// used to get a button inside a button).
+export const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE", "A", "BUTTON", "SUMMARY", "LABEL"]);
+
+/**
+ * Builds the badge element every integration uses: one class, the key as
+ * label (or a shortened one), an aria-label naming the service, and the
+ * click/open-state wiring from `attachKeyTrigger`. Linear and Upvoty had two
+ * identical copies each of this.
+ */
+export function createKeyBadge(
+  doc: Document,
+  opts: { cls: string; service: string; ref: TicketRef; label?: string; isEnabled: () => boolean },
+): HTMLElement {
+  const btn = doc.createElement("button");
+  btn.className = opts.cls;
+  btn.type = "button";
+  btn.textContent = opts.label ?? opts.ref.key;
+  btn.setAttribute("aria-label", `${opts.service}: ${opts.ref.key}`);
+  attachKeyTrigger(btn, opts.ref, opts.isEnabled);
+  return btn;
+}
+
+/**
+ * Display text for a long key: the prefix plus the first 8 characters of the
+ * id and an ellipsis. `prefixLength` is the configured prefix's length, so a
+ * prefix that itself contains a dash (MY-APP) is not cut at the wrong place.
+ */
+export function shortenKey(key: string, prefixLength?: number): string {
+  const dash = prefixLength !== undefined ? prefixLength : key.indexOf("-");
+  if (dash <= 0 || dash >= key.length || key[dash] !== "-") return key;
+  const id = key.slice(dash + 1);
+  if (id.length <= 10) return key;
+  return key.slice(0, dash + 1 + 8) + "…";
+}
 
 // ── DOM walking ──────────────────────────────────────────────────────────────
 
@@ -122,5 +157,14 @@ export function attachKeyTrigger(
   // Only the registration is released when the badge goes: the card it opened
   // is the user's to close, and must survive the note being re-rendered or
   // closed entirely.
-  onDisconnected(btn, () => unregisterKeyBadge(id, btn));
+  //
+  // Deferred a microtask: the badge is built before it is inserted, and the
+  // watcher resolves its ancestor at registration time — registered now it
+  // would fall back to document.body and never see the leaf's re-renders.
+  // By the microtask the synchronous insertion has happened; a badge that was
+  // never inserted at all is simply unregistered.
+  queueMicrotask(() => {
+    if (!btn.isConnected) { unregisterKeyBadge(id, btn); return; }
+    onDisconnected(btn, () => unregisterKeyBadge(id, btn));
+  });
 }

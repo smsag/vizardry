@@ -53,9 +53,9 @@ export function parseWardleyMap(source: string): WardleyResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = stripInlineComment(lines[i]);
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
-    if (trimmed.startsWith("anchor:")) {
+    if (trimmed.toLowerCase().startsWith("anchor:")) {
       const name = trimmed.slice("anchor:".length).trim();
       if (!name) { warnings.push(`Line ${i + 1}: anchor has no name — ignored`); continue; }
       anchor = name;
@@ -65,7 +65,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
-    if (trimmed.startsWith("stages:")) {
+    if (trimmed.toLowerCase().startsWith("stages:")) {
       const rest = trimmed.slice("stages:".length).trim();
       if (rest) {
         // Empty labels between pipes are dropped rather than fatal.
@@ -128,7 +128,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
-    if (trimmed.startsWith("component:")) {
+    if (trimmed.toLowerCase().startsWith("component:")) {
       const rest = trimmed.slice("component:".length).trim();
       const bracketMatch = rest.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
       if (!bracketMatch) {
@@ -168,7 +168,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
-    if (trimmed.startsWith("evolve:")) {
+    if (trimmed.toLowerCase().startsWith("evolve:")) {
       const rest = trimmed.slice("evolve:".length).trim();
       // Trailing number is the target evolution; the rest (may contain spaces) is the name.
       const match = rest.match(/^(.*?)\s+([0-9]*\.?[0-9]+)$/);
@@ -187,7 +187,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
-    if (trimmed.startsWith("pipeline:")) {
+    if (trimmed.toLowerCase().startsWith("pipeline:")) {
       // Consume the indented block first so a bad header never leaks its items
       // as unrecognised top-level lines.
       let j = i + 1;
@@ -250,7 +250,7 @@ export function parseWardleyMap(source: string): WardleyResult {
       continue;
     }
 
-    if (trimmed.startsWith("link:")) {
+    if (trimmed.toLowerCase().startsWith("link:")) {
       const rest = trimmed.slice("link:".length).trim();
       const arrowIdx = rest.indexOf("->");
       if (arrowIdx === -1) {

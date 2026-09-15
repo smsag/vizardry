@@ -185,10 +185,10 @@ const LAYER_ALIAS_MAP: Record<PaceLayerType, Record<string, PaceLayerName>> = ((
 const VALID_TYPES = new Set<string>(['shearing', 'product', 'retro']);
 
 /** Validates a single, already-resolved candidate value, warning and defaulting to "shearing" if unrecognized. */
-function resolveValidType(val: string): PaceLayerType {
+function resolveValidType(val: string, warnings: string[]): PaceLayerType {
   const v = val.toLowerCase();
   if (VALID_TYPES.has(v)) return v as PaceLayerType;
-  console.warn(`Vizardry pacelayers: unknown type "${v}", defaulting to "shearing"`);
+  warnings.push(`Unknown type "${v}" — using "shearing"`);
   return 'shearing';
 }
 
@@ -208,7 +208,7 @@ function stripPacelayersPrefix(val: string): string {
  * self-identifies as "pacelayers, <variant>"; the plain "<variant>" form
  * (no id prefix) is also accepted for tolerance.
  */
-function resolveType(lines: string[]): PaceLayerType {
+function resolveType(lines: string[], warnings: string[]): PaceLayerType {
   let type: PaceLayerType = 'shearing';
   for (const raw of lines) {
     const commentIdx = raw.indexOf('//');
@@ -221,7 +221,7 @@ function resolveType(lines: string[]): PaceLayerType {
       if (VALID_TYPES.has(val)) {
         type = val as PaceLayerType;
       } else {
-        console.warn(`Vizardry pacelayers: unknown type "${val}", defaulting to "shearing"`);
+        warnings.push(`Unknown type "${val}" — using "shearing"`);
       }
     }
   }
@@ -243,9 +243,10 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
   // Resolve `type:` up front (before layers are parsed) so `layer:` can
   // resolve type-specific aliases regardless of whether `type:` appears
   // before or after `layer:` lines in the source.
+  const warnings: string[] = [];
   const type: PaceLayerType = typeOverride !== undefined
-    ? resolveValidType(typeOverride)
-    : resolveType(lines);
+    ? resolveValidType(typeOverride, warnings)
+    : resolveType(lines, warnings);
 
   let context = '';
   const layers: Partial<Record<PaceLayerName, PaceLayerCell>> = {};
@@ -261,7 +262,9 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
     }
   };
 
+  let i = -1;
   for (const raw of lines) {
+    i++;
     // Strip inline comments (but not :// in URLs)
     let commentIdx = 0;
     while (commentIdx < raw.length) {
@@ -309,7 +312,7 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
         const key = layerRaw.toLowerCase();
         const canonical = LAYER_NAME_MAP[key] ?? LAYER_ALIAS_MAP[type][key];
         if (!canonical) {
-          console.warn(`Vizardry pacelayers: unknown layer "${layerRaw}", skipping`);
+          warnings.push(`Line ${i + 1}: unknown layer "${layerRaw}" — skipped`);
           currentLayer = null;
           currentCell = {};
           continue;
@@ -351,5 +354,6 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
   commitLayer();
 
   const data: ParsedPaceLayers = { context, type, layers };
+  if (warnings.length > 0) data.warnings = warnings;
   return { ok: true, data };
 }

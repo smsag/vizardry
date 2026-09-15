@@ -1249,8 +1249,7 @@ button.vzd-btn {
 /* SVG tree renderers — full width in presentation */
 .vzd-presentation-wrap .vizardry-ost-wrapper,
 .vzd-presentation-wrap .vizardry-mindmap-wrapper,
-.vzd-presentation-wrap .vizardry-impact-wrapper,
-.vzd-presentation-wrap .vizardry-fishbone-wrapper {
+.vzd-presentation-wrap .vizardry-impact-wrapper {
   width: 100%;
   max-height: none;
 }
@@ -1304,7 +1303,6 @@ button.vzd-btn {
 .vizardry-ost-wrapper,
 .vizardry-mindmap-wrapper,
 .vizardry-impact-wrapper,
-.vizardry-fishbone-wrapper,
 .vizardry-scqa-wrapper {
   overflow-x: auto;
   overflow-y: auto;
@@ -2056,95 +2054,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   font-size: 13px;
 }
 
-/* ── SIPOC Flow Diagram ────────────────────────────────────────────────────── */
-
-.vzd-sipoc-flow-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.vzd-sipoc-flow-svg {
-  width: 100%;
-  min-width: 560px;
-  display: block;
-}
-
-/* Column band backgrounds */
-.vzd-sf-band {
-  fill: transparent;
-}
-
-/* Column dividers */
-.vzd-sf-divider {
-  stroke: var(--background-modifier-border);
-  stroke-width: 1;
-  stroke-dasharray: 4 3;
-}
-
-/* Column header bars — intensity mirrors the roadmap Now/Next/Later tiers,
-   radiating outward from the centre (process = strongest). */
-.vzd-sf-header {
-  fill: var(--background-secondary);
-}
-.vzd-sf-header--process   { fill: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-secondary)); }
-.vzd-sf-header--inputs,
-.vzd-sf-header--outputs   { fill: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-secondary)); }
-.vzd-sf-header--suppliers,
-.vzd-sf-header--customers { fill: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary)); }
-
-/* Text colour is set inline by the renderer via bestTextColor() after
-   color-mix() has been resolved. #ffffff here is a static fallback only. */
-.vzd-sf-header-label {
-  fill: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font-interface);
-}
-
-/* Nodes */
-.vzd-sf-node {
-  fill: var(--background-primary);
-  stroke: var(--text-muted);
-  stroke-width: 1.5;
-}
-
-.vzd-sf-node--accent {
-  fill: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
-  stroke: var(--interactive-accent);
-  stroke-width: 2;
-}
-
-.vzd-sf-label {
-  fill: var(--text-normal);
-  font-size: 11px;
-  font-family: var(--font-interface);
-  pointer-events: none;
-}
-
-/* Arrows */
-.vzd-sf-link {
-  stroke: var(--text-muted);
-  stroke-width: 1.5;
-  fill: none;
-}
-
-.vzd-sf-arrowhead {
-  fill: var(--text-muted);
-}
-
-/* Presentation mode */
-.vzd-presentation-wrap .vzd-sipoc-flow-wrap {
-  width: 100%;
-}
-
-.vzd-presentation-wrap .vzd-sf-label {
-  font-size: 13px;
-}
-
-.vzd-presentation-wrap .vzd-sf-header-label {
-  font-size: 13px;
-}
-
 /* ── Now/Next/Later Roadmap ──────────────────────────────────────────────── */
 
 .vzd-roadmap-grid {
@@ -2405,12 +2314,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   text-overflow: ellipsis;
 }
 
-.vzd-pl-speed-cue {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
-  font-style: italic;
-}
-
 .vzd-pl-type-translation {
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
@@ -2476,11 +2379,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   flex: 1;
 }
 
-/* Empty state */
-.vzd-pl-empty {
-  color: var(--text-muted);
-  font-size: var(--vzd-base, var(--font-ui-small));
-}
 
 /* Placeholder (shown when empty + not editing) */
 .vzd-pl-cell-content[data-placeholder]:empty::before {
@@ -5152,4 +5050,4 @@ body.vizardry-sketch .vzd-tree-rename-input {
   opacity: 0.7;
 }
 .vzd-compass-add:hover { opacity: 1; color: var(--interactive-accent); }
-.vzd-compass-inline-input, .vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }
+.vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }

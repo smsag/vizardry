@@ -8,11 +8,11 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { WardleyMap } from "../types";
-import { t } from "../i18n";
 import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, writeWardleyEvolve } from "../shared/wardley-edit";
+import { showWriteFailedNotice } from "./controls";
 import {
   W, H, NODE_R, PLOT_X, PLOT_Y, PLOT_W, PLOT_H,
   clientToSvg, svgToData, labelAnchor, evolveLineEndpoints,
@@ -71,8 +71,11 @@ export function attachDragBehavior(
   const updateTooltip = (cx: number, cy: number, vis: number, evo: number): void => {
     const text = `vis ${vis.toFixed(2)}  evo ${evo.toFixed(2)}`;
     tooltipTxt.textContent = text;
-    const tipX = cx + PLOT_X * 0.1 < W - 120 ? cx + NODE_R + 6 : cx - NODE_R - 6;
-    const tipAnchor = cx + NODE_R + 6 < W - 120 ? "start" : "end";
+    // One decision for both position and anchor: two slightly different
+    // thresholds put the text right of the node but anchored at its end.
+    const flip = cx + NODE_R + 6 >= W - 120;
+    const tipX = flip ? cx - NODE_R - 6 : cx + NODE_R + 6;
+    const tipAnchor = flip ? "end" : "start";
     tooltipTxt.setAttribute("x", String(tipX));
     tooltipTxt.setAttribute("y", String(cy - NODE_R - 8));
     tooltipTxt.setAttribute("text-anchor", tipAnchor);
@@ -116,13 +119,22 @@ export function attachDragBehavior(
     const cy = parseFloat(ref.circle.getAttribute("cy") ?? "0");
     const { visibility, evolution } = svgToData(cx, cy);
 
-    writeWardleyComponent(app, mppCtx, wrap, ref.comp.name, visibility, evolution);
+    // A press without movement is a click (it also arms the dblclick rename):
+    // writing the unchanged position re-rendered the map and ate the rename.
+    if (moved && !writeWardleyComponent(app, mppCtx, wrap, ref.comp.name, visibility, evolution)) {
+      showWriteFailedNotice(wrap);
+    }
 
     doc.removeEventListener("mousemove", onMouseMove);
     doc.removeEventListener("mouseup", onMouseUp);
   };
 
-  const onMouseMove = (e: MouseEvent): void => { if (ix.drag) moveDot(ix.drag.ref, e.clientX, e.clientY); };
+  let moved = false;
+  const onMouseMove = (e: MouseEvent): void => {
+    if (!ix.drag) return;
+    moved = true;
+    moveDot(ix.drag.ref, e.clientX, e.clientY);
+  };
   const onMouseUp = (): void => endDrag();
 
   // If the canvas is torn down mid-drag (e.g. the note is edited elsewhere,
@@ -140,27 +152,33 @@ export function attachDragBehavior(
   svg.addEventListener("touchmove", (e) => {
     if (!ix.drag) return;
     e.preventDefault();
+    moved = true;
     moveDot(ix.drag.ref, e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: false });
   svg.addEventListener("touchend", () => endDrag());
+  svg.addEventListener("touchcancel", () => endDrag());
 
   for (const ref of nodeRefs) {
     if (!data.explicitComponents.has(ref.comp.name)) continue;
 
     ref.circle.classList.add("vzd-wardley-node--draggable");
 
-    const startDrag = (clientX: number, clientY: number): void => {
-      if (ix.activeRename) return;
+    const startDrag = (): void => {
+      // Not while renaming, and not while a link is being drawn from another
+      // node: both gestures would otherwise write against the same source.
+      if (ix.activeRename || ix.linkDraw) return;
+      moved = false;
       ix.drag = { ref };
       ref.circle.classList.add("vzd-wardley-node--dragging");
       svg.classList.add("vzd-wardley-svg--dragging");
-      moveDot(ref, clientX, clientY);
+      // The dot stays where it is until the pointer actually moves; snapping
+      // its centre to the pointer turned every click into a small move.
       doc.addEventListener("mousemove", onMouseMove);
       doc.addEventListener("mouseup", onMouseUp);
     };
 
-    ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(e.clientX, e.clientY); });
-    ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(); });
+    ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(); }, { passive: false });
   }
 }
 
@@ -223,6 +241,7 @@ export function attachEvolveDragBehavior(
     ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); start(e.touches[0].clientX); }, { passive: false });
     ref.circle.addEventListener("touchmove", (e) => { if (active) { e.preventDefault(); moveTo(active, e.touches[0].clientX); } }, { passive: false });
     ref.circle.addEventListener("touchend", () => onUp());
+    ref.circle.addEventListener("touchcancel", () => onUp());
   }
 }
 

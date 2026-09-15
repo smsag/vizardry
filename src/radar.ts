@@ -29,7 +29,7 @@ export function parseRadar(source: string): RadarResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(lines[i])) continue;
     const lineNum = i + 1;
 
     if (!trimmed.toLowerCase().startsWith("axis:")) {

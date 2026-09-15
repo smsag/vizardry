@@ -269,17 +269,19 @@
   }
   /* ── Hidden file input ────────────────────────────────────────────────── */
   #file-input { display: none; }
+  [hidden] { display: none !important; }
+  .vzd-ext-status { margin: 12px 24px; padding: 8px 12px; border-radius: 6px; background: var(--background-modifier-error, #fde8e8); color: var(--text-error, #b3261e); font-size: 13px; }
 </style>
 </head>
 <body>
   <div class="vzd-ext-toolbar">
     <span class="brand">Vizardry</span>
     <button id="btn-open-file">Open File</button>
-    <button id="btn-clear" style="display:none">Clear</button>
+    <button id="btn-clear" hidden>Clear</button>
     <button id="btn-theme">Theme</button>
   </div>
 
-  <div id="empty-state" class="vzd-ext-empty">
+  <div id="empty-state" class="vzd-ext-empty" hidden>
     <h2>Vizardry Viewer</h2>
     <p>Paste Markdown with vizardry blocks, or open a .md file.</p>
     <textarea id="md-input" placeholder="Paste your Markdown here&#10;&#10;```vizardry&#10;type: bmc&#10;title: My Canvas&#10;block: Key Partners&#10;  Suppliers&#10;```"></textarea>
@@ -289,7 +291,8 @@
     </div>
   </div>
 
-  <div id="rendered" class="vzd-ext-content" style="display:none"></div>
+  <div id="status" class="vzd-ext-status" role="status" hidden></div>
+  <div id="rendered" class="vzd-ext-content" hidden></div>
 
   <input type="file" id="file-input" accept=".md,.markdown,.txt,.text">
   <script src="dist/viewer.js"></script>
