@@ -25,6 +25,7 @@ import {
 } from "./keyword-tree-edit";
 import type { KeywordTreeConfig } from "./keyword-tree-edit";
 import type { SCQAVariant } from "../types";
+import { indentOf as columnOf } from "./indent";
 
 function configFor(variant: SCQAVariant): KeywordTreeConfig {
   return variant === "scqa"
@@ -135,7 +136,7 @@ export function reorderSCQAInterior(
   const indentOf = (s: string): number => {
     const t = s.trim();
     if (t === "" || t.startsWith("//")) return -1;
-    return s.search(/\S/);
+    return columnOf(s);
   };
 
   // Locate the dragged node (skip the situation root at indent 0).

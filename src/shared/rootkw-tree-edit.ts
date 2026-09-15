@@ -27,6 +27,7 @@ import {
   deleteLines,
   editorWrite,
 } from "./tree-editor-access";
+import { indentOf } from "./indent";
 
 export interface RootKwTreeConfig {
   /** The root line's keyword, e.g. "root", "outcome", "situation" (case-insensitive). */
@@ -55,9 +56,9 @@ function findAll(editor: Editor, lineStart: number, lineEnd: number, config: Roo
     const isRoot = re.test(trimmed);
     const value = isRoot ? trimmed.replace(re, "").trim() : trimmed;
     if (isRoot && value === text) {
-      matches.push({ line: ln, indent: raw.search(/\S/), isRoot: true });
+      matches.push({ line: ln, indent: indentOf(raw), isRoot: true });
     } else if (!isRoot && trimmed === text) {
-      matches.push({ line: ln, indent: raw.search(/\S/), isRoot: false });
+      matches.push({ line: ln, indent: indentOf(raw), isRoot: false });
     }
   }
   return matches;

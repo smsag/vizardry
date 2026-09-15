@@ -1,5 +1,6 @@
 import type { VennItem, VennResult } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
+import { indentOf } from "./shared/indent";
 
 /**
  * Parses the Venn diagram syntax:
@@ -33,7 +34,7 @@ export function parseVennDiagram(source: string): VennResult {
     const trimmed = raw.trim();
     if (isSkippableLine(raw)) continue;
 
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent === 0) {
       itemIndent = -1;

@@ -1,4 +1,5 @@
 import type { PaceLayerCell, PaceLayerName, PaceLayerType, PaceLayersResult, ParsedPaceLayers } from "./types";
+import { indentOf } from "./shared/indent";
 
 // ── Data tables ───────────────────────────────────────────────────────────────
 
@@ -214,7 +215,7 @@ function resolveType(lines: string[], warnings: string[]): PaceLayerType {
     const commentIdx = raw.indexOf('//');
     const line = commentIdx !== -1 ? raw.slice(0, commentIdx) : raw;
     const trimmed = line.trim();
-    if (line.search(/\S/) !== 0) continue; // only top-level lines
+    if (indentOf(line) !== 0) continue; // only top-level lines
     const lower = trimmed.toLowerCase();
     if (lower.startsWith('type:')) {
       const val = stripPacelayersPrefix(trimmed.slice('type:'.length).trim()).toLowerCase();
@@ -282,7 +283,7 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
       continue;
     }
 
-    const indent = line.search(/\S/);
+    const indent = indentOf(line);
 
     if (indent === 0) {
       // Top-level key

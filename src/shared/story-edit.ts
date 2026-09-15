@@ -4,6 +4,7 @@ import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import { escRe } from "./regex";
 import { uniqueName } from "./unique-name";
+import { indentOf } from "./indent";
 
 /** Escapes a string for safe use inside a RegExp. */
 interface StepBlock {
@@ -30,15 +31,20 @@ function findStepBlock(
   let stepIndent = 0;
   let taskIndent = -1;
   let lastTaskLine = -1;
+  // Only a `step:` under an `activity:` is a step block. A slice cell with no
+  // tasks (`step: Login` under `slice:`) has no pipe either, and used to be
+  // taken for the activity step when the slice came first in the source.
+  let inActivity = false;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("//")) continue;
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (stepLine === -1) {
-      if (indent === 0) continue;
+      if (indent === 0) { inActivity = trimmed.toLowerCase().startsWith("activity:"); continue; }
+      if (!inActivity) continue;
       // Activity step: indented, starts with "step:", NO pipe (slice steps have pipes)
       if (trimmed.toLowerCase().startsWith("step:")) {
         const afterStep = trimmed.slice("step:".length).trim();
@@ -96,7 +102,7 @@ export function addStoryTask(
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("//")) continue;
-    if (raw.search(/\S/) <= stepIndent) break;
+    if (indentOf(raw) <= stepIndent) break;
     if (trimmed.toLowerCase().startsWith("task:")) {
       const rest = trimmed.slice("task:".length).trim();
       const pipeIdx = rest.indexOf("|");
@@ -118,20 +124,72 @@ export function addStoryTask(
   return true;
 }
 
+/** The `task:` lines of a step block, in source order. */
+function stepTaskLines(
+  editor: { getLine: (n: number) => string },
+  block: StepBlock,
+  lineEnd: number,
+): Array<{ line: number; raw: string; key: string }> {
+  const out: Array<{ line: number; raw: string; key: string }> = [];
+  for (let ln = block.stepLine + 1; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    if (indentOf(raw) <= block.stepIndent) break;
+    if (!trimmed.toLowerCase().startsWith("task:")) continue;
+    const rest = trimmed.slice("task:".length).trim();
+    const pipeIdx = rest.indexOf("|");
+    out.push({ line: ln, raw: trimmed, key: (pipeIdx === -1 ? rest : rest.slice(0, pipeIdx)).trim().toLowerCase() });
+  }
+  return out;
+}
+
+/**
+ * The scope of a task edit. The parser only requires task names to be unique
+ * *per step*, so "Login" can exist under two steps; a task edit must name the
+ * step it belongs to or it hits the first "Login" in the fence and every slice
+ * cell holding that key. Returns the step key (for slice cells) and the range
+ * the declaration line must fall in, or null when the step is not there.
+ */
+function taskScope(
+  editor: { getLine: (n: number) => string },
+  lineStart: number,
+  lineEnd: number,
+  stepName: string | undefined,
+): { stepKey: string | null; from: number; to: number } | null {
+  if (stepName === undefined) return { stepKey: null, from: lineStart, to: lineEnd };
+  const block = findStepBlock(editor, lineStart, lineEnd, stepName);
+  if (!block) return null;
+  const tasks = stepTaskLines(editor, block, lineEnd);
+  const last = tasks.length > 0 ? tasks[tasks.length - 1].line : block.stepLine;
+  return { stepKey: stepName.toLowerCase().trim(), from: block.stepLine + 1, to: last };
+}
+
 /**
  * Deletes a task from the USM source:
  * - Removes the `task: <taskName>` declaration line from its activity step block
- * - Removes the task key from every slice cell reference that contains it
+ * - Removes the task key from the slice cells that reference it
+ *
+ * `stepName` scopes both to that step (see taskScope); without it the first
+ * matching task in the fence is taken, which is only safe when the name is
+ * unique across steps.
  */
 export function deleteStoryTask(
   app: App,
   ctx: MarkdownPostProcessorContext,
   el: HTMLElement,
   taskName: string,
+  stepName?: string,
 ): boolean {
   const resolved = resolveEditor(app, ctx, el, "deleteStoryTask");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
+
+  const scope = taskScope(editor, lineStart, lineEnd, stepName);
+  if (!scope) {
+    new Notice(`Vizardry: step "${stepName}" not found in story map.`, 4000);
+    return false;
+  }
 
   const taskKey = taskName.toLowerCase().trim();
   const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(taskName)}(\\s*(?:\\|.*)?$)`, "i");
@@ -140,7 +198,7 @@ export function deleteStoryTask(
   const edits: Edit[] = [];
 
   // Phase A — find and delete the task declaration line
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
+  for (let ln = scope.from; ln <= scope.to; ln++) {
     const raw = editor.getLine(ln);
     if (taskRe.test(raw)) {
       edits.push({ line: ln, newText: null });
@@ -148,10 +206,11 @@ export function deleteStoryTask(
     }
   }
 
-  // Phase B — remove the task key from all slice cell references
+  // Phase B — remove the task key from the slice cells of this step
   const slices = parseSlices(editor, lineStart, lineEnd);
   for (const slice of slices) {
     for (const cell of slice.cells) {
+      if (scope.stepKey !== null && cell.stepKey !== scope.stepKey) continue;
       if (!cell.taskKeys.includes(taskKey)) continue;
       const newKeys = cell.taskKeys.filter(k => k !== taskKey);
       const newLine = newKeys.length > 0
@@ -325,7 +384,9 @@ export function renameStoryStep(
 /**
  * Renames a task throughout the source block:
  * - The `task: <oldName>` or `task: <oldName> | subtitle` declaration line
- * - All slice cell references that use the old lowercased task key
+ * - The slice cell references that use the old lowercased task key
+ *
+ * `stepName` scopes both to that step (see taskScope).
  */
 export function renameStoryTask(
   app: App,
@@ -333,6 +394,7 @@ export function renameStoryTask(
   el: HTMLElement,
   oldName: string,
   newName: string,
+  stepName?: string,
 ): boolean {
   if (!newName.trim() || newName === oldName) return false;
 
@@ -340,19 +402,25 @@ export function renameStoryTask(
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
 
+  const scope = taskScope(editor, lineStart, lineEnd, stepName);
+  if (!scope) {
+    new Notice(`Vizardry: step "${stepName}" not found in story map.`, 4000);
+    return false;
+  }
+
   const oldKey = oldName.toLowerCase().trim();
   const newKey = newName.toLowerCase().trim();
 
   type Edit = { line: number; newText: string };
   const edits: Edit[] = [];
 
-  // Phase A — task declaration line
+  // Phase A — task declaration line, within the step when one is named
   const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(oldName)}(\\s*(?:\\|.*)?$)`, "i");
-  for (let ln = lineStart; ln <= lineEnd; ln++) {
+  for (let ln = scope.from; ln <= scope.to; ln++) {
     const raw = editor.getLine(ln);
     if (taskRe.test(raw)) {
       edits.push({ line: ln, newText: raw.replace(taskRe, `$1${newName}$2`) });
-      break; // task names are unique per step; first match is correct
+      break; // task names are unique per step; first match in the step is correct
     }
   }
 
@@ -360,6 +428,7 @@ export function renameStoryTask(
   const slices = parseSlices(editor, lineStart, lineEnd);
   for (const slice of slices) {
     for (const cell of slice.cells) {
+      if (scope.stepKey !== null && cell.stepKey !== scope.stepKey) continue;
       if (!cell.taskKeys.includes(oldKey)) continue;
       const newKeys = cell.taskKeys.map(k => k === oldKey ? newKey : k);
       // Reconstruct the cell line preserving the original step display name
@@ -405,7 +474,7 @@ function parseSlices(
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("//")) continue;
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent === 0) {
       if (trimmed.toLowerCase().startsWith("slice:")) {
@@ -544,11 +613,20 @@ export function reorderStoryTask(
   const cell = slice.cells.find(c => c.stepKey === stepKey);
   if (!cell || cell.taskKeys.length < 2) return true;
 
-  const keys = [...cell.taskKeys];
+  // The renderer's indices count the tasks it shows, and the parser drops a
+  // key that names no task of the step. Reorder those known keys and carry
+  // any unknown ones along at the end, or the wrong task moves in the source.
+  const block = findStepBlock(editor, lineStart, lineEnd, stepName);
+  const valid = block ? new Set(stepTaskLines(editor, block, lineEnd).map(t => t.key)) : null;
+  const known = valid ? cell.taskKeys.filter(k => valid.has(k)) : [...cell.taskKeys];
+  const unknown = valid ? cell.taskKeys.filter(k => !valid.has(k)) : [];
+  if (fromIndex < 0 || fromIndex >= known.length || toIndex < 0 || toIndex >= known.length) return true;
+
+  const keys = [...known];
   const [moved] = keys.splice(fromIndex, 1);
   keys.splice(toIndex, 0, moved);
 
-  const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${keys.join(", ")}`;
+  const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${[...keys, ...unknown].join(", ")}`;
   editorWrite(() => {
     const raw = editor.getLine(cell.line);
     editor.replaceRange(newLine, { line: cell.line, ch: 0 }, { line: cell.line, ch: raw.length });
@@ -598,7 +676,7 @@ export function moveStoryTaskCrossColumn(
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("//")) continue;
-    if (raw.search(/\S/) <= fromBlock.stepIndent) break;
+    if (indentOf(raw) <= fromBlock.stepIndent) break;
     if (taskRe.test(raw)) {
       taskLine = ln;
       taskRaw = trimmed; // `task: Name | subtitle`

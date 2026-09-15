@@ -28,6 +28,7 @@ import {
 } from "./tree-editor-access";
 import type { Editor } from "obsidian";
 import { uniqueName } from "./unique-name";
+import { indentOf } from "./indent";
 
 export interface KeywordTreeConfig {
   /** Canonical keyword for each level, 0-indexed (e.g. {0: "effect", 1:
@@ -84,7 +85,7 @@ function findAll(editor: Editor, lineStart: number, lineEnd: number, keyword: st
     const trimmed = raw.trim();
     if (!trimmed.toLowerCase().startsWith(prefix)) continue;
     if (trimmed.slice(prefix.length).trim() !== text) continue;
-    matches.push({ line: ln, indent: raw.search(/\S/) });
+    matches.push({ line: ln, indent: indentOf(raw) });
   }
   return matches;
 }
@@ -243,7 +244,7 @@ function findBulletLines(
     const trimmed = raw.trim();
     if (trimmed === "" || trimmed.startsWith("//")) continue;
     if (trimmed.startsWith("```")) break;
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
     if (indent <= nodeIndent) break; // left the node's subtree
     if (indent !== bulletIndent) continue; // deeper — a descendant's content
     if (!isBulletLine(trimmed, config)) continue; // a child keyword node

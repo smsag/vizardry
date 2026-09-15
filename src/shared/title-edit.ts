@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { indentOf } from "./indent";
 
 export const TITLE_MAX_LENGTH = 80;
 
@@ -11,7 +12,7 @@ export const TITLE_MAX_LENGTH = 80;
 export function parseTitle(source: string, fallback: string): string {
   for (const line of source.split("\n")) {
     // Config lives at indent 0; an indented `title:` is canvas content.
-    if (line.search(/\S/) !== 0) continue;
+    if (indentOf(line) !== 0) continue;
     const trimmed = line.trim();
     if (trimmed.toLowerCase().startsWith("title:")) {
       const value = trimmed.slice("title:".length).trim();

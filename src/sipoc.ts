@@ -1,5 +1,6 @@
 import type { SIPOCFlowLink, SIPOCResult, SIPOCRow, SIPOCVariant } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
+import { indentOf } from "./shared/indent";
 
 const CELL_KEYS = ["supplier", "input", "process", "output", "customer", "owner", "metric"] as const;
 type CellKey = typeof CELL_KEYS[number];
@@ -59,7 +60,7 @@ export function parseSIPOC(source: string, typeOverride?: string): SIPOCResult {
     const trimmed = raw.trim();
     if (isSkippableLine(raw)) continue;
 
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent === 0) {
       if (trimmed.toLowerCase().startsWith("link:")) {

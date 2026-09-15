@@ -511,3 +511,100 @@ describe("moveStoryTaskCrossColumn", () => {
     expect(moveStoryTaskCrossColumn(app, ctx, el, "Find Item", "Search", "GhostStep", null)).toBe(false);
   });
 });
+
+// ── task edits scoped to a step ──────────────────────────────────────────────
+
+/** Two steps carry a task named "Login"; slices reference both. */
+function makeDuplicateTaskSource(): string[] {
+  return [
+    "```story-map",
+    "activity: Onboard",
+    "  step: Sign up",
+    "    task: Login",
+    "    task: Verify email",
+    "activity: Return",
+    "  step: Come back",
+    "    task: Login",
+    "",
+    "slice: MVP",
+    "  step: Sign up | login, verify email",
+    "  step: Come back | login",
+    "```",
+  ];
+}
+
+describe("task edits scoped to a step", () => {
+  it("deletes only the named step's task and its own slice reference", () => {
+    const editor = makeMockEditor(makeDuplicateTaskSource());
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 12) as any;
+
+    expect(deleteStoryTask(app, ctx, el, "Login", "Come back")).toBe(true);
+
+    expect(editor._state).toContain("    task: Login");          // Sign up's stays
+    expect(editor._state.filter(l => l === "    task: Login")).toHaveLength(1);
+    expect(editor._state).toContain("  step: Sign up | login, verify email");
+    expect(editor._state).toContain("  step: Come back");
+  });
+
+  it("renames only the named step's task and its own slice reference", () => {
+    const editor = makeMockEditor(makeDuplicateTaskSource());
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 12) as any;
+
+    expect(renameStoryTask(app, ctx, el, "Login", "Sign in", "Come back")).toBe(true);
+
+    expect(editor._state[3]).toBe("    task: Login");
+    expect(editor._state[7]).toBe("    task: Sign in");
+    expect(editor._state).toContain("  step: Sign up | login, verify email");
+    expect(editor._state).toContain("  step: Come back | sign in");
+  });
+
+  it("returns false and shows a Notice when the named step does not exist", () => {
+    const editor = makeMockEditor(makeDuplicateTaskSource());
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 12) as any;
+    expect(deleteStoryTask(app, ctx, el, "Login", "Nowhere")).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+
+  it("does not take a task-less slice cell for the activity step", () => {
+    // The slice comes first and its cell has no pipe — that used to be found
+    // as the step block, and the new task landed inside the slice.
+    const editor = makeMockEditor([
+      "```story-map",
+      "slice: MVP",
+      "  step: Search",
+      "activity: Discover",
+      "  step: Search",
+      "    task: Find Item",
+      "```",
+    ]);
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 6) as any;
+    expect(addStoryTask(app, ctx, el, "Search", "Browse")).toBe(true);
+    // The mock editor models an insert as text appended to the anchor line.
+    expect(editor._state[5]).toBe("    task: Find Item\n    task: Browse");
+    expect(editor._state[2]).toBe("  step: Search");
+  });
+
+  it("reorders the tasks the canvas shows, carrying an unknown key along", () => {
+    const editor = makeMockEditor([
+      "```story-map",
+      "activity: Discover",
+      "  step: Search",
+      "    task: Login",
+      "    task: Pay",
+      "",
+      "slice: MVP",
+      "  step: Search | login, typo, pay",
+      "```",
+    ]);
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 8) as any;
+    // The canvas shows [login, pay]; dragging pay to the front is 1 → 0.
+    expect(reorderStoryTask(app, ctx, el, "Search", "MVP", 1, 0)).toBe(true);
+    expect(editor._state[7]).toBe("  step: Search | pay, login, typo");
+  });
+});
+

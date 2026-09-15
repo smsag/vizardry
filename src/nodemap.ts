@@ -1,5 +1,6 @@
 import type { NodeMapBox, NodeMapLink, NodeMapLinkDirection, NodeMapLineStyle, NodeMapColor, NodeMapResult } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
+import { indentOf } from "./shared/indent";
 
 const MAX_BOXES = 50;
 
@@ -88,7 +89,7 @@ export function parseNodeMap(source: string): NodeMapResult {
       for (; j < lines.length; j++) {
         const bodyRaw = lines[j];
         if (bodyRaw.trim() === "") break;
-        if (bodyRaw.search(/\S/) === 0) break; // next top-level line — body block ended
+        if (indentOf(bodyRaw) === 0) break; // next top-level line — body block ended
         bodyLines.push(bodyRaw.trim());
       }
       i = j - 1;

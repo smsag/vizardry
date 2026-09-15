@@ -1,5 +1,6 @@
 import type { JourneyCard, JourneyLaneKey, JourneyPhase, JourneyResult, JourneyVariant } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
+import { indentOf } from "./shared/indent";
 
 export interface JourneyLaneConfig {
   key: JourneyLaneKey;
@@ -95,7 +96,7 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
     const trimmed = raw.trim();
     if (isSkippableLine(raw)) continue;
 
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent === 0) {
       currentPhase = null;

@@ -54,4 +54,21 @@ describe("parseMindMap", () => {
     const result = parseMindMap(src);
     expect(result).toEqual({ ok: false, error: expect.stringContaining("multiple") });
   });
+
+  it("parses a tab-indented map", () => {
+    const result = parseMindMap("root: A\n\tB\n\t\tC\n\tD");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.children.map(c => c.text)).toEqual(["B", "D"]);
+    expect(result.data.root.children[0].children[0].text).toBe("C");
+  });
+
+  it("treats a tab and four spaces as the same indent", () => {
+    // Obsidian's default is tabs at width 4; a pasted space-indented line
+    // used to land one level deeper than its tab-indented sibling.
+    const result = parseMindMap("root: A\n\tB\n    C");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.root.children.map(c => c.text)).toEqual(["B", "C"]);
+  });
 });

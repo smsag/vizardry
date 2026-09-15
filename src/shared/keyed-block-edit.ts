@@ -1,4 +1,5 @@
 import type { Editor } from "obsidian";
+import { indentOf } from "./indent";
 
 export type KeyedBlock = { blockLineStart: number; blockLineEnd: number };
 
@@ -74,7 +75,7 @@ export function writeKeyedSubLine(
     for (let ln = block.blockLineStart + 1; ln <= block.blockLineEnd; ln++) {
       const raw = editor.getLine(ln);
       const t = raw.trim();
-      if (t && !t.startsWith("//") && !t.startsWith("```") && raw.search(/\S/) > 0) insertAfter = ln;
+      if (t && !t.startsWith("//") && !t.startsWith("```") && indentOf(raw) > 0) insertAfter = ln;
     }
     const insertLineText = editor.getLine(insertAfter);
     editor.replaceRange(

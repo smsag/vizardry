@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vizardry",
-  "version": "0.69.0",
+  "version": "0.69.1",
   "description": "Render product-management frameworks from Markdown vizardry blocks — paste or open any .md file.",
   "action": {
     "default_popup": "popup.html",

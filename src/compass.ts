@@ -1,5 +1,6 @@
 import type { Result } from "./types/core";
 import type { CompassData, CompassInsight } from "./types/compass";
+import { indentOf } from "./shared/indent";
 
 /**
  * Parses the Product Compass source. Flat top-level `keyword: value` lines,
@@ -51,7 +52,7 @@ export function parseCompass(source: string): Result<CompassData> {
   const lines = source.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
-    if (raw.search(/\S/) !== 0) continue; // top-level lines only
+    if (indentOf(raw) !== 0) continue; // top-level lines only
     const trimmed = raw.trim();
     if (trimmed === "" || trimmed.startsWith("//")) continue;
 

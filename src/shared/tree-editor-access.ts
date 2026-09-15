@@ -1,5 +1,6 @@
 import type { Editor } from "obsidian";
 import { ownerWindow } from "./lifecycle";
+import { indentOf } from "./indent";
 
 /**
  * Returns the number of leading spaces on the first indented line in the
@@ -9,7 +10,7 @@ export function detectIndentUnit(editor: Editor, lineStart: number, lineEnd: num
   for (let ln = lineStart + 1; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (raw.trim() === "" || raw.trim().startsWith("//") || raw.trim().startsWith("```")) continue;
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
     if (indent > 0) return indent;
   }
   return 2;
@@ -35,7 +36,7 @@ export function subtreeEnd(
     // used to be deleted along with the node above it.
     if (trimmed === "" || trimmed.startsWith("//")) continue;
     if (trimmed.startsWith("```")) break; // closing fence
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
     if (indent <= parentIndent) break;
     last = ln;
   }

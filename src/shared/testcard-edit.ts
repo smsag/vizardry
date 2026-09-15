@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { indentOf } from "./indent";
 
 /**
  * Source write-back for the Test Card. Every value — step text, a gauge level,
@@ -30,7 +31,7 @@ export function writeTestCardField(
   let lastContent = lineStart; // fall back to just after the opening fence
   for (let ln = lineStart + 1; ln < lineEnd; ln++) {
     const line = editor.getLine(ln);
-    if (line.search(/\S/) !== 0) continue; // top-level only
+    if (indentOf(line) !== 0) continue; // top-level only
     const trimmed = line.trim();
     const colon = trimmed.indexOf(":");
     if (colon !== -1 && trimmed.slice(0, colon).trim().toLowerCase() === want) target = ln;

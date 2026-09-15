@@ -1,4 +1,5 @@
 import type { ParseResult } from "./types";
+import { indentOf } from "./shared/indent";
 
 /**
  * Parses the `block: Label\n  content` syntax used by all grid frameworks.
@@ -45,7 +46,7 @@ export function parseFrameworkSource(source: string): ParseResult {
       continue;
     }
 
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent > 0) {
       warnings.push(`Line ${i + 1}: unexpected indentation — skipped`);
@@ -96,7 +97,7 @@ export function parseFrameworkSource(source: string): ParseResult {
           continue;
         }
 
-        const lineIndent = blockRaw.search(/\S/);
+        const lineIndent = indentOf(blockRaw);
         if (lineIndent === 0) break; // back to root level
         if (blockIndent === -1) blockIndent = lineIndent;
         if (lineIndent < blockIndent) break;

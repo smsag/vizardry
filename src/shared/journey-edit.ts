@@ -5,6 +5,7 @@ import { JOURNEY_LANE_CONFIG } from "../journey";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import { escRe } from "./regex";
+import { indentOf } from "./indent";
 
 const LANE_KEYS = JOURNEY_LANE_CONFIG.map(l => l.key);
 
@@ -42,26 +43,31 @@ function findPhaseBlock(
   let laneIndent = -1;
   const laneLines: PhaseLaneLine[] = [];
 
+  // The parser merges every `phase:` block of the same name into one column
+  // (journey.ts), so the lanes the canvas shows can come from several blocks.
+  // Collect from all of them; card indices then line up with the canvas.
+  // `phaseLine` stays the first header, where a lane-less phase gets its
+  // first card.
+  let inside = false;
+
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("//")) continue;
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
-    if (phaseLine === -1) {
-      if (indent !== 0) continue;
+    if (indent === 0) {
+      inside = false;
       if (trimmed.toLowerCase().startsWith("phase:")) {
         const name = trimmed.slice("phase:".length).trim().toLowerCase();
         if (name === phaseKey) {
-          phaseLine = ln;
-          phaseIndent = indent;
+          inside = true;
+          if (phaseLine === -1) { phaseLine = ln; phaseIndent = indent; }
         }
       }
       continue;
     }
-
-    // Inside the target phase
-    if (indent <= phaseIndent) break;
+    if (!inside) continue;
 
     const colonIdx = trimmed.indexOf(":");
     if (colonIdx === -1) continue;
