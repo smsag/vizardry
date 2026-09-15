@@ -13,6 +13,7 @@ import {
 } from "../shared/keyword-tree-edit";
 import type { KeywordTreeConfig } from "../shared/keyword-tree-edit";
 import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import { layoutFishbone } from "./fishbone-geometry";
 import type { FBCategory, FBCause } from "./fishbone-geometry";
 
@@ -174,7 +175,7 @@ function renderCategory(
       ops.openRename(box.x, box.y + 1, box.w, box.h - 2, cat.name, "var(--text-on-accent)",
         (v) => ops.doRename(1, cat.name, v));
     });
-    drawDelButton(svg, box.x + box.w - 3, box.y + 3, () => { ops.closeRename(); ops.doDelete(1, cat.name); });
+    drawDelButton(svg, box.x + box.w - 3, box.y + 3, cat.name, () => { ops.closeRename(); ops.doDelete(1, cat.name); });
     drawAddButton(svg, box.x + box.w + 10, box.y + box.h / 2, () => { ops.closeRename(); ops.doAddChild(1, cat.name); });
   }
 
@@ -208,7 +209,7 @@ function renderCause(
       ops.openRename(cause.labelX - 2, cause.labelY - 14, approxW + 20, 20, cause.text, "var(--text-normal)",
         (v) => ops.doRename(2, cause.text, v));
     });
-    drawDelButton(svg, cause.labelX + approxW + 8, cause.labelY - 5, () => { ops.closeRename(); ops.doDelete(2, cause.text); });
+    drawDelButton(svg, cause.labelX + approxW + 8, cause.labelY - 5, cause.text, () => { ops.closeRename(); ops.doDelete(2, cause.text); });
     drawAddButton(svg, cause.labelX + approxW + 26, cause.labelY - 5, () => { ops.closeRename(); ops.doAddChild(2, cause.text); }, true);
   }
 
@@ -223,7 +224,7 @@ function renderCause(
         ops.openRename(sub.x, sub.y - 12, sub.text.length * 6 + 24, 18, sub.text, "var(--text-muted)",
           (v) => ops.doRename(3, sub.text, v));
       });
-      drawDelButton(svg, sub.x + sub.text.length * 5.8 + 14, sub.y - 4, () => { ops.closeRename(); ops.doDelete(3, sub.text); });
+      drawDelButton(svg, sub.x + sub.text.length * 5.8 + 14, sub.y - 4, sub.text, () => { ops.closeRename(); ops.doDelete(3, sub.text); });
     }
   }
 }
@@ -266,13 +267,40 @@ function drawAddButton(svg: SVGSVGElement, x: number, y: number, onClick: () => 
   svg.appendChild(g);
 }
 
-function drawDelButton(svg: SVGSVGElement, x: number, y: number, onClick: () => void): void {
-  const g = createSvgEl("g", { class: "vzd-tree-edit-del", transform: `translate(${x}, ${y})`, "aria-label": t("tree.deleteNode") }) as SVGGElement;
+/**
+ * The `⋯` that opens a node's actions menu. Named for what it draws rather
+ * than what it did: it used to delete on click, and now opens the same menu
+ * every other canvas item uses (see shared/item-menu.ts).
+ */
+function drawDelButton(svg: SVGSVGElement, x: number, y: number, label: string, onDelete: () => void): void {
+  const g = createSvgEl("g", {
+    class: "vzd-tree-edit-del",
+    transform: `translate(${x}, ${y})`,
+    "aria-label": t("menu.actions"),
+    role: "button",
+    tabindex: "0",
+  }) as SVGGElement;
   g.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
   const x2 = createSvgEl("text", { x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle", class: "vzd-tree-edit-del-x" });
-  x2.textContent = "×";
+  x2.textContent = "⋯";
   g.appendChild(x2);
-  g.addEventListener("click", (e) => { e.stopPropagation(); onClick(); });
+
+  const menu = attachItemMenu(g, {
+    label: t("menu.actionsFor", { name: label }),
+    actions: () => [{ title: t("tree.deleteNode"), icon: "trash-2", destructive: true, onChoose: onDelete }],
+  });
+  const openFromButton = (): void => {
+    const r = g.getBoundingClientRect();
+    menu.open(r.left, r.bottom);
+  };
+  g.addEventListener("click", (e) => { e.stopPropagation(); openFromButton(); });
+  g.addEventListener("keydown", (e) => {
+    const evt = e as KeyboardEvent;
+    if (evt.key !== "Enter" && evt.key !== " ") return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    openFromButton();
+  });
   svg.appendChild(g);
 }
 

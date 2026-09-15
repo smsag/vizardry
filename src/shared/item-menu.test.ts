@@ -50,24 +50,25 @@ beforeEach(() => {
 describe("the ⋯ button", () => {
   it("is a labelled, typed button announcing that it opens a menu", () => {
     const el = host();
-    const btn = attachItemMenu(el, { actions, label: "Actions for CORE-1", button: { parent: el, cls: "vzd-item-menu-btn" } })!;
-    expect(btn.tagName).toBe("BUTTON");
-    expect(btn.getAttribute("type")).toBe("button");
-    expect(btn.getAttribute("aria-label")).toBe("Actions for CORE-1");
-    expect(btn.getAttribute("aria-haspopup")).toBe("menu");
+    const { button: btn } = attachItemMenu(el, { actions, label: "Actions for CORE-1", button: { parent: el, cls: "vzd-item-menu-btn" } });
+    expect(btn).not.toBeNull();
+    expect(btn!.tagName).toBe("BUTTON");
+    expect(btn!.getAttribute("type")).toBe("button");
+    expect(btn!.getAttribute("aria-label")).toBe("Actions for CORE-1");
+    expect(btn!.getAttribute("aria-haspopup")).toBe("menu");
   });
 
   it("opens the menu when clicked", () => {
     const el = host();
-    const btn = attachItemMenu(el, { actions, label: "x", button: { parent: el, cls: "c" } })!;
-    btn.click();
+    const { button: btn } = attachItemMenu(el, { actions, label: "x", button: { parent: el, cls: "c" } });
+    btn!.click();
     expect(shown).toHaveLength(1);
     expect(built.map(b => b.title)).toEqual(["Delete task"]);
   });
 
   it("is omitted for a host that supplies its own trigger", () => {
     // SVG canvases cannot contain an HTML button.
-    expect(attachItemMenu(host(), { actions, label: "x" })).toBeNull();
+    expect(attachItemMenu(host(), { actions, label: "x" }).button).toBeNull();
   });
 });
 
@@ -165,5 +166,14 @@ describe("menu contents", () => {
     attachItemMenu(el, { actions: () => [], label: "x" });
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     expect(shown).toHaveLength(0);
+  });
+});
+
+describe("a host that supplies its own trigger", () => {
+  it("exposes open() so an SVG trigger can drive the same menu", () => {
+    const el = host();
+    const { open } = attachItemMenu(el, { actions, label: "x" });
+    open(11, 22);
+    expect(shown).toEqual([{ x: 11, y: 22 }]);
   });
 });

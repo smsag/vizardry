@@ -9,6 +9,7 @@ import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { createTextMeasurer, wrapText, type TextMeasurer } from "../shared/text-wrap";
 import { t } from "../i18n";
+import { attachItemMenu } from "../shared/item-menu";
 import type { LinkResolver } from "../shared/links";
 
 
@@ -357,24 +358,45 @@ function renderDelButton(
   editHandlers: TreeEditHandlers, closeRename: () => void,
 ): void {
   if (node.level === 0) return;
+  // An SVG group cannot contain an HTML button, so the group is its own
+  // trigger and drives the shared menu through `open()`.
+  const menu = attachItemMenu(group, {
+    label: t("menu.actionsFor", { name: node.text }),
+    actions: () => [{
+      title: t("tree.deleteNode"),
+      icon: "trash-2",
+      destructive: true,
+      onChoose: () => { closeRename(); editHandlers.onDelete(node); },
+    }],
+  });
+
   const delBtn = createSvgEl("g", {
     class: "vzd-tree-edit-del",
     transform: `translate(${opts.nodeW - 5}, 5)`,
-    "aria-label": t("tree.deleteNode"),
+    "aria-label": t("menu.actions"),
+    role: "button",
+    tabindex: "0",
   }) as SVGGElement;
   delBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
   const delText = createSvgEl("text", {
     x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle",
     class: "vzd-tree-edit-del-x",
   });
-  delText.textContent = "×";
+  delText.textContent = "⋯";
   delBtn.appendChild(delText);
   group.appendChild(delBtn);
 
-  delBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeRename();
-    editHandlers.onDelete(node);
+  const openFromButton = (): void => {
+    const r = delBtn.getBoundingClientRect();
+    menu.open(r.left, r.bottom);
+  };
+  delBtn.addEventListener("click", (e) => { e.stopPropagation(); openFromButton(); });
+  delBtn.addEventListener("keydown", (e) => {
+    const evt = e as KeyboardEvent;
+    if (evt.key !== "Enter" && evt.key !== " ") return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    openFromButton();
   });
 }
 

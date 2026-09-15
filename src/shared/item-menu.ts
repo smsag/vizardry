@@ -73,15 +73,22 @@ function buildMenu(actions: ItemAction[]): Menu {
   return menu;
 }
 
+export interface ItemMenuHandle {
+  /** The `⋯` button, when one was requested; null for a self-triggered host. */
+  button: HTMLElement | null;
+  /** Opens the menu at viewport coordinates — for a caller's own trigger. */
+  open: (x: number, y: number) => void;
+}
+
 /**
- * Wires `host` for the actions menu and returns the `⋯` button when one was
- * requested, so the caller can position it.
+ * Wires `host` for the actions menu.
  *
  * `host` may be an HTMLElement or an SVG element — the listeners are the same
- * either way, which is what lets the Fishbone, Wardley and Nodemap canvases
- * share this with the card canvases.
+ * either way, which is what lets the Fishbone, Mind Map and Nodemap canvases
+ * share this with the card canvases. An SVG host cannot contain an HTML
+ * button, so it omits `button` and drives `open()` from its own SVG trigger.
  */
-export function attachItemMenu(host: Element, opts: ItemMenuOptions): HTMLElement | null {
+export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHandle {
   const open = (x: number, y: number): void => {
     const actions = opts.actions();
     if (actions.length === 0) return;
@@ -97,7 +104,7 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): HTMLElemen
 
   attachLongPress(host, open);
 
-  if (!opts.button) return null;
+  if (!opts.button) return { button: null, open };
 
   const btn = opts.button.parent.createEl("button", { cls: opts.button.cls });
   btn.setAttribute("type", "button");
@@ -112,7 +119,7 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): HTMLElemen
     const rect = btn.getBoundingClientRect();
     open(rect.left, rect.bottom);
   });
-  return btn;
+  return { button: btn, open };
 }
 
 /**
