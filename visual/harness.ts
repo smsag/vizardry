@@ -11,7 +11,7 @@
  * which never happens here.
  */
 
-import "../src/test-setup"; // Obsidian HTMLElement polyfills (createEl, addClass, …)
+import "../src/shared/obsidian-dom-polyfill"; // Obsidian HTMLElement polyfills (createEl, addClass, …)
 import { Platform } from "obsidian"; // -> visual/obsidian.shim.ts (aliased by build.mjs)
 import { dispatchVizardry } from "../src/vizardry-dispatch";
 import { prepareForCapture } from "../src/renderer/controls";

@@ -1,0 +1,114 @@
+/**
+ * Polyfills Obsidian's HTMLElement extensions (createEl, addClass, empty, …)
+ * for hosts that are not Obsidian: the browser extension, the visual
+ * regression harness, and the unit tests (via test-setup.ts).
+ *
+ * Only the subset of the Obsidian API actually used by Vizardry renderers is
+ * polyfilled here. Add methods as needed when a renderer starts using one —
+ * a method missing here throws "x is not a function" at render time in every
+ * non-Obsidian host, so the unit tests are the first place it shows.
+ *
+ * Installation is idempotent: the extensions are only assigned when the
+ * prototype does not already carry them, so importing this inside the real
+ * Obsidian runtime never overrides the host's implementations.
+ */
+
+type CreateElOptions = {
+  cls?: string | string[];
+  text?: string;
+  attr?: Record<string, string>;
+};
+
+// ── HTMLElement extensions ────────────────────────────────────────────────────
+
+const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+const polyfill = {
+  createEl<K extends keyof HTMLElementTagNameMap>(
+    this: HTMLElement,
+    tag: K,
+    options?: CreateElOptions,
+  ): HTMLElementTagNameMap[K] {
+    const el = document.createElement(tag);
+    if (options?.cls) {
+      const classes = Array.isArray(options.cls) ? options.cls : options.cls.split(" ");
+      el.classList.add(...classes.filter(Boolean));
+    }
+    if (options?.text) el.textContent = options.text;
+    if (options?.attr) {
+      for (const [k, v] of Object.entries(options.attr)) el.setAttribute(k, v);
+    }
+    this.appendChild(el);
+    return el as HTMLElementTagNameMap[K];
+  },
+
+  createDiv(
+    this: HTMLElement,
+    options?: CreateElOptions | string,
+  ): HTMLDivElement {
+    return this.createEl("div", typeof options === "string" ? { cls: options } : options);
+  },
+
+  addClass(this: HTMLElement, ...cls: string[]): HTMLElement {
+    this.classList.add(...cls);
+    return this;
+  },
+
+  removeClass(this: HTMLElement, ...cls: string[]): HTMLElement {
+    this.classList.remove(...cls);
+    return this;
+  },
+
+  hasClass(this: HTMLElement, cls: string): boolean {
+    return this.classList.contains(cls);
+  },
+
+  empty(this: HTMLElement): HTMLElement {
+    while (this.firstChild) this.removeChild(this.firstChild);
+    return this;
+  },
+
+  appendText(this: HTMLElement, text: string): HTMLElement {
+    this.appendChild(document.createTextNode(text));
+    return this;
+  },
+
+  toggleClass(this: HTMLElement, cls: string, value: boolean): HTMLElement {
+    this.classList.toggle(cls, value);
+    return this;
+  },
+
+  setText(this: HTMLElement, text: string): HTMLElement {
+    this.textContent = text;
+    return this;
+  },
+};
+
+for (const [name, fn] of Object.entries(polyfill)) {
+  if (typeof proto[name] !== "function") proto[name] = fn;
+}
+
+// ── window stubs ──────────────────────────────────────────────────────────────
+
+// happy-dom may not implement matchMedia; provide a no-op stub.
+if (!window.matchMedia) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (_query: string) => ({
+      matches: false,
+      media: _query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+// requestAnimationFrame stub for initCanvas → applyFullWidth scheduling.
+if (!window.requestAnimationFrame) {
+  Object.defineProperty(window, "requestAnimationFrame", {
+    writable: true,
+    value: (cb: FrameRequestCallback) => { cb(0); return 0; },
+  });
+}

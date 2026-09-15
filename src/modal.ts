@@ -1,6 +1,7 @@
 import type { App, Editor} from "obsidian";
 import { SuggestModal } from "obsidian";
 import { insertTemplateAtCursor } from "./shared/editor";
+import { t } from "./i18n";
 
 export interface FrameworkOption {
   id: string;
@@ -17,7 +18,7 @@ export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
     super(app);
     this.editor = editor;
     this.options = options;
-    this.setPlaceholder("Search frameworks…");
+    this.setPlaceholder(t("commands.searchFrameworks"));
   }
 
   getSuggestions(query: string): FrameworkOption[] {

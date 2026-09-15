@@ -257,6 +257,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
+  "notices.settingsSaveFailed": "Vizardry konnte seine Einstellungen nicht speichern – prüfe, ob der Vault beschreibbar ist. Details in der Entwicklerkonsole.",
+  "commands.searchFrameworks": "Frameworks durchsuchen…",
 
   // ── Settings: secret picker + secret row ────────────────────────────────────
   "settings.secretPicker.title":         "Geheimnis auswählen",
@@ -355,6 +357,9 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "menu.actions":              "Aktionen",
   "sideleaf.refresh":          "Aktualisieren",
   "sideleaf.copyKey":          "Schlüssel kopieren",
+  "sideleaf.copied":           "{{key}} kopiert",
+  "sideleaf.copyFailed":       "Konnte nicht in die Zwischenablage kopieren.",
+  "sideleaf.openFailed":       "Das Vizardry-Sideleaf konnte nicht geöffnet werden.",
   "sideleaf.removeCard":       "Karte entfernen",
   "sideleaf.removed":          "{{n}} Karte entfernt",
   "sideleaf.removedPlural":    "{{n}} Karten entfernt",

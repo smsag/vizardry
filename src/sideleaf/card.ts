@@ -16,6 +16,7 @@ import { getLinearService } from "../linear";
 import { getUpvotyService } from "../upvoty";
 import { setStatusColor, formatKeyAge } from "../shared/key-format";
 import { t } from "../i18n";
+import { Notice } from "obsidian";
 import { attachItemMenu } from "../shared/item-menu";
 import type { TicketRef } from "./types";
 import { cardId } from "./types";
@@ -89,7 +90,9 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
     const load = ref.service === "linear" ? loadLinearCard : loadUpvotyCard;
     load(shell, ref.key).then(done, (err: unknown) => {
       done();
-      showError(shell, (err as Error)?.message ?? t("upvoty.error.network"));
+      const fallback = t(ref.service === "linear" ? "roadmap.linear.error" : "upvoty.error.network");
+      const message = err instanceof Error ? err.message : "";
+      showError(shell, message || fallback);
     });
   };
 
@@ -101,7 +104,7 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
     button: { parent: el, cls: "vzd-card-menu vzd-btn" },
     actions: () => [
       { title: t("sideleaf.refresh"), icon: "refresh-cw", onChoose: refresh },
-      { title: t("sideleaf.copyKey"), icon: "copy", onChoose: () => void navigator.clipboard?.writeText(ref.key) },
+      { title: t("sideleaf.copyKey"), icon: "copy", onChoose: () => copyKey(ref.key) },
       { title: t("sideleaf.removeCard"), icon: "x", onChoose: onClose },
     ],
   });
@@ -110,6 +113,32 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
   refresh();
 
   return { el, refresh };
+}
+
+/** Copies `key`, and says so — or says why not. The Clipboard API rejects in
+ *  insecure contexts and when the page is not focused, both common on
+ *  mobile; a silent failure looked like the menu item did nothing. */
+function copyKey(key: string): void {
+  const clipboard = navigator.clipboard;
+  if (!clipboard) { new Notice(t("sideleaf.copyFailed")); return; }
+  clipboard.writeText(key).then(
+    () => new Notice(t("sideleaf.copied", { key })),
+    (err: unknown) => {
+      console.warn("Vizardry: clipboard write failed", err);
+      new Notice(t("sideleaf.copyFailed"));
+    },
+  );
+}
+
+/** `base?id=…`, respecting a base that already carries a query string. */
+export function buildPostUrl(base: string, id: string): string {
+  try {
+    const url = new URL(base);
+    url.searchParams.set("id", id);
+    return url.toString();
+  } catch {
+    return `${base}${base.includes("?") ? "&" : "?"}id=${encodeURIComponent(id)}`;
+  }
 }
 
 function showError(shell: CardShell, message: string): void {
@@ -153,7 +182,7 @@ async function loadUpvotyCard(shell: CardShell, key: string): Promise<void> {
   if ("error" in result) { showError(shell, result.error); return; }
 
   const { post, summary } = result;
-  if (post.id) shell.keyLink.dataset.url = `${svc.getAppUrl()}?id=${post.id}`;
+  if (post.id) shell.keyLink.dataset.url = buildPostUrl(svc.getAppUrl(), post.id);
   if (post.status?.label) {
     shell.statusEl.textContent = post.status.label;
     setStatusColor(shell.statusEl, post.status.color);

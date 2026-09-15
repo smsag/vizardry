@@ -84,7 +84,7 @@ export const SETTINGS_SCHEMA: Schema = {
   linearSecretName:       { kind: "string",  default: "vzd-linear-key" },
 
   llmProvider:            { kind: "enum",    default: "anthropic", values: ["anthropic", "openai"] },
-  llmModel:               { kind: "string",  default: "claude-haiku-4-5-latest" },
+  llmModel:               { kind: "string",  default: "claude-haiku-4-5" },
   llmSecretName:          { kind: "string",  default: "vzd-llm-key" },
 
   summaryTtlHours:        { kind: "number",  default: 24, min: 1, max: 168 },
@@ -137,7 +137,23 @@ export function normalizeSettings(raw: unknown): PluginSettings {
   const source = (raw !== null && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const out = {} as Record<string, unknown>;
   for (const key of SETTINGS_KEYS) out[key] = coerce(SETTINGS_SCHEMA[key], source[key]);
+  out.llmModel = healModelId(out.llmModel as string);
   return out as unknown as PluginSettings;
+}
+
+/**
+ * Model ids persisted by earlier releases that the API no longer accepts.
+ * `claude-*-latest` was never a valid alias for the 4.x models; every request
+ * with one 404'd. Healed on load so an existing data.json starts working
+ * without the user having to know why summaries stopped.
+ */
+const RENAMED_MODELS: Record<string, string> = {
+  "claude-haiku-4-5-latest": "claude-haiku-4-5",
+  "claude-sonnet-4-5-latest": "claude-sonnet-4-5",
+};
+
+function healModelId(model: string): string {
+  return RENAMED_MODELS[model] ?? model;
 }
 
 /**

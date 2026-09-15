@@ -58,7 +58,10 @@ export async function listSecrets(app: App): Promise<string[]> {
   try {
     const names = await app.secretStorage.listSecrets();
     return Array.isArray(names) ? names : [];
-  } catch {
+  } catch (err) {
+    // An empty picker with no trace anywhere is indistinguishable from an
+    // empty keychain; leave a line for the person debugging it.
+    console.warn("Vizardry: listing secrets failed", err);
     return [];
   }
 }

@@ -4,12 +4,12 @@ import tsParser from "@typescript-eslint/parser";
 /** @type {import("eslint").Linter.Config[]} */
 export default [
   {
-    files: ["src/**/*.ts"],
-    ignores: ["src/**/*.test.ts"],
+    files: ["src/**/*.ts", "extension/**/*.ts"],
+    ignores: ["src/**/*.test.ts", "extension/**/*.test.ts", "extension/**/*.d.ts"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: "./tsconfig.json",
+        project: ["./tsconfig.json", "./extension/tsconfig.json"],
       },
     },
     plugins: {

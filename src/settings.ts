@@ -27,9 +27,12 @@ function debounce<T extends (...args: unknown[]) => unknown>(fn: T, ms: number):
 export type { PluginSettings } from "./settings-schema";
 export { DEFAULT_SETTINGS, normalizeSettings, serializeSettings } from "./settings-schema";
 
+// Model ids as the Anthropic API accepts them — no `-latest` suffix, which
+// was a 3.x-era alias and 404s on every current model.
 const ANTHROPIC_MODELS = [
-  { value: "claude-haiku-4-5-latest",  label: "Claude Haiku 4.5 (fast, cheap)" },
-  { value: "claude-sonnet-4-5-latest", label: "Claude Sonnet 4.5 (balanced)" },
+  { value: "claude-haiku-4-5", label: "Claude Haiku 4.5 (fast, cheap)" },
+  { value: "claude-sonnet-5",  label: "Claude Sonnet 5 (balanced)" },
+  { value: "claude-opus-5",    label: "Claude Opus 5 (most capable)" },
 ];
 
 const OPENAI_MODELS = [
@@ -135,7 +138,9 @@ class SecretPickerModal extends Modal {
 
     const saveBtn = footer.createEl("button", { cls: "mod-cta", text: t("settings.secretPicker.save") });
     saveBtn.addEventListener("click", () => {
-      this.onSelect(this.selected);
+      // Saving an unchanged selection is a cancel: the callers clear the
+      // integration's cached summaries on a change, and nothing changed.
+      if (this.selected !== this.currentName) this.onSelect(this.selected);
       this.close();
     });
 
@@ -228,15 +233,22 @@ function addSecretRow(
 
       void syncFromStorage();
 
+      // The value the field showed when it gained focus. Tabbing through the
+      // field must not rewrite the keychain entry with what is already there.
+      let loadedValue: string | null = null;
+
       text.inputEl.addEventListener("focus", () => {
         if (text.getValue() === "••••••••") {
-          void loadSecret(app, currentName).then(v => text.setValue(v ?? ""));
+          void loadSecret(app, currentName).then(v => {
+            loadedValue = v ?? "";
+            text.setValue(loadedValue);
+          });
         }
       });
 
       const persistValue = (): void => {
         const v = text.getValue().trim();
-        if (v && v !== "••••••••") {
+        if (v && v !== "••••••••" && v !== loadedValue) {
           void saveSecret(app, currentName, v).then(result => {
             // A rejected write used to be silent: Obsidian throws on an id it
             // will not accept, and the only trace was a console line.
@@ -388,12 +400,14 @@ export class VizardrySettingTab extends PluginSettingTab {
       for (const { value, label } of models) {
         modelDropdown.addOption(value, label);
       }
-      const validValues = models.map(m => m.value);
-      if (!validValues.includes(this.plugin.settings.llmModel)) {
-        this.plugin.settings.llmModel = models[0].value;
-        void this.plugin.saveSettings();
+      // A model id outside the built-in list (hand-edited data.json, a newer
+      // model than this release knows) is kept and shown as its own option.
+      // Opening the settings tab must never rewrite a setting.
+      const current = this.plugin.settings.llmModel;
+      if (current && !models.some(m => m.value === current)) {
+        modelDropdown.addOption(current, current);
       }
-      modelDropdown.setValue(this.plugin.settings.llmModel);
+      modelDropdown.setValue(current || models[0].value);
     };
 
     new Setting(containerEl)

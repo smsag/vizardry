@@ -187,6 +187,12 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
     const empty = this.cards.size === 0;
     this.emptyEl.toggleClass("is-visible", empty);
     this.listEl.toggleClass("is-empty", empty);
+    // The card list is view state (getState below); Obsidian only writes
+    // workspace.json when asked or on its own schedule, so a crash could lose
+    // every card opened since. Ask for a save on each change.
+    // Optional chaining: ItemView.app is wired by Obsidian, not by the test
+    // harness that constructs the view directly.
+    this.app?.workspace?.requestSaveLayout();
   }
 
   // ── Persistence ────────────────────────────────────────────────────────────

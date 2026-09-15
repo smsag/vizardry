@@ -271,6 +271,8 @@ export const en = {
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",
+  "notices.settingsSaveFailed": "Vizardry could not save its settings — check that the vault is writable. See the developer console for details.",
+  "commands.searchFrameworks": "Search frameworks…",
 
   // ── Settings: secret picker + secret row ────────────────────────────────────
   "settings.secretPicker.title":         "Select secret",
@@ -369,6 +371,9 @@ export const en = {
   "menu.actions":              "Actions",
   "sideleaf.refresh":          "Refresh",
   "sideleaf.copyKey":          "Copy key",
+  "sideleaf.copied":           "Copied {{key}}",
+  "sideleaf.copyFailed":       "Could not copy to the clipboard.",
+  "sideleaf.openFailed":       "Could not open the Vizardry sideleaf.",
   "sideleaf.removeCard":       "Remove card",
   "sideleaf.removed":          "{{n}} card removed",
   "sideleaf.removedPlural":    "{{n}} cards removed",

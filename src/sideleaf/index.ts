@@ -8,6 +8,8 @@
  */
 
 import type { App, WorkspaceLeaf } from "obsidian";
+import { Notice } from "obsidian";
+import { t } from "../i18n";
 import { VIZARDRY_VIEW_TYPE } from "./view-type";
 import type { SideleafHost } from "./view-type";
 import type { TicketRef } from "./types";
@@ -40,16 +42,28 @@ export function unregisterSideleafView(view: SideleafHost): void {
  * not move focus — a key click should show the card without taking the caret
  * out of the note being written.
  */
+let _opening: Promise<void> | null = null;
+
 export async function revealSideleaf(): Promise<SideleafHost | null> {
   if (!_app) return null;
+  const app = _app;
   if (!_view) {
-    const leaf: WorkspaceLeaf | null = _app.workspace.getRightLeaf(false);
-    if (!leaf) return null;
-    // Creating the leaf runs the view's onOpen, which registers it above.
-    await leaf.setViewState({ type: VIZARDRY_VIEW_TYPE, active: false });
+    // A leaf can exist without `_view` being set yet (its onOpen has not run,
+    // or the workspace restored it lazily). Reuse it rather than creating a
+    // second Vizardry tab; and two clicks in the same tick share one creation.
+    if (!_opening) {
+      _opening = (async () => {
+        const leaf: WorkspaceLeaf | null =
+          app.workspace.getLeavesOfType(VIZARDRY_VIEW_TYPE)[0] ?? app.workspace.getRightLeaf(false);
+        if (!leaf) return;
+        // Creating the leaf runs the view's onOpen, which registers it above.
+        await leaf.setViewState({ type: VIZARDRY_VIEW_TYPE, active: false });
+      })().finally(() => { _opening = null; });
+    }
+    await _opening;
   }
-  const target = _app.workspace.getLeavesOfType(VIZARDRY_VIEW_TYPE)[0];
-  if (target) void _app.workspace.revealLeaf(target);
+  const target = app.workspace.getLeavesOfType(VIZARDRY_VIEW_TYPE)[0];
+  if (target) void app.workspace.revealLeaf(target);
   return _view;
 }
 
@@ -59,5 +73,8 @@ export async function revealSideleaf(): Promise<SideleafHost | null> {
  * hand against the viewport.
  */
 export function openTicketCard(ref: TicketRef): void {
-  void revealSideleaf().then(view => view?.openCard(ref));
+  revealSideleaf().then(view => view?.openCard(ref)).catch((err: unknown) => {
+    console.error("Vizardry: could not open the sideleaf", err);
+    new Notice(t("sideleaf.openFailed"));
+  });
 }

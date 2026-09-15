@@ -22,9 +22,17 @@ const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
 manifest.version = targetVersion;
 writeFileSync("manifest.json", JSON.stringify(manifest, null, 2) + "\n");
 
+// extension/manifest.json — the browser extension ships from the same tree
+// and must carry the same version, or a store listing can never be matched to
+// a plugin release.
+const extManifestPath = "extension/manifest.json";
+const extManifest = JSON.parse(readFileSync(extManifestPath, "utf8"));
+extManifest.version = targetVersion;
+writeFileSync(extManifestPath, JSON.stringify(extManifest, null, 2) + "\n");
+
 // versions.json — record which minAppVersion this plugin version needs.
 const versions = JSON.parse(readFileSync("versions.json", "utf8"));
 versions[targetVersion] = manifest.minAppVersion;
 writeFileSync("versions.json", JSON.stringify(versions, null, 2) + "\n");
 
-console.log(`version-bump: synced manifest.json + versions.json to v${targetVersion}`);
+console.log(`version-bump: synced manifest.json + extension/manifest.json + versions.json to v${targetVersion}`);

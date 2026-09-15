@@ -21,8 +21,8 @@ runs:
         # a Playwright container that already has them.
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
-    - name: Type-check
-      run: npx tsc --noEmit
+    - name: Type-check (plugin + extension)
+      run: npm run typecheck
       shell: bash
 
     - name: Lint
@@ -35,6 +35,10 @@ runs:
 
     - name: Docs check
       run: bash scripts/docs-check.sh
+      shell: bash
+
+    - name: CSS reference check
+      run: node scripts/css-check.mjs
       shell: bash
 
     - name: Build

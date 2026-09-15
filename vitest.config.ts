@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "extension/**/*.test.ts"],
     environment: "node",
     // Per-file environment overrides are declared with the
     // @vitest-environment happy-dom docblock annotation in each renderer test.
@@ -24,6 +24,7 @@ export default defineConfig({
         "src/**/*.test.ts",
         "src/__mocks__/**",
         "src/test-setup.ts",
+        "src/shared/obsidian-dom-polyfill.ts",
       ],
       // Thresholds reflect the reality that renderers require the Obsidian
       // runtime and cannot be fully exercised in unit tests. Parser and

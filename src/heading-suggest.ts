@@ -49,8 +49,13 @@ export class VizardryHeadingSuggest extends EditorSuggest<string> {
   selectSuggestion(heading: string): void {
     if (!this.context) return;
     const { editor, start } = this.context;
+    const end = { ...this.context.end };
+    // Obsidian's bracket auto-pairing turns `[[` into `[[]]` with the caret in
+    // the middle, so the closing pair is usually already there: swallow it or
+    // the result reads `[[#Heading]]]]`.
+    if (editor.getLine(end.line).slice(end.ch, end.ch + 2) === "]]") end.ch += 2;
     const replacement = `[[#${heading}]]`;
-    editor.replaceRange(replacement, start, this.context.end);
+    editor.replaceRange(replacement, start, end);
     editor.setCursor({ line: start.line, ch: start.ch + replacement.length });
   }
 }
