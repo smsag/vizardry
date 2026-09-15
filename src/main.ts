@@ -1,5 +1,5 @@
 import type { Editor, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
+import { addIcon, MarkdownView, Notice, Platform, Plugin } from "obsidian";
 import { VizardrySettingTab } from "./settings";
 import { normalizeSettings, serializeSettings } from "./settings-schema";
 import type { PluginSettings } from "./settings-schema";
@@ -13,6 +13,7 @@ import { closeSectionPreview } from "./renderer/section-preview";
 import { resetKeyOpenState } from "./shared/key-open-state";
 import { initSideleaf, revealSideleaf } from "./sideleaf";
 import { VIZARDRY_VIEW_TYPE } from "./sideleaf/view-type";
+import { VIZARDRY_ICON_ID, VIZARDRY_ICON_SVG } from "./sideleaf/icon";
 import { VizardrySideleafView } from "./sideleaf/view";
 import { setPluginVersion } from "./shared/version";
 import { CanvasInsertModal } from "./modal";
@@ -61,9 +62,10 @@ export default class VizardryPlugin extends Plugin {
     this.settings = normalizeSettings(rawData);
     // `init` validates the blob itself (a malformed or non-object value is
     // dropped), so no cast or shape check is needed here.
-    // Registered before the services so a leaf restored from workspace.json
+    // Both before the services, so a leaf restored from workspace.json
     // (Obsidian rebuilds sidebar views during layout-ready) finds its view
-    // type already known.
+    // type known and its icon already registered.
+    addIcon(VIZARDRY_ICON_ID, VIZARDRY_ICON_SVG);
     this.registerView(VIZARDRY_VIEW_TYPE, (leaf) => new VizardrySideleafView(leaf));
     initSideleaf(this.app);
     initLinearService(this as Parameters<typeof initLinearService>[0]);
