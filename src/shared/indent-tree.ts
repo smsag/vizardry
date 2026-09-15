@@ -1,3 +1,4 @@
+import { indentOf } from "./indent";
 export interface IndentLine {
   indent: number;
   text: string;
@@ -12,7 +13,7 @@ export interface IndentLine {
 export function isSkippableLine(raw: string): boolean {
   const trimmed = raw.trim();
   if (trimmed === "" || trimmed.startsWith("//")) return true;
-  if (raw.search(/\S/) !== 0) return false;
+  if (indentOf(raw) !== 0) return false;
   const lower = trimmed.toLowerCase();
   return lower.startsWith("title:") || lower.startsWith("collapsed:");
 }
@@ -24,7 +25,7 @@ export function extractMeaningfulLines(source: string): IndentLine[] {
     const raw = lines[i];
     const trimmed = raw.trim();
     if (isSkippableLine(raw)) continue;
-    result.push({ indent: raw.search(/\S/), text: trimmed, lineNum: i + 1 });
+    result.push({ indent: indentOf(raw), text: trimmed, lineNum: i + 1 });
   }
   return result;
 }

@@ -26,6 +26,7 @@ import { renderCanvasWarnings } from "./renderer/controls";
 import { registerCanvasRelink, relinkCanvas } from "./renderer/canvas";
 import { FRAMEWORKS_BY_ID, CUSTOM_RENDERERS_BY_ID } from "./catalog";
 import { getPluginVersion } from "./shared/version";
+import { indentOf } from "./shared/indent";
 
 type ExtractedType = {
   id: string;
@@ -51,7 +52,7 @@ export function extractType(source: string): ExtractedType | null {
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
-    if (raw.search(/\S/) !== 0) continue; // only top-level lines
+    if (indentOf(raw) !== 0) continue; // only top-level lines
     const trimmed = raw.trim();
     if (!trimmed.toLowerCase().startsWith("type:")) continue;
 
@@ -79,7 +80,7 @@ export function extractType(source: string): ExtractedType | null {
 export function blankStickyLines(source: string): string {
   const lines = source.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].search(/\S/) !== 0) continue; // top-level lines only
+    if (indentOf(lines[i]) !== 0) continue; // top-level lines only
     if (lines[i].trim().toLowerCase().startsWith("sticky:")) lines[i] = "";
   }
   return lines.join("\n");

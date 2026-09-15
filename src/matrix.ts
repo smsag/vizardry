@@ -1,5 +1,6 @@
 import type { Heat, MatrixAxis, MatrixItem, MatrixPreset, MatrixResult } from "./types";
 import { PRESETS, resolveCells } from "./matrix-presets";
+import { indentOf } from "./shared/indent";
 
 const HEAT_LEVELS: readonly Heat[] = ["very-high", "high", "medium", "low"];
 const PRESET_NAMES: readonly MatrixPreset[] = ["pain", "opportunity", "impact", "assumption", "scenario"];
@@ -107,7 +108,7 @@ function parseItem(lines: string[], headerIdx: number): { item: MatrixItem | nul
       if (indent !== -1) body.push("");
       continue;
     }
-    const lineIndent = raw.search(/\S/);
+    const lineIndent = indentOf(raw);
     if (lineIndent <= 0) break;
     if (indent === -1) indent = lineIndent;
     if (lineIndent < indent) break;
@@ -162,7 +163,7 @@ export function parseMatrix(source: string, presetOverride?: string): MatrixResu
     if (trimmed === "" || trimmed.startsWith("//")) { i++; continue; }
     if (lower.startsWith("title:") || lower.startsWith("collapsed:") || lower.startsWith("type:") || lower.startsWith("layout:")) { i++; continue; }
 
-    if (raw.search(/\S/) > 0) {
+    if (indentOf(raw) > 0) {
       warnings.push(`Line ${i + 1}: unexpected indentation — skipped`);
       i++; continue;
     }

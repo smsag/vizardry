@@ -1,3 +1,32 @@
+## 0.69.1
+
+The three write-back fixes deferred from the 0.69.0 review.
+
+- **Fix: a story-map task edit could hit the wrong step.** Task names only
+  have to be unique per step, so "Login" can exist under two steps — but
+  renaming or deleting one found the first "Login" in the fence and rewrote
+  every slice cell holding that key. Both edits are now scoped to the step
+  the card sits in. Two related slips: a slice cell with no tasks
+  (`step: Login` under `slice:`) could be mistaken for the activity step
+  when the slice came first, so a new task landed inside the slice; and
+  reordering tasks moved the wrong one when the cell also named a key the
+  parser drops (a typo). Reordering now works on the tasks the canvas shows
+  and carries unknown keys along at the end.
+
+- **Fix: journey cards in a repeated `phase:` could not be edited.** The
+  parser merges every block with the same phase name into one column, but
+  the editor only looked inside the first block — so the cards from the
+  second one answered "card not found" to rename, delete and move. Every
+  block of that name now contributes its lanes, and a new card goes after
+  the last one.
+
+- **Fix: a tab counted as one column of indentation.** Obsidian indents
+  with tabs by default (width 4); a pasted space-indented line under a
+  tab-indented one landed a level deeper, or failed with "indent of 1 is
+  not a multiple of the base indent". One `indentOf` helper now measures
+  every line in every parser and edit helper, with a tab as four columns,
+  so the two spellings of the same indent agree.
+
 ## 0.69.0
 
 A quality and security review of the whole codebase and the browser

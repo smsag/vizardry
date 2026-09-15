@@ -265,3 +265,51 @@ describe("writeJourneyMeta", () => {
     expect(text).toContain("scenario: Renewal recovery");
   });
 });
+
+// ── duplicate phase blocks ───────────────────────────────────────────────────
+
+describe("phases defined more than once", () => {
+  // The parser merges both blocks into one column, so the canvas shows three
+  // actions; the second and third live in the second block.
+  function makeSplitSource(): string[] {
+    return [
+      "```vizardry",
+      "type: journey",
+      "phase: Awareness",
+      "  action: See ad",
+      "phase: Consideration",
+      "  action: Compare",
+      "phase: Awareness",
+      "  action: Read blog",
+      "  action: Ask a friend",
+      "```",
+    ];
+  }
+
+  it("deletes a card that lives in the second block of the phase", () => {
+    const editor = makeMockEditor(makeSplitSource());
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 9) as any;
+    expect(deleteJourneyCard(app, ctx, el, "Awareness", "action", 2)).toBe(true);
+    expect(editor._state).not.toContain("  action: Ask a friend");
+    expect(editor._state).toContain("  action: Read blog");
+  });
+
+  it("renames a card that lives in the second block of the phase", () => {
+    const editor = makeMockEditor(makeSplitSource());
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 9) as any;
+    expect(renameJourneyCard(app, ctx, el, "Awareness", "action", 1, "Read the blog")).toBe(true);
+    expect(editor._state[7]).toBe("  action: Read the blog");
+  });
+
+  it("appends a new card after the last lane line of the last block", () => {
+    const editor = makeMockEditor(makeSplitSource());
+    const app = makeApp(PATH, editor) as any;
+    const ctx = makeCtx(PATH, 0, 9) as any;
+    expect(addJourneyCard(app, ctx, el, "Awareness", "action", "Sign up")).toBe(true);
+    // The mock editor models an insert as text appended to the anchor line.
+    expect(editor._state[8]).toBe("  action: Ask a friend\n  action: Sign up");
+  });
+});
+

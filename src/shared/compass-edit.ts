@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import { canonKey } from "../compass";
+import { indentOf } from "./indent";
 
 /**
  * Source write-back for the Product Compass. Every rendered line is one
@@ -25,7 +26,7 @@ function compassLines(editor: LineReader, lineStart: number, lineEnd: number): {
   const out: { key: string; line: number }[] = [];
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
-    if (raw.search(/\S/) !== 0) continue; // top-level only
+    if (indentOf(raw) !== 0) continue; // top-level only
     const trimmed = raw.trim();
     if (trimmed === "" || trimmed.startsWith("//")) continue;
     const colon = trimmed.indexOf(":");

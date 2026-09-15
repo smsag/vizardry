@@ -1,5 +1,6 @@
 import type { StoryActivity, StoryMapResult, StorySlice, StoryStep } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
+import { indentOf } from "./shared/indent";
 
 export function parseStoryMap(source: string): StoryMapResult {
   const lines = source.split("\n");
@@ -26,7 +27,7 @@ export function parseStoryMap(source: string): StoryMapResult {
     const trimmed = raw.trim();
     if (isSkippableLine(raw)) continue;
 
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent === 0) {
       currentStep = null;

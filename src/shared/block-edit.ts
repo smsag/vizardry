@@ -1,6 +1,7 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { indentOf } from "./indent";
 
 type BlockLocation = {
   blockHeaderLine: number;
@@ -43,7 +44,7 @@ function findBlockBody(editor: Editor, lineStart: number, lineEnd: number, block
     // (parser.ts), so the scan must step over them — but they only count as
     // body when content follows: trailing ones stay in place, so an edit does
     // not eat the blank line between blocks or a comment before the next one.
-    if (trimmed === "" || (trimmed.startsWith("//") && raw.search(/\S/) === 0)) continue;
+    if (trimmed === "" || (trimmed.startsWith("//") && indentOf(raw) === 0)) continue;
     // Stop at the next top-level line.
     if (!raw.startsWith(" ") && !raw.startsWith("\t")) break;
     bodyEnd = ln;

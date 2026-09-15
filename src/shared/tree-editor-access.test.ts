@@ -24,6 +24,11 @@ describe("detectIndentUnit", () => {
     expect(detectIndentUnit(editor as any, 0, 2)).toBe(4);
   });
 
+  it("measures a tab-indented line in columns", () => {
+    const editor = makeMockEditor(["root: X", "\tBranch"]);
+    expect(detectIndentUnit(editor as any, 0, 1)).toBe(4);
+  });
+
   it("defaults to 2 when no indented line exists", () => {
     const editor = makeMockEditor(["root: X"]);
     expect(detectIndentUnit(editor as any, 0, 0)).toBe(2);

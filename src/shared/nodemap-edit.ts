@@ -4,6 +4,7 @@ import { editorWrite } from "./tree-editor-access";
 import type { NodeMapColor, NodeMapLineStyle, NodeMapLinkDirection } from "../types";
 import { escRe } from "./regex";
 import { uniqueName } from "./unique-name";
+import { indentOf } from "./indent";
 
 /** Escapes a string for use inside a RegExp. */
 function findBoxLine(
@@ -30,7 +31,7 @@ function findBodyRange(
   for (let ln = boxLine + 1; ln <= lineEnd; ln++) {
     const line = editor.getLine(ln);
     if (line.trim() === "") break;
-    if (line.search(/\S/) === 0) break; // next top-level line
+    if (indentOf(line) === 0) break; // next top-level line
     if (first === -1) first = ln;
     last = ln;
   }

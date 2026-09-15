@@ -3,6 +3,7 @@ import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import { escRe } from "./regex";
 import { uniqueName } from "./unique-name";
+import { indentOf } from "./indent";
 
 /** Escapes a string for safe use inside a RegExp. */
 interface ItemRef {
@@ -35,7 +36,7 @@ function parseColBlocks(
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("//") || trimmed.toLowerCase().startsWith("title:")) continue;
-    const indent = raw.search(/\S/);
+    const indent = indentOf(raw);
 
     if (indent === 0) {
       const lower = trimmed.toLowerCase();

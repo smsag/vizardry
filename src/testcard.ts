@@ -5,6 +5,7 @@ import {
   TEST_CARD_STEPS,
   TEST_CARD_MAX_LEVEL,
 } from "./types/testcard";
+import { indentOf } from "./shared/indent";
 
 /**
  * Parses the Test Card source. The card's structure is fixed (see
@@ -46,7 +47,7 @@ export function parseTestCard(source: string): Result<TestCardData> {
   const lines = source.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
-    if (raw.search(/\S/) !== 0) continue; // top-level lines only (indent = structure elsewhere)
+    if (indentOf(raw) !== 0) continue; // top-level lines only (indent = structure elsewhere)
     const trimmed = raw.trim();
     if (trimmed === "" || trimmed.startsWith("//")) continue;
 

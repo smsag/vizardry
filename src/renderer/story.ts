@@ -267,7 +267,7 @@ export function renderStoryMap(
         e.stopPropagation();
         e.preventDefault();
         activateInlineEdit(nameDiv, task.name, (newName) => {
-          renameStoryTask(app, ctx, container, task.name, newName);
+          renameStoryTask(app, ctx, container, task.name, newName, cell.dataset.stepName || undefined);
         });
       });
 
@@ -279,7 +279,7 @@ export function renderStoryMap(
           title: t("story.deleteTask"),
           icon: "trash-2",
           destructive: true,
-          onChoose: () => deleteStoryTask(app, ctx, container, task.name),
+          onChoose: () => deleteStoryTask(app, ctx, container, task.name, cell.dataset.stepName || undefined),
         }],
       });
 
