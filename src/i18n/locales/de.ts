@@ -344,6 +344,10 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "sideleaf.refresh":          "Aktualisieren",
   "sideleaf.copyKey":          "Schlüssel kopieren",
   "sideleaf.removeCard":       "Karte entfernen",
+  "sideleaf.removed":          "{{n}} Karte entfernt",
+  "sideleaf.removedPlural":    "{{n}} Karten entfernt",
+  "sideleaf.undo":             "Rückgängig",
+  "sideleaf.swipeHint":        "Karte zur Seite wischen, um sie zu entfernen",
   "compass.deleteEntry":       "Eintrag löschen",
   "flow.deleteCard":           "Karte löschen",
 };

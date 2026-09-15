@@ -358,6 +358,10 @@ export const en = {
   "sideleaf.refresh":          "Refresh",
   "sideleaf.copyKey":          "Copy key",
   "sideleaf.removeCard":       "Remove card",
+  "sideleaf.removed":          "{{n}} card removed",
+  "sideleaf.removedPlural":    "{{n}} cards removed",
+  "sideleaf.undo":             "Undo",
+  "sideleaf.swipeHint":        "Swipe a card aside to remove it",
   "compass.deleteEntry":       "Delete entry",
   "flow.deleteCard":           "Delete card",
 } as const;

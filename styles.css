@@ -2789,6 +2789,11 @@ code:has(.vzd-upvoty-key) {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* A card being swiped translates past the panel edge; clip it there rather
+     than letting it ride out over the sidebar's own chrome. `clip` instead of
+     `hidden` so this never becomes a scroll container and steals the leaf's
+     vertical scrolling. */
+  overflow-x: clip;
 }
 .vzd-sideleaf-list.is-empty { display: none; }
 
@@ -2805,6 +2810,62 @@ code:has(.vzd-upvoty-key) {
 .vzd-sideleaf-empty.is-visible { display: block; }
 .vzd-sideleaf-empty-icon { color: var(--text-faint); margin-bottom: 0.5rem; }
 .vzd-sideleaf-empty p { margin: 0; }
+
+
+/* ── Sideleaf: swipe to remove, and the undo window ──────────────────────── */
+/*
+ * Grey, not red. Removing a card takes it off this panel and changes nothing
+ * in the vault — clicking the key again brings it back — so it must not borrow
+ * the colour the canvases use for deleting note content.
+ */
+.vzd-card {
+  transition: transform 0.16s ease;
+  touch-action: pan-y;
+}
+
+/* Revealed behind the card as it travels. Its strength follows the gesture, so
+   the card looks more committed the further it goes. */
+.vzd-sideleaf-list .vzd-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--radius-m);
+  background: var(--background-modifier-hover);
+  opacity: calc(var(--vzd-swipe-progress, 0) * 0.9);
+}
+
+.vzd-card--swiping {
+  transition: none;
+  cursor: grabbing;
+  user-select: none;
+}
+.vzd-card--swiped-out { transition: transform 0.14s ease-in; opacity: 0.4; }
+
+.vzd-sideleaf-undo {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 5px 10px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.vzd-sideleaf-undo.is-visible { display: flex; }
+
+.vzd-sideleaf-undo-btn {
+  padding: 2px 6px;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  cursor: pointer;
+}
+.vzd-sideleaf-undo-btn:hover { text-decoration: underline; }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 
