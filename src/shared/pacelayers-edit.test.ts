@@ -291,10 +291,26 @@ describe("writePaceLayerCell", () => {
     // lineEnd set to 15 — deliberately smaller than line 20 where Culture lives
     const ctx = makeCtx("note.md", 0, 15) as any;
     const el = makeEl();
+    // The rendered canvas always carries its source; that is how resolveEditor
+    // notices the stale section and re-finds the fence by content.
+    el.dataset.vzSource = lines.slice(1, 27).join("\n");
 
     expect(writePaceLayerCell(app, ctx, el, "Culture", "obs", "found despite stale lineEnd")).toBe(true);
     const [text] = editor.replaceRange.mock.calls[0];
     expect(text).toBe("  obs: found despite stale lineEnd");
+  });
+
+  it("never writes into the next pacelayers canvas when this one lacks the layer", () => {
+    const first = ["```pacelayers", "type: shearing", "layer: Fashion", "  note: a", "```"];
+    const second = ["", "```pacelayers", "type: shearing", "layer: Culture", "  obs: b", "```"];
+    const lines = [...first, ...second];
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    const ctx = makeCtx("note.md", 0, 4) as any;
+    const el = makeEl();
+
+    expect(writePaceLayerCell(app, ctx, el, "Culture", "obs", "leak")).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
   });
 
   // ── Orphaned fragment cleanup ────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { requestUrl } from "obsidian";
 import { withTimeout } from "./request-timeout";
 import { withRetry429 } from "./request-retry";
 import { LLM_REQUEST_TIMEOUT_MS } from "./constants";
+import { IntegrationAuthError } from "./errors";
 
 export type LlmProvider = "anthropic" | "openai";
 
@@ -95,12 +96,28 @@ export async function callLlm(
     throw new Error(`${label}: network error — ${(err as Error).message}`);
   }
 
-  if (resp.status === 401) throw new Error(`${label}: invalid API key`);
-  if (resp.status !== 200) throw new Error(`${label}: unexpected response ${resp.status}`);
+  if (resp.status === 401 || resp.status === 403) throw new IntegrationAuthError(label);
+  if (resp.status !== 200) {
+    // Both providers answer with `{ error: { message } }`; a wrong model id,
+    // an over-long prompt or a billing block each explain themselves there,
+    // and "unexpected response 400" explained nothing.
+    throw new Error(`${label}: unexpected response ${resp.status}${providerErrorDetail(resp)}`);
+  }
 
   const text = adapter.extractText(resp.json);
   if (!text) throw new Error(`${label}: empty response`);
   return text.trim();
+}
+
+/** ` — <message>` from a provider error envelope, or "" when there is none. */
+function providerErrorDetail(resp: { json?: unknown; text?: string }): string {
+  try {
+    const body = resp.json as { error?: { message?: unknown } } | null;
+    const message = body?.error?.message;
+    if (typeof message === "string" && message) return ` — ${message}`;
+    if (typeof resp.text === "string" && resp.text) return ` — ${resp.text.slice(0, 200)}`;
+  } catch { /* not JSON */ }
+  return "";
 }
 
 /** Truncates text to maxChars at the nearest word boundary, appending "…". */

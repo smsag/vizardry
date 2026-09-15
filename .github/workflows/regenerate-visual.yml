@@ -12,12 +12,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   regenerate:
+    # Baselines are regenerated on a branch and reviewed in its PR; a dispatch
+    # on main would push straight to the protected branch.
+    if: github.ref_name != 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
     container:
       image: mcr.microsoft.com/playwright:v1.56.0-noble
     env:
@@ -35,14 +40,14 @@ jobs:
       - run: npm ci
 
       # Build the harness bundle, then let Playwright rewrite every baseline it
-      # renders. `|| true` because a snapshot *update* can still surface as a
-      # non-zero exit in some Playwright versions — the real signal is whether
-      # the committed PNGs changed, checked below.
+      # renders. A non-zero exit here is a harness build failure, a missing
+      # browser or a crashing spec — it used to be swallowed with `|| true`,
+      # and the job went green having regenerated nothing.
       - name: Build harness
         run: node visual/build.mjs
 
       - name: Regenerate snapshots
-        run: npx playwright test --update-snapshots || true
+        run: npx playwright test --update-snapshots
 
       - name: Commit regenerated baselines
         run: |

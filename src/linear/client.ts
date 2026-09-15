@@ -3,6 +3,7 @@ import type { LinearIssue } from "./types";
 import { withTimeout } from "../shared/request-timeout";
 import { withRetry429 } from "../shared/request-retry";
 import { INTEGRATION_REQUEST_TIMEOUT_MS } from "../shared/constants";
+import { IntegrationAuthError } from "../shared/errors";
 
 const QUERY = `
 query Issue($id: String!) {
@@ -44,9 +45,7 @@ export async function fetchLinearIssue(
     throw new Error(`Linear: network error — ${(err as Error).message}`);
   }
 
-  if (resp.status === 401 || resp.status === 403) {
-    throw new Error("Linear: invalid or missing API key");
-  }
+  if (resp.status === 401 || resp.status === 403) throw new IntegrationAuthError("Linear");
   if (resp.status !== 200) {
     let detail = "";
     try { detail = ` — ${JSON.stringify(resp.json)}`; } catch { detail = ` — ${resp.text}`; }

@@ -6,6 +6,8 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { activateInlineEdit, activateTextareaEdit } from "./inline-edit";
 import { writeTestCardField, writeTestCardGauge } from "../shared/testcard-edit";
+import { Notice } from "obsidian";
+import { t } from "../i18n";
 
 const DEADLINE_KEY = "deadline";
 
@@ -65,7 +67,7 @@ function renderDeadline(
     valueEl.addEventListener("click", (e) => {
       e.stopPropagation();
       activateInlineEdit(valueEl, value, (next) => {
-        writeTestCardField(rc.app!, rc.ctx!, container, DEADLINE_KEY, next);
+        if (!writeTestCardField(rc.app!, rc.ctx!, container, DEADLINE_KEY, next)) new Notice(t("edit.writeFailed"));
       }, { shouldCommit: (v, cur) => v !== cur }); // allow clearing
     });
   }
@@ -93,7 +95,7 @@ function renderStep(
     fill.addEventListener("click", () => {
       activateTextareaEdit(fill, fill, step.text, (next) => {
         const canvas = fill.closest(".vizardry-canvas") as HTMLElement | null;
-        if (canvas) writeTestCardField(rc.app!, rc.ctx!, canvas, step.key, next);
+        if (!canvas || !writeTestCardField(rc.app!, rc.ctx!, canvas, step.key, next)) new Notice(t("edit.writeFailed"));
       }, {
         textareaClass: "vzd-tc-textarea",
         renderDisplay: (host, value) => renderFill(host, value, editable),
@@ -150,7 +152,7 @@ function renderGauge(
         level = (i === level) ? i - 1 : i; // clicking the top filled dot clears one
         paint();
         const canvas = dots.closest(".vizardry-canvas") as HTMLElement | null;
-        if (canvas) writeTestCardGauge(rc.app!, rc.ctx!, canvas, gauge.key, level);
+        if (!canvas || !writeTestCardGauge(rc.app!, rc.ctx!, canvas, gauge.key, level)) new Notice(t("edit.writeFailed"));
       });
     }
   }

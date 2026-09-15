@@ -1,5 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView, Notice } from "obsidian";
+import { Notice } from "obsidian";
 import { writeBlockContent, moveCardBetweenBlocks } from "../shared/block-edit";
 import { activateBlockEdit } from "./block-editor";
 import { renderInline } from "../shared/inline-markdown";
@@ -8,6 +8,7 @@ import { enableDragGesture, preserveScroll } from "../shared/drag-gesture";
 import { renderHeadingLink } from "./controls";
 import type { LinkResolver } from "../shared/links";
 import { t } from "../i18n";
+import { isEditModeActive } from "../shared/editor";
 
 /** A sibling drop-zone registered by the parent canvas (e.g. matrix cells). */
 export type CardDropTarget = { body: HTMLElement; blockLabel: string };
@@ -21,6 +22,20 @@ type DragState = {
   /** null = own body; otherwise a sibling body we're hovering over */
   activeDrop: CardDropTarget | null;
 };
+
+/**
+ * A deep clone of `card` for use as a drag ghost: buttons, links and
+ * `data-vzd-id` markers are stripped so the ghost carries no interactive
+ * chrome and never answers an id lookup meant for the real card.
+ */
+export function textOnlyClone(card: HTMLElement): DocumentFragment {
+  const clone = card.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll("button, a, [data-vzd-id]").forEach(el => el.remove());
+  clone.removeAttribute("data-vzd-id");
+  const frag = card.ownerDocument.createDocumentFragment();
+  while (clone.firstChild) frag.appendChild(clone.firstChild);
+  return frag;
+}
 
 export function renderCardBlock(
   body: HTMLElement,
@@ -41,7 +56,7 @@ export function renderCardBlock(
 
   const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
   const isEditMode = !!(app && ctx && container)
-    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+    && isEditModeActive(app);
 
   if (lines.length === 0) {
     body.addClass("vizardry-block-empty");
@@ -239,7 +254,8 @@ export function renderCardBlock(
         onEnd: () => endDrag(),
         onClick: () => {
           if (app && ctx && container) {
-            activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo);
+            activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo,
+              (b, c) => renderCardBlock(b, blockLabel, c, app, ctx, container, siblings, resolver, navigateTo));
           }
         },
       });
@@ -250,7 +266,8 @@ export function renderCardBlock(
   if (isEditMode && app && ctx && container) {
     body.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest(".vzd-card-block-card")) return;
-      activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo);
+      activateBlockEdit(body, blockLabel, body.dataset.blockContent ?? "", app, ctx, container, resolver, navigateTo,
+              (b, c) => renderCardBlock(b, blockLabel, c, app, ctx, container, siblings, resolver, navigateTo));
     });
   }
 }

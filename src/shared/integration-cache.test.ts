@@ -143,6 +143,16 @@ describe("IntegrationCache persistence", () => {
     );
   });
 
+  it("flush() settles the promise of a write it folds in, instead of orphaning it", async () => {
+    const { cache, plugin } = makeCache();
+    const pending = cache.setSummary("a", entry());
+    await cache.flush();
+    // Used to hang forever: flush cleared the timer without ever resolving.
+    await expect(Promise.race([pending, new Promise((_, r) => setTimeout(() => r(new Error("orphaned")), 200))]))
+      .resolves.toBeUndefined();
+    expect(plugin.saveData).toHaveBeenCalledTimes(1);
+  });
+
   it("flush() writes out a pending coalesced change immediately", async () => {
     const { cache, persisted } = makeCache();
     void cache.setSummary("a", entry());

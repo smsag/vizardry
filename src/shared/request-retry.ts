@@ -13,7 +13,16 @@ export interface RetryOptions {
   maxRetries?: number;
   /** Base delay (ms) for exponential backoff when no Retry-After header is present. Default 500. */
   baseDelayMs?: number;
+  /** Ceiling on any single wait, Retry-After included. Default 5 000 ms. */
+  maxDelayMs?: number;
+  /** Add up to MAX_JITTER_MS of random jitter to each wait. Default true. */
+  jitter?: boolean;
 }
+
+/** No single wait, whatever the server asked for, exceeds this. */
+export const MAX_RETRY_DELAY_MS = 5_000;
+/** Upper bound of the random jitter added to each wait. */
+export const MAX_JITTER_MS = 250;
 
 interface RetryableResponse {
   status: number;
@@ -49,12 +58,19 @@ export async function withRetry429<T extends RetryableResponse>(
 ): Promise<T> {
   const maxRetries = options.maxRetries ?? 2;
   const baseDelayMs = options.baseDelayMs ?? 500;
+  const maxDelayMs = options.maxDelayMs ?? MAX_RETRY_DELAY_MS;
 
   for (let attempt = 0; ; attempt++) {
     const resp = await fn();
     if (resp.status !== 429 || attempt >= maxRetries) return resp;
 
     const retryAfter = parseRetryAfterMs(headerValue(resp.headers, "retry-after"));
-    await sleep(retryAfter ?? baseDelayMs * Math.pow(2, attempt));
+    // Retry-After is honoured but capped: providers routinely answer with 30
+    // to 120 seconds, and a badge cannot sit on "Loading…" for that long. A
+    // small random jitter keeps the many keys of one canvas, all rate-limited
+    // together, from retrying in lock-step.
+    const wanted = retryAfter ?? baseDelayMs * Math.pow(2, attempt);
+    const jitter = options.jitter === false ? 0 : Math.random() * Math.min(baseDelayMs, MAX_JITTER_MS);
+    await sleep(Math.min(wanted, maxDelayMs) + jitter);
   }
 }

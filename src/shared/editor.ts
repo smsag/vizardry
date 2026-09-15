@@ -14,7 +14,11 @@ export type ResolvedEditor = {
  * Reading View as "preview".
  */
 export function isEditModeActive(app: App): boolean {
-  return app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+  // No active markdown view (hover preview, an export host, a sidebar) means
+  // no editor to write to — that used to read as "editable" because
+  // `undefined !== "preview"`.
+  const view = app.workspace.getActiveViewOfType(MarkdownView);
+  return !!view && view.getMode() !== "preview";
 }
 
 /**

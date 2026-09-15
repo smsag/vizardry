@@ -9,7 +9,7 @@ export function parseMindMap(source: string): MindMapResult {
   }
 
   const first = meaningful[0];
-  if (!first.text.startsWith("root:")) {
+  if (!first.text.toLowerCase().startsWith("root:")) {
     return { ok: false, error: `Line ${first.lineNum}: first line must be "root: <text>"` };
   }
   if (first.indent !== 0) {
@@ -22,7 +22,7 @@ export function parseMindMap(source: string): MindMapResult {
   }
 
   for (let i = 1; i < meaningful.length; i++) {
-    if (meaningful[i].indent === 0 && meaningful[i].text.startsWith("root:")) {
+    if (meaningful[i].indent === 0 && meaningful[i].text.toLowerCase().startsWith("root:")) {
       return { ok: false, error: `Line ${meaningful[i].lineNum}: duplicate "root:" — only one root is allowed` };
     }
   }

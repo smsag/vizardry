@@ -57,9 +57,17 @@ jobs:
 
       - name: Resolve and verify version
         id: ver
+        env:
+          # Passed through the environment, never interpolated into the script:
+          # a dispatch input is user text and would otherwise run as shell.
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          tag="${{ github.event.inputs.version }}"
+          tag="$INPUT_VERSION"
           if [ -z "$tag" ]; then tag="${GITHUB_REF#refs/tags/}"; fi
+          if ! [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$tag' is not a release version (expected MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
           mv=$(jq -r '.version' manifest.json)
           # the verify gate/docs-check already assert manifest==package and versions.json
           # coverage; this adds the check docs-check can't: the release tag itself.
@@ -76,29 +84,39 @@ jobs:
         run: npm run ext:build
 
       - name: Package extension
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
         run: |
           cd extension
-          zip -r "../vizardry-extension-${{ steps.ver.outputs.tag }}.zip" \
+          zip -r "../vizardry-extension-$TAG.zip" \
             manifest.json popup.html viewer.html styles.css \
             dist/ icons/
 
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          TARGET_SHA: ${{ github.sha }}
         run: |
-          tag="${{ steps.ver.outputs.tag }}"
+          tag="$TAG"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "::error::a release for '$tag' already exists — bump the version first"
             exit 1
           fi
-          notes_file="RELEASE_NOTES.md"
-          if [ ! -f "$notes_file" ]; then
-            notes_file=$(mktemp)
-            echo "Release $tag" > "$notes_file"
+          # Only this version's section of RELEASE_NOTES.md — the whole file
+          # (every release since 0.40) used to be attached to each release.
+          if ! grep -q "^## $tag\$" RELEASE_NOTES.md; then
+            echo "::error::RELEASE_NOTES.md has no '## $tag' section — write the notes before releasing"
+            exit 1
           fi
+          notes_file=$(mktemp)
+          awk -v tag="$tag" '
+            /^## / { if (found) exit; found = ($2 == tag); next }
+            found { print }
+          ' RELEASE_NOTES.md > "$notes_file"
           gh release create "$tag" \
             --title "$tag" \
-            --target "${{ github.sha }}" \
+            --target "$TARGET_SHA" \
             --notes-file "$notes_file" \
             main.js manifest.json styles.css \
             "vizardry-extension-$tag.zip"

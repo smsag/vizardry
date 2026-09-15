@@ -50,9 +50,9 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
 
   getViewType(): string { return VIZARDRY_VIEW_TYPE; }
   getDisplayText(): string { return t("sideleaf.title"); }
-  getIcon(): string { return VIZARDRY_ICON_ID; }
+  override getIcon(): string { return VIZARDRY_ICON_ID; }
 
-  onOpen(): Promise<void> {
+  override onOpen(): Promise<void> {
     const root = this.contentEl;
     root.empty();
     root.addClass("vzd-sideleaf");
@@ -77,7 +77,7 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
     return Promise.resolve();
   }
 
-  onClose(): Promise<void> {
+  override onClose(): Promise<void> {
     unregisterSideleafView(this);
     this.undo.discard();
     this.visibility?.disconnect();
@@ -201,11 +201,11 @@ export class VizardrySideleafView extends ItemView implements SideleafHost {
   // sessions. Only ids are stored: the content is re-fetched on restore, and
   // a persisted summary usually answers that from cache without a request.
 
-  getState(): Record<string, unknown> {
+  override getState(): Record<string, unknown> {
     return { cards: this.cardIds() };
   }
 
-  setState(state: unknown, result: unknown): Promise<void> {
+  override setState(state: unknown, result: unknown): Promise<void> {
     const ids = (state as SideleafState | null)?.cards;
     if (Array.isArray(ids)) {
       // Not clearAll(): restoring a workspace is not a removal the user made,

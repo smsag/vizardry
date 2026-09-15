@@ -34,6 +34,7 @@ export class IntegrationCache<StatusT, SummaryEntryT extends { summary: string; 
   private persistKey: string;
   private getUpdatedAt: (entry: SummaryEntryT) => string;
   private pendingPersist: Promise<void> | null = null;
+  private settlePending: { resolve: () => void; reject: (err: unknown) => void } | null = null;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(plugin: Plugin, persistKey: string, getUpdatedAt: (entry: SummaryEntryT) => string) {
@@ -152,21 +153,35 @@ export class IntegrationCache<StatusT, SummaryEntryT extends { summary: string; 
   private schedulePersist(): Promise<void> {
     if (this.pendingPersist) return this.pendingPersist;
     this.pendingPersist = new Promise<void>((resolve, reject) => {
+      this.settlePending = { resolve, reject };
       this.persistTimer = setTimeout(() => {
-        this.persistTimer = null;
-        this.pendingPersist = null;
-        this.persistNow().then(resolve, reject);
+        void this.runPending();
       }, PERSIST_COALESCE_MS);
     });
     return this.pendingPersist;
   }
 
-  /** Writes any coalesced changes out immediately. */
+  /** Runs the coalesced write now and settles every promise waiting on it. */
+  private runPending(): Promise<void> {
+    const settle = this.settlePending;
+    this.persistTimer = null;
+    this.pendingPersist = null;
+    this.settlePending = null;
+    const write = this.persistNow();
+    if (settle) write.then(settle.resolve, settle.reject);
+    return write;
+  }
+
+  /**
+   * Writes any coalesced changes out immediately. A pending coalesced write
+   * is folded into this one and its waiters are settled by it — they used to
+   * be orphaned, so a `setSummary()` awaited during the window never resolved.
+   */
   async flush(): Promise<void> {
     if (this.persistTimer !== null) {
       clearTimeout(this.persistTimer);
-      this.persistTimer = null;
-      this.pendingPersist = null;
+      await this.runPending();
+      return;
     }
     await this.persistNow();
   }

@@ -1,4 +1,4 @@
-import type { Heat, MatrixAxis, MatrixData, MatrixItem, MatrixPreset, MatrixResult } from "./types";
+import type { Heat, MatrixAxis, MatrixItem, MatrixPreset, MatrixResult } from "./types";
 import { PRESETS, resolveCells } from "./matrix-presets";
 
 const HEAT_LEVELS: readonly Heat[] = ["very-high", "high", "medium", "low"];
@@ -178,13 +178,14 @@ export function parseMatrix(source: string, presetOverride?: string): MatrixResu
     }
 
     if (lower.startsWith("item:")) {
+      const headerLine = i + 1;
       const res = parseItem(lines, i);
       warnings.push(...res.warnings);
       i = res.nextIdx;
       if (!res.item) continue;
       const key = res.item.label.toLowerCase();
       if (seenLabels.has(key)) {
-        warnings.push(`Line ${i + 1}: duplicate "item: ${res.item.label}" — later one skipped`);
+        warnings.push(`Line ${headerLine}: duplicate "item: ${res.item.label}" — later one skipped`);
         continue;
       }
       seenLabels.add(key);

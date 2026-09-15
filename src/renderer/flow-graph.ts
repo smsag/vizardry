@@ -100,7 +100,7 @@ function layout(spec: FlowSpec): { placed: Placed[]; width: number; height: numb
   if (alignRows) {
     // Uniform row height so card k of every column shares row k's y.
     const rowH = Math.max(1, ...nodes.map(n => cardHeight(n, editMode)));
-    presentStages.forEach((stage, colIdx) => {
+    presentStages.forEach((_stage, colIdx) => {
       const x = PAD + colIdx * (CARD_W + COL_GAP);
       colNodes[colIdx].forEach((node, k) => {
         const y = PAD + k * (rowH + CARD_GAP);
@@ -109,7 +109,7 @@ function layout(spec: FlowSpec): { placed: Placed[]; width: number; height: numb
       });
     });
   } else {
-    presentStages.forEach((stage, colIdx) => {
+    presentStages.forEach((_stage, colIdx) => {
       const x = PAD + colIdx * (CARD_W + COL_GAP);
       let y = PAD;
       for (const node of colNodes[colIdx]) {
@@ -160,7 +160,9 @@ function drawEdge(svg: SVGElement, from: Placed, to: Placed): void {
  * (no swapped-in textarea, no border, no reflow on entry), mirroring the canvas
  * title editor. Commits on Enter/blur, cancels on Escape.
  */
-function makeEditable(el: HTMLElement, initial: string, commit: (value: string) => void): void {
+function makeEditable(el: HTMLElement, initialText: string, commit: (value: string) => void): void {
+  // Tracks the last committed value so a later edit compares against it.
+  let initial = initialText;
   el.classList.add("vzd-flow-editable");
   el.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -177,20 +179,27 @@ function makeEditable(el: HTMLElement, initial: string, commit: (value: string) 
     sel?.removeAllRanges();
     sel?.addRange(range);
 
+    let finished = false;
     const finish = (save: boolean): void => {
+      // Enter commits and the later blur must not commit again: by then the
+      // widget has re-rendered and a second write hits a stale source.
+      if (finished) return;
+      finished = true;
       el.removeEventListener("keydown", onKey);
+      el.removeEventListener("blur", onBlur);
       el.removeAttribute("contenteditable");
       el.removeAttribute("spellcheck");
       const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-      if (save && text !== initial) { el.textContent = text; commit(text); }
+      if (save && text !== initial) { el.textContent = text; initial = text; commit(text); }
       else el.textContent = initial;
     };
     const onKey = (ev: KeyboardEvent): void => {
       if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
       else if (ev.key === "Escape") { ev.preventDefault(); finish(false); }
     };
+    const onBlur = (): void => finish(true);
     el.addEventListener("keydown", onKey);
-    el.addEventListener("blur", () => finish(true), { once: true });
+    el.addEventListener("blur", onBlur);
   });
 }
 

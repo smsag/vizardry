@@ -2,12 +2,10 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import type { NodeMapColor, NodeMapLineStyle, NodeMapLinkDirection } from "../types";
+import { escRe } from "./regex";
+import { uniqueName } from "./unique-name";
 
 /** Escapes a string for use inside a RegExp. */
-function escRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function findBoxLine(
   editor: { getLine: (line: number) => string },
   lineStart: number,
@@ -52,11 +50,7 @@ function resolveUniqueBoxName(
     const name = match[1].trim().toLowerCase();
     if (name) existingNames.add(name);
   }
-  const normalizedBase = baseName.trim() || "New Box";
-  if (!existingNames.has(normalizedBase.toLowerCase())) return normalizedBase;
-  let index = 2;
-  while (existingNames.has(`${normalizedBase} ${index}`.toLowerCase())) index++;
-  return `${normalizedBase} ${index}`;
+  return uniqueName(baseName.trim() || "New Box", existingNames);
 }
 
 interface ParsedLinkLine {
@@ -73,13 +67,17 @@ interface ParsedLinkLine {
  *  accepted, since this only round-trips already-valid source. */
 function parseLinkLine(rest: string): ParsedLinkLine | null {
   const trimmedRest = rest.trim();
+  // Same token order as the parser (nodemap.ts): "-->" before "->", or
+  // `link: A --> B` split at the second dash and every edit missed the link.
   const biIdx = trimmedRest.indexOf("<->");
+  const dblArrowIdx = trimmedRest.indexOf("-->");
   const dirIdx = trimmedRest.indexOf("->");
   const undirIdx = trimmedRest.indexOf("--");
   let direction: NodeMapLinkDirection;
   let tokenIdx: number;
   let tokenLen: number;
   if (biIdx !== -1) { direction = "bidirectional"; tokenIdx = biIdx; tokenLen = 3; }
+  else if (dblArrowIdx !== -1) { direction = "directed"; tokenIdx = dblArrowIdx; tokenLen = 3; }
   else if (dirIdx !== -1) { direction = "directed"; tokenIdx = dirIdx; tokenLen = 2; }
   else if (undirIdx !== -1) { direction = "undirected"; tokenIdx = undirIdx; tokenLen = 2; }
   else return null;

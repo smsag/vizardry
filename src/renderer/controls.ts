@@ -294,15 +294,24 @@ const SVG_CAPTURE_PROPS: readonly string[] = [
 function inlineSvgStyles(root: HTMLElement): () => void {
   const saved: Array<{ el: SVGElement; style: string | null }> = [];
   const win = ownerWindow(root);
+  // Read every computed value first, then write: interleaving a write with the
+  // next element's read invalidates inherited style for the subtree and forces
+  // a recalc per element — quadratic on a large Wardley or tree SVG.
+  const pending: Array<{ el: SVGElement; values: Array<[string, string]> }> = [];
   for (const el of Array.from(root.querySelectorAll<SVGElement>("svg, svg *"))) {
     // `style` is absent on a few SVG nodes (e.g. <title>); skip rather than throw.
     if (!el.style) continue;
-    saved.push({ el, style: el.getAttribute("style") });
     const computed = win.getComputedStyle(el);
+    const values: Array<[string, string]> = [];
     for (const prop of SVG_CAPTURE_PROPS) {
       const value = computed.getPropertyValue(prop);
-      if (value) el.style.setProperty(prop, value);
+      if (value) values.push([prop, value]);
     }
+    pending.push({ el, values });
+  }
+  for (const { el, values } of pending) {
+    saved.push({ el, style: el.getAttribute("style") });
+    for (const [prop, value] of values) el.style.setProperty(prop, value);
   }
   return () => {
     for (const { el, style } of saved) {
@@ -804,7 +813,7 @@ export function addHeaderControls(
         header: true,
       });
 
-      const filename = `${title}.png`;
+      const filename = `${safeFilename(title)}.png`;
 
       // Mobile WebViews (iOS/Android) ignore the <a download> attribute, so
       // hand the PNG to the system share sheet (Save to Photos/Files) via the
@@ -917,11 +926,29 @@ export function addHeaderControls(
   });
 }
 
+/** A title as a filename: path separators and reserved characters become "-". */
+export function safeFilename(title: string): string {
+  return title.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "-").replace(/^\.+/, "").trim() || "canvas";
+}
+
+/**
+ * The brief inline "could not save" notice tree-style canvases show under the
+ * canvas rather than as a modal Notice. Three renderers carried a copy each.
+ */
+export function showWriteFailedNotice(container: HTMLElement): void {
+  const notice = container.createEl("div", { cls: "vzd-tree-write-notice", text: t("tree.writeFailed") });
+  ownerWindow(container).setTimeout(() => notice.remove(), 3000);
+}
+
 function openPresentation(sourceContainer: HTMLElement, title: string): void {
   // Use the source container's own document — it may live in a pop-out
   // Obsidian window, and the overlay must render there, not in the main window.
   const doc = sourceContainer.ownerDocument;
   const overlay = doc.body.createEl("div", { cls: "vzd-presentation-overlay" });
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", title);
+  const previouslyFocused = doc.activeElement as HTMLElement | null;
 
   const pHeader = overlay.createEl("div", { cls: "vzd-presentation-header" });
   pHeader.createEl("span", { text: title, cls: "vzd-presentation-title" });
@@ -941,7 +968,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, venn, ost, mindmap, impact
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-fishbone-wrap, .vzd-sipoc-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-matrix-wrap, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-fishbone-wrap, .vzd-sipoc-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-mx-wrap, .vzd-cmap-wrap, .vzd-tc, .vzd-compass, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap"
     );
     if (!contentEl) return;
 
@@ -971,9 +998,14 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   const dismiss = (): void => {
     overlay.remove();
     doc.removeEventListener("keydown", onKeyDown);
+    // Hand focus back to where the presentation was opened from.
+    if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
   };
 
   closeBtn.addEventListener("click", dismiss);
+  // Move focus into the dialog so keyboard and screen-reader users are not
+  // left on the page hidden behind it.
+  closeBtn.focus({ preventScroll: true });
 
   const onKeyDown = (e: KeyboardEvent): void => { if (e.key === "Escape") dismiss(); };
   doc.addEventListener("keydown", onKeyDown);

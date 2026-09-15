@@ -92,6 +92,9 @@ function ensureFullWidthWatchers(canvasEl: HTMLElement, container: HTMLElement |
 }
 
 export function applyFullWidth(canvasEl: HTMLElement): void {
+  // Scheduled in a rAF: Live Preview can replace the canvas before the frame,
+  // and installing watchers for a detached element would only leak them.
+  if (!canvasEl.isConnected) return;
   const isEditView = !!canvasEl.closest(".cm-editor");
   const container = findWorkspaceContainer(canvasEl);
 

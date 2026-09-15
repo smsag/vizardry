@@ -1,11 +1,17 @@
 import { getLinearService } from "../linear";
-import { enrichKeys, attachKeyTrigger } from "./key-enrichment";
+import { enrichKeys, createKeyBadge } from "./key-enrichment";
 import type { TicketRef } from "../sideleaf/types";
 
 // Matches LINEAR-style identifiers like CORE-1234, PSINT-42, ENG-9999
 export const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
 
+const CLS = "vzd-linear-key";
 const ref = (key: string): TicketRef => ({ service: "linear", key });
+const isEnabled = (): boolean => !!getLinearService()?.isEnabled();
+
+function badge(doc: Document, key: string): HTMLElement {
+  return createKeyBadge(doc, { cls: CLS, service: "Linear", ref: ref(key), isEnabled });
+}
 
 /**
  * Scans `container` for Linear issue keys in text nodes and replaces each
@@ -14,14 +20,7 @@ const ref = (key: string): TicketRef => ({ service: "linear", key });
  * enriched keys are skipped.
  */
 export function enrichLinearKeys(container: HTMLElement): void {
-  enrichKeys(container, LINEAR_KEY_RE, "vzd-linear-key", (doc, key) => {
-    const btn = doc.createElement("button");
-    btn.className = "vzd-linear-key";
-    btn.textContent = key;
-    btn.setAttribute("aria-label", `Linear: ${key}`);
-    attachTrigger(btn, key);
-    return btn;
-  });
+  enrichKeys(container, LINEAR_KEY_RE, CLS, badge);
 }
 
 /**
@@ -34,12 +33,6 @@ export function enrichLinearKeys(container: HTMLElement): void {
  * badge that can't do anything when clicked.
  */
 export function renderLinearKeyBadge(parent: HTMLElement, key: string): void {
-  if (!getLinearService()?.isEnabled()) return;
-  const btn = parent.createEl("button", { cls: "vzd-linear-key", text: key });
-  btn.setAttribute("aria-label", `Linear: ${key}`);
-  attachTrigger(btn, key);
-}
-
-function attachTrigger(btn: HTMLElement, key: string): void {
-  attachKeyTrigger(btn, ref(key), () => !!getLinearService()?.isEnabled());
+  if (!isEnabled()) return;
+  parent.appendChild(badge(parent.ownerDocument, key));
 }

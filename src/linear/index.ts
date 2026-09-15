@@ -8,6 +8,7 @@ import { LinearCache } from "./cache";
 import type { LinearIssue, LinearState } from "./types";
 import { dedupe, createOnceGate } from "../shared/inflight";
 import { t } from "../i18n";
+import { IntegrationAuthError } from "../shared/errors";
 
 // ── Module-level singleton ──────────────────────────────────────────────────
 
@@ -61,6 +62,17 @@ class LinearService {
   readonly cache: LinearCache;
   private inflightIssue = new Map<string, Promise<LinearIssue>>();
   private inflightSummary = new Map<string, Promise<LinearSummary | { error: string } | null>>();
+
+  /**
+   * Forgets everything fetched so far: the persisted cache *and* the requests
+   * still in flight. Called when the credentials or base URL change — a fetch
+   * started against the old workspace must not land in the cleared cache.
+   */
+  async reset(): Promise<void> {
+    this.inflightIssue.clear();
+    this.inflightSummary.clear();
+    await this.cache.clearAndPersist();
+  }
 
   constructor(plugin: Plugin & { app: App; settings: PluginSettings }) {
     this.plugin = plugin;
@@ -182,7 +194,7 @@ class LinearService {
       } catch (err) {
         const msg = errorMessage(err);
         console.warn(`Vizardry: LinearService.getSummary("${issueKey}")`, err);
-        if (msg.toLowerCase().includes("invalid or missing api key") && authNotice.fire()) {
+        if (err instanceof IntegrationAuthError && authNotice.fire()) {
           new Notice(t("service.notice.linearAuth"), 8000);
         }
         return { error: msg };

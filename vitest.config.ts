@@ -29,11 +29,13 @@ export default defineConfig({
       // Thresholds reflect the reality that renderers require the Obsidian
       // runtime and cannot be fully exercised in unit tests. Parser and
       // shared-utility code is held to higher standards.
+      // Held two points under what the suite achieves so a deleted test fails
+      // CI instead of quietly lowering the bar; raise them as coverage grows.
       thresholds: {
-        statements: 58,
-        branches:   54,
-        functions:  44,
-        lines:      60,
+        statements: 67,
+        branches:   60,
+        functions:  57,
+        lines:      70,
       },
     },
   },

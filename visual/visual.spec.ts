@@ -37,9 +37,11 @@ test("canvases render as expected", async ({ page }, testInfo) => {
   await page.waitForSelector("body[data-ready]");
   expect(errors, `page errors:\n${errors.join("\n")}`).toEqual([]);
 
+  // `expect.soft`: one mismatched fixture must not hide the others — a PR that
+  // breaks five canvases used to report one.
   for (const name of mobile ? MOBILE : ALL) {
     const el = page.locator(`[data-fixture="${name}"]`);
-    await expect(el).toHaveScreenshot(`${name}.png`);
+    await expect.soft(el).toHaveScreenshot(`${name}.png`);
   }
 });
 
@@ -60,7 +62,7 @@ test("canvases render in sketch mode", async ({ page }, testInfo) => {
 
   for (const name of SKETCH) {
     const el = page.locator(`[data-fixture="${name}"]`);
-    await expect(el).toHaveScreenshot(`${name}-sketch.png`);
+    await expect.soft(el).toHaveScreenshot(`${name}-sketch.png`);
   }
 });
 
@@ -85,7 +87,7 @@ test("dark vault: a canvas renders dark, and a forced-light capture does not", a
 
     for (const name of FORCED_LIGHT) {
       const el = page.locator(`[data-fixture="${name}"]`);
-      await expect(el).toHaveScreenshot(`${name}-${suffix}.png`);
+      await expect.soft(el).toHaveScreenshot(`${name}-${suffix}.png`);
     }
   }
 });

@@ -58,7 +58,7 @@ export function parseProblem(source: string, variant?: string): FlowResult {
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(lines[i])) continue;
     const lineNum = i + 1;
 
     const colon = trimmed.indexOf(":");

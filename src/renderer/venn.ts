@@ -1,6 +1,5 @@
-import type { VennDiagram, VennItem } from "../types";
+import type { VennDiagram } from "../types";
 import type { RenderContext } from "./render-context";
-import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { initCanvas, markInteractive } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
@@ -107,8 +106,14 @@ export function renderVennDiagram(
   // Count Venn diagrams already rendered in the same workspace leaf to derive
   // the palette rotation. Scoped to the leaf so that diagrams in other open
   // panes don't affect the colour assignment in this one.
+  // Counted in document order among the diagrams *preceding* this one, so a
+  // previous render of this same block still in the DOM (Live Preview swaps
+  // them) or a sticky-pinned clone cannot rotate the colours between renders.
   const leaf = container.closest(".workspace-leaf-content") ?? container.ownerDocument.body;
-  const diagramIdx = leaf.querySelectorAll(".vzd-venn-wrap").length;
+  const diagramIdx = Array.from(leaf.querySelectorAll(".vizardry-canvas[data-framework=\"venn\"]"))
+    .filter(el => el !== container && !el.classList.contains("vizardry-canvas--pinned")
+      && (el.compareDocumentPosition(container) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)
+    .length;
 
   // ── Accent palette ────────────────────────────────────────────────────
   const [accentH, accentS, accentL] = getAccentHsl(container);

@@ -13,10 +13,20 @@
  * Obsidian runtime never overrides the host's implementations.
  */
 
+/** Mirrors Obsidian's DomElementInfo (obsidian.d.ts). Every key the real API
+ *  accepts is honoured here, so a renderer using `type:` or `href:` renders
+ *  the same DOM in the extension and the tests as it does in Obsidian. */
 type CreateElOptions = {
   cls?: string | string[];
-  text?: string;
-  attr?: Record<string, string>;
+  text?: string | DocumentFragment;
+  attr?: Record<string, string | number | boolean | null>;
+  title?: string;
+  parent?: Node;
+  value?: string;
+  type?: string;
+  prepend?: boolean;
+  placeholder?: string;
+  href?: string;
 };
 
 // ── HTMLElement extensions ────────────────────────────────────────────────────
@@ -26,26 +36,43 @@ const polyfill = {
   createEl<K extends keyof HTMLElementTagNameMap>(
     this: HTMLElement,
     tag: K,
-    options?: CreateElOptions,
+    options?: CreateElOptions | string,
+    callback?: (el: HTMLElementTagNameMap[K]) => void,
   ): HTMLElementTagNameMap[K] {
-    const el = document.createElement(tag);
-    if (options?.cls) {
-      const classes = Array.isArray(options.cls) ? options.cls : options.cls.split(" ");
+    const o: CreateElOptions | undefined = typeof options === "string" ? { cls: options } : options;
+    const el = this.ownerDocument.createElement(tag) as HTMLElementTagNameMap[K];
+    if (o?.cls) {
+      const classes = Array.isArray(o.cls) ? o.cls : o.cls.split(" ");
       el.classList.add(...classes.filter(Boolean));
     }
-    if (options?.text) el.textContent = options.text;
-    if (options?.attr) {
-      for (const [k, v] of Object.entries(options.attr)) el.setAttribute(k, v);
+    if (o?.text !== undefined) {
+      if (typeof o.text === "string") el.textContent = o.text;
+      else el.appendChild(o.text);
     }
-    this.appendChild(el);
-    return el as HTMLElementTagNameMap[K];
+    if (o?.attr) {
+      for (const [k, v] of Object.entries(o.attr)) {
+        if (v === null || v === undefined) el.removeAttribute(k);
+        else el.setAttribute(k, String(v));
+      }
+    }
+    if (o?.title !== undefined) el.title = o.title;
+    if (o?.value !== undefined) (el as unknown as { value: string }).value = o.value;
+    if (o?.type !== undefined) el.setAttribute("type", o.type);
+    if (o?.placeholder !== undefined) el.setAttribute("placeholder", o.placeholder);
+    if (o?.href !== undefined) el.setAttribute("href", o.href);
+    const parent = o?.parent ?? this;
+    if (o?.prepend) parent.insertBefore(el, parent.firstChild);
+    else parent.appendChild(el);
+    callback?.(el);
+    return el;
   },
 
-  createDiv(
-    this: HTMLElement,
-    options?: CreateElOptions | string,
-  ): HTMLDivElement {
-    return this.createEl("div", typeof options === "string" ? { cls: options } : options);
+  createDiv(this: HTMLElement, options?: CreateElOptions | string, callback?: (el: HTMLDivElement) => void): HTMLDivElement {
+    return this.createEl("div", options, callback);
+  },
+
+  createSpan(this: HTMLElement, options?: CreateElOptions | string, callback?: (el: HTMLSpanElement) => void): HTMLSpanElement {
+    return this.createEl("span", options, callback);
   },
 
   addClass(this: HTMLElement, ...cls: string[]): HTMLElement {

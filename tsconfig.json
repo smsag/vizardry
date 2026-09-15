@@ -1,16 +1,18 @@
 {
   "compilerOptions": {
-    "inlineSourceMap": true,
-    "inlineSources": true,
     "module": "ESNext",
-    "target": "ES6",
+    "target": "ES2020",
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
-    "importHelpers": true,
     "isolatedModules": true,
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
     "skipLibCheck": true,
-    "lib": ["ES2019", "DOM"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "noEmit": true
   },
   "include": ["src/**/*.ts"]

@@ -8,6 +8,7 @@ import { UpvotyCache } from "./cache";
 import type { UpvotyPost } from "./types";
 import { dedupe, createOnceGate } from "../shared/inflight";
 import { t } from "../i18n";
+import { IntegrationAuthError } from "../shared/errors";
 
 // ── Module-level singleton ───────────────────────────────────────────────────
 
@@ -44,6 +45,13 @@ class UpvotyService {
   readonly cache: UpvotyCache;
   private inflightSummary = new Map<string, Promise<{ post: UpvotyPost; summary: string } | { error: string } | null>>();
   private inflightPost = new Map<string, Promise<UpvotyPost>>();
+
+  /** See LinearService.reset: drops cache and in-flight requests together. */
+  async reset(): Promise<void> {
+    this.inflightSummary.clear();
+    this.inflightPost.clear();
+    await this.cache.clearAndPersist();
+  }
 
   constructor(plugin: Plugin & { app: App; settings: PluginSettings }) {
     this.plugin = plugin;
@@ -128,6 +136,7 @@ class UpvotyService {
       try {
         [upvotyApiKey, llmApiKey] = await Promise.all([this.getUpvotyApiKey(), this.getLlmApiKey()]);
       } catch (err) {
+        console.warn("Vizardry: getSummary — key loading threw", err);
         return { error: t("service.error.keyLookupFailed", { message: errorMessage(err) }) };
       }
 
@@ -161,7 +170,7 @@ class UpvotyService {
       } catch (err) {
         const msg = errorMessage(err);
         console.warn(`Vizardry: UpvotyService.getSummary("${postId}")`, err);
-        if (msg.toLowerCase().includes("invalid or missing api key") && authNotice.fire()) {
+        if (err instanceof IntegrationAuthError && authNotice.fire()) {
           new Notice(t("service.notice.upvotyAuth"), 8000);
         }
         return { error: msg };

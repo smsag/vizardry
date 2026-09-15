@@ -1,5 +1,5 @@
 import type { Editor, MarkdownPostProcessorContext } from "obsidian";
-import { addIcon, MarkdownView, Notice, Platform, Plugin } from "obsidian";
+import { addIcon, MarkdownView, Notice, Plugin } from "obsidian";
 import { VizardrySettingTab } from "./settings";
 import { normalizeSettings, serializeSettings } from "./settings-schema";
 import type { PluginSettings } from "./settings-schema";
@@ -30,7 +30,7 @@ import { t } from "./i18n";
 export default class VizardryPlugin extends Plugin {
   // A fresh normalized object, never the shared frozen DEFAULT_SETTINGS —
   // the settings tab mutates this in place.
-  settings: PluginSettings = normalizeSettings({});
+  override settings: PluginSettings = normalizeSettings({});
   // Per-file debounce timers for the heading-change relink pass. An instance
   // field (not a local in onload()) so onunload() can cancel any still
   // pending when the plugin is disabled/reloaded — otherwise a timer
@@ -71,7 +71,7 @@ export default class VizardryPlugin extends Plugin {
   /** The save-failure Notice is shown once per session, not per keystroke. */
   private saveFailureShown = false;
 
-  async onload(): Promise<void> {
+  override async onload(): Promise<void> {
     const rawData = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     // Coerced and clamped rather than spread: data.json is user-editable and
     // also carries the cache blobs, neither of which belong in settings.
@@ -241,7 +241,7 @@ export default class VizardryPlugin extends Plugin {
     for (const doc of this.sketchDocuments()) this.applySketchToDoc(doc);
   }
 
-  onunload(): void {
+  override onunload(): void {
     this.api = null;
     delete document.body.dataset.vizardryVersion;
     for (const timer of this.relinkTimers.values()) clearTimeout(timer);

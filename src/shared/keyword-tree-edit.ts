@@ -27,6 +27,7 @@ import {
   editorWrite,
 } from "./tree-editor-access";
 import type { Editor } from "obsidian";
+import { uniqueName } from "./unique-name";
 
 export interface KeywordTreeConfig {
   /** Canonical keyword for each level, 0-indexed (e.g. {0: "effect", 1:
@@ -188,12 +189,7 @@ export function addKeywordTreeChild(
       }
     }
   }
-  let childText = newChildText;
-  if (existingTexts.has(childText.toLowerCase())) {
-    let idx = 2;
-    while (existingTexts.has(`${childText} ${idx}`.toLowerCase())) idx++;
-    childText = `${childText} ${idx}`;
-  }
+  const childText = uniqueName(newChildText, existingTexts);
 
   editorWrite(() => editor.replaceRange(
     `${childIndentStr}${childKeyword}: ${childText}\n`,

@@ -4,14 +4,11 @@ import type { JourneyLaneKey } from "../types";
 import { JOURNEY_LANE_CONFIG } from "../journey";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { escRe } from "./regex";
 
 const LANE_KEYS = JOURNEY_LANE_CONFIG.map(l => l.key);
 
 /** Escapes a string for safe use inside a RegExp. */
-function escRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 interface PhaseLaneLine {
   line: number;
   key: JourneyLaneKey;

@@ -1,9 +1,8 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
-import { initCanvas, renderCanvasWarnings } from "./controls";
+import { initCanvas, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { renderTree } from "./tree";
 import { adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions } from "./tree-adapters";
-import type { LinkResolver } from "../shared/links";
 import { NULL_RESOLVER } from "../shared/links";
 import type { RenderContext } from "./render-context";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -46,7 +45,7 @@ export function renderMindMap(
     : undefined;
   initCanvas(container, "mindmap", title, undefined, source, onTitleEdit, app, ctx);
 
-  const editHandlers = isEditMode ? makeMindMapHandlers(app!, ctx!, container, map, resolver, navigateTo, source) : undefined;
+  const editHandlers = isEditMode ? makeMindMapHandlers(app!, ctx!, container) : undefined;
   renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container, resolver, navigateTo, editHandlers);
 }
 
@@ -54,10 +53,6 @@ function makeMindMapHandlers(
   app: App,
   ctx: MarkdownPostProcessorContext,
   container: HTMLElement,
-  map: MindMap,
-  resolver: LinkResolver,
-  navigateTo: ((h: string) => void) | undefined,
-  source: string | undefined,
 ): TreeEditHandlers {
   return {
     onRename(node: TreeNode, newText: string): void {
@@ -186,11 +181,3 @@ function makeOSTHandlers(
 
 // ── Shared ────────────────────────────────────────────────────────────────────
 
-function showWriteFailedNotice(container: HTMLElement): void {
-  // Show a brief inline notice rather than a modal — less disruptive.
-  const notice = container.createEl("div", {
-    cls: "vzd-tree-write-notice",
-    text: t("tree.writeFailed"),
-  });
-  setTimeout(() => notice.remove(), 3000);
-}

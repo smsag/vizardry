@@ -1891,6 +1891,19 @@ A missing API means Vizardry is absent, disabled, or too old — callers fall ba
 
 ---
 
+## The Vizardry sideleaf
+
+Linear and Upvoty keys in a note (`CORE-1234`, `UPV-…`) render as small badges. Clicking one opens a **card** for that ticket in the Vizardry sideleaf, a panel in the right sidebar: title, status, assignee or votes, and an AI summary of the latest comments when an AI key is configured. One ticket is one card however many notes mention it, and every badge for an open card lights up together.
+
+- Cards stay until you close them, and survive a restart (only the key is stored; content is re-fetched, usually from cache).
+- Each card has a `⋯` menu: refresh, copy the key, remove the card. On a phone, swipe a card aside to remove it; **Undo** is offered for a few seconds.
+- **Clear all** empties the panel, also with undo.
+- The command **Open the Vizardry sideleaf** brings the panel back after the sidebar was collapsed.
+
+Both integrations are opt-in under **Settings → Vizardry**; keys are stored in Obsidian's own keychain, never in the plugin's data file.
+
+---
+
 ## Presentation mode
 
 Each canvas has an **expand icon** in its title bar. Tapping it opens a full-screen overlay — useful when presenting from your notes or mirroring to an external display.

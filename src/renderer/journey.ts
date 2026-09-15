@@ -1,9 +1,7 @@
 import { setIcon } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import type { JourneyCard, JourneyData, JourneyLaneKey } from "../types";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
-import type { LinkResolver } from "../shared/links";
 import type { RenderContext } from "./render-context";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
@@ -13,6 +11,8 @@ import { t } from "../i18n";
 import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { JOURNEY_DIVIDERS, lanesForVariant } from "../journey";
+import { isEditModeActive } from "../shared/editor";
+import { textOnlyClone } from "./card-block";
 import {
   addJourneyCard,
   deleteJourneyCard,
@@ -30,11 +30,11 @@ export function renderJourneyMap(
 ): void {
   const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && source !== undefined)
-    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+    && isEditModeActive(app);
   const defaultTitle = data.variant === "blueprint" ? "Service Blueprint" : "Customer Journey Map";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (app && ctx && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app, ctx, container, newTitle, defaultTitle)
+  const onTitleEdit = isEditMode
+    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
     : undefined;
   const doc = container.ownerDocument;
   const win = ownerWindow(container);
@@ -175,7 +175,9 @@ export function renderJourneyMap(
     const rect = card.getBoundingClientRect();
     const ghost = doc.body.createEl("div", { cls: "vzd-journey-card vzd-journey-card--ghost" });
     ghost.style.width = `${rect.width}px`;
-    ghost.innerHTML = card.innerHTML;
+    // Text only: a clone with the card's buttons and data-vzd-id markers made
+    // the ghost a second target for id lookups mid-drag.
+    ghost.appendChild(textOnlyClone(card));
     ghost.style.left = `${clientX + 8}px`;
     ghost.style.top = `${clientY + 8}px`;
 

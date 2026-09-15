@@ -139,8 +139,11 @@ export function resolveExportOptions(options?: VizardryExportOptions): CaptureOp
 }
 
 export function getCanvases(root: HTMLElement): HTMLElement[] {
-  const found = root.classList.contains(CANVAS_CLASS) ? [root] : [];
-  return found.concat(Array.from(root.querySelectorAll<HTMLElement>(`.${CANVAS_CLASS}`)));
+  // The sticky pin keeps a clone of a canvas in the view; it is the same
+  // canvas twice, not a second one, so an exporter must not capture it.
+  const isReal = (el: HTMLElement): boolean => !el.classList.contains("vizardry-canvas--pinned");
+  const found = root.classList.contains(CANVAS_CLASS) && isReal(root) ? [root] : [];
+  return found.concat(Array.from(root.querySelectorAll<HTMLElement>(`.${CANVAS_CLASS}`)).filter(isReal));
 }
 
 export async function exportCanvas(

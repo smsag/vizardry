@@ -1,4 +1,4 @@
-import type { RoadmapColumn, RoadmapData, RoadmapItem, RoadmapResult } from "./types";
+import type { RoadmapColumn, RoadmapItem, RoadmapResult } from "./types";
 import { isSkippableLine } from "./shared/indent-tree";
 
 const COLUMN_IDS = ["now", "next", "later"] as const;
@@ -15,7 +15,7 @@ export function parseRoadmap(source: string): RoadmapResult {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const trimmed = raw.trim();
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
     const indent = raw.search(/\S/);
 

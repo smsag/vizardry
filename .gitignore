@@ -25,6 +25,7 @@ docs/*
 # …except the public docs that ship with the plugin.
 !docs/vizardry-canvas-syntax-reference.md
 !docs/vizardry-llm-cheatsheet.md
+!docs/vizardry-export-api.md
 
 # Environment & secrets
 .env

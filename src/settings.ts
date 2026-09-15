@@ -54,7 +54,7 @@ class SecretPickerModal extends Modal {
     this.onSelect = onSelect;
   }
 
-  onOpen(): void {
+  override onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("vzd-secret-picker");
@@ -148,7 +148,7 @@ class SecretPickerModal extends Modal {
     cancelBtn.addEventListener("click", () => this.close());
   }
 
-  onClose(): void {
+  override onClose(): void {
     this.contentEl.empty();
   }
 }
@@ -293,7 +293,7 @@ export class VizardrySettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
+  override display(): void {
     const { containerEl } = this;
     containerEl.empty();
 
@@ -304,7 +304,7 @@ export class VizardrySettingTab extends PluginSettingTab {
 
     const debouncedSaveAndClearLinear = debounce(() => {
       void this.plugin.saveSettings();
-      void getLinearService()?.cache.clearAndPersist();
+      void getLinearService()?.reset();
     }, 300);
 
     const debouncedSave = debounce(() => {
@@ -313,7 +313,7 @@ export class VizardrySettingTab extends PluginSettingTab {
 
     const debouncedSaveAndClearUpvoty = debounce(() => {
       void this.plugin.saveSettings();
-      void getUpvotyService()?.cache.clearAndPersist();
+      void getUpvotyService()?.reset();
     }, 300);
 
     // ── Appearance ─────────────────────────────────────────────────────────────
@@ -372,7 +372,7 @@ export class VizardrySettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
         // Different credentials can point at a different Linear workspace —
         // stale cached titles/summaries from the old one must not linger.
-        void getLinearService()?.cache.clearAndPersist();
+        void getLinearService()?.reset();
       },
     );
 
@@ -482,7 +482,7 @@ export class VizardrySettingTab extends PluginSettingTab {
         btn
           .setButtonText(t("settings.clearCache.button"))
           .onClick(async () => {
-            await getLinearService()?.cache.clearAndPersist();
+            await getLinearService()?.reset();
             new Notice(t("settings.clearCache.linear.done"));
           }),
       );
@@ -514,7 +514,7 @@ export class VizardrySettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
         // Different credentials can point at a different Upvoty board —
         // stale cached titles/summaries from the old one must not linger.
-        void getUpvotyService()?.cache.clearAndPersist();
+        void getUpvotyService()?.reset();
       },
     );
 
@@ -578,7 +578,7 @@ export class VizardrySettingTab extends PluginSettingTab {
         btn
           .setButtonText(t("settings.clearCache.button"))
           .onClick(async () => {
-            await getUpvotyService()?.cache.clearAndPersist();
+            await getUpvotyService()?.reset();
             new Notice(t("settings.clearCache.upvoty.done"));
           }),
       );

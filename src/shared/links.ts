@@ -114,8 +114,12 @@ export function extractInlineLinks(source: string): {
   // Groups: (indent)(keyword: )(label text) [[#Heading]]
   // Splitting indent and keyword into separate groups lets us rebuild the full
   // line correctly while still deriving the map key from the label alone.
-  // [ \t]* (not \s*) before the annotation prevents crossing line boundaries.
-  const WIKI_RE = /^([ \t]*)([a-z_-]+:[ \t]*)(.*?)[ \t]*\[\[#([^\]]+)\]\][ \t]*$/gm;
+  // The keyword group takes at most one space and the label is not followed
+  // by its own whitespace run: three adjacent overlapping quantifiers before
+  // the annotation backtracked cubically (a keyword line with a few thousand
+  // spaces and an unclosed `[[` froze the UI for seconds). The label is
+  // trimmed in JS instead.
+  const WIKI_RE = /^([ \t]*)([a-z_-]+:[ \t]?)(.*?)\[\[#([^\]]+)\]\][ \t]*$/gm;
   let strippedSource = source.replace(WIKI_RE, (_m, indent, keyword, label, heading) => {
     const key = label.trim().toLowerCase();
     if (key) inlineLinks[key] = heading.trim();
@@ -125,7 +129,7 @@ export function extractInlineLinks(source: string): {
   // 2. Markdown link style: [text](target) — target is classified by shape
   // (heading anchor, ticket key, or left untouched). Same group structure as
   // WIKI_RE.
-  const MD_RE = /^([ \t]*)([a-z_-]+:[ \t]*)(.*?)[ \t]*\[[^\]]*\]\(([^)]+)\)[ \t]*$/gm;
+  const MD_RE = /^([ \t]*)([a-z_-]+:[ \t]?)(.*?)\[[^\]]*\]\(([^)]+)\)[ \t]*$/gm;
   strippedSource = strippedSource.replace(MD_RE, (m, indent, keyword, label, rawTarget) => {
     const key = label.trim().toLowerCase();
     const target = rawTarget.trim();
@@ -156,7 +160,9 @@ export function extractInlineLinks(source: string): {
   // 3 & 4. Same two styles for lines WITHOUT a keyword prefix (e.g. OST/Mind Map child nodes).
   // Only processes when there is label text before the annotation — a bare link like
   // `  [text](#anchor)` with no preceding label is left untouched (key would be empty).
-  const WIKI_RE_NK = /^([ \t]*)(.*?)[ \t]*\[\[#([^\]]+)\]\][ \t]*$/gm;
+  // `\S.*?` (label must start with a non-space) keeps the indent group and
+  // the label from competing for the same whitespace — see WIKI_RE.
+  const WIKI_RE_NK = /^([ \t]*)(\S.*?)\[\[#([^\]]+)\]\][ \t]*$/gm;
   strippedSource = strippedSource.replace(WIKI_RE_NK, (m, indent, label, heading) => {
     const key = label.trim().toLowerCase();
     if (!key) return m;
@@ -164,7 +170,7 @@ export function extractInlineLinks(source: string): {
     return indent + label.trim();
   });
 
-  const MD_RE_NK = /^([ \t]*)(.*?)[ \t]*\[[^\]]*\]\(([^)]+)\)[ \t]*$/gm;
+  const MD_RE_NK = /^([ \t]*)(\S.*?)\[[^\]]*\]\(([^)]+)\)[ \t]*$/gm;
   strippedSource = strippedSource.replace(MD_RE_NK, (m, indent, label, rawTarget) => {
     const key = label.trim().toLowerCase();
     if (!key) return m;

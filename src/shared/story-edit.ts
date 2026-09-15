@@ -2,12 +2,10 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { Notice } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { escRe } from "./regex";
+import { uniqueName } from "./unique-name";
 
 /** Escapes a string for safe use inside a RegExp. */
-function escRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 interface StepBlock {
   stepLine: number;
   stepIndent: number;
@@ -107,18 +105,13 @@ export function addStoryTask(
     }
   }
 
-  let uniqueName = taskName.trim() || "New Task";
-  if (existingTasks.has(uniqueName.toLowerCase())) {
-    let idx = 2;
-    while (existingTasks.has(`${uniqueName} ${idx}`.toLowerCase())) idx++;
-    uniqueName = `${uniqueName} ${idx}`;
-  }
+  const newTaskName = uniqueName(taskName.trim() || "New Task", existingTasks);
 
   const insertAfter = lastTaskLine !== -1 ? lastTaskLine : stepLine;
   const insertLine = editor.getLine(insertAfter);
   editorWrite(() => {
     editor.replaceRange(
-      `\n${taskIndentStr}task: ${uniqueName}`,
+      `\n${taskIndentStr}task: ${newTaskName}`,
       { line: insertAfter, ch: insertLine.length },
     );
   }, el);

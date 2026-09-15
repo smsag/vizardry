@@ -135,7 +135,6 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
 const LANE_PAD_X = 14;
 const LANE_PAD_TOP = 11;
 const LANE_PAD_BOTTOM = 12;
-const LANE_CAPTION_SIZE = 11;
 const LANE_CAPTION_BASE = 11;   // baseline offset from the caption block top
 const LANE_CAPTION_H = 17;      // caption line box incl. small gap below it
 const LANE_LABEL_SIZE = 13.5;
@@ -800,25 +799,17 @@ export function renderTree(
   const renameState: RenameState = { fo: null };
   const closeRename = (): void => { renameState.fo?.remove(); renameState.fo = null; };
 
-  // Clicking the SVG background dismisses any open inline rename
-  svg.addEventListener("click", closeRename);
+  // Clicking the SVG background dismisses any open inline rename — but a click
+  // inside the rename input (it lives in a <foreignObject> of this SVG) is the
+  // user placing the caret, not dismissing the edit.
+  svg.addEventListener("click", (e) => {
+    if (renameState.fo?.contains(e.target as Node)) return;
+    closeRename();
+  });
 
   if (isLanes && laneLayout) renderLaneBands(svg, opts, laneLayout, svgW);
   renderTreeEdges(tree.root, svg, opts, direction);
   renderTreeNodes(tree.root, svg, opts, resolver, navigateTo, editHandlers, renameState, closeRename, direction);
   wrapper.appendChild(svg);
 }
-
-// -- Level-style configs -----------------------------------------------------
-//
-// Impact Map / Mind Map / Fishbone / SCQA share one visual language:
-//   Level 0 -- accent fill (root / goal / outcome)
-//   Level 1 -- hover-bg + left accent bar (main branches)
-//   Level 2 -- secondary-bg, solid, r=6 (sub-branches)
-//   Level 3 -- secondary-bg, dashed pill, muted text (leaves / hypotheses)
-//
-// OST and SCQA/SCR break away into the swim-lane style (see laneTreeOptions):
-// outlined boxes coloured per lane, wrapped text, italic captions, chevron
-// bullets. The shared factory below is the "boilerplate" both diagrams supply
-// their own lane labels + hue variables to.
 

@@ -171,6 +171,12 @@ function parseStrict(
     const entry = recognise(text, entries);
     if (!entry) {
       if (opts.allowBullets) {
+        if (indent === 0) {
+          // A top-level line that is not a keyword is a leftover config line
+          // or a typo, not a bullet on the root; say so instead of rendering it.
+          warnings.push(`Line ${lineNum}: unrecognised line "${text}" — skipped`);
+          continue;
+        }
         // Bare line → bullet on the nearest enclosing (less-indented) node.
         while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
         stack[stack.length - 1].node.bullets.push(text);

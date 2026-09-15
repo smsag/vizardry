@@ -1,16 +1,14 @@
 import { Notice } from "obsidian";
-import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { MarkdownView } from "obsidian";
 import type { ParsedPaceLayers, PaceLayerCell, PaceLayerName } from "../types";
 import { LAYER_CONFIG, LAYER_LABELS, TYPE_TRANSLATIONS, PROMPTS } from "../pacelayers";
-import { initCanvas, markInteractive, renderHeadingLink } from "./controls";
+import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import { activateTextareaEdit } from "./inline-edit";
 import { setupSlideCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { writePaceLayerCell } from "../shared/pacelayers-edit";
-import type { LinkResolver } from "../shared/links";
 import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
+import { isEditModeActive } from "../shared/editor";
 
 export function renderPaceLayers(
   data: ParsedPaceLayers,
@@ -19,7 +17,7 @@ export function renderPaceLayers(
 ): void {
   const { source, app, ctx, resolver, navigateTo } = rc;
   const isEditMode = !!(app && ctx && source !== undefined)
-    && app.workspace.getActiveViewOfType(MarkdownView)?.getMode() !== "preview";
+    && isEditModeActive(app);
   const defaultTitle = 'Pace Layer Analysis';
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
   const onTitleEdit = isEditMode
@@ -27,6 +25,7 @@ export function renderPaceLayers(
     : undefined;
 
   initCanvas(container, 'pacelayers', title, undefined, source, onTitleEdit, app, ctx);
+  renderCanvasWarnings(container, data.warnings);
 
   if (data.context) {
     container.createDiv({ cls: 'vzd-pl-context', text: data.context });

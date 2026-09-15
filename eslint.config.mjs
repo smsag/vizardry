@@ -5,11 +5,11 @@ import tsParser from "@typescript-eslint/parser";
 export default [
   {
     files: ["src/**/*.ts", "extension/**/*.ts"],
-    ignores: ["src/**/*.test.ts", "extension/**/*.test.ts", "extension/**/*.d.ts"],
+    ignores: ["extension/**/*.d.ts"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: ["./tsconfig.json", "./extension/tsconfig.json"],
+        project: "./tsconfig.eslint.json",
       },
     },
     plugins: {
@@ -27,6 +27,15 @@ export default [
 
       // Allow console.error/warn (used for plugin error reporting), ban console.log
       "no-console": ["error", { allow: ["error", "warn"] }],
+    },
+  },
+  {
+    // Tests: the same promise and equality rules apply (an un-awaited
+    // `expect(...).resolves` passes vacuously), but mocks may be loose.
+    files: ["src/**/*.test.ts", "extension/**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/consistent-type-imports": "off",
+      "no-console": "off",
     },
   },
 ];

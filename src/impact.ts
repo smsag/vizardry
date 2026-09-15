@@ -14,7 +14,7 @@ export function parseImpactMap(source: string): ImpactMapResult {
     const raw = lines[i];
     const trimmed = raw.trim();
 
-    if (isSkippableLine(trimmed)) continue;
+    if (isSkippableLine(raw)) continue;
 
     const indent = raw.search(/\S/);
 

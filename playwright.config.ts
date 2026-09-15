@@ -4,7 +4,7 @@ import { defineConfig } from "@playwright/test";
  * Visual-regression config. Baselines are committed under
  * visual/visual.spec.ts-snapshots/ and are rendered by the Playwright-managed
  * Chromium — so CI must run in the matching Playwright container
- * (mcr.microsoft.com/playwright:v1.62.1-noble) for the snapshots to line up.
+ * (mcr.microsoft.com/playwright:v1.56.0-noble, matching @playwright/test) for the snapshots to line up.
  * Regenerate with `npm run test:visual:update` in that same environment.
  */
 export default defineConfig({

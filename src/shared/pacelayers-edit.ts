@@ -216,16 +216,19 @@ function _writePaceLayerCell(
 
   const resolved = resolveEditor(app, ctx, el, "_writePaceLayerCell");
   if (!resolved) return false;
-  const { editor, lineStart } = resolved;
-  const totalLines = editor.lineCount();
+  const { editor, lineStart, lineEnd } = resolved;
+  // Bounded by this canvas's own section: scanning to the end of the note
+  // wrote into the *next* pacelayers canvas whenever this one lacked the
+  // layer. (resolveEditor already guards a stale ctx via the source check.)
+  const scanEnd = Math.min(lineEnd + 1, editor.lineCount());
 
-  const layerHeaderLine = findLayerHeader(editor, lineStart, totalLines, layerName, type);
+  const layerHeaderLine = findLayerHeader(editor, lineStart, scanEnd, layerName, type);
   if (layerHeaderLine === -1) {
-    console.warn(`Vizardry PL write ✗ layer "${layerName}" not found (searched lines ${lineStart}–${totalLines - 1})`);
+    console.warn(`Vizardry PL write ✗ layer "${layerName}" not found in this canvas (lines ${lineStart}–${scanEnd - 1})`);
     return false;
   }
 
-  const layerBodyEnd = findLayerBodyEnd(editor, layerHeaderLine, totalLines);
+  const layerBodyEnd = findLayerBodyEnd(editor, layerHeaderLine, scanEnd);
   const cellLine = findCellLine(editor, layerHeaderLine, layerBodyEnd, cellKey);
 
   editorWrite(() => {

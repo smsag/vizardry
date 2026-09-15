@@ -15,6 +15,7 @@
 import { getLinearService } from "../linear";
 import { getUpvotyService } from "../upvoty";
 import { setStatusColor, formatKeyAge } from "../shared/key-format";
+import { shortenKey } from "../shared/key-enrichment";
 import { t } from "../i18n";
 import { Notice } from "obsidian";
 import { attachItemMenu } from "../shared/item-menu";
@@ -37,13 +38,6 @@ interface CardShell {
   extraEl: HTMLElement;
 }
 
-/** Display text for a key: Upvoty ids are long base62/UUID strings. */
-function shortenKey(key: string): string {
-  const dash = key.indexOf("-");
-  if (dash === -1 || key.length - dash - 1 <= 10) return key;
-  return key.slice(0, dash + 1 + 8) + "…";
-}
-
 /**
  * Builds one card and starts its first load.
  *
@@ -61,7 +55,7 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
   const statusEl = header.createEl("span", { cls: "vzd-card-status" });
   const keyLink = header.createEl("a", {
     cls: "vzd-card-key",
-    text: ref.service === "upvoty" ? shortenKey(ref.key) : ref.key,
+    text: ref.service === "upvoty" ? shortenKey(ref.key, getUpvotyService()?.getKeyPrefix().length) : ref.key,
   }) as HTMLAnchorElement;
   keyLink.setAttribute("href", "#");
   keyLink.setAttribute("aria-label", t("sideleaf.openExternal", { key: ref.key }));
@@ -130,6 +124,12 @@ function copyKey(key: string): void {
   );
 }
 
+/** `UPV-abc` with prefix `UPV` → `abc`; falls back to the first-dash rule. */
+export function stripKeyPrefix(key: string, prefix: string): string {
+  if (prefix && key.startsWith(prefix + "-")) return key.slice(prefix.length + 1);
+  return key.replace(/^[^-]+-/, "");
+}
+
 /** `base?id=…`, respecting a base that already carries a query string. */
 export function buildPostUrl(base: string, id: string): string {
   try {
@@ -174,7 +174,8 @@ async function loadUpvotyCard(shell: CardShell, key: string): Promise<void> {
   if (!svc) { showError(shell, t("sideleaf.upvotyDisabled")); return; }
 
   // The badge text carries the prefix ("UPV-<id>"); the service wants the id.
-  const postId = key.replace(/^[^-]+-/, "");
+  // Cut at the configured prefix, not the first dash: a prefix can contain one.
+  const postId = stripKeyPrefix(key, svc.getKeyPrefix());
   const result = await svc.getSummary(postId);
   shell.summaryEl.empty();
 
