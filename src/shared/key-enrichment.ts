@@ -31,18 +31,36 @@ export const SKIP_TAGS = new Set(["PRE", "INPUT", "TEXTAREA", "SCRIPT", "STYLE",
 const openPopovers = new Map<HTMLElement, HTMLElement>();
 let topZIndex = 1000;
 
+/** Class marking the key whose popover is currently on screen. */
+export const KEY_OPEN_CLASS = "vzd-key--open";
+
+/**
+ * Keeps a key badge's open state in sync with its popover, in both channels:
+ * `aria-expanded` for assistive tech (the badge is a disclosure button, and
+ * previously announced nothing at all) and a class for the lit styling, so a
+ * reader with several popovers open can tell which key opened which.
+ */
+function markOpen(anchor: HTMLElement, open: boolean): void {
+  anchor.setAttribute("aria-expanded", open ? "true" : "false");
+  anchor.classList.toggle(KEY_OPEN_CLASS, open);
+}
+
 export function closeKeyPopover(anchor: HTMLElement): void {
   const popover = openPopovers.get(anchor);
   if (popover) {
     popover.remove();
     openPopovers.delete(anchor);
   }
+  // Reset unconditionally: an anchor can carry the open marker without a live
+  // popover if the popover was torn down some other way.
+  markOpen(anchor, false);
 }
 
 export function closeAllKeyPopovers(): void {
   for (const [anchor, popover] of openPopovers) {
     popover.remove();
     openPopovers.delete(anchor);
+    markOpen(anchor, false);
   }
   topZIndex = 1000;
 }
@@ -50,6 +68,30 @@ export function closeAllKeyPopovers(): void {
 export function bringKeyPopoverToFront(popover: HTMLElement): void {
   topZIndex += 1;
   popover.style.zIndex = String(topZIndex);
+}
+
+// ── Status colour ────────────────────────────────────────────────────────────
+
+/** #rgb, #rgba, #rrggbb or #rrggbbaa — the forms both APIs actually return. */
+const HEX_COLOR_RE = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+/**
+ * Paints the status eyebrow's rule in the state's own colour.
+ *
+ * The value comes from a third-party API response and lands in a CSS custom
+ * property, so it is matched against a strict hex pattern first rather than
+ * passed through: `setProperty` would otherwise accept arbitrary CSS, and a
+ * value such as `red; background: url(...)` has no business reaching the
+ * stylesheet. Anything that fails the test leaves the property unset, and the
+ * eyebrow falls back to --text-muted.
+ *
+ * Nothing depends on the colour being right — the label always spells the
+ * state out — so a rejected value costs no information.
+ */
+export function setStatusColor(el: HTMLElement, color: string | null | undefined): void {
+  const trimmed = typeof color === "string" ? color.trim() : "";
+  if (HEX_COLOR_RE.test(trimmed)) el.style.setProperty("--vzd-status-color", trimmed);
+  else el.style.removeProperty("--vzd-status-color");
 }
 
 // ── Time formatting ──────────────────────────────────────────────────────────
@@ -148,6 +190,8 @@ export function attachKeyTrigger(
   isEnabled: () => boolean,
   buildPopover: (onClose: () => void) => HTMLElement,
 ): void {
+  btn.setAttribute("aria-expanded", "false");
+
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -158,6 +202,7 @@ export function attachKeyTrigger(
     btn.ownerDocument.body.appendChild(popover);
     bringKeyPopoverToFront(popover);
     openPopovers.set(btn, popover);
+    markOpen(btn, true);
   });
 
   onDisconnected(btn, () => closeKeyPopover(btn));
@@ -168,7 +213,8 @@ export function attachKeyTrigger(
 export interface KeyPopoverShell {
   el: HTMLElement;
   header: HTMLElement;
-  statusPill: HTMLElement;
+  /** The status eyebrow. Paint its rule with `setStatusColor`. */
+  statusEl: HTMLElement;
   keyLink: HTMLAnchorElement;
   titleEl: HTMLElement;
   summaryEl: HTMLElement;
@@ -213,7 +259,7 @@ export function buildKeyPopoverShell(opts: {
   closeBtn.addEventListener("click", (e) => { e.stopPropagation(); onClose(); });
 
   const header = el.createEl("div", { cls: `${previewClass}-header` });
-  const statusPill = header.createEl("span", { cls: `${previewClass}-status` });
+  const statusEl = header.createEl("span", { cls: `${previewClass}-status` });
   const keyLink = header.createEl("a", { cls: `${previewClass}-key`, text: keyText }) as HTMLAnchorElement;
   keyLink.setAttribute("href", "#");
   keyLink.setAttribute("aria-label", keyAriaLabel);
@@ -231,5 +277,5 @@ export function buildKeyPopoverShell(opts: {
 
   const footer = el.createEl("div", { cls: `${previewClass}-footer` });
 
-  return { el, header, statusPill, keyLink, titleEl, summaryEl, footer };
+  return { el, header, statusEl, keyLink, titleEl, summaryEl, footer };
 }

@@ -1,6 +1,6 @@
 import { getUpvotyService } from "../upvoty";
 import { t } from "../i18n";
-import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge } from "./key-enrichment";
+import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge, setStatusColor } from "./key-enrichment";
 
 /**
  * Scans `container` for Upvoty post keys (e.g. UPV-1234) in text nodes and
@@ -79,7 +79,7 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
     loadingText: t("upvoty.loading"),
     onClose,
   });
-  const { el, statusPill, keyLink, titleEl, summaryEl, footer } = shell;
+  const { el, statusEl, keyLink, titleEl, summaryEl, footer } = shell;
   const footerEl = footer.createEl("span", { cls: "vzd-upvoty-preview-updated" });
   const votesEl = footer.createEl("span", { cls: "vzd-upvoty-preview-votes" });
 
@@ -104,7 +104,12 @@ function buildPopover(key: string, postId: string, anchor: HTMLElement, onClose:
       // feedback item's UUID using the dashboard's lookup pattern.
       if (post.id) keyLink.dataset.url = `${svc.getAppUrl()}?id=${post.id}`;
 
-      if (post.status?.label) statusPill.textContent = post.status.label;
+      // Upvoty's status colour is nullable — setStatusColor falls back to
+      // --text-muted, so a board with uncoloured statuses still renders.
+      if (post.status?.label) {
+        statusEl.textContent = post.status.label;
+        setStatusColor(statusEl, post.status.color);
+      }
 
       titleEl.textContent = post.title;
 

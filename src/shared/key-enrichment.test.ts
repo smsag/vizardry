@@ -7,7 +7,7 @@
  * key-enrichment.ts.
  */
 import "../test-setup";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("obsidian", () => ({ setIcon: vi.fn() }));
 vi.mock("../i18n", () => ({ t: (key: string) => key }));
@@ -26,7 +26,7 @@ vi.mock("../upvoty", () => ({
   }),
 }));
 
-import { formatKeyAge } from "./key-enrichment";
+import { formatKeyAge, setStatusColor, attachKeyTrigger, closeAllKeyPopovers, KEY_OPEN_CLASS } from "./key-enrichment";
 import { enrichLinearKeys } from "./linear-enrichment";
 import { enrichUpvotyKeys } from "./upvoty-enrichment";
 
@@ -91,3 +91,102 @@ describe("formatKeyAge", () => {
   });
 });
 
+describe("setStatusColor", () => {
+  function el(): HTMLElement { return document.createElement("span"); }
+
+  it("paints the rule in each hex form the APIs return", () => {
+    for (const colour of ["#f2c94c", "#FFF", "#5ec269ff", "#abcd"]) {
+      const e = el();
+      setStatusColor(e, colour);
+      expect(e.style.getPropertyValue("--vzd-status-color"), colour).toBe(colour);
+    }
+  });
+
+  it("trims surrounding whitespace", () => {
+    const e = el();
+    setStatusColor(e, "  #f2c94c \n");
+    expect(e.style.getPropertyValue("--vzd-status-color")).toBe("#f2c94c");
+  });
+
+  it("refuses anything that is not a plain hex colour", () => {
+    // The value comes from a third-party API response and is written into a
+    // CSS custom property, so it must not be able to smuggle in declarations.
+    for (const bad of [
+      "red; background: url(https://x/pixel.png)",
+      "var(--anything)",
+      "url(https://tracker.example/p.gif)",
+      "expression(alert(1))",
+      "#12345",
+      "f2c94c",
+      "",
+      null,
+      undefined,
+    ]) {
+      const e = el();
+      setStatusColor(e, bad as string);
+      expect(e.style.getPropertyValue("--vzd-status-color"), String(bad)).toBe("");
+    }
+  });
+
+  it("clears a previously painted colour when a later value is rejected", () => {
+    // A status that loses its colour must not keep the old one.
+    const e = el();
+    setStatusColor(e, "#f2c94c");
+    setStatusColor(e, null);
+    expect(e.style.getPropertyValue("--vzd-status-color")).toBe("");
+  });
+});
+
+describe("key open state", () => {
+  function trigger(): HTMLElement {
+    const btn = document.createElement("button");
+    document.body.appendChild(btn);
+    attachKeyTrigger(btn, () => true, (onClose) => {
+      const pop = document.createElement("div");
+      const close = pop.appendChild(document.createElement("button"));
+      close.addEventListener("click", onClose);
+      return pop;
+    });
+    return btn;
+  }
+
+  afterEach(() => { closeAllKeyPopovers(); document.body.innerHTML = ""; });
+
+  it("starts collapsed and announced as such", () => {
+    // The badge is a disclosure button; before this it announced nothing.
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("marks itself open in both channels once its popover is up", () => {
+    const btn = trigger();
+    btn.click();
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+    expect(btn.classList.contains(KEY_OPEN_CLASS)).toBe(true);
+  });
+
+  it("clears the open state when the popover is closed", () => {
+    const btn = trigger();
+    btn.click();
+    (btn.ownerDocument.querySelector("body > div > button") as HTMLElement).click();
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    expect(btn.classList.contains(KEY_OPEN_CLASS)).toBe(false);
+  });
+
+  it("clears every key's open state when all popovers are closed at once", () => {
+    const a = trigger(), b = trigger();
+    a.click(); b.click();
+    closeAllKeyPopovers();
+    for (const btn of [a, b]) {
+      expect(btn.getAttribute("aria-expanded")).toBe("false");
+      expect(btn.classList.contains(KEY_OPEN_CLASS)).toBe(false);
+    }
+  });
+
+  it("does not open a second popover for a key that already has one", () => {
+    const btn = trigger();
+    btn.click();
+    btn.click();
+    expect(document.querySelectorAll("body > div").length).toBe(1);
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+  });
+});

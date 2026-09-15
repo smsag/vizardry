@@ -2629,13 +2629,16 @@ code:has(.vzd-upvoty-key) {
   padding: 0;
 }
 
-/* ── Pill family (Linear + Upvoty) ───────────────────────────────────────── */
+/* ── Key tags (Linear + Upvoty) ──────────────────────────────────────────── */
 /*
- * One recipe for every integration pill — the two inline key badges and the
- * two popover status chips. They were four near-identical copies that had
- * already drifted (Linear on --color-accent, Upvoty on --interactive-accent;
- * Linear with a focus state, Upvoty without); this is the single definition
- * they all draw from now.
+ * One recipe for both inline key badges. They were near-identical copies that
+ * had already drifted (Linear on --color-accent, Upvoty on
+ * --interactive-accent; Linear with a focus state, Upvoty without); this is
+ * the single definition they both draw from now.
+ *
+ * A key is an identifier, so it is drawn as a tag. A status is not — see the
+ * status eyebrow further down, which deliberately shares nothing with this
+ * recipe so the two can never be mistaken for each other.
  *
  * SHAPE comes from Obsidian's --tag-* tokens — the variables every theme
  * already styles for its own inline chips — so a pill inherits the host
@@ -2671,12 +2674,10 @@ code:has(.vzd-upvoty-key) {
 }
 
 .vzd-linear-key,
-.vzd-linear-preview-status,
-.vzd-upvoty-key,
-.vzd-upvoty-preview-status {
+.vzd-upvoty-key {
   /* How much of the hue survives; the rest blends toward --text-muted. */
   --vzd-pill-tint: 45%;
-  /* Opacity applied to the chip's background and border. */
+  /* Opacity applied to the tag's background and border. */
   --vzd-pill-fill: 70%;
   /* --color-accent and --interactive-accent chain behind the tag tokens so a
      pill still resolves to something sane in a host (or a test harness) that
@@ -2719,11 +2720,22 @@ code:has(.vzd-upvoty-key) {
    affordance on the one element here that is actually interactive. */
 .vzd-linear-key:hover,
 .vzd-linear-key:focus-visible,
+.vzd-linear-key.vzd-key--open,
 .vzd-upvoty-key:hover,
-.vzd-upvoty-key:focus-visible {
+.vzd-upvoty-key:focus-visible,
+.vzd-upvoty-key.vzd-key--open {
   color: var(--vzd-pill-hue);
   background: var(--vzd-pill-bg);
   border-color: var(--vzd-pill-border);
+}
+
+/* A key whose popover is currently on screen holds the lit state and carries a
+   ring, so several open popovers can each be traced back to the key that
+   opened them. Paired with aria-expanded in attachKeyTrigger — the state is
+   announced, not just drawn. */
+.vzd-linear-key.vzd-key--open,
+.vzd-upvoty-key.vzd-key--open {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vzd-pill-hue) 22%, transparent);
 }
 
 /* `all: unset` drops the default focus ring too, so keyboard users get one
@@ -2734,15 +2746,41 @@ code:has(.vzd-upvoty-key) {
   outline-offset: 2px;
 }
 
-/* Popover status chips: uppercase, and roomier than the theme's inline-chip
-   padding on purpose — each stands alone in a popover header rather than
-   inside a line of prose. */
+/* ── Status eyebrow (Linear + Upvoty popovers) ───────────────────────────── */
+/*
+ * A workflow state is not an identifier, so it is deliberately not drawn as a
+ * tag: a key and a state sitting in the same header as two identical lozenges
+ * gave no clue which was which. This shares nothing with the tag recipe above.
+ *
+ * The form is the uppercase eyebrow the Test Card, Compass and Problem
+ * canvases already use for their kicker labels, over a rule in the state's own
+ * colour — `state.color` from Linear, `status.color` from Upvoty. Both are
+ * returned by the API on every fetch and were previously discarded, so the
+ * colour costs nothing and turns the rule into information rather than
+ * decoration.
+ *
+ * The colour is never load-bearing: the label always spells the state out in
+ * --text-muted, so nothing depends on telling two hues apart (and a missing or
+ * unparseable colour simply falls back to --text-muted).
+ *
+ * A bottom border rather than text-decoration: it sits below the text box with
+ * a controllable gap and a weight of its own, so it reads as a rule under a
+ * label rather than as an underlined — and therefore clickable — word.
+ */
 .vzd-linear-preview-status,
 .vzd-upvoty-preview-status {
-  line-height: 1;
-  text-transform: uppercase;
-  padding: 4px 12px;
+  --vzd-status-color: var(--text-muted);
+  display: inline-block;
   flex-shrink: 0;
+  padding-bottom: 3px;
+  border-bottom: 2px solid var(--vzd-status-color);
+  font-size: calc(var(--font-ui-small) * 0.78);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 .vzd-linear-preview-status:empty,
 .vzd-upvoty-preview-status:empty { display: none; }
@@ -2804,12 +2842,7 @@ code:has(.vzd-upvoty-key) {
   padding-right: 1.4rem; /* room for close button */
 }
 
-.vzd-linear-preview-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-}
+.vzd-linear-preview-status { align-self: center; }
 
 /* Key — looks like plain text, acts as a link */
 .vzd-linear-preview-key {
@@ -2927,11 +2960,7 @@ code:has(.vzd-upvoty-key) {
   flex-wrap: wrap;
 }
 
-.vzd-upvoty-preview-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+.vzd-upvoty-preview-status { align-self: center; }
 
 .vzd-upvoty-preview-key {
   display: inline-flex;

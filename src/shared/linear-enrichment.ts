@@ -1,6 +1,6 @@
 import { getLinearService } from "../linear";
 import { t } from "../i18n";
-import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge } from "./key-enrichment";
+import { enrichKeys, attachKeyTrigger, buildKeyPopoverShell, formatKeyAge, setStatusColor } from "./key-enrichment";
 
 // Matches LINEAR-style identifiers like CORE-1234, PSINT-42, ENG-9999
 export const LINEAR_KEY_RE = /\b([A-Z]{2,10}-\d+)\b/g;
@@ -59,7 +59,7 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
     loadingText: t("roadmap.linear.loading"),
     onClose,
   });
-  const { el, statusPill, keyLink, titleEl, summaryEl, footer } = shell;
+  const { el, statusEl, keyLink, titleEl, summaryEl, footer } = shell;
   const footerEl = footer.createEl("span", { cls: "vzd-linear-preview-updated" });
 
   // Async fetch — fires immediately on open
@@ -76,9 +76,12 @@ function buildPopover(key: string, anchor: HTMLElement, onClose: () => void): HT
         return;
       }
 
-      // Status pill with Linear's own colour — pick readable text per-colour
-      // since Linear states range from pale grey to saturated red/green.
-      statusPill.textContent = result.state.name;
+      // The eyebrow's rule takes Linear's own state colour, which the API
+      // returns on every fetch. The label stays --text-muted, so a state
+      // whose colour is pale grey (Backlog) reads exactly as well as a
+      // saturated one — the colour adds information, it never carries it.
+      statusEl.textContent = result.state.name;
+      setStatusColor(statusEl, result.state.color);
 
       // Key link URL
       if (result.url) keyLink.dataset.url = result.url;
