@@ -283,6 +283,18 @@ export const en = {
   "settings.secret.found":               "Key found ✓",
   "settings.secret.notSet":              "Not set",
   "settings.secret.link":                "Link…",
+  "settings.secretPicker.missing":       "no such secret",
+  "settings.secretPicker.pending":       "will be created",
+  "settings.secretPicker.use":           "Use the name \u00ab{{name}}\u00bb",
+  "settings.secret.badgeNoSuch":         "No such secret",
+  "settings.secret.badgeInvalid":        "Invalid name",
+  "settings.secret.badgeNoStore":        "No secret storage",
+  "settings.secret.noSuchNameDesc":      "Secret name: {{name}} \u2014 the keychain holds nothing under this name. Use Link\u2026 to pick the right secret, or enter a value below to create it.",
+  "settings.secret.invalidNameDesc":     "Secret name: {{name}} \u2014 Obsidian will not accept this name. Use Link\u2026 to choose one of lowercase letters, digits and dashes.",
+  "settings.secret.invalidName":         "A secret name must be lowercase letters, digits and dashes",
+  "settings.secret.unavailable":         "This Obsidian version has no secret storage",
+  "settings.secret.saveFailed":          "Vizardry could not store the key under \u00ab{{name}}\u00bb \u2014 see the developer console",
+  "settings.secret.saveFailedName":      "\u00ab{{name}}\u00bb is not a name Obsidian accepts: use lowercase letters, digits and dashes",
 
   // ── Settings: Linear section ────────────────────────────────────────────────
   "settings.section.appearance":         "Appearance",

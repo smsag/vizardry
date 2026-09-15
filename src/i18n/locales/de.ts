@@ -269,6 +269,18 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "settings.secret.found":               "Schlüssel gefunden ✓",
   "settings.secret.notSet":              "Nicht gesetzt",
   "settings.secret.link":                "Verknüpfen…",
+  "settings.secretPicker.missing":       "kein solches Geheimnis",
+  "settings.secretPicker.pending":       "wird angelegt",
+  "settings.secretPicker.use":           "Namen \u00ab{{name}}\u00bb verwenden",
+  "settings.secret.badgeNoSuch":         "Kein solches Geheimnis",
+  "settings.secret.badgeInvalid":        "Ung\u00fcltiger Name",
+  "settings.secret.badgeNoStore":        "Kein Geheimnisspeicher",
+  "settings.secret.noSuchNameDesc":      "Geheimnisname: {{name}} \u2014 im Schl\u00fcsselbund liegt nichts unter diesem Namen. Verkn\u00fcpfe\u2026 das richtige Geheimnis oder gib unten einen Wert ein, um es anzulegen.",
+  "settings.secret.invalidNameDesc":     "Geheimnisname: {{name}} \u2014 diesen Namen akzeptiert Obsidian nicht. W\u00e4hle \u00fcber Verkn\u00fcpfen\u2026 einen Namen aus Kleinbuchstaben, Ziffern und Bindestrichen.",
+  "settings.secret.invalidName":         "Ein Geheimnisname darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten",
+  "settings.secret.unavailable":         "Diese Obsidian-Version hat keinen Geheimnisspeicher",
+  "settings.secret.saveFailed":          "Vizardry konnte den Schl\u00fcssel nicht unter \u00ab{{name}}\u00bb speichern \u2014 siehe Entwicklerkonsole",
+  "settings.secret.saveFailedName":      "\u00ab{{name}}\u00bb akzeptiert Obsidian nicht als Namen: nur Kleinbuchstaben, Ziffern und Bindestriche",
 
   // ── Settings: Linear section ────────────────────────────────────────────────
   "settings.section.appearance":         "Darstellung",

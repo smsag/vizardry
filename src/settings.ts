@@ -2,10 +2,15 @@ import type { App , DropdownComponent} from "obsidian";
 import { Modal, Notice, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
 import { DEFAULT_SETTINGS } from "./settings-schema";
-import { saveSecret, loadSecret, listSecrets } from "./shared/keychain";
+import type { SecretLinkState } from "./shared/keychain";
+import { saveSecret, loadSecret, listSecrets, secretLinkState } from "./shared/keychain";
+import type { SecretRowKind } from "./shared/secret-picker-model";
+import { buildSecretPickerModel } from "./shared/secret-picker-model";
 import { getLinearService } from "./linear";
 import { getUpvotyService } from "./upvoty";
 import { t } from "./i18n";
+
+type TKey = Parameters<typeof t>[0];
 
 function debounce<T extends (...args: unknown[]) => unknown>(fn: T, ms: number): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout>;
@@ -52,54 +57,78 @@ class SecretPickerModal extends Modal {
     contentEl.addClass("vzd-secret-picker");
     contentEl.createEl("h2", { text: t("settings.secretPicker.title") });
 
-    // Search
+    // One field, two jobs: it filters the list, and anything typed that is a
+    // valid id the keychain doesn't hold is offered as a name to link. Without
+    // that second job a secret the listing misses — or one that does not exist
+    // yet — cannot be linked from here at all.
     const search = contentEl.createEl("input", {
       cls: "vzd-secret-search",
       attr: { type: "text", placeholder: t("settings.secretPicker.searchPlaceholder") },
     });
 
-    // List
     const listEl = contentEl.createEl("div", { cls: "vzd-secret-list" });
 
-    const allNames = listSecrets(this.app);
+    let allNames: string[] = [];
+
+    const select = (name: string, render: (filter: string) => void): void => {
+      this.selected = name;
+      render(search.value);
+    };
+
+    const addRow = (name: string, opts: { kind?: SecretRowKind } = {}): void => {
+      const row = listEl.createEl("label", { cls: "vzd-secret-row" });
+      if (name === this.selected) row.addClass("vzd-secret-row--selected");
+
+      const radio = row.createEl("input", { attr: { type: "radio", name: "vzd-secret" } }) as HTMLInputElement;
+      radio.checked = name === this.selected;
+
+      row.createEl("span", { cls: "vzd-secret-name", text: name });
+      if (opts.kind === "dangling") {
+        row.createEl("span", { cls: "vzd-secret-dots vzd-secret-dots--missing", text: t("settings.secretPicker.missing") });
+      } else if (opts.kind === "pending") {
+        row.createEl("span", { cls: "vzd-secret-dots vzd-secret-dots--pending", text: t("settings.secretPicker.pending") });
+      } else {
+        row.createEl("span", { cls: "vzd-secret-dots", text: "••••••••" });
+      }
+
+      if (name === this.selected) {
+        row.createEl("span", { cls: "vzd-secret-badge", text: t("settings.secretPicker.selected") });
+      }
+
+      radio.addEventListener("change", () => select(name, render));
+    };
 
     const render = (filter: string): void => {
       listEl.empty();
-      const names = filter
-        ? allNames.filter(n => n.toLowerCase().includes(filter.toLowerCase()))
-        : allNames;
+      const model = buildSecretPickerModel(allNames, this.currentName, this.selected, filter);
 
-      if (names.length === 0) {
-        listEl.createEl("div", { cls: "vzd-secret-empty", text: t("settings.secretPicker.empty") });
-        return;
-      }
-
-      for (const name of names) {
-        const row = listEl.createEl("label", { cls: "vzd-secret-row" });
-        if (name === this.selected) row.addClass("vzd-secret-row--selected");
-
-        const radio = row.createEl("input", { attr: { type: "radio", name: "vzd-secret" } }) as HTMLInputElement;
-        radio.checked = name === this.selected;
-
-        row.createEl("span", { cls: "vzd-secret-name", text: name });
-        row.createEl("span", { cls: "vzd-secret-dots", text: "••••••••" });
-
-        if (name === this.selected) {
-          row.createEl("span", { cls: "vzd-secret-badge", text: t("settings.secretPicker.selected") });
-        }
-
-        radio.addEventListener("change", () => {
-          this.selected = name;
-          listEl.querySelectorAll(".vzd-secret-row").forEach(r => r.removeClass("vzd-secret-row--selected"));
-          listEl.querySelectorAll(".vzd-secret-badge").forEach(b => b.remove());
-          row.addClass("vzd-secret-row--selected");
-          row.createEl("span", { cls: "vzd-secret-badge", text: t("settings.secretPicker.selected") });
+      if (model.offer !== null) {
+        const offered = model.offer;
+        const useRow = listEl.createEl("button", { cls: "vzd-secret-use", text: t("settings.secretPicker.use", { name: offered }) });
+        useRow.addEventListener("click", (e) => {
+          e.preventDefault();
+          select(offered, render);
         });
+      } else if (model.invalidHint) {
+        listEl.createEl("div", { cls: "vzd-secret-hint", text: t("settings.secret.invalidName") });
       }
+
+      if (model.empty) {
+        listEl.createEl("div", { cls: "vzd-secret-empty", text: t("settings.secretPicker.empty") });
+      }
+
+      for (const row of model.rows) addRow(row.name, { kind: row.kind });
     };
 
     render("");
     search.addEventListener("input", () => render(search.value));
+
+    // The listing is awaited: on mobile it resolves a promise the typings
+    // describe as an array, which read synchronously left the picker empty.
+    void listSecrets(this.app).then(names => {
+      allNames = names;
+      render(search.value);
+    });
 
     // Footer
     const footer = contentEl.createEl("div", { cls: "vzd-secret-footer" });
@@ -122,9 +151,24 @@ class SecretPickerModal extends Modal {
 // ── Secret setting row ────────────────────────────────────────────────────────
 
 /**
+ * Badge and description for each state a linked name can be in. The badge is a
+ * pill, so it stays short; whatever needs explaining goes in the description
+ * under it, which is also where the way out of a broken link belongs.
+ */
+const LINK_STATE: Record<SecretLinkState, { badge: TKey; cls: string; desc: TKey }> = {
+  found:       { badge: "settings.secret.found",         cls: "vzd-secret-found",    desc: "settings.secret.nameDesc" },
+  empty:       { badge: "settings.secret.notSet",        cls: "vzd-secret-missing",  desc: "settings.secret.nameDesc" },
+  missing:     { badge: "settings.secret.badgeNoSuch",   cls: "vzd-secret-dangling", desc: "settings.secret.noSuchNameDesc" },
+  invalid:     { badge: "settings.secret.badgeInvalid",  cls: "vzd-secret-dangling", desc: "settings.secret.invalidNameDesc" },
+  unavailable: { badge: "settings.secret.badgeNoStore",  cls: "vzd-secret-missing",  desc: "settings.secret.unavailable" },
+};
+
+/**
  * Renders a single settings row for a secret:
- * - Displays the currently linked secret name with a "Key found ✓" / "Not set" badge.
- * - "Link…" button opens SecretPickerModal to choose from existing secrets.
+ * - Displays the currently linked secret name with a badge saying what that
+ *   name resolves to — including "no secret of that name", which is a broken
+ *   link rather than a missing key and needs re-linking, not a new value.
+ * - "Link…" button opens SecretPickerModal to choose or name a secret.
  * - Password field to enter a new value directly (creates a new secret under the current name).
  */
 function addSecretRow(
@@ -132,6 +176,7 @@ function addSecretRow(
   app: App,
   label: string,
   valuePlaceholder: string,
+  defaultName: string,
   getName: () => string,
   setName: (n: string) => void,
 ): void {
@@ -146,6 +191,17 @@ function addSecretRow(
     const badge = setting.nameEl.createEl("span", { cls: "vzd-secret-status vzd-secret-missing", text: "…" });
     setting.nameEl.insertBefore(badge, setting.nameEl.firstChild);
     setting.nameEl.insertBefore(document.createTextNode(label + "  "), setting.nameEl.firstChild);
+
+    const paintBadge = (raw: SecretLinkState): void => {
+      // Still on the name the plugin ships with and nothing stored under it:
+      // that is an integration never set up, not a link that broke. Only a
+      // name the user chose deserves the warning.
+      const state = raw === "missing" && currentName === defaultName ? "empty" : raw;
+      const spec = LINK_STATE[state];
+      badge.textContent = t(spec.badge);
+      badge.className = "vzd-secret-status " + spec.cls;
+      setting.setDesc(t(spec.desc, { name: currentName }));
+    };
 
     // Link button
     setting.addButton(btn => {
@@ -164,11 +220,13 @@ function addSecretRow(
       text.setPlaceholder(valuePlaceholder);
 
       // Async: probe storage, set initial badge + mask
-      void loadSecret(app, currentName).then(existing => {
-        badge.textContent = existing ? t("settings.secret.found") : t("settings.secret.notSet");
-        badge.className = "vzd-secret-status " + (existing ? "vzd-secret-found" : "vzd-secret-missing");
-        text.setValue(existing ? "••••••••" : "");
-      });
+      const syncFromStorage = (): Promise<void> =>
+        secretLinkState(app, currentName).then(state => {
+          paintBadge(state);
+          text.setValue(state === "found" ? "••••••••" : "");
+        });
+
+      void syncFromStorage();
 
       text.inputEl.addEventListener("focus", () => {
         if (text.getValue() === "••••••••") {
@@ -179,19 +237,20 @@ function addSecretRow(
       const persistValue = (): void => {
         const v = text.getValue().trim();
         if (v && v !== "••••••••") {
-          void saveSecret(app, currentName, v).then(() =>
-            loadSecret(app, currentName).then(stored => {
-              text.setValue(stored ? "••••••••" : "");
-              badge.textContent = stored ? t("settings.secret.found") : t("settings.secret.notSet");
-              badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
-            })
-          );
-        } else {
-          void loadSecret(app, currentName).then(stored => {
-            text.setValue(stored ? "••••••••" : "");
-            badge.textContent = stored ? t("settings.secret.found") : t("settings.secret.notSet");
-            badge.className = "vzd-secret-status " + (stored ? "vzd-secret-found" : "vzd-secret-missing");
+          void saveSecret(app, currentName, v).then(result => {
+            // A rejected write used to be silent: Obsidian throws on an id it
+            // will not accept, and the only trace was a console line.
+            if (!result.ok) {
+              new Notice(
+                result.reason === "invalid-name" ? t("settings.secret.saveFailedName", { name: currentName })
+                : result.reason === "unavailable" ? t("settings.secret.unavailable")
+                : t("settings.secret.saveFailed", { name: currentName }),
+              );
+            }
+            return syncFromStorage();
           });
+        } else {
+          void syncFromStorage();
         }
       };
 
@@ -294,6 +353,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       this.app,
       t("settings.linear.apiKey.label"),
       "lin_api_…",
+      DEFAULT_SETTINGS.linearSecretName,
       () => this.plugin.settings.linearSecretName,
       (n) => {
         this.plugin.settings.linearSecretName = n;
@@ -368,6 +428,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       this.app,
       t("settings.ai.apiKey.label"),
       "sk-… or sk-ant-…",
+      DEFAULT_SETTINGS.llmSecretName,
       () => this.plugin.settings.llmSecretName,
       (n) => { this.plugin.settings.llmSecretName = n; void this.plugin.saveSettings(); },
     );
@@ -432,6 +493,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       this.app,
       t("settings.upvoty.apiKey.label"),
       "upvoty_sk_…",
+      DEFAULT_SETTINGS.upvotySecretName,
       () => this.plugin.settings.upvotySecretName,
       (n) => {
         this.plugin.settings.upvotySecretName = n;

@@ -1,3 +1,42 @@
+## 0.68.1
+
+- **Fix: a key could go missing and the settings said only "Not set".** The
+  plugin stores the *name* of a secret; the key itself lives in Obsidian's
+  keychain. If that secret was renamed or deleted there, the link was left
+  pointing at nothing — and the row showed exactly what an integration you had
+  never configured shows. Two very different problems, one message, and the
+  wrong instinct: people went looking for a lost key rather than a broken link.
+
+  The row now says which it is. **No such secret** means the keychain holds
+  nothing under that name and the fix is to re-link, not to paste the key
+  again; the description under it says so and points at **Link…**. **Not set**
+  now means what it says. A name your Obsidian version can never store is
+  called out as an invalid name, and an Obsidian with no keychain at all says
+  that instead of blaming the key.
+
+- **Fix: the picker could only offer secrets it had managed to list.** There
+  was no way to type a name — so a secret Obsidian held but the listing missed,
+  or one that did not exist yet, could not be linked from Vizardry at all. The
+  search box now doubles as a name field: type a name the keychain doesn't
+  hold and it is offered as **Use the name «…»**, marked *will be created*
+  until you enter a value for it.
+
+  The picker also shows the name you currently have linked even when no such
+  secret exists, marked *no such secret*. It used to show nothing at all, which
+  looked identical to never having linked anything.
+
+- **Fix: the secret list came back empty on mobile.** Obsidian's API is typed
+  as returning an array, but the mobile implementation returns a promise. Read
+  as an array, that yielded nothing — so on a phone or tablet the picker could
+  show an empty keychain while the keychain was not empty.
+
+- **Fix: a rejected key write was silent.** Obsidian only accepts a secret name
+  of lowercase letters, digits and dashes, and throws on anything else. The
+  rejection went to the developer console and nowhere else, so entering a key
+  looked like it had worked until the badge refreshed. A failed write now says
+  what went wrong, and a name Obsidian will not accept is caught before the
+  write is attempted.
+
 ## 0.68.0
 
 - **New: the Vizardry sideleaf has its own icon.** The panel used to borrow the

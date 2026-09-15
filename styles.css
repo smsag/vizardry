@@ -2544,6 +2544,13 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   background: var(--background-secondary);
 }
 
+/* A name that resolves to nothing in the keychain: a broken link, not an
+   unconfigured one, so it gets a warning rather than the muted "not set". */
+.vzd-secret-dangling {
+  color: var(--text-warning, var(--color-orange));
+  background: color-mix(in srgb, var(--color-orange) 15%, transparent);
+}
+
 /* Picker modal */
 .vzd-secret-picker h2 { margin-bottom: 0.75rem; }
 
@@ -2594,6 +2601,41 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 .vzd-secret-dots {
   color: var(--text-faint);
   letter-spacing: 0.1em;
+  font-size: var(--font-ui-smaller);
+}
+.vzd-secret-dots--missing {
+  color: var(--text-warning, var(--color-orange));
+  letter-spacing: normal;
+  font-style: italic;
+}
+.vzd-secret-dots--pending {
+  color: var(--color-accent);
+  letter-spacing: normal;
+  font-style: italic;
+}
+
+/* "Use the name «x»" — offered when what was typed is a valid id the keychain
+   does not hold, so a secret the listing misses can still be linked. */
+.vzd-secret-use {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  color: var(--color-accent);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+  box-shadow: none;
+}
+.vzd-secret-use:hover { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+
+.vzd-secret-hint {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 .vzd-secret-badge {
