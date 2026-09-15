@@ -340,6 +340,17 @@ export const en = {
   "service.error.upvotyDisabled":        "Upvoty integration disabled.",
   "service.notice.linearAuth":           "Vizardry: Linear API key is invalid or missing — check Settings → Vizardry.",
   "service.notice.upvotyAuth":           "Vizardry: Upvoty API key is invalid or missing — check Settings → Vizardry.",
+
+  // ── Sideleaf ────────────────────────────────────────────────────────────────
+  "sideleaf.title":            "Vizardry",
+  "sideleaf.clearAll":         "Clear all",
+  "sideleaf.emptyBody":        "Click a Linear or Upvoty key in a note to open it here. Cards stay until you close them.",
+  "sideleaf.closeCard":        "Close {{key}}",
+  "sideleaf.openExternal":     "Open {{key}} in the browser",
+  "sideleaf.linearDisabled":   "Linear integration disabled.",
+  "sideleaf.upvotyDisabled":   "Upvoty integration disabled.",
+  "sideleaf.openCommand":      "Open the Vizardry sideleaf",
+  "sideleaf.ribbon":           "Vizardry sideleaf",
 } as const;
 
 export type TranslationKey = keyof typeof en;

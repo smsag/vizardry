@@ -2629,218 +2629,206 @@ code:has(.vzd-upvoty-key) {
   padding: 0;
 }
 
-/* ── Linear key badge (global — any canvas or code fence) ───────────────── */
-/* Key badge — inline in text, itself the button that requests the fetch */
-.vzd-linear-key {
-  -webkit-appearance: none;
-  appearance: none;
-  all: unset;
-  box-sizing: border-box;
-  font-family: var(--font-monospace);
-  font-size: 0.7em;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--color-accent);
-  background: none;
-  border: 1.5px solid var(--color-accent);
-  border-radius: 999px;
-  padding: 2px 8px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: opacity 0.1s;
-}
-.vzd-linear-key:hover,
-.vzd-linear-key:focus-visible {
-  opacity: 0.75;
-}
+/* ── Key tags (Linear + Upvoty) ──────────────────────────────────────────── */
+/*
+ * One recipe for both inline key badges. They were near-identical copies that
+ * had already drifted (Linear on --color-accent, Upvoty on
+ * --interactive-accent; Linear with a focus state, Upvoty without); this is
+ * the single definition they both draw from now.
+ *
+ * A key is an identifier, so it is drawn as a tag. A status is not — see the
+ * status eyebrow further down, which deliberately shares nothing with this
+ * recipe so the two can never be mistaken for each other.
+ *
+ * SHAPE comes from Obsidian's --tag-* tokens — the variables every theme
+ * already styles for its own inline chips — so a pill inherits the host
+ * theme's chip radius, weight and padding instead of imposing Vizardry's own.
+ * A theme that draws tags as flat grey rectangles gets flat grey rectangles.
+ *
+ * COLOUR is one hue, --vzd-pill-hue, stepped down one notch: --vzd-pill-tint
+ * is how much of it survives, the rest blending toward --text-muted, over a
+ * background and border at --vzd-pill-fill opacity. A key badge sits inside
+ * running prose, where a full-strength accent outline competes with the
+ * sentence around it for attention.
+ *
+ * Each blended colour is declared twice — flat value first, blend second — so
+ * a webview without color-mix() keeps the flat fallback.
+ *
+ * Deliberately NOT part of this family: pills whose colour is data rather
+ * than decoration — the matrix item pills (hue = quadrant), the Circle of
+ * Influence chips (border strength = ring), the odyssey year badges (hue =
+ * plan) and the parse-warning chip (orange = severity). Muting those to one
+ * shared hue would erase what they encode.
+ */
 
-/* ── Linear popover ──────────────────────────────────────────────────────── */
-.vzd-linear-preview {
-  position: fixed;
-  z-index: 1000;
-  max-width: 320px;
-  min-width: 240px;
-  padding: 0.75rem;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  font-size: var(--font-ui-small);
-  pointer-events: auto;
-  animation: vzd-fade-in 0.12s ease;
-}
-
-/* Close button — absolute top-right. The popover lives outside
-   .vizardry-canvas (appended to document.body), so it must override
-   .vzd-btn's hover-to-reveal default and stay always visible/clickable.
-   Specificity 0-2-0 beats button.vzd-btn (0-1-1). */
-.vzd-linear-preview .vzd-linear-preview-close {
-  all: unset;
-  -webkit-appearance: none;
-  appearance: none;
-  box-sizing: border-box;
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  box-shadow: none;
-  outline: none;
-  color: var(--text-faint);
-  border-radius: var(--radius-s);
-  cursor: pointer;
-  opacity: 1;
-  pointer-events: auto;
-}
-.vzd-linear-preview .vzd-linear-preview-close svg { width: 12px; height: 12px; }
-.vzd-linear-preview .vzd-linear-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-
-/* Header: status pill (left) + key link (right) */
-.vzd-linear-preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  padding-right: 1.4rem; /* room for close button */
-}
-
-.vzd-linear-preview-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  font-size: 0.7em;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  padding: 4px 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  background: none;
-  border: 1.5px solid var(--color-accent);
-  color: var(--color-accent);
-  box-shadow: none;
-}
-.vzd-linear-preview-status:empty { display: none; }
-
-/* Key — looks like plain text, acts as a link */
-.vzd-linear-preview-key {
-  display: flex;
-  align-items: center;
-  align-self: center;
-  font-family: var(--font-monospace);
-  font-size: 0.8em;
-  line-height: 1;
-  color: var(--text-muted);
-  text-decoration: none;
-  cursor: pointer;
-}
-.vzd-linear-preview-key:hover { color: var(--text-accent); text-decoration: underline; }
-
-.vzd-linear-preview-title {
-  font-weight: 600;
-  font-size: var(--font-ui-small);
-  color: var(--text-normal);
-  margin: 0.6rem 0 0;
-  line-height: 1.3;
-}
-
-.vzd-linear-preview-body {
-  margin-top: 0.5rem;
-}
-
-.vzd-linear-preview-summary {
-  color: var(--text-normal);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.vzd-linear-preview-loading {
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-}
-
-.vzd-linear-preview-error {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Footer: "Jane Doe  ·  3d ago" — left-aligned */
-.vzd-linear-preview-footer {
-  display: flex;
-  margin-top: 0.5rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-.vzd-linear-preview-updated {
-  color: var(--text-muted);
-  font-size: 0.82em;
-  text-align: right;
-}
-
-@keyframes vzd-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: none; }
-}
-
-/* ── Upvoty enrichment ───────────────────────────────────────────────────── */
-
-/* Badge — inline clickable key, blue/purple to distinguish from Linear green */
+/* The reset comes first, in its own rule: `all: unset` resets every regular
+   property regardless of which rule set it, so folding it in below — or
+   leaving it in a later rule — would wipe the recipe itself. Custom
+   properties are unaffected by `all`. */
+.vzd-linear-key,
 .vzd-upvoty-key {
   -webkit-appearance: none;
   appearance: none;
   all: unset;
   box-sizing: border-box;
-  font-family: var(--font-monospace);
-  font-size: 0.7em;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--interactive-accent);
-  background: none;
-  border: 1.5px solid var(--interactive-accent);
-  border-radius: 999px;
-  padding: 2px 8px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: opacity 0.1s;
-}
-.vzd-upvoty-key:hover {
-  opacity: 0.75;
 }
 
-/* Popover — structurally identical to .vzd-linear-preview */
-.vzd-upvoty-preview {
-  position: fixed;
-  z-index: 2000;
-  max-width: 320px;
-  min-width: 240px;
-  padding: 0.75rem;
+.vzd-linear-key,
+.vzd-upvoty-key {
+  /* How much of the hue survives; the rest blends toward --text-muted. */
+  --vzd-pill-tint: 45%;
+  /* Opacity applied to the tag's background and border. */
+  --vzd-pill-fill: 70%;
+  /* --color-accent and --interactive-accent chain behind the tag tokens so a
+     pill still resolves to something sane in a host (or a test harness) that
+     defines only part of the palette. */
+  --vzd-pill-hue: var(--tag-color, var(--color-accent, var(--interactive-accent)));
+  --vzd-pill-bg: var(--tag-background, var(--background-modifier-hover));
+  --vzd-pill-border: var(--tag-border-color, var(--background-modifier-border));
+
+  font-size: 0.7em;
+  font-weight: var(--tag-weight, 600);
+  letter-spacing: 0.03em;
+  border-radius: var(--tag-radius, 999px);
+  white-space: nowrap;
+
+  color: var(--text-muted);
+  color: color-mix(in srgb, var(--vzd-pill-hue) var(--vzd-pill-tint), var(--text-muted));
+
+  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--vzd-pill-bg) var(--vzd-pill-fill), transparent);
+
+  border: var(--tag-border-width, 1px) solid var(--background-modifier-border);
+  border: var(--tag-border-width, 1px) solid color-mix(in srgb, var(--vzd-pill-border) var(--vzd-pill-fill), transparent);
+
+  box-shadow: none;
+}
+
+/* Inline key badges: monospace, and the theme's own chip padding — these are
+   inline chips in prose, which is exactly what those tokens are sized for. */
+.vzd-linear-key,
+.vzd-upvoty-key {
+  font-family: var(--font-monospace);
+  padding: var(--tag-padding-y, 2px) var(--tag-padding-x, 8px);
+  cursor: pointer;
+  transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+}
+
+/* Hover and keyboard focus restore the theme colour in full. That recovery is
+   what marks a badge as clickable now that its resting state is quiet — it
+   replaces a hover that only faded the badge further, which shrank the
+   affordance on the one element here that is actually interactive. */
+.vzd-linear-key:hover,
+.vzd-linear-key:focus-visible,
+.vzd-linear-key.vzd-key--open,
+.vzd-upvoty-key:hover,
+.vzd-upvoty-key:focus-visible,
+.vzd-upvoty-key.vzd-key--open {
+  color: var(--vzd-pill-hue);
+  background: var(--vzd-pill-bg);
+  border-color: var(--vzd-pill-border);
+}
+
+/* A key whose popover is currently on screen holds the lit state and carries a
+   ring, so several open popovers can each be traced back to the key that
+   opened them. Paired with aria-expanded in attachKeyTrigger — the state is
+   announced, not just drawn. */
+.vzd-linear-key.vzd-key--open,
+.vzd-upvoty-key.vzd-key--open {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vzd-pill-hue) 22%, transparent);
+}
+
+/* `all: unset` drops the default focus ring too, so keyboard users get one
+   back explicitly — the colour recovery alone is not a focus indicator. */
+.vzd-linear-key:focus-visible,
+.vzd-upvoty-key:focus-visible {
+  outline: 2px solid var(--vzd-pill-hue);
+  outline-offset: 2px;
+}
+
+
+
+/* ── Vizardry sideleaf ───────────────────────────────────────────────────── */
+/*
+ * Third-party items open as cards in a sideleaf rather than as floating
+ * popovers. The popover needed fixed positioning, viewport flipping, a shared
+ * z-index counter and teardown when its badge left the DOM; a card is flow
+ * content in a panel and needs none of it, so all of that CSS is gone.
+ */
+
+.vzd-sideleaf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.75rem;
+}
+
+.vzd-sideleaf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.vzd-sideleaf-heading {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.vzd-sideleaf-clear {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 2px 6px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.vzd-sideleaf-clear:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.vzd-sideleaf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.vzd-sideleaf-list.is-empty { display: none; }
+
+/* Empty state — the leaf can be opened from the command palette with no
+   cards in it, and says what to do rather than showing a blank panel. */
+.vzd-sideleaf-empty {
+  display: none;
+  padding: 1.5rem 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+}
+.vzd-sideleaf-empty.is-visible { display: block; }
+.vzd-sideleaf-empty-icon { color: var(--text-faint); margin-bottom: 0.5rem; }
+.vzd-sideleaf-empty p { margin: 0; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
+.vzd-card {
+  position: relative;
+  padding: 0.6rem 0.7rem;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   font-size: var(--font-ui-small);
-  pointer-events: auto;
-  animation: vzd-fade-in 0.12s ease;
 }
 
-.vzd-upvoty-preview .vzd-upvoty-preview-close {
-  all: unset;
-  -webkit-appearance: none;
-  appearance: none;
-  box-sizing: border-box;
+.vzd-card-close {
   position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
+  top: 0.3rem;
+  right: 0.3rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2850,110 +2838,91 @@ code:has(.vzd-upvoty-key) {
   background: none;
   border: none;
   box-shadow: none;
-  outline: none;
   color: var(--text-faint);
   border-radius: var(--radius-s);
   cursor: pointer;
-  opacity: 1;
-  pointer-events: auto;
 }
-.vzd-upvoty-preview .vzd-upvoty-preview-close svg { width: 12px; height: 12px; }
-.vzd-upvoty-preview .vzd-upvoty-preview-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.vzd-card-close svg { width: 12px; height: 12px; }
+.vzd-card-close:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 
-/* Header: [status pill] [votes] [key link] */
-.vzd-upvoty-preview-header {
+.vzd-card-header {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   padding-right: 1.4rem;
-  flex-wrap: wrap;
 }
 
-.vzd-upvoty-preview-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7em;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  padding: 4px 12px;
-  white-space: nowrap;
+/* The status eyebrow — see the note on the popover design this carries over:
+   a state is not an identifier, so it is deliberately not drawn as a tag. The
+   rule takes the state's own colour from the API; the label stays
+   --text-muted, so nothing depends on telling two hues apart. */
+.vzd-card-status {
+  --vzd-status-color: var(--text-muted);
+  display: inline-block;
   flex-shrink: 0;
-  background: none;
-  border: 1.5px solid var(--interactive-accent);
-  color: var(--interactive-accent);
-  box-shadow: none;
+  padding-bottom: 3px;
+  border-bottom: 2px solid var(--vzd-status-color);
+  font-size: calc(var(--font-ui-small) * 0.78);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
-.vzd-upvoty-preview-status:empty { display: none; }
+.vzd-card-status:empty { display: none; }
 
-.vzd-upvoty-preview-key {
-  display: inline-flex;
-  align-items: center;
+.vzd-card-key {
+  margin-left: auto;
   font-family: var(--font-monospace);
   font-size: 0.8em;
-  line-height: 1;
   color: var(--text-muted);
   text-decoration: none;
   cursor: pointer;
-  margin-left: auto;
 }
-.vzd-upvoty-preview-key:hover { color: var(--text-accent); text-decoration: underline; }
+.vzd-card-key:hover { color: var(--text-accent); text-decoration: underline; }
 
-.vzd-upvoty-preview-title {
+.vzd-card-title {
   font-weight: 600;
-  font-size: var(--font-ui-small);
   color: var(--text-normal);
-  margin: 0.6rem 0 0;
+  margin-top: 0.5rem;
   line-height: 1.3;
 }
 
-.vzd-upvoty-preview-description {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
+.vzd-card-summary {
+  margin: 0.35rem 0 0;
   line-height: 1.5;
-  margin: 0.3rem 0 0;
-}
-
-.vzd-upvoty-preview-body { margin-top: 0.5rem; }
-
-.vzd-upvoty-preview-summary {
   color: var(--text-normal);
-  line-height: 1.5;
-  margin: 0;
 }
 
-.vzd-upvoty-preview-loading {
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-}
+.vzd-card-loading { color: var(--text-muted); letter-spacing: 0.1em; }
+.vzd-card-error   { color: var(--text-muted); font-style: italic; }
 
-.vzd-upvoty-preview-error {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.vzd-upvoty-preview-footer {
+.vzd-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   margin-top: 0.5rem;
-  padding-top: 0.4rem;
+  padding-top: 0.35rem;
   border-top: 1px solid var(--background-modifier-border);
-}
-
-.vzd-upvoty-preview-updated {
-  color: var(--text-muted);
   font-size: 0.82em;
-}
-
-.vzd-upvoty-preview-votes {
-  font-size: 0.75em;
   color: var(--text-muted);
-  white-space: nowrap;
 }
+.vzd-card-footer:has(.vzd-card-meta:empty):has(.vzd-card-extra:empty) { display: none; }
+
+/* A refresh in flight dims the card rather than replacing it: the leaf
+   re-fetches every card whenever it becomes visible, and blanking the content
+   each time would make the panel flicker on every tab switch. */
+.vzd-card--loading { opacity: 0.6; }
+
+/* Clicking a key that already has a card surfaces it instead of stacking a
+   duplicate — this is what says "it's already here". */
+@keyframes vzd-card-flash {
+  from { background: var(--background-modifier-hover); }
+  to   { background: var(--background-primary); }
+}
+.vzd-card--flash { animation: vzd-card-flash 0.7s ease-out; }
 
 /* ── RACI Matrix ────────────────────────────────────────────────────────────── */
 /* The column boxes use vizardry-block/label-row/label/body — no custom

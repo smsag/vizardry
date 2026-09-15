@@ -19,6 +19,29 @@ export class MarkdownView {
   editor = null;
 }
 
+// WorkspaceLeaf / ItemView — the sideleaf view extends ItemView, so the stub
+// needs just enough of the base class for the view to construct and render:
+// contentEl (where it builds its chrome) and a no-op setState to super() into.
+export class WorkspaceLeaf {
+  view: unknown = null;
+  setViewState = async (_state: unknown): Promise<void> => {};
+  getViewState = (): unknown => ({});
+}
+
+export class ItemView {
+  leaf: WorkspaceLeaf;
+  containerEl: HTMLElement;
+  contentEl: HTMLElement;
+  constructor(leaf: WorkspaceLeaf) {
+    this.leaf = leaf;
+    this.containerEl = document.createElement("div");
+    this.contentEl = this.containerEl.appendChild(document.createElement("div"));
+  }
+  setState(_state: unknown, _result: unknown): Promise<void> { return Promise.resolve(); }
+  getState(): unknown { return {}; }
+  registerEvent(_ref: unknown): void {}
+}
+
 // Plugin base class — not used by renderer tests but imported transitively.
 export class Plugin {
   app: unknown = {};
