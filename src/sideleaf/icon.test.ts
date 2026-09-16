@@ -9,11 +9,38 @@ function render(): SVGSVGElement {
   return host.firstElementChild as SVGSVGElement;
 }
 
+/**
+ * Every point a shape touches, on the 24-unit grid. The artwork uses only
+ * absolute M, relative h/v and a rect, so a small walker covers it.
+ */
+function touchedPoints(): number[] {
+  const g = render().firstElementChild!;
+  const points: number[] = [];
+  for (const shape of Array.from(g.children)) {
+    if (shape.tagName.toLowerCase() === "rect") {
+      const n = (a: string) => Number(shape.getAttribute(a));
+      points.push(n("x"), n("y"), n("x") + n("width"), n("y") + n("height"));
+      continue;
+    }
+    let x = 0, y = 0;
+    for (const [, cmd, arg] of (shape.getAttribute("d") ?? "").matchAll(/([MhvHV])\s*(-?[\d.]+(?:\s+-?[\d.]+)?)/g)) {
+      const nums = arg.trim().split(/\s+/).map(Number);
+      if (cmd === "M") [x, y] = nums;
+      else if (cmd === "h") x += nums[0];
+      else if (cmd === "v") y += nums[0];
+      else if (cmd === "H") x = nums[0];
+      else if (cmd === "V") y = nums[0];
+      points.push(x, y);
+    }
+  }
+  return points;
+}
+
 describe("the Vizardry icon", () => {
   it("has a stable id", () => {
-    // Persisted into workspace.json by any leaf using it — renaming it would
-    // leave restored leaves with a missing icon.
-    expect(VIZARDRY_ICON_ID).toBe("vizardry-v");
+    // Named by the ribbon, the entry commands and the sideleaf's getIcon();
+    // a leaf restored from workspace.json asks for it by this name.
+    expect(VIZARDRY_ICON_ID).toBe("vizardry-logo");
   });
 
   it("is well-formed markup with no stray elements", () => {
@@ -21,7 +48,8 @@ describe("the Vizardry icon", () => {
     expect(svg.querySelector("parsererror")).toBeNull();
     const g = svg.firstElementChild!;
     expect(g.tagName.toLowerCase()).toBe("g");
-    expect(g.children).toHaveLength(2); // the V, and the spark
+    expect(g.children).toHaveLength(6); // the frame, three grid lines, the spark's two strokes
+    expect(g.children[0].tagName.toLowerCase()).toBe("rect");
   });
 
   it("scales Lucide's 24-unit grid into the 100-unit box addIcon draws in", () => {
@@ -35,27 +63,32 @@ describe("the Vizardry icon", () => {
     const g = render().firstElementChild!;
     expect(g.getAttribute("stroke")).toBe("currentColor");
     expect(VIZARDRY_ICON_SVG).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(VIZARDRY_ICON_SVG).not.toMatch(/\b(rgb|hsl)a?\(/);
   });
 
-  it("draws the spark filled, not stroked", () => {
-    // At the ~18px a sidebar tab renders, a stroked star collapses into a blob.
-    const spark = render().firstElementChild!.children[1];
-    expect(spark.getAttribute("fill")).toBe("currentColor");
-    expect(spark.getAttribute("stroke")).toBe("none");
-  });
-
-  it("keeps the V as an open stroke", () => {
+  it("keeps Lucide's rules: 2-unit stroke, round caps and joins, stroke only", () => {
     const g = render().firstElementChild!;
     expect(g.getAttribute("fill")).toBe("none");
-    expect(g.children[0].getAttribute("d")).toMatch(/^M4 5\.5/);
+    expect(g.getAttribute("stroke-width")).toBe("2");
+    expect(g.getAttribute("stroke-linecap")).toBe("round");
+    expect(g.getAttribute("stroke-linejoin")).toBe("round");
+    for (const shape of Array.from(g.children)) {
+      expect(shape.hasAttribute("fill")).toBe(false);
+      expect(shape.hasAttribute("stroke")).toBe(false);
+    }
+  });
+
+  it("carries the designed geometry unchanged", () => {
+    expect(VIZARDRY_ICON_SVG).toContain('<rect x="3" y="4" width="18" height="16" rx="2"/>');
+    expect(VIZARDRY_ICON_SVG).toContain('<path d="M18 6.5v5"/>');
+    expect(VIZARDRY_ICON_SVG).toContain('<path d="M15.5 9h5"/>');
   });
 
   it("stays inside the 24-unit grid it is drawn on", () => {
     // Anything outside would be clipped once scaled into the icon box.
-    const coords = [...VIZARDRY_ICON_SVG.matchAll(/[ML] ?(-?[\d.]+) (-?[\d.]+)/g)]
-      .flatMap(m => [Number(m[1]), Number(m[2])]);
-    expect(coords.length).toBeGreaterThan(0);
-    expect(Math.min(...coords)).toBeGreaterThanOrEqual(0);
-    expect(Math.max(...coords)).toBeLessThanOrEqual(24);
+    const points = touchedPoints();
+    expect(points.length).toBeGreaterThan(0);
+    expect(Math.min(...points)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...points)).toBeLessThanOrEqual(24);
   });
 });

@@ -1,4 +1,4 @@
-# Vizardry
+# <img src="assets/logo.svg" alt="" width="28"> Vizardry
 
 An [Obsidian](https://obsidian.md) plugin that renders product management frameworks as visual canvases inline in your notes — using fenced code blocks as input. Supports grid-based canvases, trees, diagrams, and flow charts.
 

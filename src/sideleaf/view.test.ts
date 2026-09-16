@@ -268,11 +268,12 @@ describe("the undo window", () => {
 });
 
 describe("the leaf's identity", () => {
-  it("uses Vizardry's own icon, not the ribbon's", async () => {
-    // The leaf used to borrow layout-template, which is also the "insert a
-    // canvas" ribbon icon — the two were indistinguishable in the sidebar.
+  it("uses Vizardry's own icon, the one the ribbon and entry commands share", async () => {
+    // The leaf used to borrow layout-template, a generic Lucide glyph; the
+    // plugin's mark is registered under its own id and used everywhere it
+    // shows up, so the tab, the ribbon and the palette all say Vizardry.
     const v = await makeView();
-    expect(v.getIcon()).toBe("vizardry-v");
+    expect(v.getIcon()).toBe("vizardry-logo");
     expect(v.getIcon()).not.toBe("layout-template");
   });
 });
