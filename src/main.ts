@@ -184,11 +184,14 @@ export default class VizardryPlugin extends Plugin {
     this.addCommand({
       id: "open-sideleaf",
       name: t("sideleaf.openCommand"),
+      icon: VIZARDRY_ICON_ID,
       callback: () => { void revealSideleaf(); },
     });
 
     // ── Ribbon icon → opens insert modal ──────────────────────────────
-    this.addRibbonIcon("layout-template", t("commands.insertVizardryCanvas"), () => {
+    // The plugin's own mark, registered above; the same one the sideleaf tab
+    // and the entry commands carry, so every way in looks like Vizardry.
+    this.addRibbonIcon(VIZARDRY_ICON_ID, t("commands.insertVizardryCanvas"), () => {
       withActiveMarkdownEditor((editor) => new CanvasInsertModal(this.app, editor, frameworkOptions).open());
     });
 
@@ -196,6 +199,7 @@ export default class VizardryPlugin extends Plugin {
     this.addCommand({
       id: "insert-canvas",
       name: t("commands.insertCanvas"),
+      icon: VIZARDRY_ICON_ID,
       callback: () => withActiveMarkdownEditor((editor) => {
         new CanvasInsertModal(this.app, editor, frameworkOptions).open();
       }),
