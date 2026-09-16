@@ -1,3 +1,19 @@
+## 0.70.0
+
+Vizardry has its own icon.
+
+- **New: one mark for every way in.** The ribbon button, the sideleaf tab and
+  the "Insert canvas…" and "Open the Vizardry sideleaf" commands now share one
+  icon: a canvas grid with a spark in one cell. The ribbon used to borrow a
+  generic Lucide glyph and the tab carried a V monogram, so the two did not
+  look like the same plugin. The mark is drawn to the same rules as Obsidian's
+  built-in icons (24-unit grid, 2-unit stroke, round caps, stroke only,
+  `currentColor`), so it follows your theme and accent colour and sits in a
+  row of native icons without standing out. The per-framework insert commands
+  are unchanged. The icon's id changed from `vizardry-v` to `vizardry-logo`; a
+  sideleaf restored from an earlier session draws the new mark as soon as the
+  plugin loads. The same artwork ships as `assets/logo.svg`.
+
 ## 0.69.1
 
 The three write-back fixes deferred from the 0.69.0 review.
