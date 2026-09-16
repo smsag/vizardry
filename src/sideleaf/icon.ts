@@ -7,10 +7,10 @@
  * V monogram; a plugin's entry points should share one mark, and a grid with a
  * spark says both "canvas" and "wizardry" where the V said only the name.
  *
- * Drawn on Lucide's 24-unit grid at stroke 2 with round caps, so it sits
+ * Drawn on Lucide's 24-unit grid with round caps, so it sits
  * correctly among Obsidian's built-in icons, then scaled into the 100-unit box
  * `addIcon` expects. Stroke width scales with the group, so the proportions
- * survive the transform. Stroke only, `currentColor` throughout: the icon
+ * survive the transform; the stroke width is Obsidian's, inherited (see below). Stroke only, `currentColor` throughout: the icon
  * follows the theme and the accent, never a colour of its own.
  */
 
@@ -29,4 +29,14 @@ const ARTWORK = [
   '<path d="M15.5 9h5"/>',
 ].join("");
 
-export const VIZARDRY_ICON_SVG = `<g transform="scale(${SCALE.toFixed(4)})" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ARTWORK}</g>`;
+/**
+ * No `stroke-width` here, deliberately. Obsidian's `.svg-icon` sets
+ * `stroke-width: var(--icon-stroke)` — 1.75px in a sidebar tab, other values in
+ * the ribbon and menus — and a Lucide icon has no attribute of its own, so it
+ * inherits that. An attribute on this group would block it, and the group's
+ * `scale()` multiplies the stroke along with the geometry: a hardcoded 2 drew
+ * at 8.33% of the icon's width where every neighbour sat at 7.29%, which reads
+ * as a darker glyph in the row. `assets/logo.svg` keeps its own `stroke-width`:
+ * a standalone file has no stylesheet to inherit from.
+ */
+export const VIZARDRY_ICON_SVG = `<g transform="scale(${SCALE.toFixed(4)})" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ARTWORK}</g>`;
