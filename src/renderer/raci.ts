@@ -7,6 +7,7 @@ import { writeRACICell } from "../shared/raci-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import type { RenderContext } from "./render-context";
+import { setupSlideCarousel } from "./grid-carousel";
 import { Notice } from "obsidian";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
@@ -84,7 +85,9 @@ export function renderRACIMatrix(
     const block = grid.createEl("div", {
       cls: `vizardry-block${col.accent ? " vzd-raci-col--accent" : ""}`,
     });
-    block.style.gridArea = col.key;
+    // A custom property, not an inline grid-area, so the carousel and capture
+    // rules can override the placement (see renderCanvas()).
+    block.style.setProperty("--vzd-area", col.key);
 
     // Label row — identical structure to renderCanvas()
     const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
@@ -121,4 +124,9 @@ export function renderRACIMatrix(
       }
     });
   });
+
+  // One column at a time on mobile and when pinned, like the other grids. The
+  // shared carousel CSS always stacked these columns; without the carousel
+  // none was ever shown, so RACI rendered blank on a phone.
+  setupSlideCarousel(container, ".vizardry-block", "vizardry-block-active", getCols().length);
 }

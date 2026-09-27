@@ -1,6 +1,6 @@
 ## 0.71.0
 
-Sketch mode is easier to read.
+Sketch mode is easier to read, and a pinned canvas can be browsed block by block.
 
 - **Changed: a new handwriting font for sketch mode.** Caveat was a narrow,
   flowing script with small lowercase letters, so labels in nodes, cards and
@@ -11,6 +11,19 @@ Sketch mode is easier to read.
   size, so the A+/A− controls and titles match the non-sketch look. If you
   preferred Caveat, install it and enter `Caveat` in the "Handwriting font"
   setting.
+- **Fix: a pinned canvas showed only its first block.** Pinning keeps a copy
+  of the canvas at the top of the reading pane, capped at half its height, so
+  a tall grid was cut off after its first block or row. That copy also ignored
+  the mouse, so the prev/next arrows it showed at narrow window widths did
+  nothing. A pinned grid, Roadmap, Pace Layers or Odyssey canvas now works
+  like the mobile view: one block at a time, with prev/next arrows and dots
+  that respond to clicks. It remembers the block you were on when it unpins
+  and pins again as you scroll. The canvas in the note itself keeps its full
+  layout.
+- **Fix: a RACI matrix was blank on a phone.** Its columns were stacked and
+  hidden like the other grids' blocks, but it had no carousel to show one.
+  It now shows one column at a time with prev/next arrows, on a phone and
+  when pinned.
 
 _Bundled font: Shantell Sans © The Shantell Sans Project Authors (Shantell
 Martin, Arrow Type, Anya Danilova), SIL Open Font License 1.1. Only a Latin
