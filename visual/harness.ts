@@ -175,7 +175,7 @@ function render(): void {
   }
 
   // Let any rAF-scheduled layout (initCanvas → applyFullWidth) settle and any
-  // web font (sketch mode's Caveat) finish loading, then signal readiness.
+  // web font (sketch mode's Shantell Sans) finish loading, then signal readiness.
   const signalReady = (): void => document.body.setAttribute("data-ready", "1");
   requestAnimationFrame(() => {
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;

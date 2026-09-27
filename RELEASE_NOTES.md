@@ -1,5 +1,16 @@
 ## 0.71.0
 
+Sketch mode is easier to read, and a pinned canvas can be browsed block by block.
+
+- **Changed: a new handwriting font for sketch mode.** Caveat was a narrow,
+  flowing script with small lowercase letters, so labels in nodes, cards and
+  axes ran together even after sketch mode scaled every canvas up by 1.35×.
+  Sketch mode now bundles [Shantell Sans](https://fonts.google.com/specimen/Shantell+Sans),
+  a handwriting font drawn for readability, with separate print letters and
+  real weights from light to extra bold. Text is back at the canvas's normal
+  size, so the A+/A− controls and titles match the non-sketch look. If you
+  preferred Caveat, install it and enter `Caveat` in the "Handwriting font"
+  setting.
 - **Fix: a pinned canvas showed only its first block.** Pinning keeps a copy
   of the canvas at the top of the reading pane, capped at half its height, so
   a tall grid was cut off after its first block or row. That copy also ignored
@@ -13,6 +24,10 @@
   hidden like the other grids' blocks, but it had no carousel to show one.
   It now shows one column at a time with prev/next arrows, on a phone and
   when pinned.
+
+_Bundled font: Shantell Sans © The Shantell Sans Project Authors (Shantell
+Martin, Arrow Type, Anya Danilova), SIL Open Font License 1.1. Only a Latin
+subset is embedded, and it loads only when sketch mode is on._
 
 ## 0.70.0
 

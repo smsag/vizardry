@@ -337,7 +337,7 @@ export class VizardrySettingTab extends PluginSettingTab {
       .setDesc(t("settings.sketchFont.desc"))
       .addText(text =>
         text
-          .setPlaceholder("Caveat, Comic Sans MS, cursive")
+          .setPlaceholder("Patrick Hand, Comic Sans MS, cursive")
           .setValue(this.plugin.settings.sketchFont)
           .onChange((value) => {
             this.plugin.settings.sketchFont = value;
