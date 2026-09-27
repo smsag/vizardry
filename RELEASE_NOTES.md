@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **Fix: exported canvases were cut off at one edge.** A canvas widened past
+  the reading column was captured where it sat on the page rather than on its
+  own, so the image was shifted and lost part of its left side. It showed most
+  in documents another plugin prints (a PDF from Schreibstube lost the first
+  column of a SWOT, the first box of a Node Map), and slightly in the download
+  button's PNG. The capture now frames the canvas itself.
 - **Fix: a canvas rendered outside a note view sized itself to the window.**
   With readable line width on, a canvas that another plugin draws off-screen
   (a note printed to PDF, a page being published) or that opens in a hover
