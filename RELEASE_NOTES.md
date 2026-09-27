@@ -1,6 +1,7 @@
 ## 0.71.0
 
-Sketch mode is easier to read, and a pinned canvas can be browsed block by block.
+Sketch mode is easier to read, a pinned canvas can be browsed block by block,
+and Node Map boxes can be dragged into place instead of typed coordinates.
 
 - **Changed: a new handwriting font for sketch mode.** Caveat was a narrow,
   flowing script with small lowercase letters, so labels in nodes, cards and
@@ -37,6 +38,10 @@ Sketch mode is easier to read, and a pinned canvas can be browsed block by block
   which on a box with body text was a narrow band, so drawing a connection
   was mostly luck. The handle now stays shown while the pointer is anywhere on
   the box or near the handle.
+- **Fix: Vizardry's icon looked bolder than its neighbours.** It drew its
+  lines at a fixed width instead of the one Obsidian sets for the ribbon, the
+  sidebar tabs and menus, so it read heavier than the icons next to it. It
+  now uses the same line width as Obsidian's own icons wherever it appears.
 
 _Bundled font: Shantell Sans © The Shantell Sans Project Authors (Shantell
 Martin, Arrow Type, Anya Danilova), SIL Open Font License 1.1. Only a Latin
