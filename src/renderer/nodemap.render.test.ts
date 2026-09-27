@@ -27,7 +27,7 @@ vi.mock("../shared/nodemap-edit", () => ({
 
 import { parseNodeMap } from "../nodemap";
 import { renderNodeMap, placeAutoBoxes, type MeasuredBox } from "./nodemap";
-import { writeNodeMapBoxPosition } from "../shared/nodemap-edit";
+import { writeNodeMapBoxPosition, renameNodeMapBox, writeNodeMapBoxBody } from "../shared/nodemap-edit";
 
 const SRC = [
   "box: Customer [x: 40, y: 40]",
@@ -67,6 +67,8 @@ function boxGroup(el: HTMLElement, name: string): SVGGElement {
 beforeEach(() => {
   document.body.innerHTML = "";
   vi.mocked(writeNodeMapBoxPosition).mockClear();
+  vi.mocked(renameNodeMapBox).mockClear();
+  vi.mocked(writeNodeMapBoxBody).mockClear();
 });
 
 describe("Node Map drag", () => {
@@ -166,5 +168,61 @@ describe("placeAutoBoxes", () => {
     const { el } = render("box: A\nbox: B\nbox: C [color: blue]\nlink: A -> B");
     const xs = Array.from(el.querySelectorAll(".vzd-nodemap-box")).map(r => Number(r.getAttribute("x")));
     expect(xs).toEqual([40, 190, 340]);
+  });
+});
+
+describe("Node Map in-place editing", () => {
+  const key = (el: Element, k: string, mods: KeyboardEventInit = {}): void => {
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true, ...mods }));
+  };
+  const dblclick = (el: Element): void => { el.dispatchEvent(new MouseEvent("dblclick", { bubbles: true })); };
+
+  it("edits the name where it stands, like the title — no input swapped in", () => {
+    const { el } = render(SRC);
+    const name = boxGroup(el, "Customer").querySelector<HTMLElement>(".vzd-nodemap-box-name")!;
+    dblclick(name);
+    expect(name.getAttribute("contenteditable")).not.toBeNull();
+    expect(name.classList.contains("vzd-inplace-editing")).toBe(true);
+    expect(el.querySelector("input, textarea")).toBeNull();
+
+    name.textContent = "Buyer";
+    key(name, "Enter");
+    expect(name.hasAttribute("contenteditable")).toBe(false);
+    expect(renameNodeMapBox).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), "Customer", "Buyer");
+  });
+
+  it("reverts the name on Escape without writing", () => {
+    const { el } = render(SRC);
+    const name = boxGroup(el, "Customer").querySelector<HTMLElement>(".vzd-nodemap-box-name")!;
+    dblclick(name);
+    name.textContent = "Nope";
+    key(name, "Escape");
+    expect(name.textContent).toBe("Customer");
+    expect(renameNodeMapBox).not.toHaveBeenCalled();
+  });
+
+  it("lets the body take new lines on Enter and saves on Mod+Enter", () => {
+    const { el } = render(SRC);
+    const body = boxGroup(el, "Order Service").querySelector<HTMLElement>(".vzd-nodemap-box-body")!;
+    dblclick(body);
+    expect(body.getAttribute("contenteditable")).not.toBeNull();
+    key(body, "Enter");
+    expect(body.hasAttribute("contenteditable")).toBe(true);
+    expect(writeNodeMapBoxBody).not.toHaveBeenCalled();
+
+    body.textContent = "Creates orders\nValidates them";
+    key(body, "Enter", { metaKey: true });
+    expect(writeNodeMapBoxBody).toHaveBeenCalledWith(
+      expect.anything(), expect.anything(), expect.anything(), "Order Service", "Creates orders\nValidates them");
+  });
+
+  it("does not start a drag while a box is being edited", () => {
+    const { el } = render(SRC);
+    const name = boxGroup(el, "Customer").querySelector<HTMLElement>(".vzd-nodemap-box-name")!;
+    dblclick(name);
+    pointer(name, "pointerdown", at(60, 50));
+    pointer(document, "pointermove", at(200, 200));
+    pointer(document, "pointerup", at(200, 200));
+    expect(writeNodeMapBoxPosition).not.toHaveBeenCalled();
   });
 });

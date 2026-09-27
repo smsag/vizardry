@@ -205,3 +205,91 @@ export function activateTextareaEdit(
     }
   });
 }
+
+/**
+ * The text of a contenteditable element with its line breaks, read from the
+ * nodes rather than `innerText` (which depends on layout): a `<br>` or the
+ * start of a block the browser inserted on Enter counts as a new line.
+ */
+function editableText(el: HTMLElement): string {
+  let out = "";
+  const walk = (node: Node): void => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 3) { out += child.nodeValue ?? ""; continue; }
+      if (!(child instanceof HTMLElement)) continue;
+      if (child.tagName === "BR") { out += "\n"; continue; }
+      const block = child.tagName === "DIV" || child.tagName === "P";
+      if (block && out.length > 0 && !out.endsWith("\n")) out += "\n";
+      walk(child);
+    }
+  };
+  walk(el);
+  return out;
+}
+
+interface InPlaceEditOptions {
+  /** The text to restore on cancel. */
+  initial: string;
+  /** Enter adds a line (Mod+Enter saves) instead of saving. */
+  multiline?: boolean;
+  /** Called once: `commit` is false on Escape. `value` is the edited text. */
+  onDone: (commit: boolean, value: string) => void;
+}
+
+/**
+ * Edits `el`'s own text where it stands, the way a canvas title does: the
+ * element turns contenteditable (plain text only), keeps its font, size and
+ * position, and shows the title's accent underline — no separate input or
+ * textarea swapped in. Enter saves (Mod+Enter when `multiline`), Escape
+ * reverts, and a real blur saves; the CM6 focus-steal blur right after
+ * focusing is ignored, as for the title.
+ */
+export function editTextInPlace(el: HTMLElement, opts: InPlaceEditOptions): void {
+  const guard = createBlurGuard();
+  let done = false;
+
+  el.classList.add("vzd-inplace-editing");
+  el.setAttribute("contenteditable", "plaintext-only");
+  // Engines without plaintext-only report it back as unset; fall back to
+  // plain contenteditable, whose pasted markup is flattened by reading text.
+  if (el.contentEditable !== "plaintext-only") el.setAttribute("contenteditable", "true");
+  el.setAttribute("spellcheck", "false");
+  el.focus({ preventScroll: true });
+
+  // Caret at the end, as on the title.
+  const range = el.ownerDocument.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = el.ownerDocument.defaultView?.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+
+  const readText = (): string => editableText(el).replace(/\u00a0/g, " ");
+
+  const finish = (commit: boolean): void => {
+    if (done) return;
+    done = true;
+    guard.dispose();
+    el.removeEventListener("keydown", onKeyDown);
+    el.removeEventListener("blur", onBlur);
+    el.classList.remove("vzd-inplace-editing");
+    el.removeAttribute("contenteditable");
+    el.removeAttribute("spellcheck");
+    const value = readText();
+    if (!commit) el.textContent = opts.initial;
+    opts.onDone(commit, value);
+  };
+
+  const onKeyDown = (e: KeyboardEvent): void => {
+    // Keep keystrokes away from the canvas's and Obsidian's own shortcuts.
+    e.stopPropagation();
+    if (e.key === "Escape") { e.preventDefault(); finish(false); return; }
+    if (e.key === "Enter" && (!opts.multiline || e.metaKey || e.ctrlKey)) { e.preventDefault(); finish(true); }
+  };
+  const onBlur = (): void => {
+    if (guard.ignoreBlur()) return;
+    finish(true);
+  };
+  el.addEventListener("keydown", onKeyDown);
+  el.addEventListener("blur", onBlur);
+}

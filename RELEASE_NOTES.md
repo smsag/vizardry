@@ -1,3 +1,25 @@
+## 0.71.1
+
+Node Map polish, and sketch mode carried into presentation.
+
+- **Changed: Node Map boxes are edited in place.** Double-clicking a box's
+  name or body used to lay a separate white input field over the box. The
+  text itself now becomes editable, in the box's own font and position, with
+  the same accent underline as a canvas title. Enter saves a name; in the body
+  Enter adds a line and Cmd/Ctrl+Enter saves. Escape cancels, clicking away
+  saves.
+- **Fix: presentation mode showed colours in sketch mode.** The presentation
+  view took sketch mode's handwriting but not its monochrome ink or line
+  wobble, so coloured Node Map boxes and links (and other hard-coded colours)
+  stayed coloured. It now looks like the sketched canvas.
+- **Fix: Node Map text spilled out of its boxes.** Boxes were sized from a
+  character-count estimate, so a wider font (sketch mode's handwriting, or
+  your own) could wrap a name onto a line the box had no room for, and
+  presentation mode enlarged the text inside boxes that stayed the same size.
+  Boxes now grow to fit their rendered text, and follow a font change without
+  a reload; presentation mode enlarges the whole diagram instead of just its
+  text.
+
 ## 0.71.0
 
 Sketch mode is easier to read, a pinned canvas can be browsed block by block,
