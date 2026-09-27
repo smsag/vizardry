@@ -387,6 +387,30 @@ export function prepareForCapture(root: HTMLElement, options: { light: boolean }
   return undo;
 }
 
+/**
+ * Where the canvas sits on the page, taken off the clone the capture draws.
+ *
+ * applyFullWidth centres a canvas past the reading column with `left: 50%` and
+ * `translateX(-50%)`. html-to-image copies the *computed* style onto the clone,
+ * so the two arrive as fixed pixels — half the column, minus half the canvas —
+ * which only cancel when the canvas is exactly as wide as its column. Anywhere
+ * else the whole drawing is shifted inside the image and one edge is cut off:
+ * in a note on screen by the column's margin, and in another plugin's render
+ * host, which is no workspace view, by hundreds of pixels. The picture frames
+ * the canvas itself, so its offsets within the page mean nothing there.
+ *
+ * Applied to the clone only; the live canvas never moves while it is captured.
+ */
+const CAPTURE_ROOT_STYLE: Partial<CSSStyleDeclaration> = {
+  left: "auto",
+  right: "auto",
+  top: "auto",
+  bottom: "auto",
+  transform: "none",
+  translate: "none",
+  margin: "0",
+};
+
 // Captures are serialised through one chain. Every step mutates the *live*
 // canvas and restores it by rewriting whole `style` / `class` attributes, so two
 // overlapping captures would interleave their snapshots and the second restore
@@ -457,6 +481,7 @@ async function runCapture(root: HTMLElement, options: CaptureOptions): Promise<C
         // when layout isn't measurable.
         width: cssWidth || undefined,
         height: cssHeight || undefined,
+        style: CAPTURE_ROOT_STYLE,
         // Strip interaction chrome (toolbar, carousel nav, inline edit
         // affordances) so the exported image is content-only, and the canvas's
         // own title row when the caller supplies its own caption.

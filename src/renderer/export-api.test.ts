@@ -225,6 +225,22 @@ describe("what ends up in the image", () => {
     expect(keepNoHeader(content)).toBe(true);
   });
 
+  it("frames the canvas itself, not where full width placed it on the page", async () => {
+    // applyFullWidth's centring, which html-to-image would otherwise copy onto
+    // the clone as fixed pixels and so shift the drawing out of its own image.
+    const el = canvas();
+    el.style.position = "relative";
+    el.style.left = "50%";
+    el.style.transform = "translateX(-50%)";
+    const before = el.getAttribute("style");
+
+    await exportCanvas(el);
+
+    expect(blobOptions().style).toMatchObject({ left: "auto", transform: "none", translate: "none", margin: "0" });
+    // The clone moves, the live canvas does not.
+    expect(el.getAttribute("style")).toBe(before);
+  });
+
   it("un-collapses a minimized canvas for the capture and re-collapses it after", async () => {
     const el = canvas({ collapsed: true });
     const before = el.outerHTML;
