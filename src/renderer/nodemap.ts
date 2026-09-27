@@ -42,8 +42,20 @@ const BODY_PAD_Y = 10;
 const NODE_RX = 8;
 const ARROW_LEN = 9;
 const LABEL_OFFSET = 13;
+/** Gap between auto-placed boxes, and between them and the positioned ones. */
+const AUTO_GAP = 40;
+/** Auto-placed boxes wrap to a new row past this width. */
+const AUTO_ROW_WIDTH = 720;
+/** Screen pixels a press must travel before it counts as a drag, so a
+ *  double-click to edit never nudges the box. */
+const DRAG_THRESHOLD_PX = 3;
+/** "+" handle: its gap from the box's right edge and its hit radius. */
+const HANDLE_GAP = 10;
+const HANDLE_HIT_R = 13;
+/** Margin around a box (and its handle) within which the handle stays shown. */
+const HANDLE_ZONE_PAD = 12;
 
-interface MeasuredBox extends NodeMapBox {
+export interface MeasuredBox extends NodeMapBox {
   width: number;
   height: number;
 }
@@ -68,6 +80,31 @@ function measureBox(box: NodeMapBox): { width: number; height: number } {
   return { width, height };
 }
 
+/**
+ * Places boxes declared without coordinates: in rows below every positioned
+ * box (or from the top-left when none is), left to right, wrapping past
+ * AUTO_ROW_WIDTH. Mutates the boxes in place.
+ */
+export function placeAutoBoxes(boxes: MeasuredBox[]): void {
+  const fixed = boxes.filter(b => !b.auto);
+  const auto = boxes.filter(b => b.auto);
+  if (auto.length === 0) return;
+  let x = AUTO_GAP;
+  let y = fixed.length > 0 ? Math.max(...fixed.map(b => b.y + b.height)) + AUTO_GAP : AUTO_GAP;
+  let rowH = 0;
+  for (const box of auto) {
+    if (x > AUTO_GAP && x + box.width > AUTO_ROW_WIDTH) {
+      x = AUTO_GAP;
+      y += rowH + AUTO_GAP;
+      rowH = 0;
+    }
+    box.x = x;
+    box.y = y;
+    x += box.width + AUTO_GAP;
+    rowH = Math.max(rowH, box.height);
+  }
+}
+
 /** Convert client (screen) coordinates to the SVG's own coordinate space,
  *  reading the SVG's current (dynamically-sized) viewBox for the fallback
  *  path used in environments without DOMPoint.matrixTransform (e.g. tests). */
@@ -89,7 +126,20 @@ function clientToSvg(svg: SVGSVGElement, clientX: number, clientY: number): Vec2
   };
 }
 
-type DragState = { ref: BoxRef };
+type DragState = {
+  ref: BoxRef;
+  pointerId: number;
+  /** Where the press started (client px), to apply DRAG_THRESHOLD_PX. */
+  startClientX: number;
+  startClientY: number;
+  /** Pointer position within the box (SVG units), kept under the cursor. */
+  grabX: number;
+  grabY: number;
+  /** Box position before the drag, restored on cancel. */
+  originX: number;
+  originY: number;
+  moved: boolean;
+};
 type LinkDrawState = { sourceRef: BoxRef; ghostLine: SVGLineElement; hasMoved: boolean };
 type ActiveEdit = { close: () => void };
 
@@ -123,7 +173,7 @@ function boxCenter(box: MeasuredBox): Vec2 {
 }
 
 function renderLinks(
-  svg: SVGSVGElement,
+  layer: SVGElement,
   data: NodeMapData,
   boxByName: Map<string, MeasuredBox>,
   isEditMode: boolean,
@@ -197,7 +247,7 @@ function renderLinks(
       linkG.appendChild(deleteBtn);
     }
 
-    svg.appendChild(linkG);
+    layer.appendChild(linkG);
   }
 }
 
@@ -240,6 +290,22 @@ function renderBoxes(svg: SVGSVGElement, boxes: MeasuredBox[]): BoxRef[] {
 
 // ── Interaction: drag to reposition ───────────────────────────────────────
 
+/** Moves a box's shapes (and its model) to a new top-left corner. */
+function placeBox(ref: BoxRef, x: number, y: number): void {
+  ref.box.x = x;
+  ref.box.y = y;
+  ref.rect.setAttribute("x", String(x));
+  ref.rect.setAttribute("y", String(y));
+  ref.fo.setAttribute("x", String(x));
+  ref.fo.setAttribute("y", String(y));
+}
+
+/**
+ * Drag a box from anywhere on it — the name and body sit in a foreignObject
+ * over the rect, so the press is taken on the box's group, not the rect. The
+ * point you grabbed stays under the pointer; `onMove` redraws what follows the
+ * box (links, its handle and controls). Pointer events, so touch drags too.
+ */
 function attachDragBehavior(
   svg: SVGSVGElement,
   refs: BoxRef[],
@@ -247,61 +313,102 @@ function attachDragBehavior(
   app: App,
   ctx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
+  onMove: (ref: BoxRef) => void,
 ): void {
   const doc = svg.ownerDocument;
 
-  const moveBox = (ref: BoxRef, clientX: number, clientY: number): void => {
-    const { x, y } = clientToSvg(svg, clientX, clientY);
-    const nx = Math.max(0, x - ref.box.width / 2);
-    const ny = Math.max(0, y - ref.box.height / 2);
-    ref.rect.setAttribute("x", String(nx));
-    ref.rect.setAttribute("y", String(ny));
-    ref.fo.setAttribute("x", String(nx));
-    ref.fo.setAttribute("y", String(ny));
+  const stopListening = (): void => {
+    doc.removeEventListener("pointermove", onPointerMove);
+    doc.removeEventListener("pointerup", onPointerUp);
+    doc.removeEventListener("pointercancel", onPointerCancel);
+    doc.removeEventListener("keydown", onKey);
   };
 
-  const endDrag = (): void => {
-    if (!ix.drag) return;
-    const { ref } = ix.drag;
+  const endDrag = (commit: boolean): void => {
+    const d = ix.drag;
+    if (!d) return;
     ix.drag = null;
-    ref.rect.classList.remove("vzd-nodemap-box--dragging");
+    stopListening();
+    d.ref.g.classList.remove("vzd-nodemap-box-g--dragging");
     svg.classList.remove("vzd-nodemap-svg--dragging");
-    const x = parseFloat(ref.rect.getAttribute("x") ?? "0");
-    const y = parseFloat(ref.rect.getAttribute("y") ?? "0");
-    // A press with no movement is a click, not a move: nothing to write.
-    if (moved && !writeNodeMapBoxPosition(app, ctx, wrap, ref.box.name, x, y)) showWriteFailedNotice(wrap);
-    doc.removeEventListener("mousemove", onMouseMove);
-    doc.removeEventListener("mouseup", onMouseUp);
+    // A press that never passed the threshold is a click (or half of a
+    // double-click to edit), not a move: nothing to write.
+    if (!d.moved) return;
+    if (!commit) { placeBox(d.ref, d.originX, d.originY); onMove(d.ref); return; }
+    if (!writeNodeMapBoxPosition(app, ctx, wrap, d.ref.box.name, d.ref.box.x, d.ref.box.y)) showWriteFailedNotice(wrap);
   };
 
-  let moved = false;
-  const onMouseMove = (e: MouseEvent): void => { if (ix.drag) { moved = true; moveBox(ix.drag.ref, e.clientX, e.clientY); } };
-  const onMouseUp = (): void => endDrag();
+  const onPointerMove = (e: PointerEvent): void => {
+    const d = ix.drag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    if (!d.moved) {
+      if (Math.hypot(e.clientX - d.startClientX, e.clientY - d.startClientY) < DRAG_THRESHOLD_PX) return;
+      d.moved = true;
+      d.ref.g.classList.add("vzd-nodemap-box-g--dragging");
+      svg.classList.add("vzd-nodemap-svg--dragging");
+    }
+    const { x, y } = clientToSvg(svg, e.clientX, e.clientY);
+    placeBox(d.ref, Math.max(0, x - d.grabX), Math.max(0, y - d.grabY));
+    onMove(d.ref);
+  };
+  const onPointerUp = (e: PointerEvent): void => { if (ix.drag?.pointerId === e.pointerId) endDrag(true); };
+  const onPointerCancel = (e: PointerEvent): void => { if (ix.drag?.pointerId === e.pointerId) endDrag(false); };
+  const onKey = (e: KeyboardEvent): void => { if (e.key === "Escape") endDrag(false); };
 
-  onDisconnected(wrap, () => {
-    doc.removeEventListener("mousemove", onMouseMove);
-    doc.removeEventListener("mouseup", onMouseUp);
-    ix.drag = null;
-  });
+  onDisconnected(wrap, () => { stopListening(); ix.drag = null; });
 
   for (const ref of refs) {
-    ref.rect.classList.add("vzd-nodemap-box--draggable");
-    const startDrag = (): void => {
-      if (ix.activeEdit || ix.linkDraw) return;
-      moved = false;
-      ix.drag = { ref };
-      ref.rect.classList.add("vzd-nodemap-box--dragging");
-      svg.classList.add("vzd-nodemap-svg--dragging");
-      doc.addEventListener("mousemove", onMouseMove);
-      doc.addEventListener("mouseup", onMouseUp);
-    };
-    ref.rect.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startDrag(); });
-    ref.rect.addEventListener("touchstart", (e) => { e.preventDefault(); startDrag(); }, { passive: false });
+    ref.g.classList.add("vzd-nodemap-box-g--draggable");
+    ref.g.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 || ix.drag || ix.linkDraw || ix.activeEdit) return;
+      // The rename input / body textarea live inside the box: let them work.
+      if (e.target instanceof Element && e.target.closest("input, textarea")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const { x, y } = clientToSvg(svg, e.clientX, e.clientY);
+      ix.drag = {
+        ref, pointerId: e.pointerId,
+        startClientX: e.clientX, startClientY: e.clientY,
+        grabX: x - ref.box.x, grabY: y - ref.box.y,
+        originX: ref.box.x, originY: ref.box.y,
+        moved: false,
+      };
+      doc.addEventListener("pointermove", onPointerMove);
+      doc.addEventListener("pointerup", onPointerUp);
+      doc.addEventListener("pointercancel", onPointerCancel);
+      doc.addEventListener("keydown", onKey);
+    });
   }
 }
 
 // ── Interaction: "+" handle drag-to-connect two EXISTING boxes ────────────
 
+/** Centre of a box's "+" handle, just off its right edge. */
+function handleCenter(box: MeasuredBox): Vec2 {
+  return { x: box.x + box.width + HANDLE_GAP, y: box.y + box.height / 2 };
+}
+
+/** True when `p` is on the box itself. */
+function onBox(box: MeasuredBox, p: Vec2): boolean {
+  return p.x >= box.x && p.x <= box.x + box.width && p.y >= box.y && p.y <= box.y + box.height;
+}
+
+/** True when `p` is within the area that keeps a box's handle shown: the box
+ *  and its handle, plus a margin, so the pointer can travel from anywhere on
+ *  the box (a corner, the controls, a tall body) to the "+" without it hiding. */
+function inHandleZone(box: MeasuredBox, p: Vec2): boolean {
+  const right = box.x + box.width + HANDLE_GAP + HANDLE_HIT_R;
+  return p.x >= box.x - HANDLE_ZONE_PAD && p.x <= right + HANDLE_ZONE_PAD
+    && p.y >= box.y - HANDLE_ZONE_PAD && p.y <= box.y + box.height + HANDLE_ZONE_PAD;
+}
+
+/**
+ * Wires the "+" handles. Which box's handle is shown is decided from the
+ * pointer position over the whole SVG rather than per-box enter/leave events:
+ * those hid the handle whenever the pointer left the box anywhere but the
+ * narrow band level with the handle — any tall box, any diagonal move. Returns
+ * a function that moves a box's handle after the box moves.
+ */
 function attachLinkDrawBehavior(
   svg: SVGSVGElement,
   refs: BoxRef[],
@@ -309,7 +416,7 @@ function attachLinkDrawBehavior(
   app: App,
   ctx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
-): void {
+): (ref: BoxRef) => void {
   const doc = svg.ownerDocument;
 
   const findBoxUnderPoint = (clientX: number, clientY: number, exclude: BoxRef): BoxRef | null => {
@@ -365,11 +472,38 @@ function attachLinkDrawBehavior(
     ix.linkDraw = null;
   });
 
+  const handles = new Map<BoxRef, SVGGElement>();
+  let shown: BoxRef | null = null;
+  const show = (ref: BoxRef | null): void => {
+    if (ref === shown) return;
+    if (shown) handles.get(shown)!.style.display = "none";
+    shown = ref;
+    if (ref) handles.get(ref)!.style.display = "";
+  };
+
+  const placeHandle = (ref: BoxRef): void => {
+    const c = handleCenter(ref.box);
+    handles.get(ref)?.setAttribute("transform", `translate(${c.x}, ${c.y})`);
+  };
+
+  svg.addEventListener("pointermove", (e) => {
+    if (ix.linkDraw) return; // keep the source handle while drawing
+    if (ix.drag || ix.activeEdit || e.pointerType === "touch") { show(null); return; }
+    const p = clientToSvg(svg, e.clientX, e.clientY);
+    // Later boxes paint over earlier ones: search topmost first, and prefer
+    // the box actually under the pointer over a neighbour's margin.
+    let hit: BoxRef | null = null;
+    for (let i = refs.length - 1; i >= 0 && !hit; i--) if (onBox(refs[i].box, p)) hit = refs[i];
+    for (let i = refs.length - 1; i >= 0 && !hit; i--) if (inHandleZone(refs[i].box, p)) hit = refs[i];
+    show(hit);
+  });
+  svg.addEventListener("pointerleave", () => { if (!ix.linkDraw) show(null); });
+
   for (const ref of refs) {
     const handle = createSvgEl("g", { class: "vzd-nodemap-add-handle-g" }) as SVGGElement;
-    const cx = ref.box.x + ref.box.width + 10, cy = ref.box.y + ref.box.height / 2;
-    handle.setAttribute("transform", `translate(${cx}, ${cy})`);
-    handle.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "13", class: "vzd-nodemap-add-handle-hit" }));
+    handles.set(ref, handle);
+    placeHandle(ref);
+    handle.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: String(HANDLE_HIT_R), class: "vzd-nodemap-add-handle-hit" }));
     handle.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-nodemap-add-handle" }));
     const plus = createSvgEl("text", { x: "0", y: "0.5", class: "vzd-nodemap-add-handle-icon", "text-anchor": "middle", "dominant-baseline": "middle" });
     plus.textContent = "+";
@@ -377,16 +511,13 @@ function attachLinkDrawBehavior(
     svg.appendChild(handle);
     handle.style.display = "none";
 
-    ref.g.addEventListener("mouseenter", () => { if (!ix.drag && !ix.linkDraw && !ix.activeEdit) handle.style.display = ""; });
-    ref.g.addEventListener("mouseleave", (e) => { if (e.relatedTarget !== handle && !(e.relatedTarget instanceof Node && handle.contains(e.relatedTarget))) handle.style.display = "none"; });
-    handle.addEventListener("mouseleave", (e) => { if (e.relatedTarget !== ref.g && !(e.relatedTarget instanceof Node && ref.g.contains(e.relatedTarget))) handle.style.display = "none"; });
-
     handle.addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (ix.activeEdit) return;
+      if (ix.activeEdit || ix.drag) return;
       const center = boxCenter(ref.box);
-      const start = rectBoundary(center.x, center.y, ref.box.width / 2, ref.box.height / 2, cx, cy);
+      const h = handleCenter(ref.box);
+      const start = rectBoundary(center.x, center.y, ref.box.width / 2, ref.box.height / 2, h.x, h.y);
       const ghostLine = createSvgEl("line", {
         x1: String(start.x), y1: String(start.y), x2: String(start.x), y2: String(start.y),
         class: "vzd-nodemap-link-draft",
@@ -399,6 +530,8 @@ function attachLinkDrawBehavior(
       doc.addEventListener("keydown", onLinkKey);
     });
   }
+
+  return placeHandle;
 }
 
 // ── Interaction: double-click to rename / edit body ───────────────────────
@@ -510,20 +643,20 @@ function openColorPopover(
   colorPopoverCleanups.set(wrap, () => doc.removeEventListener("mousedown", onDocClick, true));
 }
 
+/** Wires each box's colour + actions buttons. Returns a function that moves a
+ *  box's buttons after the box moves. */
 function attachBoxControls(
   svg: SVGSVGElement,
   refs: BoxRef[],
   app: App,
   ctx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
-): void {
+): (ref: BoxRef) => void {
+  const placers = new Map<BoxRef, () => void>();
   for (const ref of refs) {
     const controls = createSvgEl("g", { class: "vzd-nodemap-box-controls" });
-    const bx = ref.box.x + ref.box.width;
-    const by = ref.box.y;
 
     const deleteBtn = createSvgEl("g", { class: "vzd-nodemap-box-delete-btn" });
-    deleteBtn.setAttribute("transform", `translate(${bx - 10}, ${by + 10})`);
     deleteBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-nodemap-unlink-circle" }));
     const xText = createSvgEl("text", { x: "0", y: "0", class: "vzd-nodemap-unlink-icon", "text-anchor": "middle", "dominant-baseline": "central" });
     xText.textContent = "⋯";
@@ -553,7 +686,6 @@ function attachBoxControls(
     controls.appendChild(deleteBtn);
 
     const colorBtn = createSvgEl("g", { class: "vzd-nodemap-box-color-btn" });
-    colorBtn.setAttribute("transform", `translate(${bx - 28}, ${by + 10})`);
     colorBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-nodemap-color-btn-circle" }));
     colorBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -563,8 +695,17 @@ function attachBoxControls(
     });
     controls.appendChild(colorBtn);
 
+    const place = (): void => {
+      const bx = ref.box.x + ref.box.width, by = ref.box.y;
+      deleteBtn.setAttribute("transform", `translate(${bx - 10}, ${by + 10})`);
+      colorBtn.setAttribute("transform", `translate(${bx - 28}, ${by + 10})`);
+    };
+    place();
+    placers.set(ref, place);
+
     svg.appendChild(controls);
   }
+  return (ref) => placers.get(ref)?.();
 }
 
 function attachAddBoxOnEmptySpace(
@@ -600,6 +741,7 @@ export function renderNodeMap(
   const wrap = container.createEl("div", { cls: "vzd-nodemap-wrap" });
 
   const boxes: MeasuredBox[] = data.boxes.map(b => ({ ...b, ...measureBox(b) }));
+  placeAutoBoxes(boxes);
   const boxByName = new Map<string, MeasuredBox>(boxes.map(b => [b.name.toLowerCase(), b]));
 
   let minX = 0, minY = 0, maxX = 0, maxY = 0;
@@ -619,17 +761,27 @@ export function renderNodeMap(
   }) as SVGSVGElement;
 
   renderMarkerDefs(svg);
-  renderLinks(svg, data, boxByName, isEditMode, app, ctx, wrap);
+  // Links get their own layer, under the boxes, so a drag can redraw them.
+  const linksLayer = createSvgEl("g", { class: "vzd-nodemap-links" });
+  svg.appendChild(linksLayer);
+  renderLinks(linksLayer, data, boxByName, isEditMode, app, ctx, wrap);
   const refs = renderBoxes(svg, boxes);
 
   wrap.appendChild(svg);
 
   if (isEditMode) {
     const ix: NodeMapIxState = { drag: null, linkDraw: null, activeEdit: null };
-    attachDragBehavior(svg, refs, ix, app!, ctx!, wrap);
-    attachLinkDrawBehavior(svg, refs, ix, app!, ctx!, wrap);
+    const placeHandle = attachLinkDrawBehavior(svg, refs, ix, app!, ctx!, wrap);
     attachEditBehavior(refs, ix, app!, ctx!, wrap);
-    attachBoxControls(svg, refs, app!, ctx!, wrap);
+    const placeControls = attachBoxControls(svg, refs, app!, ctx!, wrap);
+    // Everything attached to a box follows it while it is dragged; the
+    // document rewrite on drop re-renders from the new coordinates anyway.
+    attachDragBehavior(svg, refs, ix, app!, ctx!, wrap, (ref) => {
+      linksLayer.replaceChildren();
+      renderLinks(linksLayer, data, boxByName, isEditMode, app, ctx, wrap);
+      placeHandle(ref);
+      placeControls(ref);
+    });
     attachAddBoxOnEmptySpace(svg, ix, app!, ctx!, wrap);
   }
 }

@@ -825,7 +825,7 @@ Self-loops are not allowed. Multiple edges between the same pair are valid.
 
 ## Node Map (`nodemap`)
 
-A free-form boxes-and-arrows diagram with **manual coordinates**. Boxes are positioned in unbounded, non-negative units (the canvas grows to fit; there is no 0–1 axis). Max 50 boxes.
+A free-form boxes-and-arrows diagram. Boxes are positioned in unbounded, non-negative units (the canvas grows to fit; there is no 0–1 axis). Coordinates are optional: a box without them is placed in rows below the positioned ones, and dragging any box in Live Preview writes its `x`/`y` for you. Max 50 boxes.
 
 ~~~
 ```vizardry
@@ -845,8 +845,9 @@ link: Order Service -> Payment Gateway : charges card [color: green]
 
 | Key | Meaning |
 | --- | --- |
-| `box: <Name> [x: <n>, y: <n>]` | A box at top-left corner (x,y ≥ 0). Name can't contain `:` or brackets |
-| `box: <Name> [x: <n>, y: <n>, color: <c>]` | With a colour: palette name or `#hex` |
+| `box: <Name>` | A box placed automatically (no coordinates yet). Name can't contain `:` or brackets |
+| `box: <Name> [x: <n>, y: <n>]` | A box at top-left corner (x,y ≥ 0). Give both or neither |
+| `box: <Name> [x: <n>, y: <n>, color: <c>]` | With a colour: palette name or `#hex`. `[color: <c>]` alone is fine; keys in any order |
 | (indented lines under `box:`) | Multi-line body text |
 | `link: A -> B` | Directed arrow |
 | `link: A <-> B` | Bidirectional |

@@ -13,8 +13,13 @@ export type NodeMapLineStyle = "solid" | "dashed";
 
 export interface NodeMapBox {
   name: string;
+  /** Top-left corner. For an `auto` box the renderer picks it; the parser
+   *  leaves 0/0. */
   x: number;
   y: number;
+  /** Declared without coordinates: the renderer places it, and the first drag
+   *  writes `x`/`y` into its line. */
+  auto?: boolean;
   color?: NodeMapColor;
   /** Multi-line body text, "\n"-joined from indented continuation lines. */
   body?: string;

@@ -13,11 +13,43 @@ function findBoxLine(
   lineEnd: number,
   boxName: string,
 ): number {
-  const re = new RegExp(`^\\s*box:\\s*${escRe(boxName)}\\s*\\[`, "i");
+  // The name ends at the bracket or, for a box declared without one, the line.
+  const re = new RegExp(`^\\s*box:\\s*${escRe(boxName)}\\s*(?:\\[|$)`, "i");
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     if (re.test(editor.getLine(ln))) return ln;
   }
   return -1;
+}
+
+/**
+ * Rewrites the `[key: value, …]` bracket of a `box:` line. `updates` sets a key
+ * (a string) or removes it (null); keys not named are kept, in place. New
+ * coordinates go first and a new color last, matching the documented
+ * `[x: …, y: …, color: …]` order. The bracket is dropped when it ends up empty.
+ */
+export function rewriteBoxModifiers(raw: string, updates: Record<string, string | null>): string {
+  const m = raw.match(/^(\s*box:\s*.*?)\s*(?:\[([^\]]*)\])?\s*$/i);
+  if (!m) return raw;
+  const head = m[1];
+  const mods: Array<[string, string]> = (m[2] ?? "")
+    .split(",").map(p => p.trim()).filter(p => p.length > 0)
+    .map((p) => {
+      const i = p.indexOf(":");
+      return i === -1 ? [p, ""] : [p.slice(0, i).trim(), p.slice(i + 1).trim()];
+    });
+  const find = (key: string): number => mods.findIndex(([k]) => k.toLowerCase() === key);
+
+  const added: Array<[string, string]> = [];
+  for (const [key, value] of Object.entries(updates)) {
+    const i = find(key);
+    if (value === null) { if (i !== -1) mods.splice(i, 1); continue; }
+    if (i !== -1) mods[i] = [mods[i][0], value];
+    else added.push([key, value]);
+  }
+  const front = added.filter(([k]) => k === "x" || k === "y");
+  const back = added.filter(([k]) => k !== "x" && k !== "y");
+  const all = [...front, ...mods, ...back];
+  return all.length > 0 ? `${head} [${all.map(([k, v]) => `${k}: ${v}`).join(", ")}]` : head;
 }
 
 /** Range (inclusive) of indented continuation lines directly below `boxLine`,
@@ -46,7 +78,7 @@ function resolveUniqueBoxName(
 ): string {
   const existingNames = new Set<string>();
   for (let ln = lineStart; ln <= lineEnd; ln++) {
-    const match = editor.getLine(ln).trim().match(/^box:\s*(.*?)\s*\[/i);
+    const match = editor.getLine(ln).trim().match(/^box:\s*(.*?)\s*(?:\[|$)/i);
     if (!match) continue;
     const name = match[1].trim().toLowerCase();
     if (name) existingNames.add(name);
@@ -129,9 +161,9 @@ export function writeNodeMapBoxPosition(
     return false;
   }
   const raw = editor.getLine(ln);
-  const newLine = raw
-    .replace(/x:\s*[+-]?[0-9.]+/, `x: ${Math.round(x)}`)
-    .replace(/y:\s*[+-]?[0-9.]+/, `y: ${Math.round(y)}`);
+  // Inserts the coordinates when the box was declared without them.
+  const newLine = rewriteBoxModifiers(raw, { x: String(Math.round(x)), y: String(Math.round(y)) });
+  if (newLine === raw) return true;
   editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
   return true;
 }
@@ -219,7 +251,7 @@ export function renameNodeMapBox(
   const { editor, lineStart, lineEnd } = resolved;
   const old = escRe(oldName);
 
-  const reBox = new RegExp(`^(\\s*box:\\s*)${old}(?=\\s*\\[)`, "i");
+  const reBox = new RegExp(`^(\\s*box:\\s*)${old}(?=\\s*(?:\\[|$))`, "i");
   const reLinkFrom = new RegExp(`^(\\s*link:\\s*)${old}(?=\\s*(?:<->|->|--))`, "i");
   const reLinkTo = new RegExp(`((?:<->|->|--)\\s*)${old}(?=\\s*(?::|\\[|$))`, "i");
 
@@ -297,17 +329,8 @@ export function setNodeMapBoxColor(
     return false;
   }
   const raw = editor.getLine(ln);
-  const hasColor = /,\s*color:\s*[^\]]+/i.test(raw);
-  let newLine: string;
-  if (hasColor) {
-    newLine = color
-      ? raw.replace(/,\s*color:\s*[^\]]+/i, `, color: ${color}`)
-      : raw.replace(/,\s*color:\s*[^\]]+/i, "");
-  } else if (color) {
-    newLine = raw.replace(/\]\s*$/, `, color: ${color}]`);
-  } else {
-    return true; // nothing to clear
-  }
+  const newLine = rewriteBoxModifiers(raw, { color });
+  if (newLine === raw) return true; // nothing to change or clear
   editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
   return true;
 }

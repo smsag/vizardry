@@ -93,7 +93,10 @@ block: Actions
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app: any = {
   workspace: {
-    getActiveViewOfType: () => ({ getMode: () => "preview" }),
+    // ?edit renders canvases as in Live Preview, so edit affordances (drag
+    // handles, "+" link handles) can be exercised by hand. Writes still fail —
+    // there is no editor behind the fixtures.
+    getActiveViewOfType: () => ({ getMode: () => (location.search.includes("edit") ? "source" : "preview") }),
     getLeavesOfType: () => [],
     openLinkText: () => {},
   },

@@ -119,11 +119,40 @@ describe("parseNodeMap", () => {
     expect(result.error).toMatch(/no boxes/i);
   });
 
-  it("returns error for a box missing coordinates", () => {
-    const result = parseNodeMap("box: A");
+  it("marks a box without coordinates as auto-placed", () => {
+    const result = parseNodeMap("box: A\nbox: B [x: 10, y: 20]");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.boxes[0]).toMatchObject({ name: "A", x: 0, y: 0, auto: true });
+    expect(result.data.boxes[1].auto).toBeUndefined();
+  });
+
+  it("parses a color-only bracket as an auto-placed box", () => {
+    const result = parseNodeMap("box: A [color: green]\n  body text");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.boxes[0]).toMatchObject({ name: "A", color: "green", auto: true, body: "body text" });
+  });
+
+  it("accepts bracket keys in any order", () => {
+    const result = parseNodeMap("box: A [color: red, y: 5, x: 7]");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.boxes[0]).toMatchObject({ x: 7, y: 5, color: "red" });
+  });
+
+  it("returns error when only one coordinate is given", () => {
+    const result = parseNodeMap("box: A [x: 10]");
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/coordinates/i);
+    expect(result.error).toMatch(/both x and y/i);
+  });
+
+  it("returns error for an unknown box modifier", () => {
+    const result = parseNodeMap("box: A [size: 3]");
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/unknown box modifier/i);
   });
 
   it("returns error for negative coordinates", () => {

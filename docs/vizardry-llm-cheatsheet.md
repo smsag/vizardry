@@ -204,7 +204,7 @@ Oxygen --> Life
 
 ## Node Map (`nodemap`)
 
-Boxes at manual coordinates (unbounded non-negative units, canvas grows to fit). Max 50 boxes.
+Boxes at `[x, y]` (unbounded non-negative units, canvas grows to fit); coordinates optional — `box: Name` is auto-placed and the user drags it. Max 50 boxes.
 
 ~~~
 ```vizardry

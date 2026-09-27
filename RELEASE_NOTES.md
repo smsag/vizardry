@@ -24,6 +24,19 @@ Sketch mode is easier to read, and a pinned canvas can be browsed block by block
   hidden like the other grids' blocks, but it had no carousel to show one.
   It now shows one column at a time with prev/next arrows, on a phone and
   when pinned.
+- **New: drag Node Map boxes instead of typing coordinates.** In Live
+  Preview you can grab a box anywhere, including its name or body text, and
+  drop it where you want; its `x`/`y` are written into the note for you. Its
+  links follow it while you drag, and Escape cancels. Boxes no longer need
+  coordinates at all: `box: Payments` (or `box: Payments [color: green]`) is
+  placed in a row below the others until you move it. Dragging used to work
+  only on the box's thin outline, because its text covered the rest, and the
+  box jumped to centre on the pointer.
+- **Fix: the Node Map "+" handle vanished before you could reach it.** It
+  only stayed up if the pointer left the box exactly level with the handle,
+  which on a box with body text was a narrow band, so drawing a connection
+  was mostly luck. The handle now stays shown while the pointer is anywhere on
+  the box or near the handle.
 
 _Bundled font: Shantell Sans © The Shantell Sans Project Authors (Shantell
 Martin, Arrow Type, Anya Danilova), SIL Open Font License 1.1. Only a Latin

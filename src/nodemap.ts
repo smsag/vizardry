@@ -19,11 +19,55 @@ function parseColor(raw: string, lineNum: number): ColorResult {
   };
 }
 
+type BoxDecl = { name: string; x: number; y: number; color?: NodeMapColor; auto: boolean };
+type BoxDeclResult = { ok: true; value: BoxDecl } | { ok: false; error: string };
+
+const NUM_RE = /^[+-]?[0-9]*\.?[0-9]+$/;
+
+/** Parses what follows `box:` — a name and an optional `[key: value, …]`
+ *  bracket of x, y and color. */
+function parseBoxDecl(rest: string, lineNum: number): BoxDeclResult {
+  const m = rest.match(/^(.*?)\s*(?:\[([^\]]*)\])?\s*$/);
+  const name = (m?.[1] ?? "").trim();
+  if (!name) return { ok: false, error: `Line ${lineNum}: box requires a name` };
+  if (name.includes(":") || name.includes("[") || name.includes("]")) {
+    return { ok: false, error: `Line ${lineNum}: box name cannot contain ":" or brackets` };
+  }
+
+  let x: number | undefined, y: number | undefined;
+  let color: NodeMapColor | undefined;
+  const parts = (m?.[2] ?? "").split(",").map(p => p.trim()).filter(p => p.length > 0);
+  for (const part of parts) {
+    const kv = part.match(/^([a-zA-Z]+)\s*:\s*(.+)$/);
+    if (!kv) return { ok: false, error: `Line ${lineNum}: malformed box modifier "${part}"` };
+    const key = kv[1].toLowerCase();
+    const value = kv[2].trim();
+    if (key === "x" || key === "y") {
+      if (!NUM_RE.test(value)) return { ok: false, error: `Line ${lineNum}: ${key} must be a number` };
+      const n = parseFloat(value);
+      if (n < 0) return { ok: false, error: `Line ${lineNum}: coordinates must be non-negative` };
+      if (key === "x") x = n; else y = n;
+    } else if (key === "color") {
+      const parsed = parseColor(value, lineNum);
+      if (!parsed.ok) return parsed;
+      color = parsed.value;
+    } else {
+      return { ok: false, error: `Line ${lineNum}: unknown box modifier "${key}" — expected x, y or color` };
+    }
+  }
+  if ((x === undefined) !== (y === undefined)) {
+    return { ok: false, error: `Line ${lineNum}: give both x and y, or neither, e.g. box: Name [x: 100, y: 50]` };
+  }
+  return { ok: true, value: { name, x: x ?? 0, y: y ?? 0, color, auto: x === undefined } };
+}
+
 /**
  * Parses Node Map syntax:
  *
+ *   box: <name>
  *   box: <name> [x: <num>, y: <num>]
  *   box: <name> [x: <num>, y: <num>, color: <name|#hex>]
+ *   box: <name> [color: <name|#hex>]
  *     <optional indented multi-line body>
  *
  *   link: <from> -> <to>              directed
@@ -33,7 +77,10 @@ function parseColor(raw: string, lineNum: number): ColorResult {
  *   link: <from> -> <to> [color: red, style: dashed]
  *
  * Box coordinates are the box's top-left corner, in unbounded (non-negative)
- * units — the canvas grows to fit its content, there is no fixed axis.
+ * units — the canvas grows to fit its content, there is no fixed axis. They
+ * are optional: a box without them is marked `auto` and placed by the
+ * renderer, and dragging it in Live Preview writes them in. Bracket keys may
+ * come in any order; `x` and `y` go together.
  */
 export function parseNodeMap(source: string): NodeMapResult {
   const lines = source.split("\n");
@@ -49,34 +96,9 @@ export function parseNodeMap(source: string): NodeMapResult {
     if (trimmed.toLowerCase().startsWith("box:")) {
       const declLine = i + 1;
       const rest = trimmed.slice("box:".length).trim();
-      const bracketMatch = rest.match(
-        /^(.*?)\s*\[\s*x:\s*([+-]?[0-9]*\.?[0-9]+)\s*,\s*y:\s*([+-]?[0-9]*\.?[0-9]+)\s*(?:,\s*color:\s*([^\]]+?))?\s*\]\s*$/,
-      );
-      if (!bracketMatch) {
-        return { ok: false, error: `Line ${declLine}: box requires coordinates, e.g. box: Name [x: 100, y: 50]` };
-      }
-
-      const name = bracketMatch[1].trim();
-      if (!name) return { ok: false, error: `Line ${declLine}: box requires a name` };
-      if (name.includes(":") || name.includes("[") || name.includes("]")) {
-        return { ok: false, error: `Line ${declLine}: box name cannot contain ":" or brackets` };
-      }
-
-      const x = parseFloat(bracketMatch[2]);
-      const y = parseFloat(bracketMatch[3]);
-      if (Number.isNaN(x) || Number.isNaN(y)) {
-        return { ok: false, error: `Line ${declLine}: box requires coordinates, e.g. box: Name [x: 100, y: 50]` };
-      }
-      if (x < 0 || y < 0) {
-        return { ok: false, error: `Line ${declLine}: coordinates must be non-negative` };
-      }
-
-      let color: NodeMapColor | undefined;
-      if (bracketMatch[4] !== undefined) {
-        const parsed = parseColor(bracketMatch[4], declLine);
-        if (!parsed.ok) return parsed;
-        color = parsed.value;
-      }
+      const parsedBox = parseBoxDecl(rest, declLine);
+      if (!parsedBox.ok) return parsedBox;
+      const { name, x, y, color, auto } = parsedBox.value;
 
       const key = name.toLowerCase();
       if (boxes.has(key)) {
@@ -94,7 +116,10 @@ export function parseNodeMap(source: string): NodeMapResult {
       }
       i = j - 1;
 
-      boxes.set(key, { name, x, y, color, body: bodyLines.length > 0 ? bodyLines.join("\n") : undefined });
+      boxes.set(key, {
+        name, x, y, color, ...(auto ? { auto } : {}),
+        body: bodyLines.length > 0 ? bodyLines.join("\n") : undefined,
+      });
       boxLineNums.set(key, declLine);
       continue;
     }
@@ -175,7 +200,7 @@ export function parseNodeMap(source: string): NodeMapResult {
   }
 
   if (boxes.size === 0) {
-    return { ok: false, error: "No boxes defined — add at least one, e.g. box: Name [x: 100, y: 50]" };
+    return { ok: false, error: "No boxes defined — add at least one, e.g. box: Name" };
   }
   if (boxes.size > MAX_BOXES) {
     return { ok: false, error: `Node map has ${boxes.size} boxes — limit is ${MAX_BOXES}. Split into smaller maps.` };
