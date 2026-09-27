@@ -6,6 +6,12 @@
   in documents another plugin prints (a PDF from Schreibstube lost the first
   column of a SWOT, the first box of a Node Map), and slightly in the download
   button's PNG. The capture now frames the canvas itself.
+- **Fix: a canvas rendered outside a note view sized itself to the window.**
+  With readable line width on, a canvas that another plugin draws off-screen
+  (a note printed to PDF, a page being published) or that opens in a hover
+  popover took the width of the whole window, so the scale of an exported
+  picture depended on how large the window happened to be. Outside a note view
+  the canvas now fills the space it was given.
 
 ## 0.71.1
 
