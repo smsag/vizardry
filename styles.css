@@ -3197,7 +3197,7 @@ code:has(.vzd-upvoty-key) {
   user-select: none;
   touch-action: none;
 }
-.vzd-nodemap-box-g--draggable :is(input, textarea) {
+.vzd-nodemap-box-g--draggable :is(input, textarea, [contenteditable]) {
   cursor: text;
   user-select: text;
 }
@@ -3241,13 +3241,13 @@ code:has(.vzd-upvoty-key) {
   cursor: text;
 }
 
-.vzd-nodemap-rename-input {
-  width: 100%;
-  font-family: var(--font-interface);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-normal);
-  padding: 0;
+/* Editing a box's name or body in place (editTextInPlace): the text keeps its
+   own font and position, marked like an editing canvas title — an accent
+   underline drawn with box-shadow so the box doesn't reflow. */
+.vzd-nodemap-box-host .vzd-inplace-editing {
+  outline: none;
+  box-shadow: inset 0 -1px 0 var(--interactive-accent);
+  cursor: text;
 }
 
 .vzd-nodemap-link {
@@ -3392,17 +3392,12 @@ code:has(.vzd-upvoty-key) {
   line-height: 1;
 }
 
-/* Presentation mode */
-.vzd-presentation-wrap .vzd-nodemap-box-name {
-  font-size: 14px;
-}
-
-.vzd-presentation-wrap .vzd-nodemap-box-body {
-  font-size: 12px;
-}
-
-.vzd-presentation-wrap .vzd-nodemap-link-label {
-  font-size: 12px;
+/* Presentation mode: enlarge the whole diagram rather than its text. The
+   boxes are sized to their text on the canvas and the overlay shows a static
+   copy, so larger type in same-size boxes spilled out of them. Zoom keeps
+   the proportions (14/12, the size the names used to get). */
+.vzd-presentation-wrap .vzd-nodemap-svg {
+  zoom: 1.1667;
 }
 
 /* ── Wheel of Life ───────────────────────────────────────────────────────── */
@@ -4749,16 +4744,20 @@ body.vizardry-sketch .vzd-presentation-overlay {
   --interactive-accent-hover: hsl(0 0% 22%);
 }
 
-/* Catch-all greyscale for the handful of inline / hardcoded colours (Odyssey
-   gauges, Linear/Upvoty badges, warning chips) — applied to the canvas content
-   only, leaving the header action buttons untouched. */
-body.vizardry-sketch .vizardry-canvas > :not(.vizardry-header) {
+/* Catch-all greyscale for the inline / hardcoded colours the accent tweak
+   can't reach (Node Map box and link colours, Odyssey gauges, Linear/Upvoty
+   badges, warning chips) — applied to the canvas content only, leaving the
+   header action buttons untouched. The presentation overlay shows a clone of
+   that content outside the canvas, so it needs the same filter. */
+body.vizardry-sketch .vizardry-canvas > :not(.vizardry-header),
+body.vizardry-sketch .vzd-presentation-wrap {
   filter: grayscale(1);
 }
 
 /* Hand-drawn line wobble on SVG shapes only — text and foreignObject stay
    crisp so labels remain legible at small sizes. */
-body.vizardry-sketch .vizardry-canvas svg :is(path, line, circle, ellipse, rect, polygon, polyline) {
+body.vizardry-sketch .vizardry-canvas svg :is(path, line, circle, ellipse, rect, polygon, polyline),
+body.vizardry-sketch .vzd-presentation-wrap svg :is(path, line, circle, ellipse, rect, polygon, polyline) {
   filter: url(#vzd-sketch-rough);
 }
 

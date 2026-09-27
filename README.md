@@ -1154,7 +1154,7 @@ link: Order Service -> Payment Gateway : charges card [color: green]
 ```
 ~~~
 
-Boxes are draggable in Live Preview. Grab one anywhere, including its name or body text, and drop it; its `x`/`y` are written into the box's line for you, so you never have to type coordinates. Escape cancels a drag. A box declared without coordinates (`box: Payments`) is placed in a row below the others until you drag it. Hover a box to reveal a "+" handle just off its right edge; it stays up while you move to it from anywhere on the box. Drag it onto another box to link them (dropping on empty space cancels instead of creating a new box). Double-click a box's name to rename it, or its body text to edit it. Hover a box or link for a delete "×" and a color-swatch button.
+Boxes are draggable in Live Preview. Grab one anywhere, including its name or body text, and drop it; its `x`/`y` are written into the box's line for you, so you never have to type coordinates. Escape cancels a drag. A box declared without coordinates (`box: Payments`) is placed in a row below the others until you drag it. Hover a box to reveal a "+" handle just off its right edge; it stays up while you move to it from anywhere on the box. Drag it onto another box to link them (dropping on empty space cancels instead of creating a new box). Double-click a box's name or body text to edit it in place, like a canvas title: Enter saves a name, while in the body Enter starts a new line and Cmd/Ctrl+Enter saves. Escape cancels, and clicking away saves. Hover a box or link for a delete "×" and a color-swatch button.
 
 **Syntax:**
 

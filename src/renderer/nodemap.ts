@@ -23,7 +23,7 @@ const NODEMAP_PALETTE: Record<string, string> = {
 function resolveNodeMapColor(color: NodeMapColor): string {
   return color.startsWith("#") ? color : (NODEMAP_PALETTE[color] ?? color);
 }
-import { wireRenameInputKeys, createBlurGuard, activateTextareaEdit } from "./inline-edit";
+import { editTextInPlace } from "./inline-edit";
 import {
   writeNodeMapBoxPosition, addNodeMapBox, removeNodeMapBox, renameNodeMapBox,
   writeNodeMapBoxBody, setNodeMapBoxColor, addNodeMapLink, removeNodeMapLink,
@@ -536,6 +536,12 @@ function attachLinkDrawBehavior(
 
 // ── Interaction: double-click to rename / edit body ───────────────────────
 
+/**
+ * Double-click a box's name or body to edit it where it stands, like a canvas
+ * title: the text itself becomes editable, in the box's own font and place,
+ * with no input or textarea laid over it. The name saves on Enter; the body
+ * takes new lines and saves on Mod+Enter. Both save on blur, revert on Escape.
+ */
 function attachEditBehavior(
   refs: BoxRef[],
   ix: NodeMapIxState,
@@ -547,41 +553,36 @@ function attachEditBehavior(
     ref.nameEl.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       if (ix.drag || ix.linkDraw || ix.activeEdit) return;
-      const host = ref.nameEl.parentElement!;
-      ref.nameEl.style.display = "none";
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = ref.box.name;
-      input.className = "vzd-rename-input vzd-nodemap-rename-input";
-      host.insertBefore(input, ref.nameEl);
-      input.focus({ preventScroll: true });
-      input.select();
-
-      const blurGuard = createBlurGuard();
-      const close = (): void => { blurGuard.dispose(); ix.activeEdit = null; };
-      ix.activeEdit = { close };
-      wireRenameInputKeys(input, (commit) => {
-        close();
-        input.remove();
-        ref.nameEl.style.display = "";
-        const newName = input.value.trim();
-        if (commit && newName && newName !== ref.box.name) {
+      ix.activeEdit = { close: () => { ix.activeEdit = null; } };
+      editTextInPlace(ref.nameEl, {
+        initial: ref.box.name,
+        onDone: (commit, value) => {
+          ix.activeEdit = null;
+          const newName = value.replace(/\s+/g, " ").trim();
+          if (!commit || !newName || newName === ref.box.name) { ref.nameEl.textContent = ref.box.name; return; }
+          ref.nameEl.textContent = newName;
           renameNodeMapBox(app, ctx, wrap, ref.box.name, newName);
-        }
-      }, { stopPropagation: true, ignoreBlur: blurGuard.ignoreBlur });
+        },
+      });
     });
 
-    const bodyHost = ref.fo.querySelector(".vzd-nodemap-box-body") as HTMLElement | null;
-    if (bodyHost) {
-      bodyHost.addEventListener("dblclick", (e) => {
+    const bodyEl = ref.fo.querySelector<HTMLElement>(".vzd-nodemap-box-body");
+    if (bodyEl) {
+      bodyEl.addEventListener("dblclick", (e) => {
         e.stopPropagation();
         if (ix.drag || ix.linkDraw || ix.activeEdit) return;
-        const host = ref.nameEl.parentElement!;
         ix.activeEdit = { close: () => { ix.activeEdit = null; } };
-        activateTextareaEdit(host, bodyHost, ref.box.body ?? "", (newBody) => {
-          writeNodeMapBoxBody(app, ctx, wrap, ref.box.name, newBody);
-        }, {
-          renderDisplay: (contentHost, value) => { contentHost.textContent = value; ix.activeEdit = null; },
+        const before = ref.box.body ?? "";
+        editTextInPlace(bodyEl, {
+          initial: before,
+          multiline: true,
+          onDone: (commit, value) => {
+            ix.activeEdit = null;
+            const newBody = value.split("\n").map(l => l.trim()).filter(Boolean).join("\n");
+            if (!commit || newBody === before) { bodyEl.textContent = before; return; }
+            bodyEl.textContent = newBody;
+            writeNodeMapBoxBody(app, ctx, wrap, ref.box.name, newBody);
+          },
         });
       });
     }
@@ -722,6 +723,68 @@ function attachAddBoxOnEmptySpace(
   });
 }
 
+// ── Fit boxes to their rendered text ──────────────────────────────────────
+
+/** Sets a box's size on its rect and foreignObject. */
+function sizeBox(ref: BoxRef): void {
+  for (const el of [ref.rect, ref.fo]) {
+    el.setAttribute("width", String(ref.box.width));
+    el.setAttribute("height", String(ref.box.height));
+  }
+}
+
+/**
+ * Grows boxes whose rendered text doesn't fit the size measureBox() estimated
+ * from character counts — a wider font (sketch mode's handwriting, a custom
+ * one) wraps a name the estimate thought fit, and wrapped text overflows the
+ * fixed height. A box widens (up to MAX_BOX_WIDTH) to keep its name on one
+ * line, then grows to its content's height. Never shrinks, so it can't
+ * oscillate. Returns true when any box changed. Skips boxes with no layout
+ * (detached, collapsed, or a test DOM).
+ */
+function fitBoxesToContent(refs: BoxRef[]): boolean {
+  let changed = false;
+  for (const ref of refs) {
+    const host = ref.fo.firstElementChild;
+    if (!(host instanceof HTMLElement) || host.clientWidth === 0) continue;
+    // Leave a box being edited alone until the edit ends.
+    if (host.querySelector("[contenteditable]")) continue;
+    const cs = getComputedStyle(host);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+
+    // The name's own one-line width: as a block it always spans the box, so
+    // lay it out shrink-wrapped for the reading. (scrollWidth would report at
+    // least the box's width and grow the box on every pass.)
+    const { display, whiteSpace } = ref.nameEl.style;
+    ref.nameEl.style.display = "inline-block";
+    ref.nameEl.style.whiteSpace = "nowrap";
+    const nameW = ref.nameEl.offsetWidth;
+    ref.nameEl.style.display = display;
+    ref.nameEl.style.whiteSpace = whiteSpace;
+    const wantW = Math.min(MAX_BOX_WIDTH, Math.ceil(nameW + padX + 1));
+    if (wantW > ref.box.width) { ref.box.width = wantW; sizeBox(ref); changed = true; }
+
+    const wantH = Math.ceil(host.scrollHeight);
+    if (wantH > ref.box.height + 1) { ref.box.height = wantH; sizeBox(ref); changed = true; }
+  }
+  return changed;
+}
+
+/** The SVG viewBox framing every box with PAD around it. */
+function frameViewBox(svg: SVGSVGElement, boxes: MeasuredBox[]): void {
+  let minX = 0, minY = 0, maxX = 0, maxY = 0;
+  if (boxes.length > 0) {
+    minX = Math.min(...boxes.map(b => b.x));
+    minY = Math.min(...boxes.map(b => b.y));
+    maxX = Math.max(...boxes.map(b => b.x + b.width));
+    maxY = Math.max(...boxes.map(b => b.y + b.height));
+  }
+  const vbW = (maxX - minX) + PAD * 2, vbH = (maxY - minY) + PAD * 2;
+  svg.setAttribute("viewBox", `${minX - PAD} ${minY - PAD} ${vbW} ${vbH}`);
+  svg.setAttribute("width", String(vbW));
+  svg.setAttribute("height", String(vbH));
+}
+
 // ── Public entry point ─────────────────────────────────────────────────────
 
 export function renderNodeMap(
@@ -744,21 +807,8 @@ export function renderNodeMap(
   placeAutoBoxes(boxes);
   const boxByName = new Map<string, MeasuredBox>(boxes.map(b => [b.name.toLowerCase(), b]));
 
-  let minX = 0, minY = 0, maxX = 0, maxY = 0;
-  if (boxes.length > 0) {
-    minX = Math.min(...boxes.map(b => b.x));
-    minY = Math.min(...boxes.map(b => b.y));
-    maxX = Math.max(...boxes.map(b => b.x + b.width));
-    maxY = Math.max(...boxes.map(b => b.y + b.height));
-  }
-  const vbX = minX - PAD, vbY = minY - PAD, vbW = (maxX - minX) + PAD * 2, vbH = (maxY - minY) + PAD * 2;
-
-  const svg = createSvgEl("svg", {
-    viewBox: `${vbX} ${vbY} ${vbW} ${vbH}`,
-    width: String(vbW),
-    height: String(vbH),
-    class: "vzd-nodemap-svg",
-  }) as SVGSVGElement;
+  const svg = createSvgEl("svg", { class: "vzd-nodemap-svg" }) as SVGSVGElement;
+  frameViewBox(svg, boxes);
 
   renderMarkerDefs(svg);
   // Links get their own layer, under the boxes, so a drag can redraw them.
@@ -769,19 +819,43 @@ export function renderNodeMap(
 
   wrap.appendChild(svg);
 
+  let placeHandle: (ref: BoxRef) => void = () => {};
+  let placeControls: (ref: BoxRef) => void = () => {};
+  /** Redraws what hangs off the given boxes after they move or resize. */
+  const follow = (moved: BoxRef[]): void => {
+    linksLayer.replaceChildren();
+    renderLinks(linksLayer, data, boxByName, isEditMode, app, ctx, wrap);
+    for (const ref of moved) { placeHandle(ref); placeControls(ref); }
+  };
+
   if (isEditMode) {
     const ix: NodeMapIxState = { drag: null, linkDraw: null, activeEdit: null };
-    const placeHandle = attachLinkDrawBehavior(svg, refs, ix, app!, ctx!, wrap);
+    placeHandle = attachLinkDrawBehavior(svg, refs, ix, app!, ctx!, wrap);
     attachEditBehavior(refs, ix, app!, ctx!, wrap);
-    const placeControls = attachBoxControls(svg, refs, app!, ctx!, wrap);
+    placeControls = attachBoxControls(svg, refs, app!, ctx!, wrap);
     // Everything attached to a box follows it while it is dragged; the
     // document rewrite on drop re-renders from the new coordinates anyway.
-    attachDragBehavior(svg, refs, ix, app!, ctx!, wrap, (ref) => {
-      linksLayer.replaceChildren();
-      renderLinks(linksLayer, data, boxByName, isEditMode, app, ctx, wrap);
-      placeHandle(ref);
-      placeControls(ref);
-    });
+    attachDragBehavior(svg, refs, ix, app!, ctx!, wrap, (ref) => follow([ref]));
     attachAddBoxOnEmptySpace(svg, ix, app!, ctx!, wrap);
+  }
+
+  // Fit boxes to their text once it is laid out, and again whenever it
+  // changes size: a web font finishing loading, or sketch mode switching the
+  // font on a canvas that is already rendered.
+  const RO = (container.ownerDocument.defaultView ?? window).ResizeObserver;
+  if (RO) {
+    let pending = false;
+    const ro = new RO(() => {
+      if (pending) return;
+      pending = true;
+      (container.ownerDocument.defaultView ?? window).requestAnimationFrame(() => {
+        pending = false;
+        if (!fitBoxesToContent(refs)) return;
+        follow(refs);
+        frameViewBox(svg, boxes);
+      });
+    });
+    for (const ref of refs) ro.observe(ref.fo.firstElementChild as Element);
+    onDisconnected(wrap, () => ro.disconnect());
   }
 }
