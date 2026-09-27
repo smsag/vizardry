@@ -1918,13 +1918,13 @@ Each canvas has an **expand icon** in its title bar. Tapping it opens a full-scr
 
 **Settings → Vizardry → Appearance → "Sketch (hand-drawn) style"** restyles every canvas to look like a whiteboard sketch:
 
-- a **handwriting font** (the bundled [Caveat](https://fonts.google.com/specimen/Caveat), or your own via the optional font-family field),
+- a **handwriting font** (the bundled [Shantell Sans](https://fonts.google.com/specimen/Shantell+Sans), or your own via the optional font-family field),
 - **monochrome ink** — colours desaturate to grey (derived from your accent, so it stays theme-aware), and
 - a subtle **hand-drawn line wobble** on the diagram strokes.
 
 It's a global toggle that applies live to all rendered canvases — no re-render needed — and is captured in PNG exports and presentation mode too. True status signals (errors/warnings) still read as grey in this mode.
 
-> Bundled font: **Caveat** © Pablo Impallari (Impallari Type), used under the [SIL Open Font License 1.1](https://openfontlicense.org/). Only a Latin subset is embedded, and it loads only when sketch mode is on.
+> Bundled font: **Shantell Sans** © The Shantell Sans Project Authors (Shantell Martin, Arrow Type, Anya Danilova), used under the [SIL Open Font License 1.1](https://openfontlicense.org/). Only a Latin subset is embedded, and it loads only when sketch mode is on.
 
 ---
 

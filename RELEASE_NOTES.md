@@ -1,3 +1,21 @@
+## 0.71.0
+
+Sketch mode is easier to read.
+
+- **Changed: a new handwriting font for sketch mode.** Caveat was a narrow,
+  flowing script with small lowercase letters, so labels in nodes, cards and
+  axes ran together even after sketch mode scaled every canvas up by 1.35×.
+  Sketch mode now bundles [Shantell Sans](https://fonts.google.com/specimen/Shantell+Sans),
+  a handwriting font drawn for readability, with separate print letters and
+  real weights from light to extra bold. Text is back at the canvas's normal
+  size, so the A+/A− controls and titles match the non-sketch look. If you
+  preferred Caveat, install it and enter `Caveat` in the "Handwriting font"
+  setting.
+
+_Bundled font: Shantell Sans © The Shantell Sans Project Authors (Shantell
+Martin, Arrow Type, Anya Danilova), SIL Open Font License 1.1. Only a Latin
+subset is embedded, and it loads only when sketch mode is on._
+
 ## 0.70.0
 
 Vizardry has its own icon.
