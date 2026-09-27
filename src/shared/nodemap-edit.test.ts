@@ -288,3 +288,57 @@ describe("setNodeMapLinkStyle", () => {
     expect(editor.replaceRange.mock.calls[0][0]).toBe("link: A <-> B");
   });
 });
+
+describe("boxes declared without coordinates", () => {
+  function write(lines: string[], fn: (app: any, ctx: any, el: HTMLElement) => unknown) {
+    const editor = makeMockEditor(lines);
+    const ok = fn(makeApp("note.md", editor) as any, makeCtx("note.md", 0, lines.length - 1) as any, document.createElement("div"));
+    return { ok, editor };
+  }
+
+  it("a drag writes the coordinates into a bare box line", () => {
+    const { ok, editor } = write(["```vizardry", "box: Order Service", "```"],
+      (app, ctx, el) => writeNodeMapBoxPosition(app, ctx, el, "Order Service", 120.4, 80.6));
+    expect(ok).toBe(true);
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("box: Order Service [x: 120, y: 81]");
+  });
+
+  it("a drag puts the coordinates ahead of an existing color", () => {
+    const { editor } = write(["```vizardry", "  box: A [color: green]", "```"],
+      (app, ctx, el) => writeNodeMapBoxPosition(app, ctx, el, "A", 5, 6));
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("  box: A [x: 5, y: 6, color: green]");
+  });
+
+  it("does not match a longer box name that starts with the same words", () => {
+    const { editor } = write(["```vizardry", "box: Order Service", "box: Order", "```"],
+      (app, ctx, el) => writeNodeMapBoxPosition(app, ctx, el, "Order", 1, 2));
+    expect(editor.replaceRange.mock.calls[0][1]).toEqual({ line: 2, ch: 0 });
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("box: Order [x: 1, y: 2]");
+  });
+
+  it("sets a color on a bare box, and clearing it drops the empty bracket", () => {
+    const set = write(["```vizardry", "box: A", "```"], (app, ctx, el) => setNodeMapBoxColor(app, ctx, el, "A", "blue"));
+    expect(set.editor.replaceRange.mock.calls[0][0]).toBe("box: A [color: blue]");
+    const clear = write(["```vizardry", "box: A [color: blue]", "```"], (app, ctx, el) => setNodeMapBoxColor(app, ctx, el, "A", null));
+    expect(clear.editor.replaceRange.mock.calls[0][0]).toBe("box: A");
+  });
+
+  it("clears a color that is the only key before the coordinates", () => {
+    const { editor } = write(["```vizardry", "box: A [color: red, x: 1, y: 2]", "```"],
+      (app, ctx, el) => setNodeMapBoxColor(app, ctx, el, "A", null));
+    expect(editor.replaceRange.mock.calls[0][0]).toBe("box: A [x: 1, y: 2]");
+  });
+
+  it("renames a bare box and its links", () => {
+    const { ok, editor } = write(["```vizardry", "box: A", "box: B", "link: A -> B", "```"],
+      (app, ctx, el) => renameNodeMapBox(app, ctx, el, "A", "Alpha"));
+    expect(ok).toBe(true);
+    const written = editor.replaceRange.mock.calls.map(c => c[0]);
+    expect(written).toEqual(["box: Alpha", "link: Alpha -> B"]);
+  });
+
+  it("gives a new box a unique name when a bare box already uses it", () => {
+    const { ok } = write(["```vizardry", "box: New Box", "```"], (app, ctx, el) => addNodeMapBox(app, ctx, el, 0, 0));
+    expect(ok).toBe("New Box 2");
+  });
+});

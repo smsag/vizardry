@@ -1136,7 +1136,7 @@ Nodes are inferred automatically from the edges — no separate node declaration
 
 ### Node Map
 
-An ERD-style diagram: you place labeled boxes exactly where you want them and draw the connecting lines yourself — nothing auto-arranges. Good for system diagrams, entity relationships, or any sketch where the layout itself carries meaning.
+An ERD-style diagram: you place labeled boxes where you want them and draw the connecting lines yourself. Good for system diagrams, entity relationships, or any sketch where the layout itself carries meaning. Coordinates are optional: list the boxes, then drag them into place in Live Preview.
 
 ~~~
 ```vizardry
@@ -1154,14 +1154,15 @@ link: Order Service -> Payment Gateway : charges card [color: green]
 ```
 ~~~
 
-Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a box to reveal a "+" handle; drag it onto another box to link them (dropping on empty space cancels instead of creating a new box). Double-click a box's name to rename it, or its body text to edit it. Hover a box or link for a delete "×" and a color-swatch button.
+Boxes are draggable in Live Preview. Grab one anywhere, including its name or body text, and drop it; its `x`/`y` are written into the box's line for you, so you never have to type coordinates. Escape cancels a drag. A box declared without coordinates (`box: Payments`) is placed in a row below the others until you drag it. Hover a box to reveal a "+" handle just off its right edge; it stays up while you move to it from anywhere on the box. Drag it onto another box to link them (dropping on empty space cancels instead of creating a new box). Double-click a box's name to rename it, or its body text to edit it. Hover a box or link for a delete "×" and a color-swatch button.
 
 **Syntax:**
 
 | Line | Meaning |
 |---|---|
+| `box: <name>` | A box without coordinates: placed automatically, then dragged into place |
 | `box: <name> [x: <num>, y: <num>]` | A box at the given top-left position |
-| `box: <name> [x: <num>, y: <num>, color: <name\|#hex>]` | A box with a color — palette name (red, orange, yellow, green, teal, blue, purple, pink, gray) or a `#hex` value |
+| `box: <name> [x: <num>, y: <num>, color: <name\|#hex>]` | A box with a color — palette name (red, orange, yellow, green, teal, blue, purple, pink, gray) or a `#hex` value. `[color: …]` alone works too |
 | Indented lines under `box:` | Optional multi-line body text for that box |
 | `link: A -> B` | Directed link (arrowhead at B) |
 | `link: A <-> B` | Bidirectional link (arrowhead at both ends) |
@@ -1172,7 +1173,7 @@ Boxes are draggable in Live Preview — grab one and drop it anywhere. Hover a b
 | `// comment` | Ignored |
 
 **Rules:**
-- Coordinates are unbounded, non-negative numbers — the canvas grows to fit its content
+- Coordinates are unbounded, non-negative numbers — the canvas grows to fit its content. Give both `x` and `y`, or neither; bracket keys can come in any order
 - Box names must be unique and cannot contain `:` or brackets
 - Self-links are not allowed, and every link must reference a declared box
 
@@ -2064,8 +2065,9 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 
 | Syntax | Meaning |
 |---|---|
+| `box: <name>` | A box without coordinates: placed automatically, then dragged into place |
 | `box: <name> [x: <num>, y: <num>]` | A box at the given top-left position |
-| `box: <name> [x: <num>, y: <num>, color: <name\|#hex>]` | A box with a color |
+| `box: <name> [x: <num>, y: <num>, color: <name\|#hex>]` | A box with a color (`[color: …]` alone works too) |
 | Indented lines under `box:` | Optional multi-line body text |
 | `link: A -> B` / `A <-> B` / `A -- B` | Directed / bidirectional / undirected link |
 | `link: A -> B : <label>` | Link with a label |

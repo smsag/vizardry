@@ -3186,12 +3186,27 @@ code:has(.vzd-upvoty-key) {
   stroke-width: 1.5;
 }
 
-.vzd-nodemap-box--draggable {
+/* Live Preview: a box drags from anywhere on it, including its name and body
+   text (which sit in a foreignObject over the rect). No text selection or page
+   scroll while pressing a box; the rename input and body textarea still take
+   text. */
+.vzd-nodemap-box-g--draggable,
+.vzd-nodemap-box-g--draggable .vzd-nodemap-box-host,
+.vzd-nodemap-box-g--draggable .vzd-nodemap-box-body {
   cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.vzd-nodemap-box-g--draggable :is(input, textarea) {
+  cursor: text;
+  user-select: text;
 }
 
-.vzd-nodemap-box--dragging {
+.vzd-nodemap-box-g--dragging,
+.vzd-nodemap-box-g--dragging * {
   cursor: grabbing;
+}
+.vzd-nodemap-box-g--dragging .vzd-nodemap-box {
   filter: drop-shadow(0 0 4px var(--interactive-accent));
 }
 
