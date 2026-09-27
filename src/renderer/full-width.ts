@@ -98,7 +98,12 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
   const isEditView = !!canvasEl.closest(".cm-editor");
   const container = findWorkspaceContainer(canvasEl);
 
-  if (isEditView) {
+  // Outside every workspace view there is no reading column to break out of:
+  // the canvas is in another plugin's render host (a note printed to PDF) or a
+  // popover. Measured against the window instead, its width — and so the
+  // scale of every exported picture — followed whatever size the window had.
+  // The host is the frame the caller chose, so the canvas fills it.
+  if (isEditView || !container) {
     canvasEl.style.position = "";
     canvasEl.style.left = "";
     canvasEl.style.transform = "";
@@ -119,7 +124,7 @@ export function applyFullWidth(canvasEl: HTMLElement): void {
       canvasEl.style.marginRight = "";
     } else {
       const viewContent = canvasEl.closest<HTMLElement>(".view-content");
-      const measureEl = viewContent ?? container ?? canvasEl.ownerDocument.documentElement;
+      const measureEl = viewContent ?? container;
       const computed = ownerWindow(canvasEl).getComputedStyle(measureEl);
       const paddingLeft = parseFloat(computed.paddingLeft) || 0;
       const paddingRight = parseFloat(computed.paddingRight) || 0;
