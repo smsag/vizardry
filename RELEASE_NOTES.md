@@ -9,6 +9,10 @@
   that respond to clicks. It remembers the block you were on when it unpins
   and pins again as you scroll. The canvas in the note itself keeps its full
   layout.
+- **Fix: a RACI matrix was blank on a phone.** Its columns were stacked and
+  hidden like the other grids' blocks, but it had no carousel to show one.
+  It now shows one column at a time with prev/next arrows, on a phone and
+  when pinned.
 
 ## 0.70.0
 

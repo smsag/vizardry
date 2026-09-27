@@ -24,7 +24,7 @@ const ALL = [
 
 // On mobile we only snapshot the canvases whose layout is width-sensitive
 // (horizontal scrollers / carousels) — where mobile regressions actually bite.
-const MOBILE = ["wardley", "matrix", "sipoc", "journey", "roadmap", "bmc", "odyssey", "wholeperson"];
+const MOBILE = ["wardley", "matrix", "sipoc", "journey", "roadmap", "bmc", "odyssey", "wholeperson", "raci"];
 
 test("canvases render as expected", async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === "mobile";
