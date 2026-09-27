@@ -30,6 +30,7 @@
  */
 
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
+import { carouselSlide, cloneSlideCarousel } from "./grid-carousel";
 
 /** The Reading View scroll container. Live Preview (`.cm-editor`) is not
  *  supported — CM6 virtualizes lines even more aggressively. */
@@ -44,6 +45,9 @@ class StickyController {
   private readonly offsets = new WeakMap<HTMLElement, number>();
   /** Horizontal box (viewport left + width) of each entry, likewise cached. */
   private readonly geoms = new WeakMap<HTMLElement, Geom>();
+  /** Slide each entry's pinned carousel last showed, so unpinning and pinning
+   *  again (scrolling back up a little) returns to the same block. */
+  private readonly slides = new WeakMap<HTMLElement, number>();
 
   private pinned: HTMLElement | null = null;
   private clone: HTMLElement | null = null;
@@ -151,6 +155,15 @@ class StickyController {
     host.appendChild(clone);
     this.clone = clone;
     this.pinned = target;
+
+    // A pinned canvas with blocks is browsed one block at a time, like the
+    // mobile carousel: the pin strip is capped at half the pane, so a full grid
+    // would show only its top row (or, stacked, its first block). The clone is
+    // aria-hidden, so its nav stays out of the tab order; keyboard users read
+    // the live canvas.
+    if (cloneSlideCarousel(target, clone, this.slides.get(target))) {
+      clone.querySelectorAll<HTMLElement>(".vizardry-nav-btn").forEach((b) => { b.tabIndex = -1; });
+    }
   }
 
   private position(chromeTop: number): void {
@@ -162,6 +175,10 @@ class StickyController {
   }
 
   private unpin(): void {
+    if (this.pinned && this.clone) {
+      const slide = carouselSlide(this.clone);
+      if (slide !== undefined) this.slides.set(this.pinned, slide);
+    }
     this.clone?.remove();
     this.clone = null;
     this.pinned = null;

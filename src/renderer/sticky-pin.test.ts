@@ -11,8 +11,10 @@
  * synchronous so a dispatched "scroll" resolves before the assertion.
  */
 
+import "../test-setup";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { activateSticky, deactivateSticky } from "./sticky-pin";
+import { setupSlideCarousel } from "./grid-carousel";
 
 const CHROME_TOP = 100; // scroller's viewport top
 
@@ -151,5 +153,85 @@ describe("sticky-pin selection", () => {
 
     deactivateSticky(a);
     expect(pinnedName()).toBeNull();
+  });
+});
+
+describe("sticky-pin carousel", () => {
+  /** A grid canvas with `n` blocks and its (desktop-width, so inactive)
+   *  carousel, as renderCanvas builds it. */
+  function makeGridCanvas(name: string, off: number, n: number): HTMLElement {
+    const el = makeCanvas(name, off);
+    const grid = el.createEl("div", { cls: "vizardry-grid" });
+    for (let i = 0; i < n; i++) grid.createEl("div", { cls: "vizardry-block", text: `Block ${i + 1}` });
+    setupSlideCarousel(el, ".vizardry-block", "vizardry-block-active", n);
+    return el;
+  }
+
+  function pinnedClone(): HTMLElement {
+    return viewContent.querySelector<HTMLElement>(".vizardry-canvas--pinned")!;
+  }
+
+  function activeBlock(root: HTMLElement): string | null {
+    return root.querySelector(".vizardry-block-active")?.textContent ?? null;
+  }
+
+  function navButtons(root: HTMLElement): HTMLButtonElement[] {
+    return Array.from(root.querySelectorAll<HTMLButtonElement>(".vizardry-nav-btn"));
+  }
+
+  it("browses the pinned clone one block at a time while the live canvas keeps its grid", () => {
+    const a = makeGridCanvas("A", 300, 3);
+    activateSticky(a);
+    scrollTo(350);
+
+    const clone = pinnedClone();
+    expect(clone.classList.contains("vzd-carousel")).toBe(true);
+    expect(a.classList.contains("vzd-carousel")).toBe(false);
+    expect(activeBlock(clone)).toBe("Block 1");
+
+    // Exactly one live nav: the copied (listener-less) one is replaced.
+    expect(clone.querySelectorAll(".vizardry-nav")).toHaveLength(1);
+    const [prev, next] = navButtons(clone);
+    expect(prev.disabled).toBe(true);
+
+    next.click();
+    expect(activeBlock(clone)).toBe("Block 2");
+    next.click();
+    expect(activeBlock(clone)).toBe("Block 3");
+    expect(next.disabled).toBe(true);
+    prev.click();
+    expect(activeBlock(clone)).toBe("Block 2");
+
+    // The source's blocks are untouched.
+    expect(activeBlock(a)).toBeNull();
+  });
+
+  it("returns to the same block after unpinning and pinning again", () => {
+    const a = makeGridCanvas("A", 300, 3);
+    activateSticky(a);
+    scrollTo(350);
+    navButtons(pinnedClone())[1].click();
+    expect(activeBlock(pinnedClone())).toBe("Block 2");
+
+    scrollTo(100); // released
+    expect(pinnedName()).toBeNull();
+    scrollTo(350); // pinned again
+    expect(activeBlock(pinnedClone())).toBe("Block 2");
+  });
+
+  it("keeps the clone's nav out of the tab order", () => {
+    const a = makeGridCanvas("A", 300, 2);
+    activateSticky(a);
+    scrollTo(350);
+    expect(navButtons(pinnedClone()).map((b) => b.tabIndex)).toEqual([-1, -1]);
+  });
+
+  it("leaves a canvas without blocks as a plain clone", () => {
+    const a = makeCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(350);
+    const clone = pinnedClone();
+    expect(clone.classList.contains("vzd-carousel")).toBe(false);
+    expect(clone.querySelector(".vizardry-nav")).toBeNull();
   });
 });

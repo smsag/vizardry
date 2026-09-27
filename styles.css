@@ -235,6 +235,29 @@ button.vzd-btn {
 .vizardry-canvas--pinned .vizardry-header {
   cursor: default;
 }
+/* A pinned carousel: the strip is capped at 50vh, so let the block frame give
+   up height rather than the nav — the prev/next buttons must stay on screen.
+   The clone ignores the pointer except for its nav. Desktop-sized buttons. */
+.vizardry-canvas--pinned.vzd-carousel {
+  display: flex;
+  flex-direction: column;
+}
+.vizardry-canvas--pinned.vzd-carousel > * {
+  flex: none;
+}
+.vizardry-canvas--pinned.vzd-carousel > :not(.vizardry-header, .vizardry-nav) {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.vizardry-canvas--pinned.vzd-carousel .vizardry-nav {
+  pointer-events: auto;
+  margin-top: 0.25rem;
+}
+.vizardry-canvas--pinned.vzd-carousel .vizardry-nav-btn {
+  min-width: 28px;
+  min-height: 28px;
+}
 
 /* Minimized state: hide all canvas content except the header.
    Only non-layout properties (background, border-radius) change on the header
@@ -515,71 +538,70 @@ button.vzd-btn {
   display: none;
 }
 
-/* ── Responsive: single-column carousel ── */
-@media (max-width: 600px) {
-  /* Carousel: stack every block in a single grid cell so the frame is always
-     as tall as the tallest block. Swiping then never changes the canvas
-     height, so content below it no longer jumps. Inactive blocks stay laid out
-     (holding the height) but hidden; only the active one is shown. */
-  .vizardry-grid {
-    display: grid;
-    grid-template: none;
-    grid-template-columns: 1fr;
-    position: relative;
-  }
+/* ── Single-column carousel ──
+   On while the canvas carries .vzd-carousel, which setupSlideCarousel sets at
+   mobile width (<=600px) and always on a pinned clone. Keyed off the class, not
+   a media query, so the pinned strip can browse blocks at any width. */
+/* Carousel: stack every block in a single grid cell so the frame is always
+   as tall as the tallest block. Swiping then never changes the canvas
+   height, so content below it no longer jumps. Inactive blocks stay laid out
+   (holding the height) but hidden; only the active one is shown. */
+.vzd-carousel .vizardry-grid {
+  display: grid;
+  grid-template: none;
+  grid-template-columns: 1fr;
+  position: relative;
+}
 
-  .vizardry-block {
-    grid-area: 1 / 1; /* stack every block in the same cell */
-    visibility: hidden;
-    min-height: 160px;
-  }
+.vzd-carousel .vizardry-block {
+  grid-area: 1 / 1; /* stack every block in the same cell */
+  visibility: hidden;
+  min-height: 160px;
+}
 
-  .vizardry-block.vizardry-block-active {
-    visibility: visible;
-  }
+.vzd-carousel .vizardry-block.vizardry-block-active {
+  visibility: visible;
+}
 
-  .vizardry-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 0.5rem;
-  }
+.vzd-carousel .vizardry-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
 
-  /* Mobile carousel nav: ghost style inherits from .vzd-btn.
-     44×44px touch targets per Apple HIG. Always visible on mobile
-     (no hover state on touch screens).                              */
-  .vizardry-nav-btn {
-    min-width: 44px;
-    min-height: 44px;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
+/* Carousel nav: ghost style inherits from .vzd-btn. 44×44px touch targets per
+   Apple HIG. Always visible (no hover state on touch screens). */
+.vzd-carousel .vizardry-nav-btn {
+  min-width: 44px;
+  min-height: 44px;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 
-  .vizardry-nav-dots {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
+.vzd-carousel .vizardry-nav-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
 
-  .vizardry-nav-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--background-modifier-border);
-    transition: background 0.15s ease;
-    flex-shrink: 0;
-  }
+.vzd-carousel .vizardry-nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
 
-  .vizardry-nav-dot.is-active {
-    background: var(--text-muted);
-  }
+.vzd-carousel .vizardry-nav-dot.is-active {
+  background: var(--text-muted);
+}
 
-  .vizardry-nav-btn:disabled {
-    opacity: 0.3 !important;
-    cursor: default;
-  }
-
+.vzd-carousel .vizardry-nav-btn:disabled {
+  opacity: 0.3 !important;
+  cursor: default;
 }
 
 /* ══ User Story Map ══════════════════════════════════════════════════
@@ -1257,7 +1279,7 @@ button.vzd-btn {
 /* ══ PNG export capture ══════════════════════════════════════════════
    Added to a canvas only while html-to-image reads its computed styles
    (controls.ts → revealForCapture), then removed. On a narrow (mobile)
-   viewport the carousel @media below stacks every panel into one cell and
+   viewport the carousel rules (.vzd-carousel) stack every panel into one cell and
    hides all but the active one; these rules re-establish the real desktop
    layout so the exported PNG is the whole canvas, not just the on-screen
    slice. Mirrors the presentation-mode reveal (.vzd-presentation-wrap). On
@@ -2228,18 +2250,17 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 /* ── Mobile carousel ── */
-@media (max-width: 600px) {
-  /* Carousel: stack columns in one grid cell for a stable, non-jumping frame. */
-  .vzd-roadmap-grid {
-    grid-template-columns: 1fr;
-  }
-  .vzd-roadmap-col {
-    grid-area: 1 / 1;
-    visibility: hidden;
-  }
-  .vzd-roadmap-col.vzd-roadmap-col--active {
-    visibility: visible;
-  }
+/* Carousel (mobile, or pinned): stack columns in one grid cell for a stable,
+   non-jumping frame. */
+.vzd-carousel .vzd-roadmap-grid {
+  grid-template-columns: 1fr;
+}
+.vzd-carousel .vzd-roadmap-col {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.vzd-carousel .vzd-roadmap-col.vzd-roadmap-col--active {
+  visibility: visible;
 }
 
 /* Presentation mode */
@@ -2392,19 +2413,22 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 /* Editable cell textarea — uses shared .vzd-block-textarea (see block editing section) */
 
 /* ── Mobile carousel ── */
+/* Carousel (mobile, or pinned): stack rows in one grid cell for a stable,
+   non-jumping frame. */
+.vzd-carousel .vzd-pl-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.vzd-carousel .vzd-pl-row {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.vzd-carousel .vzd-pl-row.vzd-pl-row--active {
+  visibility: visible;
+}
 @media (max-width: 600px) {
-  /* Carousel: stack rows in one grid cell for a stable, non-jumping frame. */
-  .vzd-pl-stack {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
   .vzd-pl-row {
-    grid-area: 1 / 1;
-    visibility: hidden;
     flex-direction: column;
-  }
-  .vzd-pl-row.vzd-pl-row--active {
-    visibility: visible;
   }
   .vzd-pl-label-col {
     width: 100%;
@@ -3608,18 +3632,17 @@ code:has(.vzd-upvoty-key) {
   margin: 0.1rem 0;
 }
 
-@media (max-width: 600px) {
-  /* Carousel: stack plans in one grid cell for a stable, non-jumping frame. */
-  .vzd-odyssey-grid {
-    grid-template-columns: 1fr;
-  }
-  .vzd-odyssey-plan {
-    grid-area: 1 / 1;
-    visibility: hidden;
-  }
-  .vzd-odyssey-plan.vzd-odyssey-plan--active {
-    visibility: visible;
-  }
+/* Carousel (mobile, or pinned): stack plans in one grid cell for a stable,
+   non-jumping frame. */
+.vzd-carousel .vzd-odyssey-grid {
+  grid-template-columns: 1fr;
+}
+.vzd-carousel .vzd-odyssey-plan {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.vzd-carousel .vzd-odyssey-plan.vzd-odyssey-plan--active {
+  visibility: visible;
 }
 
 /* ── Circle of Influence & Concern ───────────────────────────────────────── */

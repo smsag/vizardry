@@ -1,3 +1,15 @@
+## 0.71.0
+
+- **Fix: a pinned canvas showed only its first block.** Pinning keeps a copy
+  of the canvas at the top of the reading pane, capped at half its height, so
+  a tall grid was cut off after its first block or row. That copy also ignored
+  the mouse, so the prev/next arrows it showed at narrow window widths did
+  nothing. A pinned grid, Roadmap, Pace Layers or Odyssey canvas now works
+  like the mobile view: one block at a time, with prev/next arrows and dots
+  that respond to clicks. It remembers the block you were on when it unpins
+  and pins again as you scroll. The canvas in the note itself keeps its full
+  layout.
+
 ## 0.70.0
 
 Vizardry has its own icon.
