@@ -1,4 +1,8 @@
-## Unreleased
+## 0.71.2
+
+Exported canvases come out whole, at the size of the place they were drawn
+into — which is what a note printed, published or mailed by another plugin
+shows of them.
 
 - **Fix: exported canvases were cut off at one edge.** A canvas widened past
   the reading column was captured where it sat on the page rather than on its

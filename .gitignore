@@ -2,7 +2,8 @@
 vizardry
 
 # Build output
-node_modules/
+# No slash: a worktree may link its dependencies in, and a link is no directory.
+node_modules
 main.js
 *.js.map
 *.tsbuildinfo
