@@ -1916,9 +1916,12 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   overflow-x: auto;
 }
 
+/* Never below 90% of the 800-unit viewBox (720px): the 11px stage and axis
+   labels stay at ~10px. Narrower than that, the wrap scrolls sideways instead
+   of shrinking the map — at 480px they were 6.6px in a sidebar. */
 .vzd-wardley-svg {
   width: 100%;
-  min-width: 480px;
+  min-width: 720px;
   max-width: 900px;
   display: block;
   margin: 0 auto;
@@ -3116,9 +3119,11 @@ code:has(.vzd-upvoty-key) {
   overflow-x: auto;
 }
 
+/* Never below 90% of the 900-unit viewBox (810px): the 10px edge labels stay
+   at 9px. Narrower than that, the wrap scrolls sideways (see the Wardley map). */
 .vzd-cmap-svg {
   width: 100%;
-  min-width: 480px;
+  min-width: 810px;
   max-width: 900px;
   display: block;
   margin: 0 auto;
@@ -3406,15 +3411,19 @@ code:has(.vzd-upvoty-key) {
   width: 100%;
   max-width: 100%;
   display: flex;
-  justify-content: center;
   overflow: auto;
 }
 
+/* Centred by auto margins, not justify-content: a centred flex item wider
+   than its wrap overflows to the LEFT too, where no scroll reaches. The
+   min-width is 90% of the 560-unit viewBox, so the 13px labels stay ~12px. */
 .vzd-wol-svg {
   display: block;
   width: 100%;
+  min-width: 504px;
   max-width: 560px;
   height: auto;
+  margin: 0 auto;
 }
 
 /* Filled score wedge — hue set inline per wedge; softened so the reference
