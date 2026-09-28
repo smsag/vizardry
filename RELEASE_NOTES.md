@@ -1,4 +1,7 @@
-## Unreleased
+## 0.71.3
+
+Diagrams stay readable where there is little room — a sidebar, another
+plugin's panel, a phone.
 
 - **Fix: Wardley Maps, Concept Maps and Wheels of Life were unreadable in a
   narrow space.** In a sidebar, another plugin's panel or a phone they shrank
