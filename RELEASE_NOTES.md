@@ -1,3 +1,10 @@
+## Unreleased
+
+- **Fix: Wardley Maps, Concept Maps and Wheels of Life were unreadable in a
+  narrow space.** In a sidebar, another plugin's panel or a phone they shrank
+  until their labels were 5–9px. They now stop shrinking at 90% of their size
+  and scroll sideways instead.
+
 ## 0.71.2
 
 Exported canvases come out whole, at the size of the place they were drawn
