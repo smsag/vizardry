@@ -23,7 +23,7 @@ import {
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
   ODYSSEY_TEMPLATE, CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
-  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
+  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE, PRO_CONTRA_TEMPLATE,
 } from "../src/templates";
 
 /** Strip the ```vizardry … ``` fence so only the inner block source remains. */
@@ -88,6 +88,10 @@ block: Actions
   Hand off two recurring duties
   Weekly 1:1s with each report
   Write the strategy one-pager`,
+  // Appended last: a new fixture's height shifts every later section's page
+  // offset, and a sub-pixel shift changes the rounded height of their
+  // element screenshots (canvaslink/futureself flipped by 1px).
+  procontra: inner(PRO_CONTRA_TEMPLATE),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

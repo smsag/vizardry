@@ -10,7 +10,7 @@ import { parsePeriod, writeCanvasPeriod } from "../shared/period-edit";
 import { onDisconnected } from "../shared/lifecycle";
 import { isEditModeActive } from "../shared/editor";
 import { initCanvas, markInteractive } from "./controls";
-import { activateInlineEdit } from "./inline-edit";
+import { renderHeaderChip } from "./header-chip";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 import type { FrameworkDefinition } from "../types";
@@ -118,27 +118,14 @@ function renderPeriodField(
   app?: App,
   ctx?: MarkdownPostProcessorContext,
 ): void {
-  const value = parsePeriod(source);
-  if (!value && !editable) return;
-
-  const field = header.createEl("div", { cls: "vizardry-period" });
-  field.createEl("span", { cls: "vizardry-period-label", text: t("period.label") });
-  const valueEl = field.createEl("span", { cls: "vizardry-period-value" });
-  if (value) valueEl.setText(value);
-  else valueEl.addClass("vizardry-period-value--empty"), valueEl.setText(t("period.placeholder"));
-
-  if (editable && app && ctx) {
-    valueEl.addClass("vizardry-period-value--editable");
-    valueEl.addEventListener("click", (e) => {
-      e.stopPropagation();
-      activateInlineEdit(valueEl, value, (next) => {
-        if (!writeCanvasPeriod(app, ctx, container, next)) new Notice(t("edit.writeFailed"));
-      });
-    });
-  }
-
-  const actions = header.querySelector(".vizardry-header-actions");
-  if (actions) header.insertBefore(field, actions);
+  renderHeaderChip(header, {
+    label: t("period.label"),
+    value: parsePeriod(source),
+    placeholder: t("period.placeholder"),
+    onCommit: (editable && app && ctx)
+      ? (next) => { if (!writeCanvasPeriod(app, ctx, container, next)) new Notice(t("edit.writeFailed")); }
+      : undefined,
+  });
 }
 
 export function renderCanvas(

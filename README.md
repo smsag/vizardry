@@ -72,6 +72,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `utilitymap` | Buyer Utility Map (Blue Ocean) | Grid |
 | `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
+| `procontra` | Pro / Contra (weighted decision list) | Card |
 | `compass` | Product Compass | Brief |
 
 ---
@@ -1520,6 +1521,37 @@ criteria: Paid conversion exceeds 5%
 - Order is ignored; an unknown field or an out-of-range gauge skips with a warning chip rather than failing the card.
 - **Editable in Live Preview:** click a step to edit its text, click a gauge dot to set its level (click the top filled dot to lower it), and click the deadline to change it — all written straight back to source. (In Read View, edit as text.)
 - Styling is Vizardry-native (theme-aware, sketch-mode and font-size controls apply).
+
+### Pro / Contra
+
+A **Pro / Contra** board helps with a decision: list the arguments for and against, weight each **1–3**, and the canvas sums each side into a net score with a balance bar. Compare **several options** side by side (the leader is marked), and record the outcome with `decision:` (that option gets a *Chosen* badge). With no `option:` line it is the classic two-column T-chart.
+
+````
+```vizardry
+type: procontra
+title: Relocate the team?
+question: Should we move the core team to Berlin by Q2?
+
+option: Move to Berlin
+  pro: Larger hiring pool | 3
+  pro: Closer to key customers | 2
+  con: Relocation cost | 3
+  con: Two people may leave
+
+option: Stay remote
+  pro: No disruption to delivery | 2
+  con: Slower onboarding of new hires | 3
+
+decision: Move to Berlin
+```
+````
+
+**Rules:**
+- `pro: <text> | <weight>` / `con: <text> | <weight>` (`contra:` works too). The weight is **1–3**, defaults to 1, and is clamped when out of range.
+- `pro:`/`con:` lines attach to the most recent `option: <name>` — indentation is cosmetic. Lines before any `option:` form one unnamed option (the plain T-chart).
+- `question:` frames the decision above the board; `decision:` shows as a header chip and, when it names an option, badges that card. The score only advises — nothing is decided for you.
+- An unknown field, an empty argument or a line without `key: value` skips with a warning chip rather than failing the canvas.
+- **Editable in Live Preview:** click any text (question, option name, argument) to edit it, click a weight dot to change the weight, **+ Add argument** / **+ Add option** to grow the board, and use an item's **⋯** menu to move an argument to the other side, delete it, or choose an option as the decision — all written straight back to source. (In Read View, edit as text.)
 
 ### Product Compass
 
