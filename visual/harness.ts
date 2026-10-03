@@ -64,7 +64,6 @@ const FIXTURES: Record<string, string> = {
   problem: inner(PROBLEM_TEMPLATE),
   testcard: inner(TEST_CARD_TEMPLATE),
   compass: inner(COMPASS_TEMPLATE),
-  procontra: inner(PRO_CONTRA_TEMPLATE),
   // A block that links to another canvas by title (canvas: target) → shows the
   // canvas-link button next to the block value.
   canvaslink: `type: swot
@@ -89,6 +88,10 @@ block: Actions
   Hand off two recurring duties
   Weekly 1:1s with each report
   Write the strategy one-pager`,
+  // Appended last: a new fixture's height shifts every later section's page
+  // offset, and a sub-pixel shift changes the rounded height of their
+  // element screenshots (canvaslink/futureself flipped by 1px).
+  procontra: inner(PRO_CONTRA_TEMPLATE),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
