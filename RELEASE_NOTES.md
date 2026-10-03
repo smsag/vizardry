@@ -1,3 +1,25 @@
+## 0.72.0
+
+A new canvas for making decisions: weigh the pros and cons, and see which way
+it tips.
+
+- **New canvas: Pro / Contra (`type: procontra`)** — list the arguments for
+  and against, weight each **1–3** (`pro: Larger hiring pool | 3`), and the
+  canvas sums each side into a net score with a balance bar. With no
+  `option:` line it is the classic two-column T-chart; add `option:` lines to
+  compare alternatives side by side, the leader marked *Leading*. Record the
+  outcome with `decision:` — that option is badged *Chosen*. The score only
+  advises; nothing is decided for you. Editable in Live Preview: click any
+  text to edit it, click (or arrow-key) the weight dots, **+** to add
+  arguments and options, and the **⋯** menu to move an argument to the other
+  side, delete it, or choose an option. On a phone or in a narrow pane Pro
+  stacks above Contra; in sketch mode the sides stay apart by stroke (solid
+  vs. dashed and hatched), and the **+ / −** labels help with red/green
+  colour blindness.
+- **Fix: clearing a Test Card field left an earlier duplicate behind.** When
+  a field such as `deadline:` appeared twice, clearing it removed only the
+  last line and the older value came back. Every copy is now removed.
+
 ## 0.71.3
 
 Diagrams stay readable where there is little room — a sidebar, another
