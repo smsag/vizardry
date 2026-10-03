@@ -4965,8 +4965,10 @@ body.vizardry-sketch .vzd-tree-rename-input {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-right: 28px; /* room for the ⋯ */
 }
+/* Room for the ⋯ — only where it is rendered (Live Preview), so Reading View,
+   carousels and exports don't carry an empty gutter. */
+.vzd-pc--editable .vzd-pc-option-head { padding-right: 28px; }
 .vzd-pc-option-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -5061,11 +5063,12 @@ body.vizardry-sketch .vzd-tree-rename-input {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
-  padding: 0.25rem 28px 0.25rem 0.45rem;
+  padding: 0.25rem 0.45rem;
   border-radius: 6px;
   background: color-mix(in srgb, var(--vzd-pc-side) 9%, transparent);
   color: var(--text-normal);
 }
+.vzd-pc--editable .vzd-pc-item { padding-right: 28px; }
 .vzd-pc-text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
 .vzd-pc-dots {
@@ -5083,6 +5086,11 @@ body.vizardry-sketch .vzd-tree-rename-input {
   transition: background 0.12s ease;
 }
 .vzd-pc-dot.is-filled { background: var(--vzd-pc-side); border-color: var(--vzd-pc-side); }
+.vzd-pc-dots--editable { border-radius: 999px; }
+.vzd-pc-dots--editable:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
 .vzd-pc-dot--editable { cursor: pointer; }
 .vzd-pc-dot--editable:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--vzd-pc-side) 30%, transparent); }
 

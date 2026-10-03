@@ -11,7 +11,7 @@ vi.mock("obsidian", () => ({
 import {
   flipProContraArg, insertProContraArg, insertProContraOption, removeProContraArg,
   removeProContraOption, renameProContraOption, writeProContraArgText,
-  writeProContraArgWeight, writeProContraField,
+  writeProContraArgWeight, writeProContraField, formatArg,
 } from "./procontra-edit";
 import { MarkdownView } from "obsidian";
 
@@ -98,6 +98,13 @@ describe("argument edits", () => {
     expect(body(editor)).toHaveLength(MULTI.length - 3);
   });
 
+  it("keeps text that ends in | n as text by writing the weight explicitly", () => {
+    const { editor, app, ctx, el } = setup(MULTI);
+    writeProContraArgText(app, ctx, el, 2, "Plan B | 2");
+    expect(editor.getLine(7)).toBe("  pro: Plan B | 2 | 1");
+    expect(formatArg("", "pro", "Either | or", 1)).toBe("pro: Either | or");
+  });
+
   it("returns false for an unknown ref", () => {
     const { app, ctx, el } = setup(MULTI);
     expect(writeProContraArgText(app, ctx, el, 99, "x")).toBe(false);
@@ -133,16 +140,23 @@ describe("insertProContraArg", () => {
 });
 
 describe("option edits", () => {
-  it("renames an option and carries a matching decision along", () => {
+  it("renames the chosen option and carries the decision along", () => {
     const { editor, app, ctx, el } = setup(MULTI);
-    renameProContraOption(app, ctx, el, 0, "Berlin", "Munich");
+    renameProContraOption(app, ctx, el, 0, "Munich", true);
     expect(editor.getLine(3)).toBe("option: Munich");
     expect(editor.getLine(8)).toBe("decision: Munich");
   });
 
+  it("leaves the decision alone when renaming an option that isn't chosen", () => {
+    const lines = ["```vizardry", "option: Same", "option: Same", "decision: Same", "```"];
+    const { editor, app, ctx, el } = setup(lines);
+    renameProContraOption(app, ctx, el, 1, "Other", false);
+    expect(body(editor)).toEqual(["option: Same", "option: Other", "decision: Same"]);
+  });
+
   it("names the implicit option by inserting an option line and indenting", () => {
     const { editor, app, ctx, el } = setup(["```vizardry", "title: T", "pro: a", "con: b", "option: Other", "```"]);
-    renameProContraOption(app, ctx, el, -1, "", "This one");
+    renameProContraOption(app, ctx, el, -1, "This one", false);
     expect(body(editor)).toEqual(["title: T", "option: This one", "  pro: a", "  con: b", "option: Other"]);
   });
 
@@ -160,6 +174,13 @@ describe("option edits", () => {
 });
 
 describe("writeProContraField", () => {
+  it("clears every duplicate, so an earlier one can't resurface", () => {
+    const lines = ["```vizardry", "decision: Old", "option: A", "decision: A", "```"];
+    const { editor, app, ctx, el } = setup(lines);
+    writeProContraField(app, ctx, el, "decision", "");
+    expect(body(editor)).toEqual(["option: A"]);
+  });
+
   it("updates, clears and inserts the decision", () => {
     const { editor, app, ctx, el } = setup(MULTI);
     writeProContraField(app, ctx, el, "decision", "Remote");

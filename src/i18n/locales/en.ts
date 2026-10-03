@@ -401,6 +401,7 @@ export const en = {
   "procontra.deleteArgument":  "Delete argument",
   "procontra.deleteOption":    "Delete option",
   "procontra.weight":          "Weight",
+  "procontra.weightOf":        "Weight {{n}} of {{max}}",
   "procontra.prosOutweigh":    "Pros outweigh",
   "procontra.consOutweigh":    "Contras outweigh",
   "procontra.balanced":        "Balanced",

@@ -4,7 +4,8 @@ import type { RenderContext } from "./render-context";
 import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
-import { activateInlineEdit, activateTextareaEdit } from "./inline-edit";
+import { activateTextareaEdit } from "./inline-edit";
+import { renderHeaderChip } from "./header-chip";
 import { writeTestCardField, writeTestCardGauge } from "../shared/testcard-edit";
 import { Notice } from "obsidian";
 import { t } from "../i18n";
@@ -55,25 +56,16 @@ function renderDeadline(
   editable: boolean,
   rc: RenderContext,
 ): void {
-  if (!value && !editable) return;
-  const field = header.createEl("div", { cls: "vizardry-period vzd-tc-deadline" });
-  field.createEl("span", { cls: "vizardry-period-label", text: "Deadline" });
-  const valueEl = field.createEl("span", { cls: "vizardry-period-value" });
-  if (value) valueEl.setText(value);
-  else { valueEl.addClass("vizardry-period-value--empty"); valueEl.setText("Set deadline"); }
-
-  if (editable) {
-    valueEl.addClass("vizardry-period-value--editable");
-    valueEl.addEventListener("click", (e) => {
-      e.stopPropagation();
-      activateInlineEdit(valueEl, value, (next) => {
-        if (!writeTestCardField(rc.app!, rc.ctx!, container, DEADLINE_KEY, next)) new Notice(t("edit.writeFailed"));
-      }, { shouldCommit: (v, cur) => v !== cur }); // allow clearing
-    });
-  }
-
-  const actions = header.querySelector(".vizardry-header-actions");
-  if (actions) header.insertBefore(field, actions);
+  renderHeaderChip(header, {
+    cls: "vzd-tc-deadline",
+    label: "Deadline",
+    value,
+    placeholder: "Set deadline",
+    allowClear: true,
+    onCommit: editable
+      ? (next) => { if (!writeTestCardField(rc.app!, rc.ctx!, container, DEADLINE_KEY, next)) new Notice(t("edit.writeFailed")); }
+      : undefined,
+  });
 }
 
 function renderStep(

@@ -1,6 +1,7 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { writeFieldLine } from "./field-line";
 import { scanProContraLines, splitWeight, type ProContraLine } from "../procontra";
 import type { ProContraSide } from "../types/procontra";
 
@@ -39,10 +40,15 @@ function indentStr(line: string): string {
   return line.match(/^\s*/)?.[0] ?? "";
 }
 
-/** `<indent><key>: <text>[ | w]` — the weight suffix is omitted at the default 1. */
-function formatArg(indent: string, key: string, text: string, weight: number): string {
+/**
+ * `<indent><key>: <text>[ | w]`. The weight suffix is omitted at the default 1
+ * — unless the text itself ends in `| <integer>`, which the parser would
+ * otherwise read back as the weight (so "Plan B | 2" stays text).
+ */
+export function formatArg(indent: string, key: string, text: string, weight: number): string {
   const clean = text.replace(/\s+/g, " ").trim();
-  return `${indent}${key}: ${clean}${weight > 1 ? ` | ${weight}` : ""}`;
+  const ambiguous = splitWeight(clean).text !== clean;
+  return `${indent}${key}: ${clean}${weight > 1 || ambiguous ? ` | ${weight}` : ""}`;
 }
 
 /** The key as written on the line (`pro`, `con`, `contra`, any case). */
@@ -137,8 +143,7 @@ export function insertProContraArg(
   const nextOpt = opts.find(o => o.abs > from);
   const to = nextOpt ? nextOpt.abs : b.lineEnd;
   const own = args(b).filter(a => a.abs > from && a.abs < to);
-  const sameSide = own.filter(a => a.kind === "arg" && a.side === side);
-  const anchor = sameSide.at(-1) ?? own.at(-1);
+  const anchor = own.filter(a => a.kind === "arg" && a.side === side).at(-1) ?? own.at(-1);
 
   let after: number;
   let indent: string;
@@ -148,12 +153,9 @@ export function insertProContraArg(
   } else if (head) {
     after = head.abs;
     indent = `${indentStr(b.editor.getLine(head.abs))}  `;
-  } else if (nextOpt) {
-    // Implicit option with no arguments yet, but named options follow:
-    // the new line goes just above the first `option:`.
-    after = nextOpt.abs - 1;
-    indent = "";
   } else {
+    // The implicit option of an empty board: no named option follows (the
+    // renderer only shows an empty implicit option when there are none).
     after = lastContentLine(b);
     indent = "";
   }
@@ -162,22 +164,20 @@ export function insertProContraArg(
 }
 
 /**
- * Renames an option; a `decision:` that named it follows along. Naming the
- * implicit option (`ref` -1) inserts an `option:` line above its first
- * argument and indents its arguments under it.
+ * Renames an option. When it is the chosen option (`chosen`), the effective
+ * `decision:` follows along — only then, so renaming a same-named sibling
+ * never moves the decision. Naming the implicit option (`ref` -1) inserts an
+ * `option:` line above its first argument and indents its arguments under it.
  */
 export function renameProContraOption(
   app: App, ctx: MarkdownPostProcessorContext, el: HTMLElement,
-  ref: number, oldName: string, name: string,
+  ref: number, name: string, chosen: boolean,
 ): boolean {
   const b = openBlock(app, ctx, el, "renameProContraOption");
   if (!b) return false;
   const clean = name.replace(/\s+/g, " ").trim();
   if (!clean) return false;
-  const old = oldName.trim().toLowerCase();
-  const decisions = old
-    ? b.entries.filter(e => e.kind === "decision" && e.value.trim().toLowerCase() === old)
-    : [];
+  const decision = chosen ? b.entries.filter(e => e.kind === "decision").at(-1) : undefined;
 
   if (ref >= 0) {
     const head = options(b)[ref];
@@ -186,7 +186,7 @@ export function renameProContraOption(
     editorWrite(() => {
       // In-line rewrites only, so no line number shifts between them.
       replaceLine(b.editor, head.abs, `${indentStr(line)}option: ${clean}`);
-      for (const d of decisions) replaceLine(b.editor, d.abs, `${indentStr(b.editor.getLine(d.abs))}decision: ${clean}`);
+      if (decision) replaceLine(b.editor, decision.abs, `${indentStr(b.editor.getLine(decision.abs))}decision: ${clean}`);
     }, el);
     return true;
   }
@@ -240,7 +240,7 @@ export function removeProContraOption(
 }
 
 /**
- * Upserts (or, when `value` is empty, removes) the `question:` / `decision:`
+ * Upserts (or, when `value` is empty, removes every) `question:` / `decision:`
  * line. A new question goes above the options, right under the title; a new
  * decision goes at the end.
  */
@@ -250,28 +250,19 @@ export function writeProContraField(
 ): boolean {
   const b = openBlock(app, ctx, el, "writeProContraField");
   if (!b) return false;
-  const clean = value.replace(/\s+/g, " ").trim();
-  const existing = b.entries.filter(e => e.kind === key).at(-1); // last one wins in the parser
-
-  editorWrite(() => {
-    if (existing) {
-      if (clean) replaceLine(b.editor, existing.abs, `${indentStr(b.editor.getLine(existing.abs))}${key}: ${clean}`);
-      else deleteLine(b.editor, existing.abs);
-      return;
-    }
-    if (!clean) return;
-    if (key === "decision") {
-      insertAfter(b.editor, lastContentLine(b), `decision: ${clean}`);
-      return;
-    }
-    // Under the leading type/title/collapsed lines.
-    let after = b.lineStart;
-    for (let ln = b.lineStart + 1; ln < b.lineEnd; ln++) {
-      const k = b.editor.getLine(ln).trim().split(":")[0].trim().toLowerCase();
-      if (k === "type" || k === "title" || k === "collapsed") after = ln;
-      else if (b.editor.getLine(ln).trim() !== "") break;
-    }
-    insertAfter(b.editor, after, `question: ${clean}`);
-  }, el);
+  const matches = b.entries.filter(e => e.kind === key).map(e => e.abs);
+  editorWrite(() => writeFieldLine(b.editor, matches, key, value, key === "decision" ? lastContentLine(b) : afterChrome(b)), el);
   return true;
+}
+
+/** The last of the leading type/title/collapsed lines (or the opening fence). */
+function afterChrome(b: Block): number {
+  let after = b.lineStart;
+  for (let ln = b.lineStart + 1; ln < b.lineEnd; ln++) {
+    const line = b.editor.getLine(ln).trim();
+    const k = line.split(":")[0].trim().toLowerCase();
+    if (k === "type" || k === "title" || k === "collapsed") after = ln;
+    else if (line !== "") break;
+  }
+  return after;
 }

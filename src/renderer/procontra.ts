@@ -8,6 +8,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { attachItemMenu } from "../shared/item-menu";
 import { activateInlineEdit } from "./inline-edit";
+import { renderHeaderChip } from "./header-chip";
 import {
   flipProContraArg, insertProContraArg, insertProContraOption, removeProContraArg,
   removeProContraOption, renameProContraOption, writeProContraArgText,
@@ -49,7 +50,7 @@ export function renderProContra(
 
   initCanvas(container, "procontra", title, (header) => renderDecisionChip(header, data.decision, edit), source, onTitleEdit, app, ctx);
 
-  const root = container.createEl("div", { cls: "vzd-pc" });
+  const root = container.createEl("div", { cls: edit ? "vzd-pc vzd-pc--editable" : "vzd-pc" });
   renderQuestion(root, data.question, edit);
 
   // An empty block still gets a board, so the first argument can be added.
@@ -58,23 +59,39 @@ export function renderProContra(
     : [{ name: "", ref: -1, pros: [], cons: [] }];
   const multi = options.length > 1;
   const leader = multi ? leadingOption(options) : null;
-  const decision = data.decision.trim().toLowerCase();
+  const chosen = chosenOption(options, data.decision);
 
   const list = root.createEl("div", { cls: multi ? "vzd-pc-options" : "vzd-pc-single" });
   for (const option of options) {
-    const chosen = !!decision && !!option.name && option.name.trim().toLowerCase() === decision;
-    renderOption(list, option, { multi, chosen, leading: option === leader, decision: data.decision }, edit);
+    renderOption(list, option, { multi, chosen: option === chosen, leading: option === leader }, edit);
   }
 
   if (edit) {
     const add = root.createEl("button", { cls: "vzd-pc-add vzd-pc-add-option", text: `+ ${t("procontra.addOption")}` });
     add.setAttribute("type", "button");
     add.addEventListener("click", () => {
-      if (!insertProContraOption(edit.app, edit.ctx, edit.container, t("procontra.newOption"))) failed();
+      const name = uniqueName(t("procontra.newOption"), options.map(o => o.name));
+      if (!insertProContraOption(edit.app, edit.ctx, edit.container, name)) failed();
     });
   }
 
   renderCanvasWarnings(container, data.warnings);
+}
+
+/** The option `decision:` names — the first one, should two share the name. */
+export function chosenOption(options: ProContraOption[], decision: string): ProContraOption | null {
+  const want = decision.trim().toLowerCase();
+  if (!want) return null;
+  return options.find(o => o.name.trim().toLowerCase() === want) ?? null;
+}
+
+/** `base`, or `base 2`, `base 3`… — the first not already taken (case-insensitive). */
+export function uniqueName(base: string, taken: string[]): string {
+  const used = new Set(taken.map(n => n.trim().toLowerCase()));
+  if (!used.has(base.toLowerCase())) return base;
+  let n = 2;
+  while (used.has(`${base} ${n}`.toLowerCase())) n++;
+  return `${base} ${n}`;
 }
 
 /** The single option with the highest net score, or null on a tie / no arguments. */
@@ -91,27 +108,18 @@ function leadingOption(options: ProContraOption[]): ProContraOption | null {
   return tie ? null : best;
 }
 
-/** `decision:` chip in the header — reuses the `period:` field's chip styling. */
+/** `decision:` chip in the header. */
 function renderDecisionChip(header: HTMLElement, value: string, edit: Edit | undefined): void {
-  if (!value && !edit) return;
-  const field = header.createEl("div", { cls: "vizardry-period vzd-pc-decision" });
-  field.createEl("span", { cls: "vizardry-period-label", text: t("procontra.decision") });
-  const valueEl = field.createEl("span", { cls: "vizardry-period-value" });
-  if (value) valueEl.setText(value);
-  else { valueEl.addClass("vizardry-period-value--empty"); valueEl.setText(t("procontra.setDecision")); }
-
-  if (edit) {
-    valueEl.addClass("vizardry-period-value--editable");
-    valueEl.addEventListener("click", (e) => {
-      e.stopPropagation();
-      activateInlineEdit(valueEl, value, (next) => {
-        if (!writeProContraField(edit.app, edit.ctx, edit.container, "decision", next)) failed();
-      }, { shouldCommit: (v, cur) => v !== cur }); // allow clearing
-    });
-  }
-
-  const actions = header.querySelector(".vizardry-header-actions");
-  if (actions) header.insertBefore(field, actions);
+  renderHeaderChip(header, {
+    cls: "vzd-pc-decision",
+    label: t("procontra.decision"),
+    value,
+    placeholder: t("procontra.setDecision"),
+    allowClear: true,
+    onCommit: edit
+      ? (next) => { if (!writeProContraField(edit.app, edit.ctx, edit.container, "decision", next)) failed(); }
+      : undefined,
+  });
 }
 
 function renderQuestion(root: HTMLElement, question: string, edit: Edit | undefined): void {
@@ -135,7 +143,6 @@ interface OptionState {
   multi: boolean;
   chosen: boolean;
   leading: boolean;
-  decision: string;
 }
 
 function renderOption(list: HTMLElement, option: ProContraOption, state: OptionState, edit: Edit | undefined): void {
@@ -169,7 +176,7 @@ function renderOptionHead(card: HTMLElement, option: ProContraOption, state: Opt
   name.addClass("vzd-pc-editable");
   name.addEventListener("click", () => {
     activateInlineEdit(name, option.name, (next) => {
-      if (!renameProContraOption(edit.app, edit.ctx, edit.container, option.ref, option.name, next)) failed();
+      if (!renameProContraOption(edit.app, edit.ctx, edit.container, option.ref, next, state.chosen)) failed();
     }, { renderDisplay: paint });
   });
 
@@ -235,32 +242,67 @@ function renderArgument(ul: HTMLElement, arg: ProContraArgument, edit: Edit | un
   });
 }
 
-/** 1–3 weight dots. Click a dot to set the weight (minimum 1). */
+/**
+ * 1–3 weight dots. Editable, it is a keyboard slider too (arrows, Home/End);
+ * a click or key sets the weight, rolled back if the write fails. Read-only,
+ * it is announced as an image of the weight.
+ */
 function renderWeight(li: HTMLElement, arg: ProContraArgument, edit: Edit | undefined): void {
-  const dots = li.createEl("span", {
-    cls: "vzd-pc-dots",
-    attr: {
-      role: "slider", "aria-label": t("procontra.weight"),
-      "aria-valuemin": "1", "aria-valuemax": String(PRO_CONTRA_MAX_WEIGHT), "aria-valuenow": String(arg.weight),
-    },
-  });
+  const dots = li.createEl("span", { cls: "vzd-pc-dots" });
   let weight = arg.weight;
+  const describe = (w: number): string => t("procontra.weightOf", { n: w, max: PRO_CONTRA_MAX_WEIGHT });
   const paint = (): void => {
-    dots.setAttribute("aria-valuenow", String(weight));
     Array.from(dots.children).forEach((d, i) => d.classList.toggle("is-filled", i < weight));
+    if (edit) {
+      dots.setAttribute("aria-valuenow", String(weight));
+      dots.setAttribute("aria-valuetext", describe(weight));
+    } else {
+      dots.setAttribute("aria-label", describe(weight));
+    }
   };
-  for (let i = 1; i <= PRO_CONTRA_MAX_WEIGHT; i++) {
-    const dot = dots.createEl("span", { cls: "vzd-pc-dot" });
-    if (!edit) continue;
-    dot.addClass("vzd-pc-dot--editable");
-    dot.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (i === weight) return;
-      weight = i;
-      paint();
-      if (!writeProContraArgWeight(edit.app, edit.ctx, edit.container, arg.ref, weight)) failed();
-    });
+  for (let i = 1; i <= PRO_CONTRA_MAX_WEIGHT; i++) dots.createEl("span", { cls: "vzd-pc-dot" });
+
+  if (!edit) {
+    dots.setAttribute("role", "img");
+    paint();
+    return;
   }
+
+  dots.addClass("vzd-pc-dots--editable");
+  dots.setAttribute("role", "slider");
+  dots.setAttribute("tabindex", "0");
+  dots.setAttribute("aria-label", t("procontra.weight"));
+  dots.setAttribute("aria-valuemin", "1");
+  dots.setAttribute("aria-valuemax", String(PRO_CONTRA_MAX_WEIGHT));
+
+  const set = (next: number): void => {
+    const clamped = Math.max(1, Math.min(PRO_CONTRA_MAX_WEIGHT, next));
+    if (clamped === weight) return;
+    const prev = weight;
+    weight = clamped;
+    paint();
+    if (!writeProContraArgWeight(edit.app, edit.ctx, edit.container, arg.ref, weight)) {
+      weight = prev;
+      paint();
+      failed();
+    }
+  };
+
+  Array.from(dots.children).forEach((dot, i) => {
+    dot.addClass("vzd-pc-dot--editable");
+    dot.addEventListener("click", (e) => { e.stopPropagation(); set(i + 1); });
+  });
+  dots.addEventListener("keydown", (e) => {
+    const step: Record<string, number> = {
+      ArrowRight: weight + 1, ArrowUp: weight + 1,
+      ArrowLeft: weight - 1, ArrowDown: weight - 1,
+      Home: 1, End: PRO_CONTRA_MAX_WEIGHT,
+    };
+    if (!(e.key in step)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    set(step[e.key]);
+  });
   paint();
 }
 

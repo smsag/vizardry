@@ -386,6 +386,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "procontra.deleteArgument":  "Argument löschen",
   "procontra.deleteOption":    "Option löschen",
   "procontra.weight":          "Gewicht",
+  "procontra.weightOf":        "Gewicht {{n}} von {{max}}",
   "procontra.prosOutweigh":    "Pro überwiegt",
   "procontra.consOutweigh":    "Contra überwiegt",
   "procontra.balanced":        "Ausgeglichen",
