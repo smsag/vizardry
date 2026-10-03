@@ -23,7 +23,7 @@ import {
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
   ODYSSEY_TEMPLATE, CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
-  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
+  PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE, PRO_CONTRA_TEMPLATE,
 } from "../src/templates";
 
 /** Strip the ```vizardry … ``` fence so only the inner block source remains. */
@@ -64,6 +64,7 @@ const FIXTURES: Record<string, string> = {
   problem: inner(PROBLEM_TEMPLATE),
   testcard: inner(TEST_CARD_TEMPLATE),
   compass: inner(COMPASS_TEMPLATE),
+  procontra: inner(PRO_CONTRA_TEMPLATE),
   // A block that links to another canvas by title (canvas: target) → shows the
   // canvas-link button next to the block value.
   canvaslink: `type: swot

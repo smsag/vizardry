@@ -72,6 +72,7 @@ Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas to t
 | `problem, research` | Problem Statement (research) | SVG flow |
 | `problem, fivew` | Problem Statement (5W+H) | SVG flow |
 | `testcard` | Test Card | Card |
+| `procontra` | Pro / Contra | Card |
 | `compass` | Product Compass | Brief |
 
 ## Grid canvases
@@ -548,6 +549,19 @@ criteria: Conversion exceeds 5%
 ~~~
 
 Steps: `hypothesis:` → `test:` → `metric:` → `criteria:`. Gauges (0–3): `critical:` (step 1), `cost:` + `reliability:` (step 2), `time:` (step 3). All fields optional.
+
+## Pro / Contra (`procontra`)
+
+~~~
+```vizardry
+type: procontra
+question: Move the team to Berlin?
+pro: Larger hiring pool | 3
+con: Relocation cost | 2
+```
+~~~
+
+Weight `| 1–3` (default 1); `contra:` = `con:`. To compare alternatives, add `option: <name>` lines — the `pro:`/`con:` below attach to it. `decision: <option name>` badges that option.
 
 ## Product Compass (`compass`)
 

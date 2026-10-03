@@ -803,3 +803,23 @@ phase: Resolution
   support: Payment gateway processes the retry
 \`\`\`
 `;
+
+export const PRO_CONTRA_TEMPLATE = `\`\`\`vizardry
+type: procontra
+title: Relocate the team?
+question: Should we move the core team to Berlin by Q2?
+
+option: Move to Berlin
+  pro: Larger hiring pool | 3
+  pro: Closer to key customers | 2
+  con: Relocation cost | 3
+  con: Two people may leave
+
+option: Stay remote
+  pro: No disruption to delivery | 2
+  pro: Keeps the hiring radius wide
+  con: Slower onboarding of new hires | 3
+
+decision: Move to Berlin
+\`\`\`
+`;

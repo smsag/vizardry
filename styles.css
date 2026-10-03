@@ -2941,6 +2941,7 @@ code:has(.vzd-upvoty-key) {
 .vzd-scqa-card-del svg,
 .vzd-flow-card-delete svg,
 .vzd-compass-del svg,
+.vzd-pc-item-menu svg,
 .vzd-card-menu svg {
   width: 14px;
   height: 14px;
@@ -3000,7 +3001,8 @@ code:has(.vzd-upvoty-key) {
 .vzd-journey-card-delete,
 .vzd-scqa-card-del,
 .vzd-flow-card-delete,
-.vzd-compass-del {
+.vzd-compass-del,
+.vzd-pc-item-menu {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
@@ -3011,12 +3013,15 @@ code:has(.vzd-upvoty-key) {
 .vzd-journey-card:hover .vzd-journey-card-delete,
 .vzd-scqa-card:hover .vzd-scqa-card-del,
 .vzd-flow-node-g:hover .vzd-flow-card-delete,
+.vzd-pc-item:hover .vzd-pc-item-menu,
+.vzd-pc-option-head:hover .vzd-pc-item-menu,
 /* …and by tabbing to it, which `display: none` had made impossible. */
 .vzd-story-task-delete:focus-visible,
 .vzd-journey-card-delete:focus-visible,
 .vzd-scqa-card-del:focus-visible,
 .vzd-flow-card-delete:focus-visible,
-.vzd-compass-del:focus-visible {
+.vzd-compass-del:focus-visible,
+.vzd-pc-item-menu:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
@@ -3026,7 +3031,8 @@ code:has(.vzd-upvoty-key) {
 .vzd-journey-card-delete::after,
 .vzd-scqa-card-del::after,
 .vzd-flow-card-delete::after,
-.vzd-compass-del::after {
+.vzd-compass-del::after,
+.vzd-pc-item-menu::after {
   content: "";
   position: absolute;
   inset: -4px;
@@ -3043,6 +3049,7 @@ code:has(.vzd-upvoty-key) {
   .vzd-scqa-card-del,
   .vzd-flow-card-delete,
   .vzd-compass-del,
+  .vzd-pc-item-menu,
   .vzd-tree-edit-del,
   .vzd-wardley-unlink-btn,
   .vzd-nodemap-box-delete-btn,
@@ -4902,6 +4909,253 @@ body.vizardry-sketch .vzd-tree-rename-input {
 .vzd-tc-dot--editable { cursor: pointer; }
 .vzd-tc-dot--editable:hover {
   border-color: var(--interactive-accent);
+}
+
+/* ══ Pro / Contra ════════════════════════════════════════════════════
+   A weighted pros-and-cons board. One option = a two-column T-chart; several
+   options = cards side by side, each with a pro-vs-contra balance bar. Pro is
+   the theme's green, contra its red; everything else stays neutral. */
+.vzd-pc {
+  --vzd-pc-pro: var(--color-green, #30a46c);
+  --vzd-pc-con: var(--color-red, #e5484d);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.vzd-pc-question {
+  font-weight: 600;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.15);
+  color: var(--text-normal);
+}
+.vzd-pc-question--empty,
+.vzd-pc-option-name--empty {
+  color: var(--text-faint);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.vzd-pc-editable { cursor: text; border-radius: 4px; }
+.vzd-pc-editable:hover { background: color-mix(in srgb, var(--interactive-accent) 8%, transparent); }
+.vzd-pc .vzd-inline-input { width: 100%; font: inherit; color: inherit; }
+
+.vzd-pc-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 0.9rem;
+}
+
+.vzd-pc-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  background: var(--background-primary);
+}
+.vzd-pc-option.is-chosen {
+  border-color: color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+
+.vzd-pc-option-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 28px; /* room for the ⋯ */
+}
+.vzd-pc-option-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--text-normal);
+}
+
+.vzd-pc-badge {
+  flex: none;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.vzd-pc-badge--chosen {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.vzd-pc-badge--leading {
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.vzd-pc-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+/* Too narrow for two readable columns (a phone, a sidebar, a split pane, or a
+   card in a crowded options grid): stack Pro above Contra. Keyed to the card's
+   own width rather than the viewport, so it also applies to a narrow pane on
+   desktop; the media query covers older mobile WebViews without container
+   queries. The balance bar below still compares the two sides. */
+.vzd-pc-option { container: vzd-pc-option / inline-size; }
+@container vzd-pc-option (max-width: 26rem) {
+  .vzd-pc-cols { grid-template-columns: 1fr; gap: 0.9rem; }
+}
+@media (max-width: 480px) {
+  .vzd-pc-cols { grid-template-columns: 1fr; gap: 0.9rem; }
+  /* The decision is often a whole option name; on a phone it would squeeze
+     the title to an ellipsis, so it takes its own line under the title row. */
+  .vizardry-header .vzd-pc-decision { order: 10; flex-basis: 100%; margin-left: 0; }
+}
+
+.vzd-pc-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  border-top: 3px solid var(--vzd-pc-side);
+  padding-top: 0.4rem;
+}
+.vzd-pc-col--pro { --vzd-pc-side: var(--vzd-pc-pro); }
+.vzd-pc-col--con { --vzd-pc-side: var(--vzd-pc-con); }
+
+.vzd-pc-col-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.vzd-pc-col-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.78);
+  color: var(--vzd-pc-side);
+}
+/* A sign as well as a colour, so the sides stay apart for red/green colour
+   blindness and in monochrome sketch mode. */
+.vzd-pc-col--pro .vzd-pc-col-label::before { content: "+ "; }
+.vzd-pc-col--con .vzd-pc-col-label::before { content: "\2212  "; }
+.vzd-pc-col-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.vzd-pc-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.vzd-pc-item {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 28px 0.25rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--vzd-pc-side) 9%, transparent);
+  color: var(--text-normal);
+}
+.vzd-pc-text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+.vzd-pc-dots {
+  flex: none;
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.vzd-pc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--vzd-pc-side) 70%, var(--text-muted));
+  background: transparent;
+  transition: background 0.12s ease;
+}
+.vzd-pc-dot.is-filled { background: var(--vzd-pc-side); border-color: var(--vzd-pc-side); }
+.vzd-pc-dot--editable { cursor: pointer; }
+.vzd-pc-dot--editable:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--vzd-pc-side) 30%, transparent); }
+
+/* The ⋯ trigger; visibility and hit area live in "Item action reachability". */
+.vzd-pc-item-menu {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.vzd-pc-item-menu:hover { color: var(--text-normal); }
+
+.vzd-pc-add {
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.7;
+}
+.vzd-pc-add:hover { opacity: 1; color: var(--interactive-accent); }
+
+.vzd-pc-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+.vzd-pc-balance-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--background-modifier-border);
+}
+.vzd-pc-balance-pro { background: var(--vzd-pc-pro); }
+.vzd-pc-balance-con { background: var(--vzd-pc-con); }
+.vzd-pc-balance-label {
+  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
+  color: var(--text-muted);
+}
+.vzd-pc-net { font-weight: 700; font-variant-numeric: tabular-nums; }
+.vzd-pc-balance.is-pro .vzd-pc-net { color: var(--vzd-pc-pro); }
+.vzd-pc-balance.is-con .vzd-pc-net { color: var(--vzd-pc-con); }
+
+/* Sketch mode greys the canvas, which would leave pro and contra as two near-
+   identical greys. Encode the side by stroke instead, the way a hand-drawn
+   list would: pro in solid ink, contra dashed and hatched. */
+body.vizardry-sketch .vzd-pc {
+  --vzd-pc-pro: var(--text-normal);
+  --vzd-pc-con: var(--text-muted);
+}
+body.vizardry-sketch .vzd-pc-col--con { border-top-style: dashed; }
+body.vizardry-sketch .vzd-pc-col--con .vzd-pc-item {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--vzd-pc-con) 14%, transparent) 0 1px,
+    transparent 1px 6px
+  );
+}
+body.vizardry-sketch .vzd-pc-balance-con {
+  background: repeating-linear-gradient(-45deg, var(--vzd-pc-con) 0 2px, transparent 2px 5px);
 }
 
 /* ══ Product Compass ═════════════════════════════════════════════════

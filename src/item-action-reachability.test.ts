@@ -25,6 +25,7 @@ const HTML_CONTROLS = [
   "vzd-scqa-card-del",
   "vzd-flow-card-delete",
   "vzd-compass-del",
+  "vzd-pc-item-menu",
 ];
 
 const SVG_CONTROLS = [

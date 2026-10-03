@@ -91,6 +91,7 @@ These are the rules that most often get broken. Follow all of them:
 | `utilitymap` | Buyer Utility Map (Blue Ocean 6×6) | Grid |
 | `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
+| `procontra` | Pro / Contra (weighted decision list) | Card |
 | `compass` | Product Compass | Brief |
 
 ---
@@ -1651,6 +1652,44 @@ criteria: Paid conversion exceeds 5%
 - An unknown field or a non-numeric / out-of-range gauge is dropped with a warning chip; the card never fails outright.
 - Editable in **Live Preview**: click a step to edit its text, click a gauge dot to set the level (click the top filled dot to lower it), click the deadline chip to change it — all written back to source. In Read View, edit as text.
 - Styling is Vizardry-native (theme-aware; sketch mode and font-size controls apply). It carries no Strategyzer branding.
+
+---
+
+## Pro / Contra (`procontra`)
+
+A weighted pros-and-cons list for a decision. One or more options, each with pro and contra arguments weighted 1–3; each side is summed into a net score (Σpro − Σcon) shown as a balance bar. With several options, the unique highest net score is marked *Leading*; `decision:` records the choice.
+
+```
+type: procontra
+title: Relocate the team?
+question: Should we move the core team to Berlin by Q2?
+
+option: Move to Berlin
+  pro: Larger hiring pool | 3
+  pro: Closer to key customers | 2
+  con: Relocation cost | 3
+  con: Two people may leave
+
+option: Stay remote
+  pro: No disruption to delivery | 2
+  con: Slower onboarding of new hires | 3
+
+decision: Move to Berlin
+```
+
+| Key | Meaning |
+| --- | --- |
+| `question: <text>` | The decision being made, shown above the board |
+| `option: <name>` | Opens an option; following `pro:`/`con:` lines attach to it |
+| `pro: <text> \| <weight>` | An argument for. Weight **1–3**, optional (default 1) |
+| `con: <text> \| <weight>` | An argument against (`contra:` is an alias) |
+| `decision: <text>` | Header chip; when it equals an option name (case-insensitive) that card is badged *Chosen* |
+
+**Rules:**
+- Indentation is cosmetic. `pro:`/`con:` before any `option:` form one unnamed option — on its own that is the plain two-column T-chart.
+- A `|` tail that is not an integer stays part of the text; an out-of-range weight is clamped to 1–3 with a warning.
+- An unknown field, an empty `pro:`/`con:`/`option:`, or a line without a colon is skipped with a warning chip; the canvas never fails outright.
+- Editable in **Live Preview**: click the question, an option name or an argument to edit it; click a weight dot; **+ Add argument** / **+ Add option**; the **⋯** menu moves an argument to the other side, deletes it, deletes an option, or chooses/clears the decision. Renaming the chosen option updates `decision:` too.
 
 ---
 

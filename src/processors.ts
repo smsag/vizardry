@@ -50,13 +50,14 @@ import { parseTestCard } from "./testcard";
 import { parseCompass } from "./compass";
 import { parseStrategyCanvas } from "./strategycanvas";
 import { parseBuyerUtilityMap } from "./utilitymap";
+import { parseProContra } from "./procontra";
 import {
   renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
   renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderJourneyMap, renderWheelOfLife, renderOdyssey,
   renderCircleOfInfluence, renderWholePerson, renderRadar, renderProblem, renderTestCard,
-  renderCompass, renderStrategyCanvas, renderBuyerUtilityMap,
+  renderCompass, renderStrategyCanvas, renderBuyerUtilityMap, renderProContra,
   renderError,
 } from "./renderer";
 import type { RenderContext } from "./renderer/render-context";
@@ -73,7 +74,7 @@ import {
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
   CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
   PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
-  STRATEGY_CANVAS_TEMPLATE, BUYER_UTILITY_MAP_TEMPLATE,
+  STRATEGY_CANVAS_TEMPLATE, BUYER_UTILITY_MAP_TEMPLATE, PRO_CONTRA_TEMPLATE,
 } from "./templates";
 
 /**
@@ -246,4 +247,9 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // link stripper would mangle them) and need no heading-link resolver.
   { id: "strategycanvas", label: "Strategy Canvas", template: STRATEGY_CANVAS_TEMPLATE, createProcessor: plain(parseStrategyCanvas, renderStrategyCanvas) },
   { id: "utilitymap", label: "Buyer Utility Map", template: BUYER_UTILITY_MAP_TEMPLATE, createProcessor: plain(parseBuyerUtilityMap, renderBuyerUtilityMap) },
+
+  // Pro / Contra parses raw source — its `pro:`/`con:` lines carry a `| n`
+  // weight suffix the inline-link stripper would mangle — and needs no
+  // heading-link resolver.
+  { id: "procontra", label: "Pro / Contra", template: PRO_CONTRA_TEMPLATE, createProcessor: plain(parseProContra, renderProContra) },
 ];

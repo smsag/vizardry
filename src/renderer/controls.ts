@@ -183,6 +183,7 @@ const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
   "vzd-story-task-delete", "vzd-story-add-task",
   "vzd-nodemap-box-delete-btn",
   "vzd-compass-del", "vzd-compass-add",
+  "vzd-pc-item-menu", "vzd-pc-add",
   // SVG affordances (the wrapping <g> / text element carries the class)
   "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
   "vzd-nodemap-unlink-btn", "vzd-nodemap-add-handle-g",
@@ -993,7 +994,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, venn, ost, mindmap, impact
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-fishbone-wrap, .vzd-sipoc-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-mx-wrap, .vzd-cmap-wrap, .vzd-tc, .vzd-compass, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap"
+      ".vizardry-grid, .vzd-story-grid, .vzd-venn-wrap, .vizardry-ost-wrapper, .vizardry-mindmap-wrapper, .vizardry-impact-wrapper, .vzd-fishbone-wrap, .vzd-sipoc-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-mx-wrap, .vzd-cmap-wrap, .vzd-tc, .vzd-compass, .vzd-pc, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-journey-grid, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap"
     );
     if (!contentEl) return;
 

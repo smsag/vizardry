@@ -51,6 +51,7 @@ export const en = {
   "framework.radar.description": "Rate several attributes 0–10 and plot them as a filled radar/spider chart.",
   "framework.strategycanvas.description": "Blue Ocean value curves — competing factors scored 0–10 for you vs. rivals.",
   "framework.utilitymap.description": "Blue Ocean 6×6 map — where your offering creates buyer utility (or pain).",
+  "framework.procontra.description": "Weigh pros and cons (1–3) for one or several options — see which way the decision tips.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
@@ -381,6 +382,29 @@ export const en = {
   "sideleaf.swipeHint":        "Swipe a card aside to remove it",
   "compass.deleteEntry":       "Delete entry",
   "flow.deleteCard":           "Delete card",
+  "procontra.pro":             "Pro",
+  "procontra.con":             "Contra",
+  "procontra.question":        "What are you deciding?",
+  "procontra.decision":        "Decision",
+  "procontra.setDecision":     "Set decision",
+  "procontra.chosen":          "Chosen",
+  "procontra.leading":         "Leading",
+  "procontra.untitledOption":  "Untitled option",
+  "procontra.newOption":       "New option",
+  "procontra.newArgument":     "New argument",
+  "procontra.addArgument":     "Add argument",
+  "procontra.addOption":       "Add option",
+  "procontra.choose":          "Choose this option",
+  "procontra.clearDecision":   "Clear decision",
+  "procontra.moveToPro":       "Move to Pro",
+  "procontra.moveToCon":       "Move to Contra",
+  "procontra.deleteArgument":  "Delete argument",
+  "procontra.deleteOption":    "Delete option",
+  "procontra.weight":          "Weight",
+  "procontra.prosOutweigh":    "Pros outweigh",
+  "procontra.consOutweigh":    "Contras outweigh",
+  "procontra.balanced":        "Balanced",
+  "procontra.noArguments":     "No arguments yet",
 } as const;
 
 export type TranslationKey = keyof typeof en;
