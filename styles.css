@@ -202,6 +202,98 @@ button.vzd-btn {
   opacity: 0.5;
 }
 
+/* ── Add controls (src/renderer/add-control.ts) ───────────────────────
+   One look for every "add something" affordance in Live Edit:
+   - .vzd-add--slot  append to a list/column: full-width dashed row, plus
+                     and a label ("Add argument")
+   - .vzd-add--dot   insert at a point: 20px circle with a plus
+   Hidden until the canvas is hovered or holds focus, like the header
+   buttons; always shown on touch, and for an empty list (--always), where
+   the control is the only hint there is something to add to. It keeps its
+   space while hidden, so revealing it moves nothing. `button.` matches the
+   specificity of Obsidian's button:not(.clickable-icon) chrome (see
+   button.vzd-btn). */
+button.vzd-add {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  cursor: pointer;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.2;
+  color: var(--text-muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+}
+.vizardry-canvas:hover button.vzd-add,
+.vizardry-canvas:focus-within button.vzd-add,
+button.vzd-add.vzd-add--always {
+  opacity: 1;
+  pointer-events: auto;
+}
+button.vzd-add:focus-visible {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+.vzd-add-icon {
+  display: flex;
+  flex: none;
+}
+.vzd-add-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+button.vzd-add--slot {
+  width: 100%;
+  min-height: 28px;
+  margin-top: 0.3rem;
+  padding: 0 0.6em;
+  justify-content: flex-start;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+}
+/* In an SVG foreignObject (Problem flow) the box is sized exactly; no gap. */
+foreignObject > button.vzd-add--slot {
+  margin-top: 0;
+}
+button.vzd-add--slot:hover,
+button.vzd-add--slot:focus-visible {
+  color: var(--text-accent);
+  border-color: var(--interactive-accent);
+  background-color: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+
+button.vzd-add--dot {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--background-primary);
+}
+button.vzd-add--dot .vzd-add-icon svg {
+  width: 12px;
+  height: 12px;
+}
+button.vzd-add--dot:hover,
+button.vzd-add--dot:focus-visible {
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  background: var(--interactive-accent);
+}
+
+/* Touch: always visible and 44px to hit — set in the touch (no-hover) media
+   block beside the delete controls; Obsidian mobile also flags .is-mobile. */
+.is-mobile button.vzd-add { opacity: 1; pointer-events: auto; }
+
+/* The presentation view is a static clone (no listeners): no add controls. */
+.vzd-presentation-overlay .vzd-add { display: none; }
+
 /* Pin (sticky) button: when active it stays visible even without a canvas
    hover, tinted with the accent colour, so the pinned state is legible. */
 .vzd-pin-btn.is-active {
@@ -839,31 +931,6 @@ button.vzd-btn {
   visibility: hidden;
 }
 
-/* Add task button */
-.vzd-story-add-task {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  margin: 0.3rem auto 0;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.vzd-story-cell:hover .vzd-story-add-task {
-  opacity: 1;
-}
-
-.vzd-story-add-task:hover {
-  background: var(--interactive-accent-hover);
-  opacity: 1 !important;
-}
-
 /* Presentation mode */
 .vzd-presentation-wrap .vzd-story-grid {
   width: 100%;
@@ -1097,31 +1164,6 @@ button.vzd-btn {
 
 .vzd-journey-card--hidden {
   visibility: hidden;
-}
-
-/* Add card button — every cell gets one (no backlog concept here) */
-.vzd-journey-add-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  margin: 0.3rem auto 0;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.vzd-journey-cell:hover .vzd-journey-add-card {
-  opacity: 1;
-}
-
-.vzd-journey-add-card:hover {
-  background: var(--interactive-accent-hover);
-  opacity: 1 !important;
 }
 
 /* Presentation mode */
@@ -1464,7 +1506,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
   fill: var(--text-muted);
   cursor: pointer;
 }
-.vzd-lane-bullet-add:hover { fill: var(--text-normal); }
+.vzd-lane-bullet-add:hover { fill: var(--text-accent); }
 
 .vzd-lane-bullet-del { cursor: pointer; }
 .vzd-lane-bullet-del-hit { fill: transparent; }
@@ -1500,16 +1542,30 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
   pointer-events: all;
 }
 
+/* Same look as the HTML add dot (.vzd-add--dot): quiet at rest, accent on
+   hover. */
 .vzd-tree-edit-add-circle {
-  fill: var(--interactive-accent);
+  fill: var(--background-primary);
+  stroke: var(--background-modifier-border-hover, var(--background-modifier-border));
+  stroke-width: 1;
+  transition: fill 0.12s ease, stroke 0.12s ease;
 }
 
 .vzd-tree-edit-add-plus {
   font-family: var(--font-interface);
   font-size: 13px;
-  fill: var(--text-on-accent);
+  fill: var(--text-muted);
   pointer-events: none;
   user-select: none;
+}
+
+.vzd-tree-edit-add:hover .vzd-tree-edit-add-circle {
+  fill: var(--interactive-accent);
+  stroke: var(--interactive-accent);
+}
+
+.vzd-tree-edit-add:hover .vzd-tree-edit-add-plus {
+  fill: var(--text-on-accent);
 }
 
 /* "×" delete button — small muted circle at top-right corner of leaf nodes */
@@ -1708,21 +1764,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   background: transparent !important;
   padding: 0 0 0 4px;
   vertical-align: middle;
-}
-
-/* Ghost icon style — matches .vzd-btn but triggered by row hover, not canvas hover */
-.vzd-sipoc-add-row {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.vzd-sipoc-row:hover .vzd-sipoc-add-row {
-  opacity: var(--icon-opacity, 0.7);
-  pointer-events: auto;
-}
-
-.vzd-sipoc-add-row:hover {
-  opacity: 1 !important;
 }
 
 /* ══ Venn Diagram ════════════════════════════════════════════════════
@@ -2227,30 +2268,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
 }
 
 .vzd-roadmap-card--hidden { visibility: hidden; }
-
-.vzd-roadmap-add-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  margin: 0.3rem auto 0;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.vzd-roadmap-col:hover .vzd-roadmap-add-item {
-  opacity: 1;
-}
-
-.vzd-roadmap-add-item:hover {
-  background: var(--interactive-accent-hover);
-  opacity: 1 !important;
-}
 
 /* ── Mobile carousel ── */
 /* Carousel (mobile, or pinned): stack columns in one grid cell for a stable,
@@ -3053,10 +3070,16 @@ code:has(.vzd-upvoty-key) {
   .vzd-tree-edit-del,
   .vzd-wardley-unlink-btn,
   .vzd-nodemap-box-delete-btn,
-  .vzd-nodemap-unlink-btn {
+  .vzd-nodemap-unlink-btn,
+  .vzd-tree-edit-add,
+  button.vzd-add {
     opacity: 1;
     pointer-events: auto;
   }
+  /* Add controls: a 44px target; the dot keeps its 20px look and grows an
+     invisible hit area. */
+  button.vzd-add--slot { min-height: 44px; }
+  button.vzd-add--dot::after { content: ""; position: absolute; inset: -12px; }
 }
 
 /* ── RACI Matrix ────────────────────────────────────────────────────────────── */
@@ -4478,7 +4501,6 @@ code:has(.vzd-upvoty-key) {
   word-break: break-word;
 }
 
-.vzd-scqa-card-add,
 .vzd-scqa-card-del {
   position: absolute;
   width: 20px;
@@ -4496,11 +4518,13 @@ code:has(.vzd-upvoty-key) {
   z-index: 1;
 }
 
-.vzd-scqa-card-add {
+/* Add dot (createAddControl) — placement only; it straddles the card's
+   bottom-right edge. `button.` outranks the dot's own position: relative. */
+button.vzd-scqa-card-add {
+  position: absolute;
   right: 4px;
-  bottom: -8px;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  bottom: -10px;
+  z-index: 1;
 }
 
 .vzd-scqa-card-del {
@@ -4512,8 +4536,6 @@ code:has(.vzd-upvoty-key) {
   color: var(--text-normal);
   background: var(--background-modifier-hover);
 }
-
-.vzd-scqa-card:hover .vzd-scqa-card-add,
 
 .vzd-scqa-card--draggable {
   cursor: grab;
@@ -4710,26 +4732,6 @@ code:has(.vzd-upvoty-key) {
   z-index: 2;
 }
 .vzd-flow-card-delete:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-
-/* "+ Add" — one per column, revealed on canvas hover. */
-.vzd-flow-add {
-  width: 100%;
-  height: 22px;
-  border: 1px dashed var(--background-modifier-border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.72em;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-}
-.vzd-flow-svg:hover .vzd-flow-add { opacity: 0.65; }
-.vzd-flow-add:hover {
-  opacity: 1;
-  border-color: var(--interactive-accent);
-  color: var(--interactive-accent);
-}
 
 /* ── Sketch (hand-drawn) mode ─────────────────────────────────────────────────
    Toggled globally via body.vizardry-sketch (from the plugin setting). Swaps to
@@ -5111,18 +5113,6 @@ body.vizardry-sketch .vzd-tree-rename-input {
 }
 .vzd-pc-item-menu:hover { color: var(--text-normal); }
 
-.vzd-pc-add {
-  align-self: flex-start;
-  padding: 0;
-  background: none;
-  border: none;
-  box-shadow: none;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
-  color: var(--text-muted);
-  cursor: pointer;
-  opacity: 0.7;
-}
-.vzd-pc-add:hover { opacity: 1; color: var(--interactive-accent); }
 
 .vzd-pc-balance {
   display: flex;
@@ -5334,13 +5324,4 @@ body.vizardry-sketch .vzd-pc-balance-con {
 .vzd-compass-line:hover .vzd-compass-del,
 .vzd-compass-stat:hover .vzd-compass-del { opacity: 1; }
 .vzd-compass-del:hover { color: var(--text-error, var(--text-normal)); }
-.vzd-compass-add {
-  display: inline-block;
-  margin-top: 0.2rem;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.8);
-  color: var(--text-muted);
-  cursor: pointer;
-  opacity: 0.7;
-}
-.vzd-compass-add:hover { opacity: 1; color: var(--interactive-accent); }
 .vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }

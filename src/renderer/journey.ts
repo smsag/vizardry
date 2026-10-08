@@ -1,4 +1,5 @@
 import { setIcon } from "obsidian";
+import { createAddControl } from "./add-control";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { JourneyCard, JourneyData, JourneyLaneKey } from "../types";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
@@ -271,12 +272,10 @@ export function renderJourneyMap(
       for (let j = 0; j < cards.length; j++) renderJourneyCardEl(cell, cards[j], phase.name, lane.key, j);
 
       if (isEditMode && app && ctx) {
-        const addBtn = cell.createEl("button", { cls: "vzd-journey-add-card vzd-btn" });
-        setIcon(addBtn, "plus");
-        addBtn.setAttribute("aria-label", t("journey.addCard"));
-        addBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          addJourneyCard(app, ctx, container, phase.name, lane.key, t("journey.newCard"));
+        createAddControl(cell, {
+          label: t("journey.addCard"),
+          alwaysVisible: cards.length === 0,
+          onAdd: () => addJourneyCard(app, ctx, container, phase.name, lane.key, t("journey.newCard")),
         });
       } else if (cards.length === 0) {
         cell.addClass("vzd-journey-cell-empty");

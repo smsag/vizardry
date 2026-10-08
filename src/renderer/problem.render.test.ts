@@ -84,7 +84,7 @@ describe("renderFlowGraph — live editing", () => {
     const el = host();
     renderFlowGraph(el, { stages, nodes, edges: [] }, {});
     expect(el.querySelectorAll(".vzd-flow-editable")).toHaveLength(0);
-    expect(el.querySelectorAll(".vzd-flow-card-delete, .vzd-flow-add")).toHaveLength(0);
+    expect(el.querySelectorAll(".vzd-flow-card-delete, .vzd-add")).toHaveLength(0);
   });
 
   it("edit mode: editable fields + a delete per card + an add per column", () => {
@@ -93,7 +93,7 @@ describe("renderFlowGraph — live editing", () => {
     renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
     expect(el.querySelectorAll(".vzd-flow-editable")).toHaveLength(4); // heading + body per card
     expect(el.querySelectorAll(".vzd-flow-card-delete")).toHaveLength(2);
-    expect(el.querySelectorAll(".vzd-flow-add")).toHaveLength(2); // one per stage column
+    expect(el.querySelectorAll(".vzd-add")).toHaveLength(2); // one per stage column
   });
 
   it("clicking a heading edits it in place; Enter commits the new text", () => {
@@ -147,7 +147,7 @@ describe("renderFlowGraph — live editing", () => {
     renderFlowGraph(el, { stages, nodes, edges: [], edit }, {});
     const trigger = el.querySelector<HTMLElement>(".vzd-flow-card-delete")!;
     expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
-    el.querySelector<HTMLElement>(".vzd-flow-add")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    el.querySelector<HTMLElement>(".vzd-add")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(edit.addCard).toHaveBeenCalledWith("ideal");
   });
 });

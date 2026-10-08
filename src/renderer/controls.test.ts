@@ -382,7 +382,7 @@ describe("download / export", () => {
       "vizardry-header-actions",
       "vizardry-nav", "vzd-story-nav", "vzd-journey-nav",
       "vzd-journey-card-delete", "vzd-story-task-delete",
-      "vzd-scqa-card-add", "vzd-scqa-card-del", "vzd-roadmap-add-item",
+      "vzd-add", "vzd-scqa-card-del",
       "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
       "vzd-tree-edit-add", "vzd-tree-edit-del",
       "vzd-lane-bullet-add", "vzd-lane-bullet-del",

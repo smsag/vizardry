@@ -1613,7 +1613,7 @@ link: consequences_1 -> proposal_1
 - The **Gap** stage (e.g. `reality`/`issue`) is subtly tinted; the **Direction** stage (e.g. `proposal`/`method`/`objective`) is accent-filled.
 - A card heading that matches a `#`/`##` heading in the note links out to that chapter (with a section preview).
 - Graceful degradation: an unknown subtype is fatal (lists the valid ones); an empty card, a duplicate id, a self-link, or a dangling/malformed link is dropped with a warning chip. Fatal only when no cards are defined.
-- Editable in **Live Preview**: click a card's heading or body to edit it in place, use the **×** to delete a card or **+ Add** under a column to add one (writes back to the source). In Read View, edit the source as text. Flows wider than the view scroll horizontally.
+- Editable in **Live Preview**: click a card's heading or body to edit it in place, use the **×** to delete a card or **+ Add card** under a column to add one (writes back to the source). In Read View, edit the source as text. Flows wider than the view scroll horizontally.
 
 ---
 
@@ -1726,7 +1726,7 @@ pricing: Included in all tiers
 - Aliases accepted (`force`, `problem statement`, `case`, `north star`, `solution`, `go-to-market`, `price`).
 - Unknown keys and empty values are dropped with a warning chip; the brief never fails outright.
 - Empty sections show a faint prompt so the structure stays visible as the brief grows.
-- Editable in **Live Preview**: click any line to edit it (the raw value, so links are preserved), hover **×** to delete, **+** to add a line to a section. In Read View, edit as text.
+- Editable in **Live Preview**: click any line to edit it (the raw value, so links are preserved), hover **×** to delete, **+ Add …** under a section to add a line. In Read View, edit as text.
 
 ---
 
