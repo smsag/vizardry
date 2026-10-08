@@ -80,7 +80,6 @@ function activateCellEdit(
     if (!writeSIPOCCell(app, ctx, container, rowIndex, cellKey, value)) new Notice(t("edit.writeFailed"));
   }, {
     editingClass: "vzd-sipoc-editing",
-    textareaClass: "vzd-sipoc-textarea",
     minHeight,
     renderDisplay: (host, value) => {
       host.empty();

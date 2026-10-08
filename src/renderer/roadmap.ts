@@ -279,7 +279,7 @@ export function renderRoadmap(
       // selection is suppressed by the gesture helper once a drag begins.
       enableDragGesture(card, {
         preventDefaultDown: false,
-        shouldStart: (target) => !card.querySelector(".vzd-inline-input") && !target.closest("button, a"),
+        shouldStart: (target) => !card.querySelector(".vzd-editing") && !target.closest("button, a"),
         onStart: (x, y) => startDrag(card, x, y),
         onMove: (x, y) => updateDragPosition(x, y),
         onEnd: () => endDrag(),

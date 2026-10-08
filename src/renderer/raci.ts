@@ -44,7 +44,6 @@ function activateItemEdit(
     if (!writeRACICell(app, ctx, container, rowIndex, cellKey, value)) new Notice(t("edit.writeFailed"));
   }, {
     editingClass: "vzd-raci-editing",
-    textareaClass: "vzd-raci-textarea",
     renderDisplay: (host, value) => {
       host.empty();
       if (value) {
