@@ -41,14 +41,33 @@ export const requestUrl = async (): Promise<{ status: number; json: unknown; tex
 
 /**
  * Menu — the actions menu every canvas item opens (see shared/item-menu.ts).
- * The harness renders canvases but never opens a menu, so this only has to
- * exist and chain; `showAtPosition` deliberately draws nothing, which keeps
- * the snapshots free of menu chrome.
+ * `showAtPosition` deliberately draws nothing, which keeps the snapshots free
+ * of menu chrome; it records what it would have shown on
+ * `window.__vzdMenus`, so a browser check can assert the rows and where the
+ * menu opened.
  */
+interface ShownMenu { x: number; y: number; items: { title: string; warning: boolean; run: () => void }[] }
+
 export class Menu {
-  addItem(_cb: (item: unknown) => void): this { return this; }
+  private items: ShownMenu["items"] = [];
+  addItem(cb: (item: unknown) => void): this {
+    const row = { title: "", warning: false, run: () => {} };
+    const item = {
+      setTitle: (t: string) => { row.title = t; return item; },
+      setIcon: () => item,
+      setWarning: (w: boolean) => { row.warning = w; return item; },
+      onClick: (fn: () => void) => { row.run = fn; return item; },
+    };
+    cb(item);
+    this.items.push(row);
+    return this;
+  }
   addSeparator(): this { return this; }
-  showAtPosition(_pos: { x: number; y: number }, _doc?: Document): this { return this; }
+  showAtPosition(pos: { x: number; y: number }, _doc?: Document): this {
+    const w = window as unknown as { __vzdMenus?: ShownMenu[] };
+    (w.__vzdMenus ??= []).push({ ...pos, items: this.items });
+    return this;
+  }
   showAtMouseEvent(_evt: MouseEvent): this { return this; }
   hide(): this { return this; }
   close(): void {}

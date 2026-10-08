@@ -13,7 +13,7 @@ import {
 } from "../shared/keyword-tree-edit";
 import type { KeywordTreeConfig } from "../shared/keyword-tree-edit";
 import { t } from "../i18n";
-import { attachItemMenu } from "../shared/item-menu";
+import { attachSvgItemMenu } from "../shared/item-menu";
 import { layoutFishbone } from "./fishbone-geometry";
 import type { FBCategory, FBCause } from "./fishbone-geometry";
 
@@ -161,8 +161,12 @@ function renderCategory(
   }));
 
   // Category box (accent-filled with its harmonised hue).
+  // Box and label share one group: the item hovering reveals its `⋯`, and
+  // right-click / long-press anywhere on it open its menu.
   const { box } = cat;
-  svg.appendChild(createSvgEl("rect", {
+  const catItem = createSvgEl("g", { class: "vzd-fb-item" }) as SVGGElement;
+  svg.appendChild(catItem);
+  catItem.appendChild(createSvgEl("rect", {
     x: String(box.x), y: String(box.y), width: String(box.w), height: String(box.h), rx: "8", fill: col, class: "vzd-fb-catbox",
   }));
   const catLabel = createSvgEl("text", {
@@ -170,7 +174,7 @@ function renderCategory(
     "text-anchor": "middle", class: "vzd-fb-cat-label", fill: "var(--text-on-accent)",
   });
   catLabel.textContent = cat.name;
-  svg.appendChild(catLabel);
+  catItem.appendChild(catLabel);
 
   if (editMode) {
     catLabel.classList.add("vzd-fb-editable");
@@ -179,7 +183,8 @@ function renderCategory(
       ops.openRename(box.x, box.y + 1, box.w, box.h - 2, cat.name, "var(--text-on-accent)",
         (v) => ops.doRename(1, cat.name, v));
     });
-    drawDelButton(svg, box.x + box.w - 3, box.y + 3, cat.name, () => { ops.closeRename(); ops.doDelete(1, cat.name); });
+    attachDeleteMenu(catItem, box.x + box.w - 14, box.y + box.h / 2, cat.name,
+      () => { ops.closeRename(); ops.doDelete(1, cat.name); }, "vzd-item-menu--on-accent");
     drawAddButton(svg, box.x + box.w + 10, box.y + box.h / 2, () => { ops.closeRename(); ops.doAddChild(1, cat.name); });
   }
 
@@ -202,7 +207,9 @@ function renderCause(
     x: String(cause.labelX), y: String(cause.labelY), class: "vzd-fb-cause-label",
   });
   label.textContent = cause.text;
-  svg.appendChild(label);
+  const causeItem = createSvgEl("g", { class: "vzd-fb-item" }) as SVGGElement;
+  causeItem.appendChild(label);
+  svg.appendChild(causeItem);
   applyLink(label, cause.text, resolver, navigateTo);
 
   const approxW = cause.text.length * 6.4;
@@ -213,14 +220,20 @@ function renderCause(
       ops.openRename(cause.labelX - 2, cause.labelY - 14, approxW + 20, 20, cause.text, "var(--text-normal)",
         (v) => ops.doRename(2, cause.text, v));
     });
-    drawDelButton(svg, cause.labelX + approxW + 8, cause.labelY - 5, cause.text, () => { ops.closeRename(); ops.doDelete(2, cause.text); });
-    drawAddButton(svg, cause.labelX + approxW + 26, cause.labelY - 5, () => { ops.closeRename(); ops.doAddChild(2, cause.text); }, true);
+    // Spans label and trigger, so the pointer can travel from one to the
+    // other without leaving the item and hiding the ⋯ on the way.
+    causeItem.prepend(itemHit(cause.labelX - 4, cause.labelY - 15, approxW + 32, 20));
+    attachDeleteMenu(causeItem, cause.labelX + approxW + 14, cause.labelY - 5, cause.text,
+      () => { ops.closeRename(); ops.doDelete(2, cause.text); });
+    drawAddButton(svg, cause.labelX + approxW + 36, cause.labelY - 5, () => { ops.closeRename(); ops.doAddChild(2, cause.text); }, true);
   }
 
   for (const sub of cause.subs) {
     const subText = createSvgEl("text", { x: String(sub.x), y: String(sub.y), class: "vzd-fb-sub-label" });
     subText.textContent = `› ${sub.text}`;
-    svg.appendChild(subText);
+    const subItem = createSvgEl("g", { class: "vzd-fb-item" }) as SVGGElement;
+    subItem.appendChild(subText);
+    svg.appendChild(subItem);
     if (editMode) {
       subText.classList.add("vzd-fb-editable");
       subText.addEventListener("dblclick", (e) => {
@@ -228,7 +241,9 @@ function renderCause(
         ops.openRename(sub.x, sub.y - 12, sub.text.length * 6 + 24, 18, sub.text, "var(--text-muted)",
           (v) => ops.doRename(3, sub.text, v));
       });
-      drawDelButton(svg, sub.x + sub.text.length * 5.8 + 14, sub.y - 4, sub.text, () => { ops.closeRename(); ops.doDelete(3, sub.text); });
+      subItem.prepend(itemHit(sub.x - 4, sub.y - 14, sub.text.length * 5.8 + 36, 20));
+      attachDeleteMenu(subItem, sub.x + sub.text.length * 5.8 + 18, sub.y - 4, sub.text,
+        () => { ops.closeRename(); ops.doDelete(3, sub.text); });
     }
   }
 }
@@ -271,40 +286,22 @@ function drawAddButton(svg: SVGSVGElement, x: number, y: number, onClick: () => 
   svg.appendChild(g);
 }
 
-/**
- * The `⋯` that opens a node's actions menu. Named for what it draws rather
- * than what it did: it used to delete on click, and now opens the same menu
- * every other canvas item uses (see shared/item-menu.ts).
- */
-function drawDelButton(svg: SVGSVGElement, x: number, y: number, label: string, onDelete: () => void): void {
-  const g = createSvgEl("g", {
-    class: "vzd-tree-edit-del",
-    transform: `translate(${x}, ${y})`,
-    "aria-label": t("menu.actions"),
-    role: "button",
-    tabindex: "0",
-  }) as SVGGElement;
-  g.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
-  const x2 = createSvgEl("text", { x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle", class: "vzd-tree-edit-del-x" });
-  x2.textContent = "⋯";
-  g.appendChild(x2);
+/** A transparent rect that makes the whole of an item's area hoverable. */
+function itemHit(x: number, y: number, w: number, h: number): SVGRectElement {
+  return createSvgEl("rect", {
+    x: String(x), y: String(y), width: String(w), height: String(h), class: "vzd-fb-item-hit",
+  }) as SVGRectElement;
+}
 
-  const menu = attachItemMenu(g, {
+/** Wires `item` (a category, cause or sub-cause) for the shared actions menu,
+ *  with its `⋯` trigger centred at (x, y). */
+function attachDeleteMenu(
+  item: SVGGElement, x: number, y: number, label: string, onDelete: () => void, cls?: string,
+): void {
+  attachSvgItemMenu(item, {
     label: t("menu.actionsFor", { name: label }),
+    x, y, cls,
     actions: () => [{ title: t("tree.deleteNode"), icon: "trash-2", destructive: true, onChoose: onDelete }],
   });
-  const openFromButton = (): void => {
-    const r = g.getBoundingClientRect();
-    menu.open(r.left, r.bottom);
-  };
-  g.addEventListener("click", (e) => { e.stopPropagation(); openFromButton(); });
-  g.addEventListener("keydown", (e) => {
-    const evt = e as KeyboardEvent;
-    if (evt.key !== "Enter" && evt.key !== " ") return;
-    evt.preventDefault();
-    evt.stopPropagation();
-    openFromButton();
-  });
-  svg.appendChild(g);
 }
 

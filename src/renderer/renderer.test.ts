@@ -15,7 +15,28 @@ import "../test-setup";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Mock obsidian ─────────────────────────────────────────────────────────────
+/** Every Menu shown, with its rows — the item actions menu is an Obsidian Menu. */
+interface MenuRow { title: string; click?: () => void }
+const menus: { items: MenuRow[] }[] = [];
+const lastMenu = (): { items: MenuRow[] } => menus[menus.length - 1];
+
 vi.mock("obsidian", () => ({
+  Menu: class Menu {
+    items: MenuRow[] = [];
+    addItem(cb: (item: unknown) => void) {
+      const row: MenuRow = { title: "" };
+      const api = {
+        setTitle: (t: string) => { row.title = t; return api; },
+        setIcon: () => api,
+        setWarning: () => api,
+        onClick: (fn: () => void) => { row.click = fn; return api; },
+      };
+      cb(api);
+      this.items.push(row);
+      return this;
+    }
+    showAtPosition() { menus.push(this); return this; }
+  },
   setIcon: vi.fn(),
   MarkdownView: class MarkdownView {},
   moment: { locale: () => "en" },
@@ -464,7 +485,7 @@ describe("renderTree", () => {
       { onRename: vi.fn(), onAddChild: vi.fn(), onDelete });
 
     // Branch (with child), Sub, Leaf → 3 triggers; none on the root.
-    const triggers = el.querySelectorAll<SVGGElement>(".vzd-tree-edit-del");
+    const triggers = el.querySelectorAll<SVGGElement>(".vzd-tree-node--editable > .vzd-item-menu");
     expect(triggers).toHaveLength(3);
 
     // Delete moved behind the shared actions menu, so the trigger opens a menu
@@ -973,7 +994,7 @@ describe("renderWardleyMap", () => {
     renderWardleyMap(map, el, { app: previewApp, ctx: {} as any, source: "type: wardley" });
     expect(el.querySelector(".vzd-wardley-node--draggable")).toBeNull();
     expect(el.querySelector(".vzd-wardley-add-handle-g")).toBeNull();
-    expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
+    expect(el.querySelector(".vzd-wardley-link-g .vzd-item-menu")).toBeNull();
     expect(el.querySelector(".vizardry-title--editable")).toBeNull();
 
     const authLabel = Array.from(el.querySelectorAll(".vzd-wardley-label"))
@@ -1300,15 +1321,20 @@ describe("renderWardleyMap", () => {
     expect(addSpy).not.toHaveBeenCalled();
   });
 
-  it("renders an unlink button on links when app/ctx provided and calls removeWardleyLink on click", () => {
+  it("gives each link an actions trigger whose Remove link row calls removeWardleyLink", () => {
     const removeSpy = vi.spyOn(wardleyEdit, "removeWardleyLink").mockReturnValue(true);
     const el = container();
     renderWardleyMap(map, el, { app: editModeApp, ctx: {} as any });
 
-    const btn = el.querySelector(".vzd-wardley-unlink-btn") as SVGGElement | null;
+    const btn = el.querySelector(".vzd-wardley-link-g > .vzd-item-menu") as SVGGElement | null;
     expect(btn).toBeTruthy();
 
+    // A click opens the menu; it no longer removes the link by itself.
     btn!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(removeSpy).not.toHaveBeenCalled();
+    const menu = lastMenu();
+    expect(menu.items.map(i => i.title)).toEqual(["Remove link"]);
+    menu.items[0].click!();
     expect(removeSpy).toHaveBeenCalledTimes(1);
     expect(removeSpy.mock.calls[0][3]).toBe("User");
     expect(removeSpy.mock.calls[0][4]).toBe("Auth");
@@ -1318,7 +1344,7 @@ describe("renderWardleyMap", () => {
     const el = container();
     renderWardleyMap(map, el);
 
-    expect(el.querySelector(".vzd-wardley-unlink-btn")).toBeNull();
+    expect(el.querySelector(".vzd-wardley-link-g .vzd-item-menu")).toBeNull();
   });
 });
 

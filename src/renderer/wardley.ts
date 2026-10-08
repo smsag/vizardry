@@ -7,6 +7,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { removeWardleyLink } from "../shared/wardley-edit";
+import { attachSvgItemMenu } from "../shared/item-menu";
 import {
   W, H, PLOT_X, PLOT_Y, PLOT_W, PLOT_H, NODE_R,
   toSvgX, toSvgY, labelAnchor, nudgeLabels, stageEdgesFromPositions, evolveLineEndpoints,
@@ -144,22 +145,17 @@ function renderLinks(
         class: "vzd-wardley-link-hit",
       }));
 
-      const deleteBtn = createSvgEl("g", { class: "vzd-wardley-unlink-btn" });
-      deleteBtn.appendChild(createSvgEl("circle", {
-        cx: String(mx), cy: String(my), r: "8", class: "vzd-wardley-unlink-circle",
-      }));
-      const xText = createSvgEl("text", {
-        x: String(mx), y: String(my),
-        class: "vzd-wardley-unlink-icon",
-        "text-anchor": "middle", "dominant-baseline": "central",
+      attachSvgItemMenu(linkG as SVGGElement, {
+        label: t("menu.actionsFor", { name: `${link.from} → ${link.to}` }),
+        x: mx, y: my,
+        floating: true,
+        actions: () => [{
+          title: t("link.remove"),
+          icon: "unlink",
+          destructive: true,
+          onChoose: () => { if (!removeWardleyLink(app, mppCtx, wrap, link.from, link.to)) showWriteFailedNotice(wrap); },
+        }],
       });
-      xText.textContent = "×";
-      deleteBtn.appendChild(xText);
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!removeWardleyLink(app, mppCtx, wrap, link.from, link.to)) showWriteFailedNotice(wrap);
-      });
-      linkG.appendChild(deleteBtn);
     }
 
     svg.appendChild(linkG);

@@ -110,7 +110,7 @@ export function renderCompass(
     });
     attachItemMenu(el, {
       label: t("menu.actionsFor", { name: text }),
-      button: { parent: el, cls: "vzd-compass-del vzd-btn" },
+      button: { parent: el, cls: "vzd-compass-del", placement: "row" },
       actions: () => [{
         title: t("compass.deleteEntry"),
         icon: "trash-2",
@@ -152,7 +152,7 @@ export function renderCompass(
       });
       attachItemMenu(tile, {
         label: t("menu.actionsFor", { name: ins.text }),
-        button: { parent: tile, cls: "vzd-compass-del vzd-btn" },
+        button: { parent: tile, cls: "vzd-compass-del" },
         actions: () => [{
           title: t("compass.deleteEntry"),
           icon: "trash-2",

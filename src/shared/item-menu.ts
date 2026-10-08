@@ -26,6 +26,7 @@
  */
 
 import { Menu, setIcon } from "obsidian";
+import { createSvgEl } from "./svg";
 
 /** How long a touch must stay still (ms) before it counts as a long press. */
 export const LONG_PRESS_MS = 450;
@@ -52,11 +53,24 @@ export interface ItemMenuOptions {
   label: string;
   /**
    * Where the `⋯` button goes. Omit for a host that supplies its own trigger
-   * (an SVG canvas, which cannot contain an HTML button) — right-click and
+   * (an SVG canvas uses `attachSvgItemMenu` instead) — right-click and
    * long-press still work on the host itself.
+   *
+   * The button is always a direct child of `parent`, and is revealed by
+   * hovering `parent` — so pass the item itself, not a wrapper around several.
+   * `placement` picks the one of two positions every canvas uses: the top-right
+   * corner of a card or box, or vertically centred at the end of a text row.
+   * `cls` is only a hook for per-canvas tweaks; the look is shared.
    */
-  button?: { parent: HTMLElement; cls: string };
+  button?: { parent: HTMLElement; cls: string; placement?: ItemMenuPlacement };
 }
+
+export type ItemMenuPlacement = "corner" | "row";
+
+/** The class every `⋯` trigger carries, HTML and SVG alike. */
+export const ITEM_MENU_CLS = "vzd-item-menu";
+/** Marks an item that owns a trigger; hovering it reveals its own `⋯`. */
+export const ITEM_HOST_CLS = "vzd-item-host";
 
 function buildMenu(actions: ItemAction[]): Menu {
   const menu = new Menu();
@@ -89,6 +103,7 @@ export interface ItemMenuHandle {
  * button, so it omits `button` and drives `open()` from its own SVG trigger.
  */
 export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHandle {
+  host.classList.add(ITEM_HOST_CLS);
   const open = (x: number, y: number): void => {
     const actions = opts.actions();
     if (actions.length === 0) return;
@@ -100,6 +115,9 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHa
   let longPressedAt = 0;
   host.addEventListener("contextmenu", (e) => {
     const evt = e as MouseEvent;
+    // A nested host (an OST bullet inside its node) answered first; the
+    // outer item must not open its own menu on top.
+    if (evt.defaultPrevented) return;
     evt.preventDefault();
     evt.stopPropagation();
     if (Date.now() - longPressedAt < LONG_PRESS_ECHO_MS) return;
@@ -110,7 +128,10 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHa
 
   if (!opts.button) return { button: null, open };
 
-  const btn = opts.button.parent.createEl("button", { cls: opts.button.cls });
+  const placement = opts.button.placement === "row" ? "vzd-item-menu--row" : "vzd-item-menu--corner";
+  const btn = opts.button.parent.createEl("button", {
+    cls: `${ITEM_MENU_CLS} ${placement} ${opts.button.cls}`,
+  });
   btn.setAttribute("type", "button");
   btn.setAttribute("aria-label", opts.label);
   btn.setAttribute("aria-haspopup", "menu");
@@ -124,6 +145,87 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHa
     open(rect.left, rect.bottom);
   });
   return { button: btn, open };
+}
+
+export interface SvgItemMenuOptions extends Omit<ItemMenuOptions, "button"> {
+  /** Centre of the trigger, in the host's own coordinates. */
+  x: number;
+  y: number;
+  /** Extra class — a hook for per-canvas tweaks, as `button.cls` is. */
+  cls?: string;
+  /**
+   * Gives the trigger an opaque disc, for one that sits on a line (a link's
+   * midpoint) rather than inside a filled box.
+   */
+  floating?: boolean;
+}
+
+export interface SvgItemMenuHandle extends ItemMenuHandle {
+  /** The drawn trigger — e.g. to anchor a popover a menu row opens. */
+  trigger: SVGGElement;
+  /** Moves the trigger, e.g. after its box was dragged. */
+  moveTo: (x: number, y: number) => void;
+}
+
+/** Side of the trigger's visible square, and of its (larger) hit area. */
+const SVG_TRIGGER_SIZE = 20;
+const SVG_TRIGGER_HIT = 24;
+
+/**
+ * The SVG counterpart of the `⋯` button: same size, same look, same reveal,
+ * for the canvases drawn in SVG (Mind Map, OST, Fishbone, Nodemap, Wardley).
+ * An `<svg>` cannot contain an HTML `<button>`, so this draws one — a rounded
+ * square with three dots — and gives it the button semantics by hand.
+ *
+ * The trigger is appended to `host` as a direct child, so hovering the item
+ * reveals exactly its own trigger and not a nested item's.
+ */
+export function attachSvgItemMenu(host: SVGGElement, opts: SvgItemMenuOptions): SvgItemMenuHandle {
+  const handle = attachItemMenu(host, { actions: opts.actions, label: opts.label });
+
+  const cls = [ITEM_MENU_CLS, "vzd-item-menu--svg"];
+  if (opts.floating) cls.push("vzd-item-menu--floating");
+  if (opts.cls) cls.push(opts.cls);
+  const g = createSvgEl("g", {
+    class: cls.join(" "),
+    role: "button",
+    tabindex: "0",
+    "aria-label": opts.label,
+    "aria-haspopup": "menu",
+  }) as SVGGElement;
+  const half = SVG_TRIGGER_HIT / 2;
+  g.appendChild(createSvgEl("rect", {
+    x: String(-half), y: String(-half), width: String(SVG_TRIGGER_HIT), height: String(SVG_TRIGGER_HIT),
+    class: "vzd-item-menu-hit",
+  }));
+  const s = SVG_TRIGGER_SIZE / 2;
+  g.appendChild(createSvgEl("rect", {
+    x: String(-s), y: String(-s), width: String(SVG_TRIGGER_SIZE), height: String(SVG_TRIGGER_SIZE),
+    rx: "4", class: "vzd-item-menu-bg",
+  }));
+  for (const dx of [-5, 0, 5]) {
+    g.appendChild(createSvgEl("circle", { cx: String(dx), cy: "0", r: "1.5", class: "vzd-item-menu-dot" }));
+  }
+
+  const moveTo = (x: number, y: number): void => g.setAttribute("transform", `translate(${x}, ${y})`);
+  moveTo(opts.x, opts.y);
+
+  const openFromTrigger = (): void => {
+    const r = g.getBoundingClientRect();
+    handle.open(r.left, r.bottom);
+  };
+  // A press on the trigger is a click, never the start of dragging its item.
+  g.addEventListener("pointerdown", (e) => e.stopPropagation());
+  g.addEventListener("click", (e) => { e.stopPropagation(); openFromTrigger(); });
+  g.addEventListener("keydown", (e) => {
+    const evt = e as KeyboardEvent;
+    if (evt.key !== "Enter" && evt.key !== " ") return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    openFromTrigger();
+  });
+  host.appendChild(g);
+  return { button: null, open: handle.open, trigger: g, moveTo };
 }
 
 /**
@@ -140,6 +242,9 @@ export function attachItemMenu(host: Element, opts: ItemMenuOptions): ItemMenuHa
 /** How long after a long press a native contextmenu still counts as its echo. */
 const LONG_PRESS_ECHO_MS = 700;
 
+/** Pointer events a host has already armed a long press for. */
+const armedBy = new WeakSet<Event>();
+
 function attachLongPress(host: Element, open: (x: number, y: number) => void): void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let startX = 0;
@@ -152,6 +257,10 @@ function attachLongPress(host: Element, open: (x: number, y: number) => void): v
   host.addEventListener("pointerdown", (e) => {
     const evt = e as PointerEvent;
     if (evt.pointerType !== "touch") return;
+    // Only the innermost host arms: a long press on an OST bullet is the
+    // bullet's, not also its node's.
+    if (armedBy.has(evt)) return;
+    armedBy.add(evt);
     startX = evt.clientX;
     startY = evt.clientY;
     cancel();

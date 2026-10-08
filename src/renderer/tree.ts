@@ -9,7 +9,7 @@ import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { createTextMeasurer, wrapText, type TextMeasurer } from "../shared/text-wrap";
 import { t } from "../i18n";
-import { attachItemMenu } from "../shared/item-menu";
+import { attachSvgItemMenu } from "../shared/item-menu";
 import type { LinkResolver } from "../shared/links";
 
 
@@ -133,6 +133,9 @@ function collectTreeBounds(node: TreeNode): { maxX: number; maxY: number } {
 
 // Box interior metrics (authoritative — the renderer draws to these).
 const LANE_PAD_X = 14;
+/** Distance of the `⋯` trigger's centre from the node's right (and, for lane
+ *  nodes, top) edge: a 20px trigger with a 4px gap, as on the card canvases. */
+const ITEM_MENU_INSET = 14;
 const LANE_PAD_TOP = 11;
 const LANE_PAD_BOTTOM = 12;
 const LANE_CAPTION_BASE = 11;   // baseline offset from the caption block top
@@ -348,54 +351,26 @@ function renderAddButton(
   });
 }
 
-/** "×" delete button — top-right corner, on every node except the root.
- *  Deleting a node removes its whole subtree (the edit engines handle that and
- *  refuse the root), so branches with children are deletable too — not just
- *  leaves. */
+/** The `⋯` actions trigger, on every node except the root. Deleting a node
+ *  removes its whole subtree (the edit engines handle that and refuse the
+ *  root), so branches with children are deletable too — not just leaves.
+ *  Fixed-height nodes centre it at the right end of their single row; lane
+ *  nodes (OST, SCQA tree), which grow with their text, put it in the corner. */
 function renderDelButton(
   group: SVGGElement, node: TreeNode, opts: TreeRenderOptions,
   editHandlers: TreeEditHandlers, closeRename: () => void,
 ): void {
   if (node.level === 0) return;
-  // An SVG group cannot contain an HTML button, so the group is its own
-  // trigger and drives the shared menu through `open()`.
-  const menu = attachItemMenu(group, {
+  attachSvgItemMenu(group, {
     label: t("menu.actionsFor", { name: node.text }),
+    x: opts.nodeW - ITEM_MENU_INSET,
+    y: opts.wrap ? ITEM_MENU_INSET : opts.nodeH / 2,
     actions: () => [{
       title: t("tree.deleteNode"),
       icon: "trash-2",
       destructive: true,
       onChoose: () => { closeRename(); editHandlers.onDelete(node); },
     }],
-  });
-
-  const delBtn = createSvgEl("g", {
-    class: "vzd-tree-edit-del",
-    transform: `translate(${opts.nodeW - 5}, 5)`,
-    "aria-label": t("menu.actions"),
-    role: "button",
-    tabindex: "0",
-  }) as SVGGElement;
-  delBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "7", class: "vzd-tree-edit-del-circle" }));
-  const delText = createSvgEl("text", {
-    x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle",
-    class: "vzd-tree-edit-del-x",
-  });
-  delText.textContent = "⋯";
-  delBtn.appendChild(delText);
-  group.appendChild(delBtn);
-
-  const openFromButton = (): void => {
-    const r = delBtn.getBoundingClientRect();
-    menu.open(r.left, r.bottom);
-  };
-  delBtn.addEventListener("click", (e) => { e.stopPropagation(); openFromButton(); });
-  delBtn.addEventListener("keydown", (e) => {
-    const evt = e as KeyboardEvent;
-    if (evt.key !== "Enter" && evt.key !== " ") return;
-    evt.preventDefault();
-    evt.stopPropagation();
-    openFromButton();
   });
 }
 
@@ -549,23 +524,26 @@ function renderLaneNode(
         });
       }
       if (editHandlers?.onDeleteBullet) {
-        const del = createSvgEl("g", {
-          class: "vzd-lane-bullet-del",
-          transform: `translate(${opts.nodeW - LANE_PAD_X}, ${rowTop + LANE_BULLET_BASE - 4})`,
-          "aria-label": t("tree.deleteNode"),
-        }) as SVGGElement;
-        del.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-lane-bullet-del-hit" }));
-        const dx = createSvgEl("text", {
-          x: "0", y: "0", "dominant-baseline": "middle", "text-anchor": "middle", class: "vzd-lane-bullet-del-x",
+        // The row is its own item: hovering it reveals its own `⋯`, and
+        // right-click / long-press on it act on the bullet, not the node.
+        const row = createSvgEl("g", { class: "vzd-lane-bullet-row" }) as SVGGElement;
+        row.appendChild(createSvgEl("rect", {
+          x: "0", y: String(rowTop), width: String(opts.nodeW), height: String(rowH),
+          class: "vzd-lane-bullet-row-hit",
+        }));
+        row.append(chevron, bText);
+        group.appendChild(row);
+        attachSvgItemMenu(row, {
+          label: t("menu.actionsFor", { name: bullet }),
+          x: opts.nodeW - ITEM_MENU_INSET,
+          y: rowTop + rowH / 2,
+          actions: () => [{
+            title: t("ost.deleteBullet"),
+            icon: "trash-2",
+            destructive: true,
+            onChoose: () => { closeRename(); editHandlers.onDeleteBullet!(node, bullet); },
+          }],
         });
-        dx.textContent = "×";
-        del.appendChild(dx);
-        del.addEventListener("click", (e) => {
-          e.stopPropagation();
-          closeRename();
-          editHandlers.onDeleteBullet!(node, bullet);
-        });
-        group.appendChild(del);
       }
       top += rowH;
     });

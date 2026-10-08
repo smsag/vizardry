@@ -177,21 +177,13 @@ const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
   "vizardry-header-actions",
   // Mobile carousel navigation
   "vizardry-nav", "vzd-story-nav", "vzd-journey-nav",
-  // Inline add / delete / unlink affordances (HTML buttons)
+  // Inline add affordances (HTML buttons)
   "vzd-add", // every add slot / dot (createAddControl)
-  "vzd-scqa-card-del",
-  "vzd-journey-card-delete",
-  "vzd-story-task-delete",
-  "vzd-nodemap-box-delete-btn",
-  "vzd-compass-del",
-  "vzd-pc-item-menu",
-  // SVG affordances (the wrapping <g> / text element carries the class)
-  "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
-  "vzd-nodemap-unlink-btn", "vzd-nodemap-add-handle-g",
-  "vzd-tree-edit-add", "vzd-tree-edit-del",
-  "vzd-lane-bullet-add", "vzd-lane-bullet-del",
-  // Flow canvas (Problem) live-edit affordances
-  "vzd-flow-card-delete",
+  // Every item's `⋯` actions trigger, HTML and SVG (shared/item-menu.ts)
+  "vzd-item-menu",
+  // SVG add affordances (the wrapping <g> / text element carries the class)
+  "vzd-wardley-add-handle-g", "vzd-nodemap-add-handle-g",
+  "vzd-tree-edit-add", "vzd-lane-bullet-add",
 ]);
 
 /** True when `node` is interaction chrome to omit from the exported image. */

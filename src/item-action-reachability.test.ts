@@ -1,12 +1,13 @@
 /**
- * Guards the reachability contract for every delete/unlink control, at the
- * stylesheet level.
+ * Guards the reachability contract for every item's `⋯` actions trigger, at
+ * the stylesheet level.
  *
- * These controls were hidden with `display: none` until their parent was
+ * These controls were once hidden with `display: none` until their parent was
  * hovered, which made them impossible to reach on touch (no hover exists) and
  * impossible to reach by keyboard on any platform (`display: none` drops an
- * element from the tab order). Both are easy to reintroduce by copying an
- * older block, so the invariants are asserted here rather than left to review.
+ * element from the tab order). Each canvas also styled its own copy, so the
+ * fixes drifted apart. Every trigger now carries `.vzd-item-menu` and is
+ * styled once; these invariants are asserted here rather than left to review.
  *
  * The behaviour itself — computed opacity at rest, on hover, on
  * :focus-visible, and under `hover: none` — is verified in a real browser;
@@ -18,21 +19,13 @@ import { resolve } from "node:path";
 
 const css = readFileSync(resolve(__dirname, "../styles.css"), "utf8");
 
-/** Controls that destroy note content, plus the ones that only unlink. */
-const HTML_CONTROLS = [
-  "vzd-story-task-delete",
-  "vzd-journey-card-delete",
-  "vzd-scqa-card-del",
-  "vzd-flow-card-delete",
-  "vzd-compass-del",
-  "vzd-pc-item-menu",
-];
-
-const SVG_CONTROLS = [
-  "vzd-tree-edit-del",
-  "vzd-wardley-unlink-btn",
-  "vzd-nodemap-box-delete-btn",
-];
+/** The declarations of the first rule whose selector list is exactly `selector`. */
+function rule(selector: string): string {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = css.match(new RegExp(`(^|\\n)${escaped}\\s*\\{([^}]*)\\}`, "m"));
+  expect(m, `a rule for ${selector} must exist`).not.toBeNull();
+  return m![2];
+}
 
 /** The body of the single `@media (hover: none)` block. */
 function hoverNoneBlock(): string {
@@ -47,57 +40,48 @@ function hoverNoneBlock(): string {
   throw new Error("unterminated @media (hover: none) block");
 }
 
-/** The declarations of the first rule whose selector is exactly `.<cls>`. */
-function baseRule(cls: string): string {
-  const re = new RegExp(`(^|\\n)\\.${cls}\\s*\\{([^}]*)\\}`, "m");
-  const m = css.match(re);
-  expect(m, `a base rule for .${cls} must exist`).not.toBeNull();
-  return m![2];
-}
-
-describe("delete controls stay reachable on touch", () => {
-  it("reveals every control under @media (hover: none)", () => {
-    // Without this, deleting a card is impossible on a phone or tablet —
-    // which is exactly what shipped before 0.67.
-    const block = hoverNoneBlock();
-    for (const cls of [...HTML_CONTROLS, ...SVG_CONTROLS]) {
-      expect(block, `${cls} must be revealed on touch`).toContain(`.${cls}`);
+describe("item triggers are styled once", () => {
+  it("no canvas restyles its trigger's visibility on its own", () => {
+    // A per-canvas `opacity` / `display` rule is how the old drift started.
+    for (const cls of [
+      "vzd-story-task-delete", "vzd-journey-card-delete", "vzd-scqa-card-del",
+      "vzd-flow-card-delete", "vzd-compass-del", "vzd-pc-item-menu", "vzd-card-menu",
+    ]) {
+      expect(css, `.${cls} must not be styled on its own`).not.toMatch(new RegExp(`\\.${cls}\\b`));
     }
+  });
+});
+
+describe("item triggers stay reachable on touch", () => {
+  it("reveals every trigger under @media (hover: none)", () => {
+    const block = hoverNoneBlock();
+    expect(block).toContain(".vzd-item-host > .vzd-item-menu");
     expect(block).toMatch(/opacity:\s*1/);
     expect(block).toMatch(/pointer-events:\s*auto/);
   });
 });
 
-describe("delete controls stay reachable by keyboard", () => {
-  it("never hides an HTML control with display:none", () => {
-    // display:none removes the element from the tab order entirely.
-    for (const cls of HTML_CONTROLS) {
-      expect(baseRule(cls), `.${cls} must not use display:none`).not.toMatch(/display:\s*none/);
+describe("item triggers stay reachable by keyboard", () => {
+  it("hides them with opacity, never display:none, so they stay focusable", () => {
+    for (const sel of ["button.vzd-item-menu", ".vzd-item-menu--svg"]) {
+      const body = rule(sel);
+      expect(body, `${sel} must not use display:none`).not.toMatch(/display:\s*none/);
+      expect(body, `${sel} must hide with opacity`).toMatch(/opacity:\s*0/);
+      expect(body, `${sel} must not take clicks while hidden`).toMatch(/pointer-events:\s*none/);
     }
   });
 
-  it("hides them with opacity instead, so they stay focusable", () => {
-    for (const cls of HTML_CONTROLS) {
-      expect(css, `.${cls} must be hidden with opacity`)
-        .toMatch(new RegExp(`\\.${cls}[^{]*\\{[^}]*opacity:\\s*0`, "s"));
-    }
-  });
-
-  it("reveals the control the user has tabbed to", () => {
-    for (const cls of HTML_CONTROLS) {
-      expect(css, `.${cls} needs a :focus-visible reveal`).toContain(`.${cls}:focus-visible`);
-    }
+  it("reveals the trigger the user has tabbed to, and the one whose item is hovered", () => {
+    const body = rule(".vzd-item-host:hover:not(:has(.vzd-item-host:hover)) > .vzd-item-menu,\n.vzd-item-menu:focus-visible");
+    expect(body).toMatch(/opacity:\s*1/);
+    expect(body).toMatch(/pointer-events:\s*auto/);
   });
 });
 
-describe("delete controls meet the minimum target size", () => {
-  it("expands each 16px badge to a 24px hit area", () => {
-    // WCAG 2.2 Target Size (Minimum) is 24x24. The badge stays 16px so six
-    // canvases keep their look; an invisible inset carries the target.
-    for (const cls of HTML_CONTROLS) {
-      expect(css, `.${cls} needs an expanded hit area`).toContain(`.${cls}::after`);
-    }
-    const m = css.match(/\.vzd-story-task-delete::after[\s\S]*?\{([\s\S]*?)\}/);
-    expect(m![1]).toMatch(/inset:\s*-4px/); // 16 + 2*4 = 24
+describe("item triggers meet the minimum target size", () => {
+  it("expands the 20px button to a 24px hit area", () => {
+    // WCAG 2.2 Target Size (Minimum) is 24x24.
+    expect(rule("button.vzd-item-menu")).toMatch(/width:\s*20px/);
+    expect(rule("button.vzd-item-menu::after")).toMatch(/inset:\s*-2px/);
   });
 });

@@ -185,7 +185,7 @@ function renderOptionHead(card: HTMLElement, option: ProContraOption, state: Opt
 
   attachItemMenu(head, {
     label: t("menu.actionsFor", { name: option.name || t("procontra.untitledOption") }),
-    button: { parent: head, cls: "vzd-pc-item-menu vzd-btn" },
+    button: { parent: head, cls: "vzd-pc-item-menu", placement: "row" },
     actions: () => [
       ...(option.name ? [state.chosen
         ? { title: t("procontra.clearDecision"), icon: "circle-off",
@@ -237,7 +237,7 @@ function renderArgument(ul: HTMLElement, arg: ProContraArgument, edit: Edit | un
 
   attachItemMenu(li, {
     label: t("menu.actionsFor", { name: arg.text }),
-    button: { parent: li, cls: "vzd-pc-item-menu vzd-btn" },
+    button: { parent: li, cls: "vzd-pc-item-menu", placement: "row" },
     actions: () => [
       { title: t(arg.side === "pro" ? "procontra.moveToCon" : "procontra.moveToPro"), icon: "arrow-left-right",
         onChoose: () => { if (!flipProContraArg(edit.app, edit.ctx, edit.container, arg.ref)) failed(); } },

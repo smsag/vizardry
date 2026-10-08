@@ -106,6 +106,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "ost.caption.desire":    "Kundenwunsch",
 
   "ost.addBullet":         "Detail hinzufügen",
+  "ost.deleteBullet":      "Detail löschen",
 
   // ── SCQA / SCR level labels ─────────────────────────────────────────────────
   "scqa.level.situation":    "Situation",
@@ -356,6 +357,9 @@ export const de: Partial<Record<TranslationKey, string>> = {
   // ── Item actions menu ───────────────────────────────────────────────────────
   "menu.actionsFor":           "Aktionen für {{name}}",
   "menu.actions":              "Aktionen",
+  "nodemap.changeColor":       "Farbe ändern…",
+  "nodemap.deleteBox":         "Box löschen",
+  "link.remove":               "Verbindung entfernen",
   "sideleaf.refresh":          "Aktualisieren",
   "sideleaf.copyKey":          "Schlüssel kopieren",
   "sideleaf.copied":           "{{key}} kopiert",
