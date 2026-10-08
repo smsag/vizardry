@@ -10,7 +10,7 @@
 
 export const setIcon = (_el: HTMLElement, _iconId: string): void => {};
 
-export const Platform = { isMobile: false, isDesktop: true };
+export const Platform = { isMobile: false, isPhone: false, isDesktop: true };
 
 export class MarkdownView {
   file: { path: string } | null = null;

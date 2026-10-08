@@ -33,7 +33,7 @@ These are the rules that most often get broken. Follow all of them:
 - **Blank lines:** ignored.
 - **Heading / ticket links:** append `[[#Heading]]`, `[text](#Anchor)`, or `[text](TICKET-123)` to an element label (see "Links" near the end).
 - **`collapsed: true`** — optional top-level line; starts the canvas minimized (also written back by the minimize button).
-- **`sticky: true`** — optional top-level line; pins the canvas to the top of the reading pane while you scroll past it (also written back by the pin button). A pinned canvas with blocks shows one block at a time, with prev/next arrows and dots to browse them, like the mobile view. Reading View on desktop only; a no-op elsewhere.
+- **`sticky: true`** — optional top-level line; pins the canvas to the top of the reading pane while you scroll past it (also written back by the pin button). A pinned canvas with blocks shows one block at a time, with prev/next arrows and dots to browse them, like the mobile view. On a phone it pins as a slim title bar instead: tap it to open the canvas (one block at a time), tap outside or keep scrolling to fold it. Reading View only; a no-op elsewhere.
 
 ---
 
@@ -1784,7 +1784,7 @@ Icon buttons in the title bar, revealed on hover:
 | Download | Export a high-DPI PNG. On **desktop** it downloads the file; on **mobile** it opens the system share sheet (Save to Photos/Files) |
 | Copy source | Copy this canvas's ` ```vizardry ` fence to the clipboard |
 | Present | Full-screen presentation overlay |
-| Pin / Unpin | Keep the canvas pinned at the top of the reading pane while you scroll the rest of the note; persisted as `sticky: true`. Grid, Roadmap, Pace Layers and Odyssey canvases are browsed one block at a time while pinned. Reading View on desktop only |
+| Pin / Unpin | Keep the canvas pinned at the top of the reading pane while you scroll the rest of the note; persisted as `sticky: true`. Grid, Roadmap, Pace Layers and Odyssey canvases are browsed one block at a time while pinned. On a phone the pin is a tap-to-open title bar. Reading View only |
 | Minimize / Expand | Collapse to the title bar; persisted as `collapsed: true` in the source |
 
 ---

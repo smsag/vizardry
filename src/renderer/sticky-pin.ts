@@ -1,5 +1,5 @@
 /**
- * Sticky canvas pinning (Reading View, desktop only).
+ * Sticky canvas pinning (Reading View).
  *
  * A canvas marked `sticky: true` stays visible while you read the rest of the
  * note: once its top scrolls under the view chrome, a read-only clone pins to
@@ -25,18 +25,34 @@
  * past, the one lowest in the document (largest offset) wins, so pinning tracks
  * the section you are currently reading — only ever one canvas at a time.
  *
+ * On a phone a 50vh strip would bury the note, so the controller runs in
+ * compact mode instead: the clone pins as a slim title bar (title, block
+ * counter, present + chevron buttons). Tapping the bar opens the canvas below
+ * it, browsed one block at a time; tapping outside or scrolling the note on
+ * folds it back to the bar.
+ *
  * One StickyController per reading-view scroller, shared by every sticky canvas
  * under it; it self-disposes when its last canvas unregisters or disconnects.
  */
 
+import { setIcon } from "obsidian";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
-import { carouselSlide, cloneSlideCarousel } from "./grid-carousel";
+import { t } from "../i18n";
+import { carouselSize, carouselSlide, cloneSlideCarousel } from "./grid-carousel";
 
 /** The Reading View scroll container. Live Preview (`.cm-editor`) is not
  *  supported — CM6 virtualizes lines even more aggressively. */
 const READING_SCROLLER = ".markdown-preview-view";
 
 interface Geom { left: number; width: number; }
+
+/** Note scroll (px) after which an opened compact bar folds itself again. */
+const BAR_SCROLL_CLOSE_PX = 24;
+
+export interface StickyOptions {
+  /** Pin as a tap-to-open title bar (phones) instead of the full canvas. */
+  compact?: boolean;
+}
 
 class StickyController {
   private readonly entries = new Set<HTMLElement>();
@@ -53,10 +69,18 @@ class StickyController {
   private clone: HTMLElement | null = null;
   private rafPending = false;
   private disposed = false;
+  /** Compact bar: scrollTop when it was opened, null while folded. */
+  private barOpenedAt: number | null = null;
+  /** Releases the compact bar's document listener. */
+  private releaseBar: (() => void) | null = null;
 
   private readonly onScrollOrResize = (): void => this.schedule();
 
-  constructor(private readonly scroller: HTMLElement, private readonly win: Window) {
+  constructor(
+    private readonly scroller: HTMLElement,
+    private readonly win: Window,
+    private readonly compact: boolean,
+  ) {
     this.scroller.addEventListener("scroll", this.onScrollOrResize, { passive: true });
     this.win.addEventListener("resize", this.onScrollOrResize);
   }
@@ -123,6 +147,9 @@ class StickyController {
       this.unpin();
       if (target) this.pin(target);
     }
+    if (this.barOpenedAt !== null && Math.abs(scrollTop - this.barOpenedAt) > BAR_SCROLL_CLOSE_PX) {
+      this.setBarOpen(false);
+    }
     if (this.pinned) this.position(sRect.top);
   }
 
@@ -161,17 +188,89 @@ class StickyController {
     // would show only its top row (or, stacked, its first block). The clone is
     // aria-hidden, so its nav stays out of the tab order; keyboard users read
     // the live canvas.
-    if (cloneSlideCarousel(target, clone, this.slides.get(target))) {
+    const carousel = cloneSlideCarousel(target, clone, this.slides.get(target));
+    if (this.compact) this.makeBar(target, clone, carousel);
+    else if (carousel) {
       clone.querySelectorAll<HTMLElement>(".vizardry-nav-btn").forEach((b) => { b.tabIndex = -1; });
     }
+  }
+
+  /** Turn the clone into the compact, tap-to-open title bar. */
+  private makeBar(target: HTMLElement, clone: HTMLElement, carousel: boolean): void {
+    const header = clone.querySelector<HTMLElement>(":scope > .vizardry-header");
+    if (!header) return;
+    const doc = clone.ownerDocument;
+    clone.classList.add("vizardry-canvas--pinned-bar", "is-collapsed");
+    // Interactive, unlike the desktop strip — so not hidden from assistive tech.
+    clone.removeAttribute("aria-hidden");
+
+    const count = carousel ? header.createSpan({ cls: "vzd-pin-bar-count" }) : null;
+    const syncCount = (): void => {
+      if (!count) return;
+      count.textContent = `${(carouselSlide(clone) ?? 0) + 1}/${carouselSize(clone) ?? 1}`;
+    };
+    syncCount();
+
+    // Fullscreen: hand off to the live canvas's present button, which owns the
+    // presentation overlay (and still exists while its section is virtualized).
+    const present = target.querySelector<HTMLElement>(".vizardry-present-btn");
+    if (present) {
+      const btn = header.createEl("button", { cls: "vzd-pin-bar-btn" });
+      setIcon(btn, "expand");
+      btn.setAttribute("aria-label", t("controls.presentFullscreen"));
+      btn.addEventListener("click", (e) => { e.stopPropagation(); present.click(); });
+    }
+
+    const toggle = header.createEl("button", { cls: "vzd-pin-bar-btn vzd-pin-bar-toggle" });
+    header.addEventListener("click", () => this.setBarOpen(this.barOpenedAt === null));
+    // The carousel's own handlers run first (registered earlier), so the
+    // counter reads the slide they just moved to.
+    clone.addEventListener("click", syncCount);
+    clone.addEventListener("touchend", syncCount, { passive: true });
+
+    const onOutside = (e: Event): void => {
+      if (!clone.contains(e.target as Node)) this.setBarOpen(false);
+    };
+    doc.addEventListener("pointerdown", onOutside, true);
+    this.releaseBar = () => doc.removeEventListener("pointerdown", onOutside, true);
+    this.barOpenedAt = null;
+    this.syncBar(toggle);
+  }
+
+  private setBarOpen(open: boolean): void {
+    if (!this.clone?.classList.contains("vizardry-canvas--pinned-bar")) return;
+    this.barOpenedAt = open ? this.scroller.scrollTop : null;
+    this.clone.classList.toggle("is-collapsed", !open);
+    const toggle = this.clone.querySelector<HTMLElement>(".vzd-pin-bar-toggle");
+    if (toggle) this.syncBar(toggle);
+  }
+
+  private syncBar(toggle: HTMLElement): void {
+    const open = this.barOpenedAt !== null;
+    setIcon(toggle, open ? "chevron-up" : "chevron-down");
+    toggle.setAttribute("aria-label", t(open ? "controls.minimize" : "controls.expand"));
+    toggle.setAttribute("aria-expanded", String(open));
   }
 
   private position(chromeTop: number): void {
     const geom = this.pinned && this.geoms.get(this.pinned);
     if (!geom || !this.clone) return;
-    this.clone.style.top = `${chromeTop}px`;
-    this.clone.style.left = `${geom.left}px`;
-    this.clone.style.width = `${geom.width}px`;
+    const s = this.clone.style;
+    s.top = `${chromeTop}px`;
+    s.left = `${geom.left}px`;
+    s.width = `${geom.width}px`;
+    // `position: fixed` resolves against the nearest ancestor with `contain`,
+    // `transform` or `filter`, not the viewport — and Obsidian's workspace
+    // leaves set `contain`. top/left above are viewport coordinates, so the
+    // clone landed shifted by the leaf's own offset (the sidebar width): half
+    // off the pane, unreadable. Measure the drift and subtract it. Skipped
+    // without a layout box (hidden pane, no layout engine in tests).
+    const r = this.clone.getBoundingClientRect();
+    if (r.width === 0) return;
+    const dx = r.left - geom.left;
+    const dy = r.top - chromeTop;
+    if (Math.abs(dx) > 0.5) s.left = `${geom.left - dx}px`;
+    if (Math.abs(dy) > 0.5) s.top = `${chromeTop - dy}px`;
   }
 
   private unpin(): void {
@@ -179,6 +278,9 @@ class StickyController {
       const slide = carouselSlide(this.clone);
       if (slide !== undefined) this.slides.set(this.pinned, slide);
     }
+    this.releaseBar?.();
+    this.releaseBar = null;
+    this.barOpenedAt = null;
     this.clone?.remove();
     this.clone = null;
     this.pinned = null;
@@ -201,12 +303,12 @@ const controllers = new WeakMap<HTMLElement, StickyController>();
  * No-op outside Reading View (no `.markdown-preview-view` ancestor). Safe to
  * call more than once for the same container — registration is idempotent.
  */
-export function activateSticky(container: HTMLElement): void {
+export function activateSticky(container: HTMLElement, options: StickyOptions = {}): void {
   const scroller = container.closest<HTMLElement>(READING_SCROLLER);
   if (!scroller) return;
   let ctrl = controllers.get(scroller);
   if (!ctrl) {
-    ctrl = new StickyController(scroller, ownerWindow(scroller));
+    ctrl = new StickyController(scroller, ownerWindow(scroller), options.compact ?? false);
     controllers.set(scroller, ctrl);
   }
   ctrl.add(container);

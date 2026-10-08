@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { onDisconnected } from "./lifecycle";
+import { onDisconnected, whenOnScreen } from "./lifecycle";
 
 function flush(): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, 0));
@@ -110,5 +110,31 @@ describe("onDisconnected", () => {
     await flush();
 
     expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("whenOnScreen", () => {
+  it("waits for the first intersecting entry, then calls back once and disconnects", () => {
+    let fire: (entries: Array<{ isIntersecting: boolean }>) => void = () => {};
+    const disconnect = vi.fn();
+    const original = window.IntersectionObserver;
+    window.IntersectionObserver = class {
+      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) { fire = cb; }
+      observe(): void {}
+      disconnect = disconnect;
+    } as unknown as typeof IntersectionObserver;
+    try {
+      const cb = vi.fn();
+      whenOnScreen(document.createElement("div"), cb);
+
+      fire([{ isIntersecting: false }]); // initial report while still detached
+      expect(cb).not.toHaveBeenCalled();
+
+      fire([{ isIntersecting: true }]);  // attached and scrolled into view
+      expect(cb).toHaveBeenCalledTimes(1);
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      window.IntersectionObserver = original;
+    }
   });
 });

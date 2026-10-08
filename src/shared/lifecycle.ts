@@ -86,6 +86,28 @@ export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void
 }
 
 /**
+ * Calls `cb` once, the first time `el` intersects the viewport. A markdown
+ * post processor renders into a detached element that Reading View attaches
+ * later — after the first frame for a note still rendering, only when
+ * scrolled to for a virtualized section — so a check that needs the element's
+ * final place in the DOM (an ancestor query) can't run at render time or one
+ * frame after it. Falls back to the next frame without IntersectionObserver.
+ */
+export function whenOnScreen(el: HTMLElement, cb: () => void): void {
+  const win = el.ownerDocument.defaultView ?? window;
+  if (typeof win.IntersectionObserver !== "function") {
+    win.requestAnimationFrame(cb);
+    return;
+  }
+  const io = new win.IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    io.disconnect();
+    cb();
+  });
+  io.observe(el);
+}
+
+/**
  * Returns the Window that owns `el`'s document. Obsidian pop-out windows
  * each have their own document/window pair, but the plugin's JS runs in a
  * single context whose bare `window`/`document` globals always resolve to

@@ -1,7 +1,7 @@
 import { setIcon, MarkdownView, Platform, Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { applyFullWidth } from "./full-width";
-import { onDisconnected, ownerWindow } from "../shared/lifecycle";
+import { onDisconnected, ownerWindow, whenOnScreen } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { TITLE_MAX_LENGTH } from "../shared/title-edit";
 import { getPluginVersion } from "../shared/version";
@@ -908,9 +908,15 @@ export function addHeaderControls(
   actions.createEl("span", { cls: "vzd-btn-separator" });
 
   // Pin (sticky) button — sits immediately left of minimize. Pinning only does
-  // anything in Reading View on desktop, so the button is hidden elsewhere; the
-  // visibility decision waits a frame for the canvas to attach to its view.
+  // anything in Reading View, so the button is hidden elsewhere; on a phone the
+  // canvas pins as a compact tap-to-open bar (see sticky-pin.ts). The
+  // visibility decision waits until the canvas is on screen: Reading View
+  // attaches a freshly rendered block later than one frame (a note still
+  // rendering, a virtualized section), and a check made while detached hid the
+  // button for good — only a re-render (collapse/expand rewrites the source)
+  // brought it back.
   let sticky = initiallySticky;
+  const stickyOptions = { compact: Platform.isPhone };
   const pinBtn = actions.createEl("button", { cls: "vzd-pin-btn vzd-btn" }) as HTMLButtonElement;
   pinBtn.style.display = "none";
   const syncPinBtn = (): void => {
@@ -924,17 +930,16 @@ export function addHeaderControls(
     sticky = !sticky;
     syncPinBtn();
     container.toggleClass("vizardry-canvas--sticky", sticky);
-    if (sticky) activateSticky(container); else deactivateSticky(container);
+    if (sticky) activateSticky(container, stickyOptions); else deactivateSticky(container);
     if (app && ctx) void writeStickyState(app, ctx, container, sticky);
   });
-  ownerWindow(container).requestAnimationFrame(() => {
-    const canPin = Platform.isDesktop &&
-      !!container.closest(".markdown-reading-view") &&
+  whenOnScreen(container, () => {
+    const canPin = !!container.closest(".markdown-reading-view") &&
       !container.closest(".cm-editor");
     pinBtn.style.display = canPin ? "" : "none";
     if (canPin && sticky) {
       container.addClass("vizardry-canvas--sticky");
-      activateSticky(container);
+      activateSticky(container, stickyOptions);
     }
   });
 
