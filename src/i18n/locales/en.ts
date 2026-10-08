@@ -381,6 +381,7 @@ export const en = {
   "sideleaf.undo":             "Undo",
   "sideleaf.swipeHint":        "Swipe a card aside to remove it",
   "compass.deleteEntry":       "Delete entry",
+  "flow.addCard":              "Add card",
   "flow.deleteCard":           "Delete card",
   "procontra.pro":             "Pro",
   "procontra.con":             "Contra",

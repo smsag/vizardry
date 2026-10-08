@@ -13,6 +13,7 @@
  * same-note chapter link (renderHeadingLink) exactly like other card canvases.
  */
 import type { FlowEdge, FlowNode, StageDef } from "../types/problem";
+import { createAddControl } from "./add-control";
 import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
 import { attachItemMenu } from "../shared/item-menu";
@@ -262,15 +263,9 @@ function renderAddButtons(svg: SVGElement, placed: Placed[], spec: FlowSpec): vo
     const col = byStage.get(stage.key);
     if (!col) continue;
     const fo = createSvgEl("foreignObject", {
-      x: String(col.x), y: String(col.bottom + 8), width: String(CARD_W), height: "26",
+      x: String(col.x), y: String(col.bottom + 8), width: String(CARD_W), height: "28",
     });
-    const btn = document.createElement("button");
-    btn.className = "vzd-flow-add";
-    btn.type = "button";
-    btn.setAttribute("aria-label", `Add ${stage.eyebrow} card`);
-    btn.textContent = "+ Add";
-    btn.addEventListener("click", (e) => { e.stopPropagation(); spec.edit!.addCard(stage.key); });
-    fo.appendChild(btn);
+    createAddControl(fo, { label: t("flow.addCard"), onAdd: () => spec.edit!.addCard(stage.key) });
     svg.appendChild(fo);
   }
 }

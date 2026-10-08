@@ -391,5 +391,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "procontra.consOutweigh":    "Contra überwiegt",
   "procontra.balanced":        "Ausgeglichen",
   "procontra.noArguments":     "Noch keine Argumente",
+  "flow.addCard":              "Karte hinzufügen",
   "flow.deleteCard":           "Karte löschen",
 };

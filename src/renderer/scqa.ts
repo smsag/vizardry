@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { createAddControl } from "./add-control";
 import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
@@ -159,11 +160,13 @@ function renderGrid(
     // "+" add child, where depth allows.
     const maxAddLevel = data.variant === "scqa" ? 3 : 2;
     if (node.level < maxAddLevel) {
-      const addBtn = card.createEl("button", { cls: "vzd-scqa-card-add vzd-btn", text: "+" });
-      addBtn.setAttribute("aria-label", t("tree.addChild"));
-      addBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!addSCQAChild(app!, ctx!, el, data.variant, node.level, node.text, childDefault(data.variant, node.level))) showWriteFailedNotice(el);
+      createAddControl(card, {
+        label: t("tree.addChild"),
+        variant: "dot",
+        cls: "vzd-scqa-card-add",
+        onAdd: () => {
+          if (!addSCQAChild(app!, ctx!, el, data.variant, node.level, node.text, childDefault(data.variant, node.level))) showWriteFailedNotice(el);
+        },
       });
     }
 

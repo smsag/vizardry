@@ -697,7 +697,7 @@ row:
 - Missing cells render as `—`
 - Blank lines and `// comment` lines are ignored
 
-**Live Edit:** click any cell to edit it inline. The Process column is visually accented with your theme's accent colour. Hover any row to reveal a **+** button at the right edge — click it to insert a new empty row below.
+**Live Edit:** click any cell to edit it inline. The Process column is visually accented with your theme's accent colour. Hover the canvas to reveal a **+** at each row's right edge — click it to insert a new empty row below.
 
 **Flow view:** switch `type: sipoc` to `type: sipoc, flow` to see the same rows as a connected diagram instead of a table. Each of the 5 core columns turns into one node per **distinct** cell value (two rows with the same Supplier text share one node); nothing is connected automatically — add `link: A -> B` lines yourself for the connections you want to show. Owner/Metric never appear in flow view, but stay in the source and reappear the moment you switch back to `type: sipoc`. Flow view is read-only in this pass — edit rows and links as text, then switch views to see the result.
 
@@ -1488,7 +1488,7 @@ link: consequences_1 -> proposal_1
 - If a card heading matches a `#`/`##` heading in the same note, the card gets a jump-to-chapter link (with a section preview), like other card canvases.
 - An unknown subtype fails with the list of valid ones; an unknown stage, an empty card, a duplicate id, or a malformed/dangling link skips that line with a warning chip rather than failing the whole canvas.
 - Wider-than-screen flows scroll horizontally.
-- **Editable in Live Preview:** click a card's heading or body to edit it in place, delete a card with its **×**, or add one with **+ Add** under a column — changes write straight back to the source. (In Read View, edit as text.)
+- **Editable in Live Preview:** click a card's heading or body to edit it in place, delete a card with its **×**, or add one with **+ Add card** under a column — changes write straight back to the source. (In Read View, edit as text.)
 
 ---
 
@@ -1584,7 +1584,7 @@ pricing: Included in all tiers — an activation lever, not a paywall
 - `insight:` optionally splits on `|` into **figure | text** to render a stat tile; without `|` it's a plain line. `northstar:` takes the first line (one guiding outcome); everything else is repeatable.
 - `problem:` and `idea:` lines can link out with `[label](canvas:Title)` (to another canvas — e.g. the OST or Test Card), `[[#Heading]]`, or a ticket key. This is the "index" in action.
 - Unknown keys and empty values degrade to a warning chip; empty sections show a faint prompt so the structure stays visible.
-- **Editable in Live Preview:** click any line to edit it (raw value, so links are kept), hover **×** to delete, **+** to add a line to a section. (In Read View, edit as text.)
+- **Editable in Live Preview:** click any line to edit it (raw value, so links are kept), hover **×** to delete, **+ Add …** under a section to add a line. (In Read View, edit as text.)
 
 ---
 

@@ -1,4 +1,5 @@
 import { setIcon } from "obsidian";
+import { createAddControl } from "./add-control";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { RoadmapColumn, RoadmapData, RoadmapItem } from "../types";
 import { initCanvas, markInteractive, AUTO_TEXT_ATTR } from "./controls";
@@ -210,12 +211,10 @@ export function renderRoadmap(
     });
 
     if (editMode && app && ctx) {
-      const btn = colEl.createEl("button", { cls: "vzd-roadmap-add-item vzd-btn" });
-      setIcon(btn, "plus");
-      btn.setAttribute("aria-label", t("roadmap.addItem"));
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        addRoadmapItem(app, ctx, container, col.id, t("roadmap.newItem"));
+      createAddControl(colEl, {
+        label: t("roadmap.addItem"),
+        alwaysVisible: col.items.length === 0,
+        onAdd: () => addRoadmapItem(app, ctx, container, col.id, t("roadmap.newItem")),
       });
     }
   }

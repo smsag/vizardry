@@ -1,4 +1,5 @@
 import { setIcon } from "obsidian";
+import { createAddControl } from "./add-control";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { StoryMap, StoryStep, StoryTask } from "../types";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
@@ -355,12 +356,10 @@ export function renderStoryMap(
         for (let j = 0; j < tasks.length; j++) renderTaskCard(cell, tasks[j], null, j);
       }
       if (isEditMode) {
-        const btn = cell.createEl("button", { cls: "vzd-story-add-task vzd-btn" });
-        setIcon(btn, "plus");
-        btn.setAttribute("aria-label", t("story.addTask"));
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          addStoryTask(app!, ctx!, container, step.name, t("story.newTask"));
+        createAddControl(cell, {
+          label: t("story.addTask"),
+          alwaysVisible: tasks.length === 0,
+          onAdd: () => addStoryTask(app!, ctx!, container, step.name, t("story.newTask")),
         });
       }
       cellsByStep[i].push(cell);
