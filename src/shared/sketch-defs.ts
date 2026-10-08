@@ -8,10 +8,22 @@
  * Obsidian window (main and pop-out), the browser extension into its viewer
  * page. Keeping a single copy means the filter parameters cannot drift
  * between the two.
+ *
+ * The filter region is in user space, not the default objectBoundingBox
+ * (-10%/120% of the referencing shape's bbox). A perfectly horizontal or
+ * vertical stroke — an axis, a spine, `M5 12h14` — has a zero-height or
+ * zero-width bbox, so a bbox-relative region collapses to nothing and the
+ * shape is not drawn at all. Even a thin non-degenerate shape gets its stroke
+ * clipped, since the bbox excludes the stroke width. A fixed, generous user-
+ * space region can never collapse; the browser only rasterises the part that
+ * is actually painted, so its size costs nothing.
  */
 
 export const SKETCH_DEFS_ID = "vzd-sketch-defs";
 export const SKETCH_FILTER_ID = "vzd-sketch-rough";
+
+/** Half the side of the user-space filter region; covers any canvas coordinate. */
+const REGION_EXTENT = 100000;
 
 /** Injects the filter into `doc` once; a second call is a no-op. */
 export function ensureSketchDefs(doc: Document): void {
@@ -25,6 +37,11 @@ export function ensureSketchDefs(doc: Document): void {
   svg.style.position = "absolute";
   const filter = doc.createElementNS(NS, "filter");
   filter.setAttribute("id", SKETCH_FILTER_ID);
+  filter.setAttribute("filterUnits", "userSpaceOnUse");
+  filter.setAttribute("x", String(-REGION_EXTENT));
+  filter.setAttribute("y", String(-REGION_EXTENT));
+  filter.setAttribute("width", String(2 * REGION_EXTENT));
+  filter.setAttribute("height", String(2 * REGION_EXTENT));
   const turb = doc.createElementNS(NS, "feTurbulence");
   turb.setAttribute("type", "fractalNoise");
   turb.setAttribute("baseFrequency", "0.02");
