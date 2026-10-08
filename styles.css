@@ -306,23 +306,28 @@ button.vzd-add--dot:focus-visible {
   color: var(--text-accent);
 }
 
-/* Read-only clone pinned to the top of the reading pane while its source canvas
-   is scrolled past (see src/renderer/sticky-pin.ts). Position (top/left/width)
-   is set inline from JS; everything else lives here.
-   - opaque background so the document scrolling underneath does not show through
+/* Read-only clone pinned to the top of the note pane while its source canvas
+   is scrolled past (see src/renderer/sticky-pin.ts). It continues Obsidian's
+   header bar rather than floating over the note as a card: edge to edge under
+   the header, the header's own background, no frame, no radius — only a
+   hairline and a soft fade below, where the note scrolls underneath.
+   Position, width and the side padding that keeps the canvas in its own
+   column are set inline from JS.
    - pointer-events:none so wheel/click pass straight through to the page
-   - height cap keeps a tall canvas from swallowing the reading area */
+   - height cap keeps a tall canvas from swallowing the writing area */
 .vizardry-canvas--pinned {
   z-index: var(--layer-popover, 30);
   max-height: 50vh;
   overflow: hidden;
   margin: 0;
-  padding: 0.15rem 0.5rem 0.35rem;
+  padding-top: 0.15rem;
+  padding-bottom: 0.35rem;
   pointer-events: none;
   background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m, 8px);
-  box-shadow: var(--shadow-s, 0 4px 12px rgba(0, 0, 0, 0.15));
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  box-shadow: 0 6px 12px -10px rgba(0, 0, 0, 0.35);
 }
 .vizardry-canvas--pinned .vizardry-header {
   cursor: default;
@@ -4792,9 +4797,12 @@ body.vizardry-sketch .vzd-presentation-wrap {
 }
 
 /* Hand-drawn line wobble on SVG shapes only — text and foreignObject stay
-   crisp so labels remain legible at small sizes. */
-body.vizardry-sketch .vizardry-canvas svg :is(path, line, circle, ellipse, rect, polygon, polyline),
-body.vizardry-sketch .vzd-presentation-wrap svg :is(path, line, circle, ellipse, rect, polygon, polyline) {
+   crisp so labels remain legible at small sizes. Not on Obsidian's icons
+   (svg.svg-icon): a filter's region is sized from the shape's bounding box,
+   and an icon drawn only from straight horizontal/vertical strokes (plus,
+   minus) has a zero-height or zero-width box — filtered, it vanished. */
+body.vizardry-sketch .vizardry-canvas svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline),
+body.vizardry-sketch .vzd-presentation-wrap svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline) {
   filter: url(#vzd-sketch-rough);
 }
 

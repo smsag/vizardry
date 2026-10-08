@@ -15,7 +15,7 @@ Full reference: [vizardry-canvas-syntax-reference.md](vizardry-canvas-syntax-ref
 8. Don't quote values: `title: My Map`, not `title: "My Map"`.
 9. One `title:` line per canvas (optional).
 
-Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas to the top while scrolling (Reading View; a tap-to-open bar on phones). Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`.
+Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas under the header while writing (Live Preview; a tap-to-open bar on phones). Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`.
 
 ## Framework index
 

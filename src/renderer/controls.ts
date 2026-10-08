@@ -9,6 +9,7 @@ import type { LinkResolver } from "../shared/links";
 import { attachSectionPreview } from "./section-preview";
 import { writeCollapseState, writeStickyState } from "../shared/block-edit";
 import { activateSticky, deactivateSticky } from "./sticky-pin";
+import type { StickyOptions } from "./sticky-pin";
 import { createBlurGuard } from "./inline-edit";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
@@ -907,16 +908,27 @@ export function addHeaderControls(
   // Separator, then the pin + minimize buttons — always last in the action bar.
   actions.createEl("span", { cls: "vzd-btn-separator" });
 
-  // Pin (sticky) button — sits immediately left of minimize. Pinning only does
-  // anything in Reading View, so the button is hidden elsewhere; on a phone the
-  // canvas pins as a compact tap-to-open bar (see sticky-pin.ts). The
-  // visibility decision waits until the canvas is on screen: Reading View
-  // attaches a freshly rendered block later than one frame (a note still
-  // rendering, a virtualized section), and a check made while detached hid the
-  // button for good — only a re-render (collapse/expand rewrites the source)
-  // brought it back.
+  // Pin (sticky) button — sits immediately left of minimize. Pinning is an
+  // editing aid: it keeps a reference canvas in view while you write the rest
+  // of the note, so it is offered in Live Preview only (see sticky-pin.ts) —
+  // not in Reading View, sidebars, hover previews or exports. On a phone the
+  // canvas pins as a compact tap-to-open bar. The visibility decision waits
+  // until the canvas is on screen: a freshly rendered block is attached later
+  // than one frame (a note still rendering, a virtualized section), and a
+  // check made while detached hid the button for good.
   let sticky = initiallySticky;
-  const stickyOptions = { compact: Platform.isPhone };
+  const pinOptions = (): StickyOptions => {
+    // Live Preview reuses its scroller for the next note: tie the pin to the
+    // view showing this note, so it lets go when that view moves on.
+    const view = app?.workspace.getLeavesOfType("markdown")
+      .map((l) => l.view)
+      .find((v): v is MarkdownView => v instanceof MarkdownView && v.containerEl.contains(container));
+    const path = ctx?.sourcePath;
+    return {
+      compact: Platform.isPhone,
+      isCurrent: view && path !== undefined ? () => view.file?.path === path : undefined,
+    };
+  };
   const pinBtn = actions.createEl("button", { cls: "vzd-pin-btn vzd-btn" }) as HTMLButtonElement;
   pinBtn.style.display = "none";
   const syncPinBtn = (): void => {
@@ -930,16 +942,15 @@ export function addHeaderControls(
     sticky = !sticky;
     syncPinBtn();
     container.toggleClass("vizardry-canvas--sticky", sticky);
-    if (sticky) activateSticky(container, stickyOptions); else deactivateSticky(container);
+    if (sticky) activateSticky(container, pinOptions()); else deactivateSticky(container);
     if (app && ctx) void writeStickyState(app, ctx, container, sticky);
   });
   whenOnScreen(container, () => {
-    const canPin = !!container.closest(".markdown-reading-view") &&
-      !container.closest(".cm-editor");
+    const canPin = !!container.closest(".markdown-source-view .cm-scroller");
     pinBtn.style.display = canPin ? "" : "none";
     if (canPin && sticky) {
       container.addClass("vizardry-canvas--sticky");
-      activateSticky(container, stickyOptions);
+      activateSticky(container, pinOptions());
     }
   });
 

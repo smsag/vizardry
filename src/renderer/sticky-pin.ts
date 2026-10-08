@@ -1,5 +1,5 @@
 /**
- * Sticky canvas pinning (Reading View).
+ * Sticky canvas pinning (Reading View and Live Preview).
  *
  * A canvas marked `sticky: true` stays visible while you read the rest of the
  * note: once its top scrolls under the view chrome, a read-only clone pins to
@@ -31,7 +31,15 @@
  * it, browsed one block at a time; tapping outside or scrolling the note on
  * folds it back to the bar.
  *
- * One StickyController per reading-view scroller, shared by every sticky canvas
+ * Live Preview (CM6) goes further than Reading View: a widget scrolled about
+ * a screen out of view is destroyed, its element removed. A pinned canvas is
+ * exactly the one you have scrolled past, so an entry whose element leaves the
+ * DOM far from the viewport is kept (the detached element still clones fine,
+ * and its offset is cached); one that leaves near the viewport was re-rendered
+ * or deleted, and is dropped. When CM6 renders the canvas again, the new
+ * element replaces the kept one (same framework + title).
+ *
+ * One StickyController per note scroller, shared by every sticky canvas
  * under it; it self-disposes when its last canvas unregisters or disconnects.
  */
 
@@ -40,11 +48,19 @@ import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { t } from "../i18n";
 import { carouselSize, carouselSlide, cloneSlideCarousel } from "./grid-carousel";
 
-/** The Reading View scroll container. Live Preview (`.cm-editor`) is not
- *  supported — CM6 virtualizes lines even more aggressively. */
-const READING_SCROLLER = ".markdown-preview-view";
+/** The note's scroll container: the Live Preview editor's, else Reading
+ *  View's. The editor's is looked up first so a rendered block nested in it
+ *  can't resolve to an inner preview element that doesn't scroll. */
+function noteScroller(el: HTMLElement): HTMLElement | null {
+  return el.closest<HTMLElement>(".cm-scroller") ?? el.closest<HTMLElement>(".markdown-preview-view");
+}
 
-interface Geom { left: number; width: number; }
+/** An element that leaves the DOM with its box this close to the viewport
+ *  (px) was re-rendered or deleted, not virtualized away. CM6 keeps ~1000px
+ *  of margin rendered, so virtualization never happens this close. */
+const NEAR_VIEWPORT_PX = 200;
+
+interface Geom { left: number; width: number; height: number; }
 
 /** Note scroll (px) after which an opened compact bar folds itself again. */
 const BAR_SCROLL_CLOSE_PX = 24;
@@ -52,6 +68,15 @@ const BAR_SCROLL_CLOSE_PX = 24;
 export interface StickyOptions {
   /** Pin as a tap-to-open title bar (phones) instead of the full canvas. */
   compact?: boolean;
+  /** Whether the note this canvas belongs to is still the one shown. Live
+   *  Preview reuses its scroller for the next note, so a kept (detached)
+   *  entry is dropped once this turns false. */
+  isCurrent?: () => boolean;
+}
+
+/** Identity that survives a re-render: framework + title. */
+function stickyKey(el: HTMLElement): string {
+  return `${el.dataset.framework ?? ""}|${el.dataset.canvasTitle ?? ""}`;
 }
 
 class StickyController {
@@ -64,6 +89,9 @@ class StickyController {
   /** Slide each entry's pinned carousel last showed, so unpinning and pinning
    *  again (scrolling back up a little) returns to the same block. */
   private readonly slides = new WeakMap<HTMLElement, number>();
+  /** Entries whose element left the DOM by virtualization, kept for pinning. */
+  private readonly detached = new Set<HTMLElement>();
+  private readonly isCurrent = new WeakMap<HTMLElement, () => boolean>();
 
   private pinned: HTMLElement | null = null;
   private clone: HTMLElement | null = null;
@@ -85,17 +113,49 @@ class StickyController {
     this.win.addEventListener("resize", this.onScrollOrResize);
   }
 
-  add(container: HTMLElement): void {
+  add(container: HTMLElement, isCurrent?: () => boolean): void {
     if (this.disposed) return;
+    // A re-render of a kept canvas replaces it; a pinned one hands its pin over
+    // without flicker (the clone stays).
+    for (const old of this.detached) {
+      if (old === container || stickyKey(old) !== stickyKey(container)) continue;
+      this.detached.delete(old);
+      this.entries.delete(old);
+      if (this.pinned === old) this.pinned = container;
+    }
     this.entries.add(container);
+    if (isCurrent) this.isCurrent.set(container, isCurrent);
     this.schedule();
   }
 
   remove(container: HTMLElement): void {
     this.entries.delete(container);
+    this.detached.delete(container);
     if (this.pinned === container) this.unpin();
     if (this.entries.size === 0) { this.dispose(); return; }
     this.schedule();
+  }
+
+  /** Drop every entry for the canvas `container` renders (any element). */
+  forget(container: HTMLElement): void {
+    const key = stickyKey(container);
+    for (const el of Array.from(this.entries)) {
+      if (el === container || stickyKey(el) === key) this.remove(el);
+      if (this.disposed) return;
+    }
+  }
+
+  /** `container` left the DOM: keep it if it was virtualized away (far from
+   *  the viewport), drop it if it was re-rendered or deleted (near it). */
+  disconnected(container: HTMLElement): void {
+    if (!this.entries.has(container)) return;
+    const off = this.offsets.get(container);
+    const geom = this.geoms.get(container);
+    const top = this.scroller.scrollTop;
+    const near = off === undefined || !geom ||
+      (off + geom.height > top - NEAR_VIEWPORT_PX && off < top + this.scroller.clientHeight + NEAR_VIEWPORT_PX);
+    if (near) this.remove(container);
+    else this.detached.add(container);
   }
 
   private schedule(): void {
@@ -120,12 +180,21 @@ class StickyController {
 
     const scrollTop = this.scroller.scrollTop;
 
+    // A kept canvas belongs to its note: once the scroller shows another one
+    // (Live Preview reuses it), let it go.
+    for (const el of Array.from(this.detached)) {
+      if (this.isCurrent.get(el)?.() === false) {
+        this.remove(el);
+        if (this.disposed) return;
+      }
+    }
+
     // Refresh cached offset/geometry for every currently-measurable entry.
     for (const el of this.entries) {
       const rect = el.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         this.offsets.set(el, rect.top - sRect.top + scrollTop);
-        this.geoms.set(el, { left: rect.left, width: rect.width });
+        this.geoms.set(el, { left: rect.left, width: rect.width, height: rect.height });
       }
     }
 
@@ -150,7 +219,7 @@ class StickyController {
     if (this.barOpenedAt !== null && Math.abs(scrollTop - this.barOpenedAt) > BAR_SCROLL_CLOSE_PX) {
       this.setBarOpen(false);
     }
-    if (this.pinned) this.position(sRect.top);
+    if (this.pinned) this.position(sRect);
   }
 
   private pin(target: HTMLElement): void {
@@ -173,6 +242,7 @@ class StickyController {
       margin: "0",
       minWidth: "0",
       maxWidth: "none",
+      boxSizing: "border-box",
       right: "auto",
     } satisfies Partial<CSSStyleDeclaration>);
 
@@ -252,13 +322,22 @@ class StickyController {
     toggle.setAttribute("aria-expanded", String(open));
   }
 
-  private position(chromeTop: number): void {
+  /** The clone spans the note pane edge to edge right under its header —
+   *  an extension of the header, not a box floating over the text — and pads
+   *  its content in to the canvas's own column, so the canvas sits exactly
+   *  where it was. */
+  private position(sRect: DOMRect): void {
     const geom = this.pinned && this.geoms.get(this.pinned);
     if (!geom || !this.clone) return;
+    const chromeTop = sRect.top;
+    const left = sRect.left;
+    const width = this.scroller.clientWidth || sRect.width; // without the scrollbar
     const s = this.clone.style;
     s.top = `${chromeTop}px`;
-    s.left = `${geom.left}px`;
-    s.width = `${geom.width}px`;
+    s.left = `${left}px`;
+    s.width = `${width}px`;
+    s.paddingLeft = `${Math.max(0, geom.left - left)}px`;
+    s.paddingRight = `${Math.max(0, left + width - (geom.left + geom.width))}px`;
     // `position: fixed` resolves against the nearest ancestor with `contain`,
     // `transform` or `filter`, not the viewport — and Obsidian's workspace
     // leaves set `contain`. top/left above are viewport coordinates, so the
@@ -267,9 +346,9 @@ class StickyController {
     // without a layout box (hidden pane, no layout engine in tests).
     const r = this.clone.getBoundingClientRect();
     if (r.width === 0) return;
-    const dx = r.left - geom.left;
+    const dx = r.left - left;
     const dy = r.top - chromeTop;
-    if (Math.abs(dx) > 0.5) s.left = `${geom.left - dx}px`;
+    if (Math.abs(dx) > 0.5) s.left = `${left - dx}px`;
     if (Math.abs(dy) > 0.5) s.top = `${chromeTop - dy}px`;
   }
 
@@ -299,34 +378,36 @@ class StickyController {
 const controllers = new WeakMap<HTMLElement, StickyController>();
 
 /**
- * Start pinning `container` when it scrolls under the reading-view chrome.
- * No-op outside Reading View (no `.markdown-preview-view` ancestor). Safe to
- * call more than once for the same container — registration is idempotent.
+ * Start pinning `container` when it scrolls under the note's chrome (Reading
+ * View or Live Preview). No-op outside a note scroller. Safe to call more than
+ * once for the same container — registration is idempotent.
  */
 export function activateSticky(container: HTMLElement, options: StickyOptions = {}): void {
-  const scroller = container.closest<HTMLElement>(READING_SCROLLER);
+  const scroller = noteScroller(container);
   if (!scroller) return;
   let ctrl = controllers.get(scroller);
   if (!ctrl) {
     ctrl = new StickyController(scroller, ownerWindow(scroller), options.compact ?? false);
     controllers.set(scroller, ctrl);
   }
-  ctrl.add(container);
-  // Also drop it when the block is re-rendered/removed, so a stale entry can't
-  // keep a controller (and its listeners) alive. Registered once per
-  // container: every pin toggle used to add another registration.
+  ctrl.add(container, options.isCurrent);
+  // When the block leaves the DOM the controller decides: re-rendered or
+  // deleted → dropped (so a stale entry can't keep the controller alive);
+  // virtualized away → kept. Registered once per container: every pin toggle
+  // used to add another registration.
   if (!watched.has(container)) {
     watched.add(container);
-    onDisconnected(container, () => { watched.delete(container); controllers.get(scroller)?.remove(container); });
+    onDisconnected(container, () => { watched.delete(container); controllers.get(scroller)?.disconnected(container); });
   }
 }
 
 /** Containers whose disconnect watch is already registered. */
 const watched = new WeakSet<HTMLElement>();
 
-/** Stop pinning `container` and remove its clone if currently pinned. */
+/** Stop pinning the canvas `container` renders — including a copy of it kept
+ *  from before a re-render — and remove its clone if currently pinned. */
 export function deactivateSticky(container: HTMLElement): void {
-  const scroller = container.closest<HTMLElement>(READING_SCROLLER);
+  const scroller = noteScroller(container);
   if (!scroller) return;
-  controllers.get(scroller)?.remove(container);
+  controllers.get(scroller)?.forget(container);
 }

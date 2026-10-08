@@ -121,15 +121,19 @@ describe("sticky-pin selection", () => {
     expect(pinnedName()).toBe("A");
   });
 
-  it("positions the pinned clone at the chrome top and the source's horizontal box", () => {
+  it("spans the pane under its chrome, padding the canvas into its own column", () => {
     const a = makeCanvas("A", 300);
     activateSticky(a);
     scrollTo(350);
 
     const clone = viewContent.querySelector<HTMLElement>(".vizardry-canvas--pinned")!;
     expect(clone.style.top).toBe(`${CHROME_TOP}px`);
-    expect(clone.style.left).toBe("100px");
-    expect(clone.style.width).toBe("800px");
+    // Edge to edge across the scroller (0..1000), not a box at the canvas.
+    expect(clone.style.left).toBe("0px");
+    expect(clone.style.width).toBe("1000px");
+    // The canvas itself stays where it was: 100..900.
+    expect(clone.style.paddingLeft).toBe("100px");
+    expect(clone.style.paddingRight).toBe("100px");
     // Full-width inline transforms are neutralised on the clone.
     expect(clone.style.transform).toBe("none");
   });
@@ -150,7 +154,7 @@ describe("sticky-pin selection", () => {
 
       const clone = viewContent.querySelector<HTMLElement>(".vizardry-canvas--pinned")!;
       const r = clone.getBoundingClientRect();
-      expect(r.left).toBe(100);
+      expect(r.left).toBe(0); // the scroller's left edge
       expect(r.top).toBe(CHROME_TOP);
     } finally {
       rectSpy.mockRestore();
@@ -350,5 +354,97 @@ describe("sticky-pin compact bar (phones)", () => {
     expect(pinnedName()).toBeNull();
     expect(remove).toHaveBeenCalledWith("pointerdown", expect.any(Function), true);
     remove.mockRestore();
+  });
+});
+
+describe("sticky-pin in Live Preview (CM6)", () => {
+  /** A Live Preview canvas: CM6 removes its element when it virtualizes, and a
+   *  detached element measures 0×0, as in a browser. */
+  function makeLpCanvas(title: string, off: number): HTMLElement {
+    const el = document.createElement("div");
+    el.className = "vizardry-canvas";
+    el.dataset.name = title;
+    el.dataset.framework = "procontra";
+    el.dataset.canvasTitle = title.toLowerCase();
+    el.getBoundingClientRect = () => {
+      if (!el.isConnected) return { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      const top = CHROME_TOP + (off - scrollTop);
+      return { top, bottom: top + 200, left: 100, right: 900, width: 800, height: 200, x: 100, y: top, toJSON: () => ({}) } as DOMRect;
+    };
+    scroller.appendChild(el);
+    return el;
+  }
+  const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
+  beforeEach(() => {
+    scroller.className = "cm-scroller";
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, get: () => 500 });
+  });
+
+  it("pins in a Live Preview scroller", () => {
+    const a = makeLpCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(350);
+    expect(pinnedName()).toBe("A");
+  });
+
+  it("keeps the pin when CM6 virtualizes the canvas away", async () => {
+    const a = makeLpCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(2000);          // far below: A's box ends at 500, viewport starts at 2000
+    a.remove();              // CM6 destroys the widget
+    await flush();
+    scrollTo(2100);
+    expect(pinnedName()).toBe("A");
+  });
+
+  it("drops the canvas when it leaves the DOM near the viewport (re-render or delete)", async () => {
+    const a = makeLpCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(350);
+    expect(pinnedName()).toBe("A");
+    a.remove();
+    await flush();
+    scrollTo(360);
+    expect(pinnedName()).toBeNull();
+  });
+
+  it("hands a kept pin over to the canvas when CM6 renders it again", async () => {
+    const a = makeLpCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(2000);
+    a.remove();
+    await flush();
+    const again = makeLpCanvas("A", 300);  // scrolled back: a new element
+    activateSticky(again);
+    scrollTo(400);
+    expect(pinnedName()).toBe("A");
+    expect(viewContent.querySelectorAll(".vizardry-canvas--pinned")).toHaveLength(1);
+    deactivateSticky(again);
+    expect(pinnedName()).toBeNull();
+  });
+
+  it("lets a kept canvas go once the scroller shows another note", async () => {
+    let current = true;
+    const a = makeLpCanvas("A", 300);
+    activateSticky(a, { isCurrent: () => current });
+    scrollTo(2000);
+    a.remove();
+    await flush();
+    current = false;         // same scroller, next note
+    scrollTo(2100);
+    expect(pinnedName()).toBeNull();
+  });
+
+  it("unpinning drops the kept copy too", async () => {
+    const a = makeLpCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(2000);
+    a.remove();
+    await flush();
+    const again = makeLpCanvas("A", 300);
+    deactivateSticky(again); // unpinned from the re-rendered canvas before it re-registered
+    scrollTo(2100);
+    expect(pinnedName()).toBeNull();
   });
 });
