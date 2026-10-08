@@ -1,3 +1,33 @@
+## 0.73.0
+
+Live Edit feels steadier: text is edited where it sits, every canvas adds
+things the same way, and pinning works everywhere — phones included.
+
+- **Fix: fields jumped when you clicked them in Live Edit.** Clicking a text
+  field swapped in an input box that took Obsidian's own styling, so the field
+  grew and the row below it moved — most visibly on Pro / Contra arguments
+  and the Decision chip. The text is now edited in place, in the same font,
+  size and position, with an accent underline while you type. Multi-line
+  fields (RACI, SIPOC, Pace Layers, Test Card) edit in place too: Enter adds
+  a line; Mod+Enter, Tab or clicking away saves. One-line blocks in the
+  Business Model Canvas, SWOT and Future Self no longer grow on click.
+- **One design for every "add" control in Live Edit.** Each canvas used to
+  draw its own: hidden circles, a tiny icon, faint grey links, a dashed bar.
+  Lists and columns (Pro / Contra, Story, Journey, Roadmap, Compass, Problem
+  flow) now end in a dashed row that names what it adds — *Add argument*,
+  *Add card* — and SCQA and SIPOC use a small round **+** where there is no
+  room for a row. They appear when you hover over or focus the canvas without
+  moving anything, are always shown on touch screens and for an empty list,
+  and stay out of PNG exports and presentations.
+- **Fix: the pin button only appeared on collapsed canvases.** It now shows
+  on every canvas once it is on screen, and a canvas saved as `sticky: true`
+  pins reliably.
+- **Fix: a pinned canvas was pushed sideways by the sidebar.** It now sits
+  exactly over its column.
+- **Pinning on phones.** A pinned canvas folds into a slim title bar with its
+  title, block counter and fullscreen button. Tap it to open the canvas; tap
+  outside or keep scrolling to fold it again. Tablets keep the desktop strip.
+
 ## 0.72.0
 
 A new canvas for making decisions: weigh the pros and cons, and see which way
