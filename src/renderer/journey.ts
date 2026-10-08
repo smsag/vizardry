@@ -227,7 +227,7 @@ export function renderJourneyMap(
 
       attachItemMenu(cardEl, {
         label: t("menu.actionsFor", { name: card.name }),
-        button: { parent: cardEl, cls: "vzd-journey-card-delete vzd-btn" },
+        button: { parent: cardEl, cls: "vzd-journey-card-delete" },
         actions: () => [{
           title: t("journey.deleteCard"),
           icon: "trash-2",

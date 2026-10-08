@@ -115,6 +115,7 @@ export const en = {
 
   // Add-bullet affordance inside an OST node
   "ost.addBullet":         "Add detail",
+  "ost.deleteBullet":      "Delete detail",
 
   // ── SCQA / SCR level labels ─────────────────────────────────────────────────
   "scqa.level.situation":    "Situation",
@@ -370,6 +371,9 @@ export const en = {
   // ── Item actions menu ───────────────────────────────────────────────────────
   "menu.actionsFor":           "Actions for {{name}}",
   "menu.actions":              "Actions",
+  "nodemap.changeColor":       "Change color…",
+  "nodemap.deleteBox":         "Delete box",
+  "link.remove":               "Remove link",
   "sideleaf.refresh":          "Refresh",
   "sideleaf.copyKey":          "Copy key",
   "sideleaf.copied":           "Copied {{key}}",

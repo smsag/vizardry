@@ -95,7 +95,7 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
   // vault — clicking the key again brings it straight back.
   attachItemMenu(el, {
     label: t("menu.actionsFor", { name: ref.key }),
-    button: { parent: el, cls: "vzd-card-menu vzd-btn" },
+    button: { parent: el, cls: "vzd-card-menu" },
     actions: () => [
       { title: t("sideleaf.refresh"), icon: "refresh-cw", onChoose: refresh },
       { title: t("sideleaf.copyKey"), icon: "copy", onChoose: () => copyKey(ref.key) },

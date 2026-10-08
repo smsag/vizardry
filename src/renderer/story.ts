@@ -275,7 +275,7 @@ export function renderStoryMap(
       // Actions menu — ⋯ button, right-click, or long-press. See item-menu.ts.
       attachItemMenu(card, {
         label: t("menu.actionsFor", { name: task.name }),
-        button: { parent: card, cls: "vzd-story-task-delete vzd-btn" },
+        button: { parent: card, cls: "vzd-story-task-delete" },
         actions: () => [{
           title: t("story.deleteTask"),
           icon: "trash-2",

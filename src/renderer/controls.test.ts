@@ -381,12 +381,9 @@ describe("download / export", () => {
     for (const c of [
       "vizardry-header-actions",
       "vizardry-nav", "vzd-story-nav", "vzd-journey-nav",
-      "vzd-journey-card-delete", "vzd-story-task-delete",
-      "vzd-add", "vzd-scqa-card-del",
-      "vzd-wardley-unlink-btn", "vzd-wardley-add-handle-g",
-      "vzd-tree-edit-add", "vzd-tree-edit-del",
-      "vzd-lane-bullet-add", "vzd-lane-bullet-del",
-      "vzd-nodemap-box-delete-btn",
+      "vzd-item-menu",
+      "vzd-add", "vzd-wardley-add-handle-g",
+      "vzd-tree-edit-add", "vzd-lane-bullet-add",
     ]) {
       expect(filter(node(c)), `${c} should be excluded`).toBe(false);
     }

@@ -24,7 +24,7 @@ vi.mock("obsidian", () => {
   return { Menu, setIcon: vi.fn() };
 });
 
-import { attachItemMenu, LONG_PRESS_MS } from "./item-menu";
+import { attachItemMenu, attachSvgItemMenu, LONG_PRESS_MS } from "./item-menu";
 
 function host(): HTMLElement {
   const el = document.createElement("div");
@@ -66,6 +66,20 @@ describe("the ⋯ button", () => {
     expect(built.map(b => b.title)).toEqual(["Delete task"]);
   });
 
+  it("carries the shared trigger class and a placement, defaulting to the corner", () => {
+    const el = host();
+    const corner = attachItemMenu(el, { actions, label: "x", button: { parent: el, cls: "c" } }).button!;
+    expect([...corner.classList]).toEqual(["vzd-item-menu", "vzd-item-menu--corner", "c"]);
+    const row = attachItemMenu(el, { actions, label: "x", button: { parent: el, cls: "c", placement: "row" } }).button!;
+    expect(row.classList.contains("vzd-item-menu--row")).toBe(true);
+  });
+
+  it("marks its host, so hovering the item reveals the trigger", () => {
+    const el = host();
+    attachItemMenu(el, { actions, label: "x", button: { parent: el, cls: "c" } });
+    expect(el.classList.contains("vzd-item-host")).toBe(true);
+  });
+
   it("is omitted for a host that supplies its own trigger", () => {
     // SVG canvases cannot contain an HTML button.
     expect(attachItemMenu(host(), { actions, label: "x" }).button).toBeNull();
@@ -80,6 +94,87 @@ describe("right-click", () => {
     el.dispatchEvent(e);
     expect(e.defaultPrevented).toBe(true);
     expect(shown).toEqual([{ x: 42, y: 99 }]);
+  });
+});
+
+describe("nested hosts", () => {
+  // An OST bullet row is an item inside its node, which is an item too.
+  function nested(): { outer: HTMLElement; inner: HTMLElement; outerDel: ReturnType<typeof vi.fn> } {
+    const outer = host();
+    const inner = outer.createEl("div");
+    const outerDel = vi.fn();
+    attachItemMenu(outer, { actions: () => [{ title: "Delete node", onChoose: outerDel }], label: "x" });
+    attachItemMenu(inner, { actions, label: "y" });
+    return { outer, inner, outerDel };
+  }
+
+  it("right-click on the inner item opens only its menu", () => {
+    const { inner } = nested();
+    inner.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    expect(shown).toHaveLength(1);
+    expect(built.map(b => b.title)).toEqual(["Delete task"]);
+  });
+
+  it("a long press on the inner item opens only its menu", () => {
+    vi.useFakeTimers();
+    const { inner } = nested();
+    pointer(inner, "pointerdown");
+    vi.advanceTimersByTime(LONG_PRESS_MS + 10);
+    expect(shown).toHaveLength(1);
+    expect(built.map(b => b.title)).toEqual(["Delete task"]);
+  });
+});
+
+describe("the SVG trigger", () => {
+  const NS = "http://www.w3.org/2000/svg";
+  function svgHost(): SVGGElement {
+    const svg = document.createElementNS(NS, "svg");
+    document.body.appendChild(svg);
+    const g = document.createElementNS(NS, "g") as SVGGElement;
+    svg.appendChild(g);
+    return g;
+  }
+
+  it("is a keyboard-operable, labelled button drawn as a direct child of its item", () => {
+    const g = svgHost();
+    attachSvgItemMenu(g, { actions, label: "Actions for Leaf", x: 10, y: 20 });
+    const trigger = g.querySelector(":scope > .vzd-item-menu")!;
+    expect(trigger).toBeTruthy();
+    expect(trigger.classList.contains("vzd-item-menu--svg")).toBe(true);
+    expect(trigger.getAttribute("role")).toBe("button");
+    expect(trigger.getAttribute("tabindex")).toBe("0");
+    expect(trigger.getAttribute("aria-label")).toBe("Actions for Leaf");
+    expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
+    expect(trigger.getAttribute("transform")).toBe("translate(10, 20)");
+    expect(g.classList.contains("vzd-item-host")).toBe(true);
+  });
+
+  it("opens the menu on click and on Enter, and never deletes by itself", () => {
+    const g = svgHost();
+    attachSvgItemMenu(g, { actions, label: "x", x: 0, y: 0 });
+    const trigger = g.querySelector(".vzd-item-menu")!;
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(shown).toHaveLength(2);
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  it("keeps a press on it from reaching the item, so it never starts a drag", () => {
+    const g = svgHost();
+    const onItemDown = vi.fn();
+    g.addEventListener("pointerdown", onItemDown);
+    attachSvgItemMenu(g, { actions, label: "x", x: 0, y: 0 });
+    pointer(g.querySelector(".vzd-item-menu")!, "pointerdown", { pointerType: "mouse" });
+    expect(onItemDown).not.toHaveBeenCalled();
+  });
+
+  it("moves with its item, and offers an opaque variant for a link's midpoint", () => {
+    const g = svgHost();
+    const h = attachSvgItemMenu(g, { actions, label: "x", x: 0, y: 0, floating: true });
+    h.moveTo(5, 6);
+    const trigger = g.querySelector(".vzd-item-menu")!;
+    expect(trigger.getAttribute("transform")).toBe("translate(5, 6)");
+    expect(trigger.classList.contains("vzd-item-menu--floating")).toBe(true);
   });
 });
 

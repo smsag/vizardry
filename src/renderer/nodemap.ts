@@ -29,7 +29,7 @@ import {
   writeNodeMapBoxBody, setNodeMapBoxColor, addNodeMapLink, removeNodeMapLink,
 } from "../shared/nodemap-edit";
 import { t } from "../i18n";
-import { attachItemMenu } from "../shared/item-menu";
+import { attachSvgItemMenu } from "../shared/item-menu";
 
 const PAD = 40;
 const CHAR_W = 7;
@@ -232,19 +232,17 @@ function renderLinks(
       linkG.appendChild(createSvgEl("line", {
         x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2), class: "vzd-nodemap-link-hit",
       }));
-      const deleteBtn = createSvgEl("g", { class: "vzd-nodemap-unlink-btn" });
-      deleteBtn.appendChild(createSvgEl("circle", { cx: String(mx), cy: String(my), r: "8", class: "vzd-nodemap-unlink-circle" }));
-      const xText = createSvgEl("text", {
-        x: String(mx), y: String(my), class: "vzd-nodemap-unlink-icon",
-        "text-anchor": "middle", "dominant-baseline": "central",
+      attachSvgItemMenu(linkG as SVGGElement, {
+        label: t("menu.actionsFor", { name: `${link.from} → ${link.to}` }),
+        x: mx, y: my,
+        floating: true,
+        actions: () => [{
+          title: t("link.remove"),
+          icon: "unlink",
+          destructive: true,
+          onChoose: () => removeNodeMapLink(app, ctx, wrap, link.from, link.to),
+        }],
       });
-      xText.textContent = "×";
-      deleteBtn.appendChild(xText);
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        removeNodeMapLink(app, ctx, wrap, link.from, link.to);
-      });
-      linkG.appendChild(deleteBtn);
     }
 
     layer.appendChild(linkG);
@@ -644,10 +642,12 @@ function openColorPopover(
   colorPopoverCleanups.set(wrap, () => doc.removeEventListener("mousedown", onDocClick, true));
 }
 
-/** Wires each box's colour + actions buttons. Returns a function that moves a
- *  box's buttons after the box moves. */
+/** Centre of a box's `⋯` trigger, in from its top-right corner. */
+const BOX_MENU_INSET = 14;
+
+/** Wires each box's actions menu. Returns a function that moves a box's `⋯`
+ *  after the box moves. */
 function attachBoxControls(
-  svg: SVGSVGElement,
   refs: BoxRef[],
   app: App,
   ctx: MarkdownPostProcessorContext,
@@ -655,56 +655,34 @@ function attachBoxControls(
 ): (ref: BoxRef) => void {
   const placers = new Map<BoxRef, () => void>();
   for (const ref of refs) {
-    const controls = createSvgEl("g", { class: "vzd-nodemap-box-controls" });
-
-    const deleteBtn = createSvgEl("g", { class: "vzd-nodemap-box-delete-btn" });
-    deleteBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-nodemap-unlink-circle" }));
-    const xText = createSvgEl("text", { x: "0", y: "0", class: "vzd-nodemap-unlink-icon", "text-anchor": "middle", "dominant-baseline": "central" });
-    xText.textContent = "⋯";
-    deleteBtn.appendChild(xText);
-    deleteBtn.setAttribute("aria-label", t("menu.actions"));
-    deleteBtn.setAttribute("role", "button");
-    deleteBtn.setAttribute("tabindex", "0");
-    const boxMenu = attachItemMenu(deleteBtn, {
+    // One `⋯` per box, inside the box's own group: hovering the box reveals
+    // it, and right-click / long-press anywhere on the box open the same menu.
+    // Colour lives in that menu too, so a box carries a single control.
+    const menu = attachSvgItemMenu(ref.g, {
       label: t("menu.actionsFor", { name: ref.box.name }),
-      actions: () => [{
-        title: t("tree.deleteNode"),
-        icon: "trash-2",
-        destructive: true,
-        onChoose: () => removeNodeMapBox(app, ctx, wrap, ref.box.name),
-      }],
+      x: 0, y: 0,
+      actions: () => [
+        {
+          title: t("nodemap.changeColor"),
+          icon: "palette",
+          onChoose: () => openColorPopover(wrap, menu.trigger, (color) => {
+            setNodeMapBoxColor(app, ctx, wrap, ref.box.name, color as NodeMapColor | null);
+          }),
+        },
+        {
+          title: t("nodemap.deleteBox"),
+          icon: "trash-2",
+          destructive: true,
+          onChoose: () => removeNodeMapBox(app, ctx, wrap, ref.box.name),
+        },
+      ],
     });
-    const openBoxMenu = (): void => {
-      const r = deleteBtn.getBoundingClientRect();
-      boxMenu.open(r.left, r.bottom);
-    };
-    deleteBtn.addEventListener("click", (e) => { e.stopPropagation(); openBoxMenu(); });
-    deleteBtn.addEventListener("keydown", (e) => {
-      const evt = e as KeyboardEvent;
-      if (evt.key !== "Enter" && evt.key !== " ") return;
-      evt.preventDefault(); evt.stopPropagation(); openBoxMenu();
-    });
-    controls.appendChild(deleteBtn);
-
-    const colorBtn = createSvgEl("g", { class: "vzd-nodemap-box-color-btn" });
-    colorBtn.appendChild(createSvgEl("circle", { cx: "0", cy: "0", r: "8", class: "vzd-nodemap-color-btn-circle" }));
-    colorBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openColorPopover(wrap, colorBtn, (color) => {
-        setNodeMapBoxColor(app, ctx, wrap, ref.box.name, color as NodeMapColor | null);
-      });
-    });
-    controls.appendChild(colorBtn);
 
     const place = (): void => {
-      const bx = ref.box.x + ref.box.width, by = ref.box.y;
-      deleteBtn.setAttribute("transform", `translate(${bx - 10}, ${by + 10})`);
-      colorBtn.setAttribute("transform", `translate(${bx - 28}, ${by + 10})`);
+      menu.moveTo(ref.box.x + ref.box.width - BOX_MENU_INSET, ref.box.y + BOX_MENU_INSET);
     };
     place();
     placers.set(ref, place);
-
-    svg.appendChild(controls);
   }
   return (ref) => placers.get(ref)?.();
 }
@@ -832,7 +810,7 @@ export function renderNodeMap(
     const ix: NodeMapIxState = { drag: null, linkDraw: null, activeEdit: null };
     placeHandle = attachLinkDrawBehavior(svg, refs, ix, app!, ctx!, wrap);
     attachEditBehavior(refs, ix, app!, ctx!, wrap);
-    placeControls = attachBoxControls(svg, refs, app!, ctx!, wrap);
+    placeControls = attachBoxControls(refs, app!, ctx!, wrap);
     // Everything attached to a box follows it while it is dragged; the
     // document rewrite on drop re-renders from the new coordinates anyway.
     attachDragBehavior(svg, refs, ix, app!, ctx!, wrap, (ref) => follow([ref]));

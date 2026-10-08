@@ -170,11 +170,11 @@ function renderGrid(
       });
     }
 
-    // "×" delete (any node except the situation root).
+    // Actions menu (any node except the situation root).
     if (node.level > 0) {
       attachItemMenu(card, {
         label: t("menu.actionsFor", { name: node.text }),
-        button: { parent: card, cls: "vzd-scqa-card-del vzd-btn" },
+        button: { parent: card, cls: "vzd-scqa-card-del" },
         actions: () => [{
           title: t("tree.deleteNode"),
           icon: "trash-2",
