@@ -1,4 +1,7 @@
-## Unreleased
+## 0.74.0
+
+Live Edit gets one way to act on any item — the same **⋯** everywhere, and
+nothing deleted by a stray click — and sketch mode draws every line again.
 
 - **One way to delete things in Live Edit.** Each canvas had its own delete
   control — a grey **⋯**, a red circle, a muted circle, a bare **×** — in
