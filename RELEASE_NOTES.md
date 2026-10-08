@@ -1,3 +1,31 @@
+## Unreleased
+
+- **One way to delete things in Live Edit.** Each canvas had its own delete
+  control — a grey **⋯**, a red circle, a muted circle, a bare **×** — in
+  different sizes and places. Every item now has the same **⋯** button: in
+  the top-right corner of a card or box, at the end of a single-line row, or
+  on a link's midpoint. It appears only on the item under the pointer (or
+  when you Tab to it), is always shown on touch screens, and opens a menu
+  whose red row says exactly what goes: *Delete task*, *Delete detail*,
+  *Delete box*, *Remove link*. Right-click, or long-press on touch, opens the
+  same menu from anywhere on the item.
+- **Fix: one click deleted an OST or SCQA detail, or a Nodemap or Wardley
+  link.** Those **×** buttons removed the item immediately; they now go
+  through the menu like everything else.
+- **Fix: Fishbone and Nodemap delete buttons never appeared on desktop.**
+  Fishbone's could even be clicked while invisible. Both now show on hover.
+- **Nodemap: colour moved into the box menu** (*Change color…*), so the
+  colour circle no longer covers the box's label.
+- **Pinning moved to Live Preview.** A pinned canvas is a reference to keep
+  in view while you write below it, so the pin button is now offered while
+  editing rather than in Reading View, and the pin holds while you scroll far
+  away. The pinned canvas now sits flush under the note's header, as part of
+  it, instead of in a framed box.
+- **Fix: straight lines disappeared in sketch mode.** Wardley axes, Fishbone
+  spines, flow arrows, wheel spokes, OST lane dividers and the **+ / −**
+  icons were not drawn at all with the hand-drawn look switched on. They now
+  wobble like every other line.
+
 ## 0.73.0
 
 Live Edit feels steadier: text is edited where it sits, every canvas adds
