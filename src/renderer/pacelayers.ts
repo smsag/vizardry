@@ -66,7 +66,6 @@ export function renderPaceLayers(
       if (!written) new Notice(t('edit.writeFailed'));
     }, {
       editingClass: 'vzd-pl-editing',
-      textareaClass: 'vzd-block-textarea',
       trimValue: false,
       onTab: 'indent',
       // CM6's replaceRange dispatches a transaction that scrolls the editor

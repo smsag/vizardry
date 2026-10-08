@@ -89,7 +89,6 @@ function renderStep(
         const canvas = fill.closest(".vizardry-canvas") as HTMLElement | null;
         if (!canvas || !writeTestCardField(rc.app!, rc.ctx!, canvas, step.key, next)) new Notice(t("edit.writeFailed"));
       }, {
-        textareaClass: "vzd-tc-textarea",
         renderDisplay: (host, value) => renderFill(host, value, editable),
       });
     });

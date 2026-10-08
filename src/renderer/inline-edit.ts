@@ -1,8 +1,9 @@
 /**
- * Shared inline text-editing plumbing used by the canvases — Story, Roadmap
- * and SCQA swap a rendered HTML label for a text input in place; Tree and
- * Wardley overlay a text input on their SVG nodes via foreignObject. Both
- * shapes share the same commit-on-Enter/blur, revert-on-Escape wiring.
+ * Shared inline text-editing plumbing used by the canvases — HTML labels
+ * (Story, Roadmap, SCQA, Pro / Contra, header chips, …) turn editable where
+ * they stand; Tree and Wardley overlay a text input on their SVG nodes via
+ * foreignObject. Both shapes share the same commit-on-Enter/blur,
+ * revert-on-Escape wiring.
  */
 
 interface WireKeysOptions {
@@ -76,9 +77,12 @@ export interface InlineEditOptions {
 }
 
 /**
- * Replace `host`'s rendered content with a text input for the duration of an
- * edit, committing on Enter/blur and reverting on Escape. No-ops if `host`
- * is already mid-edit.
+ * Edit `host`'s text where it stands (see {@link editTextInPlace}): the label
+ * shows its raw value and turns editable, keeping its font, size and box, so
+ * nothing around it moves. Swapping in an `<input>` instead let Obsidian's
+ * input styles (height, padding, background) resize the row — the field
+ * jumped. Commits on Enter/blur, reverts on Escape; no-ops if `host` is
+ * already mid-edit.
  */
 export function activateInlineEdit(
   host: HTMLElement,
@@ -90,40 +94,37 @@ export function activateInlineEdit(
   const renderDisplay = options.renderDisplay ?? ((h, v) => { h.textContent = v; });
   const shouldCommit = options.shouldCommit ?? ((v, cur) => !!v && v !== cur);
 
+  // A placeholder's styling (`…--empty`: faint, italic) must not dress the
+  // text being typed; the original classes come back before the display is
+  // repainted.
+  const className = stripEmptyClasses(host);
   host.classList.add("vzd-editing");
-  host.textContent = "";
-  const input = host.createEl("input", { cls: "vzd-rename-input vzd-inline-input", type: "text" });
-  input.value = currentValue;
+  host.textContent = currentValue;
 
-  const blurGuardMs = options.blurGuardMs ?? DEFAULT_BLUR_GUARD_MS;
-  let blurGuarded = blurGuardMs > 0;
-  const blurGuardTimer = blurGuarded
-    ? setTimeout(() => { blurGuarded = false; }, blurGuardMs)
-    : undefined;
-  input.focus({ preventScroll: true });
-  input.select();
-
-  wireRenameInputKeys(input, (commit) => {
-    if (blurGuardTimer !== undefined) clearTimeout(blurGuardTimer);
-    host.classList.remove("vzd-editing");
-    const v = input.value.trim();
-    if (commit && shouldCommit(v, currentValue)) {
-      onCommit(v);
-      renderDisplay(host, v); // Optimistic; a re-render replaces this once the write lands.
-    } else {
-      renderDisplay(host, currentValue);
-    }
-  }, { ignoreBlur: () => blurGuarded });
+  editTextInPlace(host, {
+    initial: currentValue,
+    blurGuardMs: options.blurGuardMs,
+    selectAll: true,
+    onDone: (commit, raw) => {
+      host.className = className;
+      const v = raw.replace(/\s*\n\s*/g, " ").trim();
+      if (commit && shouldCommit(v, currentValue)) {
+        onCommit(v);
+        renderDisplay(host, v); // Optimistic; a re-render replaces this once the write lands.
+      } else {
+        renderDisplay(host, currentValue);
+      }
+    },
+  });
 }
 
 export interface TextareaEditOptions {
   /** Class toggled on `editHost` for the duration of the edit. Default "vzd-editing". */
   editingClass?: string;
-  /** Extra class(es) added to the textarea alongside "vzd-plain-textarea". */
-  textareaClass?: string;
-  /** Textarea min-height (px), e.g. the cell's pre-edit rendered height. */
+  /** Min-height (px) held on `contentHost` while editing, e.g. the cell's
+   *  pre-edit rendered height. */
   minHeight?: number;
-  /** Trim the value both when loading it into the textarea and on commit.
+  /** Trim the value both when loading it for editing and on commit.
    *  Default true. Pass false for canvases (e.g. Pace Layers) that write the
    *  raw multi-line value verbatim and only trim for display. */
   trimValue?: boolean;
@@ -137,12 +138,23 @@ export interface TextareaEditOptions {
   renderDisplay: (contentHost: HTMLElement, value: string) => void;
 }
 
+/** Strip placeholder styling (`…--empty`, the empty block) from `el` for an
+ *  edit; returns the original class list to restore afterwards. */
+function stripEmptyClasses(el: HTMLElement): string {
+  const className = el.className;
+  Array.from(el.classList).forEach((c) => {
+    if (c.endsWith("--empty") || c === "vizardry-block-empty") el.classList.remove(c);
+  });
+  return className;
+}
+
 /**
- * Replace `contentHost`'s content with an auto-resizing textarea for the
- * duration of an edit, committing on blur/Tab and reverting on Escape.
- * `editHost` carries the "currently editing" class — same element as
- * `contentHost` unless a canvas keeps its editing indicator on a wrapper.
- * No-ops if `editHost` is already mid-edit.
+ * Multi-line counterpart of {@link activateInlineEdit}: `contentHost` shows
+ * its raw value and turns editable in place (Enter adds a line, Mod+Enter or
+ * blur or Tab saves, Escape reverts) — no textarea swapped in, so the cell
+ * keeps its font and size. `editHost` carries the "currently editing" class —
+ * same element as `contentHost` unless a canvas keeps its editing indicator
+ * on a wrapper. No-ops if `editHost` is already mid-edit.
  */
 export function activateTextareaEdit(
   editHost: HTMLElement,
@@ -154,56 +166,49 @@ export function activateTextareaEdit(
   const editingClass = options.editingClass ?? "vzd-editing";
   if (editHost.hasClass(editingClass)) return;
   const trimValue = options.trimValue ?? true;
+  const initial = trimValue ? currentValue.trim() : currentValue;
 
+  const className = stripEmptyClasses(contentHost);
+  const minHeight = contentHost.style.minHeight;
   editHost.addClass(editingClass);
-  contentHost.empty();
   contentHost.removeAttribute("data-placeholder");
+  contentHost.addClass("vzd-inplace-editing--multiline");
+  if (options.minHeight !== undefined) contentHost.style.minHeight = `${options.minHeight}px`;
+  contentHost.textContent = initial;
 
-  const textarea = contentHost.createEl("textarea", {
-    cls: `vzd-plain-textarea${options.textareaClass ? ` ${options.textareaClass}` : ""}`,
-  });
-  if (options.minHeight !== undefined) textarea.style.minHeight = `${options.minHeight}px`;
-  textarea.value = trimValue ? currentValue.trim() : currentValue;
-
-  const resize = (): void => {
-    textarea.style.height = "auto";
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  };
-  resize();
-  textarea.addEventListener("input", resize);
-  textarea.focus({ preventScroll: true });
-  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
-  let committed = false;
-  const finish = (commit: boolean): void => {
-    if (committed) return;
-    committed = true;
-    editHost.removeClass(editingClass);
-    const raw = textarea.value;
-    const value = commit ? (trimValue ? raw.trim() : raw) : currentValue;
-    if (commit) {
-      const write = (): void => onCommit(value);
-      if (options.wrapCommit) options.wrapCommit(write); else write();
-    }
-    options.renderDisplay(contentHost, value);
-  };
-
-  textarea.addEventListener("blur", () => finish(true));
-  textarea.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { e.preventDefault(); finish(false); }
-    if (e.key === "Tab") {
-      e.preventDefault();
-      if (options.onTab === "indent") {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        textarea.value = textarea.value.slice(0, start) + "  " + textarea.value.slice(end);
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-        resize();
-      } else {
-        finish(true);
+  editTextInPlace(contentHost, {
+    initial,
+    multiline: true,
+    onTab: options.onTab ?? "commit",
+    onDone: (commit, raw) => {
+      contentHost.className = className;
+      contentHost.style.minHeight = minHeight;
+      editHost.removeClass(editingClass);
+      const value = commit ? (trimValue ? raw.trim() : raw) : currentValue;
+      if (commit) {
+        const write = (): void => onCommit(value);
+        if (options.wrapCommit) options.wrapCommit(write); else write();
       }
-    }
+      options.renderDisplay(contentHost, value);
+    },
   });
+}
+
+/** Type `text` at the caret in `el`. insertText keeps it on the browser's
+ *  undo stack; without it (no execCommand), splice it into the selection. */
+function insertAtCaret(el: HTMLElement, text: string): void {
+  const doc = el.ownerDocument;
+  if (typeof doc.execCommand === "function" && doc.execCommand("insertText", false, text)) return;
+  const sel = doc.defaultView?.getSelection();
+  if (!sel || sel.rangeCount === 0) { el.append(text); return; }
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const node = doc.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
 }
 
 /**
@@ -232,6 +237,13 @@ interface InPlaceEditOptions {
   initial: string;
   /** Enter adds a line (Mod+Enter saves) instead of saving. */
   multiline?: boolean;
+  /** Select the whole text instead of placing the caret at the end. */
+  selectAll?: boolean;
+  /** Blur grace window (ms), see createBlurGuard. Default DEFAULT_BLUR_GUARD_MS. */
+  blurGuardMs?: number;
+  /** Tab saves ("commit") or inserts two spaces ("indent"). Unset: the
+   *  browser moves focus, and the blur saves. */
+  onTab?: "commit" | "indent";
   /** Called once: `commit` is false on Escape. `value` is the edited text. */
   onDone: (commit: boolean, value: string) => void;
 }
@@ -245,7 +257,7 @@ interface InPlaceEditOptions {
  * focusing is ignored, as for the title.
  */
 export function editTextInPlace(el: HTMLElement, opts: InPlaceEditOptions): void {
-  const guard = createBlurGuard();
+  const guard = createBlurGuard(opts.blurGuardMs);
   let done = false;
 
   el.classList.add("vzd-inplace-editing");
@@ -256,10 +268,10 @@ export function editTextInPlace(el: HTMLElement, opts: InPlaceEditOptions): void
   el.setAttribute("spellcheck", "false");
   el.focus({ preventScroll: true });
 
-  // Caret at the end, as on the title.
+  // Caret at the end, as on the title (or the whole text selected).
   const range = el.ownerDocument.createRange();
   range.selectNodeContents(el);
-  range.collapse(false);
+  if (!opts.selectAll) range.collapse(false);
   const sel = el.ownerDocument.defaultView?.getSelection();
   sel?.removeAllRanges();
   sel?.addRange(range);
@@ -285,6 +297,11 @@ export function editTextInPlace(el: HTMLElement, opts: InPlaceEditOptions): void
     e.stopPropagation();
     if (e.key === "Escape") { e.preventDefault(); finish(false); return; }
     if (e.key === "Enter" && (!opts.multiline || e.metaKey || e.ctrlKey)) { e.preventDefault(); finish(true); }
+    if (e.key === "Tab" && opts.onTab) {
+      e.preventDefault();
+      if (opts.onTab === "commit") finish(true);
+      else insertAtCaret(el, "  ");
+    }
   };
   const onBlur = (): void => {
     if (guard.ignoreBlur()) return;

@@ -498,7 +498,9 @@ button.vzd-btn {
 .vzd-block-textarea {
   display: block;
   width: 100%;
-  min-height: 4em;
+  /* One line: the block editor seeds the block's own pre-edit height, so a
+     taller floor here only made a one-line block grow on click. */
+  min-height: 1.45em;
   overflow: hidden;
   font-size: var(--vzd-base, var(--font-ui-small));
   font-family: var(--font-interface);
@@ -770,21 +772,22 @@ button.vzd-btn {
   box-shadow: none !important;
 }
 
-.vzd-inline-input {
-  /* Inherit the host element's own colour (e.g. accent on activity headers,
-     muted on step headers) since the input replaces the label in place and
-     has a transparent background — a fixed colour would look wrong or, on
-     accent-tinted headers, risk poor contrast. */
-  color: inherit;
-  font: inherit;
-  text-align: inherit;
-  /* No padding/margin of its own: the host element (task name, meta item,
-     activity/step header) already carries whatever padding and alignment it
-     needs, and the input replaces the label's text in place. Any padding
-     here would stack on top of the host's, shifting the caret away from
-     where the label text sat and resizing the box when edit mode toggles. */
-  padding: 0;
-  margin: 0;
+/* Editing a label in place (editTextInPlace, activateInlineEdit): the text
+   keeps its own font, size and position, marked like an editing canvas title
+   — an accent underline drawn with box-shadow so nothing reflows. An emptied
+   label keeps one line's height and a little width, so the caret has
+   somewhere to sit. */
+.vzd-inplace-editing {
+  outline: none;
+  box-shadow: inset 0 -1px 0 var(--interactive-accent);
+  cursor: text;
+}
+.vzd-inplace-editing:empty {
+  min-width: 2em;
+  min-height: 1lh;
+}
+.vzd-inplace-editing--multiline {
+  white-space: pre-wrap;
 }
 
 /* Edit-mode drag states */
@@ -1678,20 +1681,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   box-shadow: inset 0 0 0 1px var(--background-modifier-border-hover);
 }
 
-.vzd-sipoc-td--editable.vzd-sipoc-editing {
-  /* Keep padding so the cell box doesn't jump; textarea provides no padding. */
-  vertical-align: top;
-}
-
-.vzd-sipoc-textarea {
-  width: 100%;
-  min-height: 1.4em;
-  font-family: var(--font-interface);
-  font-size: var(--vzd-base, var(--font-ui-small));
-  /* padding: 0 — the parent td already provides 0.5rem 0.75rem padding. */
-  padding: 0;
-}
-
 /* Action column — zero-width gutter; button floats visually outside the table */
 .vzd-sipoc-th--actions {
   width: 36px;
@@ -2413,8 +2402,6 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-del {
   pointer-events: none;
 }
 
-/* Editable cell textarea — uses shared .vzd-block-textarea (see block editing section) */
-
 /* ── Mobile carousel ── */
 /* Carousel (mobile, or pinned): stack rows in one grid cell for a stable,
    non-jumping frame. */
@@ -3102,23 +3089,6 @@ code:has(.vzd-upvoty-key) {
   min-height: 1.75rem;
 }
 
-.vzd-raci-item.vzd-raci-editing {
-  /* Keep padding and border-width so the outer box geometry doesn't jump.
-     Transparent border preserves the 1px from the empty-slot dashed variant. */
-  background: transparent;
-  border-color: transparent;
-}
-
-.vzd-raci-textarea {
-  width: 100%;
-  overflow: hidden;
-  /* padding: 0 — the parent .vzd-raci-item already provides the padding. */
-  padding: 0;
-  font-size: var(--font-ui-small);
-  font-family: inherit;
-  line-height: 1.4;
-}
-
 /* ── Concept Map ─────────────────────────────────────────────────────────── */
 
 .vzd-cmap-wrap {
@@ -3253,14 +3223,6 @@ code:has(.vzd-upvoty-key) {
   cursor: text;
 }
 
-/* Editing a box's name or body in place (editTextInPlace): the text keeps its
-   own font and position, marked like an editing canvas title — an accent
-   underline drawn with box-shadow so the box doesn't reflow. */
-.vzd-nodemap-box-host .vzd-inplace-editing {
-  outline: none;
-  box-shadow: inset 0 -1px 0 var(--interactive-accent);
-  cursor: text;
-}
 
 .vzd-nodemap-link {
   stroke: var(--vzd-nodemap-color, var(--text-muted));
@@ -4858,12 +4820,6 @@ body.vizardry-sketch .vzd-tree-rename-input {
   border-bottom-color: var(--interactive-accent);
 }
 
-/* The in-place textarea inherits the fill's flow; keep it borderless/seamless. */
-.vzd-tc-fill .vzd-tc-textarea {
-  width: 100%;
-  font: inherit;
-  color: inherit;
-}
 
 .vzd-tc-gauges {
   display: flex;
@@ -4938,7 +4894,6 @@ body.vizardry-sketch .vzd-tree-rename-input {
 
 .vzd-pc-editable { cursor: text; border-radius: 4px; }
 .vzd-pc-editable:hover { background: color-mix(in srgb, var(--interactive-accent) 8%, transparent); }
-.vzd-pc .vzd-inline-input { width: 100%; font: inherit; color: inherit; }
 
 .vzd-pc-options {
   display: grid;
@@ -5343,4 +5298,3 @@ body.vizardry-sketch .vzd-pc-balance-con {
   opacity: 0.7;
 }
 .vzd-compass-add:hover { opacity: 1; color: var(--interactive-accent); }
-.vzd-compass-editable .vzd-inline-input { width: 100%; font: inherit; color: inherit; }

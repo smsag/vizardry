@@ -288,7 +288,7 @@ export function renderStoryMap(
       enableDragGesture(card, {
         // Skip while an inline-edit input is open, and let interactive children
         // (link/delete buttons, anchors) handle their own tap.
-        shouldStart: (target) => !card.querySelector(".vzd-inline-input") && !target.closest("button, a"),
+        shouldStart: (target) => !card.querySelector(".vzd-editing") && !target.closest("button, a"),
         onStart: (x, y) => startDrag(card, x, y),
         onMove: (x, y) => updateDragPosition(x, y),
         onEnd: () => endDrag(),

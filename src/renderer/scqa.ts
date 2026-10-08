@@ -228,7 +228,7 @@ function enableReorderDrag(
   });
 
   enableDragGesture(card, {
-    shouldStart: (target) => !target.closest("button, input"),
+    shouldStart: (target) => !target.closest("button, input, .vzd-editing"),
     onStart: (x, y) => {
       lastX = x;
       card.classList.add("vzd-scqa-card--dragging");

@@ -236,7 +236,7 @@ export function renderJourneyMap(
       });
 
       enableDragGesture(cardEl, {
-        shouldStart: (target) => !cardEl.querySelector(".vzd-inline-input") && !target.closest("button, a"),
+        shouldStart: (target) => !cardEl.querySelector(".vzd-editing") && !target.closest("button, a"),
         onStart: (x, y) => startDrag(cardEl, x, y),
         onMove: (x, y) => updateDragPosition(x, y),
         onEnd: () => endDrag(),
