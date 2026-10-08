@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { createAddControl } from "./add-control";
 import type {
   SIPOCColumn, SIPOCData, SIPOCFlowLink, SIPOCFlowNode, SIPOCRow,
 } from "../types";
@@ -13,7 +14,7 @@ import { bestTextColor } from "../shared/color-utils";
 import type { RenderContext } from "./render-context";
 import type { FlowNode, FlowEdge, StageDef, FlowRole } from "../types/problem";
 import { renderFlowGraph } from "./flow-graph";
-import { Notice, setIcon } from "obsidian";
+import { Notice } from "obsidian";
 
 export function renderSIPOC(
   data: SIPOCData,
@@ -167,13 +168,12 @@ function renderSIPOCTable(
     // never clipped by the table's overflow boundary.
     if (isEditMode) {
       const actionTd = tr.createEl("td", { cls: "vzd-sipoc-td vzd-sipoc-td--actions" });
-      const btn = actionTd.createEl("button", {
-        cls: "vzd-btn vzd-sipoc-add-row",
-        attr: { "aria-label": t("sipoc.addRowBelow"), type: "button" },
-      });
-      setIcon(btn, "plus");
-      btn.addEventListener("click", () => {
-        if (!insertSIPOCRowAfter(app!, ctx!, container, rowIdx)) new Notice(t("edit.writeFailed"));
+      createAddControl(actionTd, {
+        label: t("sipoc.addRowBelow"),
+        variant: "dot",
+        onAdd: () => {
+          if (!insertSIPOCRowAfter(app!, ctx!, container, rowIdx)) new Notice(t("edit.writeFailed"));
+        },
       });
     }
   });

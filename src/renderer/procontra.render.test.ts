@@ -99,7 +99,7 @@ describe("renderProContra — single option (T-chart)", () => {
     const el = render(SRC);
     expect(el.querySelector(".vzd-pc-dots")?.getAttribute("role")).toBe("img");
     expect(el.querySelector(".vzd-pc-dots")?.getAttribute("aria-label")).toBe("Weight 3 of 3");
-    expect(el.querySelector(".vzd-pc-add")).toBeNull();
+    expect(el.querySelector(".vzd-add")).toBeNull();
     expect(el.querySelector(".vzd-pc-item-menu")).toBeNull();
     expect(el.querySelector(".vzd-pc-decision")).toBeNull();
   });
@@ -154,8 +154,8 @@ describe("renderProContra — editable (Live Preview)", () => {
   it("adds arguments with the option's ref and side, and options with a unique name", () => {
     const el = renderEditable(SRC);
     const [a, b] = Array.from(el.querySelectorAll<HTMLElement>(".vzd-pc-option"));
-    a.querySelector<HTMLElement>(".vzd-pc-col--con .vzd-pc-add")!.click();
-    b.querySelector<HTMLElement>(".vzd-pc-col--pro .vzd-pc-add")!.click();
+    a.querySelector<HTMLElement>(".vzd-pc-col--con .vzd-add")!.click();
+    b.querySelector<HTMLElement>(".vzd-pc-col--pro .vzd-add")!.click();
     expect(edits.insertProContraArg.mock.calls.map(c => [c[3], c[4]])).toEqual([[0, "con"], [1, "pro"]]);
 
     renderEditable("option: New option\noption: New option 2").querySelector<HTMLElement>(".vzd-pc-add-option")!.click();
@@ -163,7 +163,7 @@ describe("renderProContra — editable (Live Preview)", () => {
   });
 
   it("adds to the implicit option (ref -1) on an empty board", () => {
-    renderEditable("title: T").querySelector<HTMLElement>(".vzd-pc-col--pro .vzd-pc-add")!.click();
+    renderEditable("title: T").querySelector<HTMLElement>(".vzd-pc-col--pro .vzd-add")!.click();
     expect(edits.insertProContraArg.mock.calls[0].slice(3, 5)).toEqual([-1, "pro"]);
   });
 

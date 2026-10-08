@@ -1,4 +1,5 @@
 import { t } from "../i18n";
+import { createAddControl } from "./add-control";
 import { attachItemMenu } from "../shared/item-menu";
 import { Notice } from "obsidian";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
@@ -36,6 +37,16 @@ const ADD_PLACEHOLDER: Record<string, string> = {
   pricing: "Pricing note",
 };
 
+/** Add-slot labels, matching the canvas's own (English) section names. */
+const ADD_LABEL: Record<string, string> = {
+  forces: "Add force",
+  problem: "Add problem",
+  insight: "Add insight",
+  idea: "Add idea",
+  gtm: "Add go-to-market note",
+  pricing: "Add pricing note",
+};
+
 const failed = (): void => { new Notice("Vizardry: couldn't save — open the note in editing mode."); };
 
 export function renderCompass(
@@ -70,13 +81,15 @@ export function renderCompass(
     parent.createEl("div", { cls: "vzd-compass-placeholder", text });
   };
 
-  /** A "+ Add" affordance that appends a new line of `key`. */
-  const addButton = (parent: HTMLElement, key: string): void => {
+  /** The add slot that appends a new line of `key`; `empty` keeps it in view. */
+  const addButton = (parent: HTMLElement, key: string, empty: boolean): void => {
     if (!edit) return;
-    const btn = parent.createEl("div", { cls: "vzd-compass-add", text: `+ ${key === "insight" ? "insight" : key}` });
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!insertCompassValue(edit.app, edit.ctx, edit.container, key, ADD_PLACEHOLDER[key] ?? "New")) failed();
+    createAddControl(parent, {
+      label: ADD_LABEL[key] ?? "Add entry",
+      alwaysVisible: empty,
+      onAdd: () => {
+        if (!insertCompassValue(edit.app, edit.ctx, edit.container, key, ADD_PLACEHOLDER[key] ?? "New")) failed();
+      },
     });
   };
 
@@ -114,12 +127,12 @@ export function renderCompass(
     subLabel(challenge, "Forces");
     const list = challenge.createEl("div", { cls: "vzd-compass-forces" });
     data.forces.forEach((f, i) => linkedLine(list, "vzd-compass-force", f, "forces", i));
-    addButton(list, "forces");
+    addButton(list, "forces", data.forces.length === 0);
   }
   if (data.problem.length || edit) {
     subLabel(challenge, "Problem");
     data.problem.forEach((p, i) => linkedLine(challenge, "vzd-compass-problem", p, "problem", i));
-    addButton(challenge, "problem");
+    addButton(challenge, "problem", data.problem.length === 0);
   }
   if (data.insights.length || edit) {
     subLabel(challenge, "Case / Insights");
@@ -148,7 +161,7 @@ export function renderCompass(
         }],
       });
     });
-    addButton(challenge, "insight");
+    addButton(challenge, "insight", data.insights.length === 0);
   }
   if (!hasChallenge && !edit) placeholder(challenge, "What forces make this worth doing? What's the problem, and what's the evidence?");
 
@@ -185,7 +198,7 @@ export function renderCompass(
   if (data.ideas.length || edit) {
     const list = solutions.createEl("div", { cls: "vzd-compass-ideas" });
     data.ideas.forEach((idea, i) => linkedLine(list, "vzd-compass-idea", idea, "idea", i));
-    addButton(list, "idea");
+    addButton(list, "idea", data.ideas.length === 0);
   } else {
     placeholder(solutions, "Ideas and experiments — link out to an OST or a Test Card.");
   }
@@ -195,10 +208,10 @@ export function renderCompass(
   if (data.gtm.length || data.pricing.length || edit) {
     subLabel(gtm, "Go-To-Market");
     data.gtm.forEach((g, i) => linkedLine(gtm, "vzd-compass-line", g, "gtm", i));
-    addButton(gtm, "gtm");
+    addButton(gtm, "gtm", data.gtm.length === 0);
     subLabel(gtm, "Pricing");
     data.pricing.forEach((p, i) => linkedLine(gtm, "vzd-compass-line", p, "pricing", i));
-    addButton(gtm, "pricing");
+    addButton(gtm, "pricing", data.pricing.length === 0);
   } else {
     placeholder(gtm, "How it reaches users, and how it's priced.");
   }

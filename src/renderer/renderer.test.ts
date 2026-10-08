@@ -1408,7 +1408,7 @@ describe("renderSIPOC — table view", () => {
     const ctx = { sourcePath: "note.md" } as any;
     renderSIPOC(data, el, { source: "type: sipoc", app: previewApp, ctx });
     expect(el.querySelector(".vzd-sipoc-td--editable")).toBeNull();
-    expect(el.querySelector(".vzd-sipoc-add-row")).toBeNull();
+    expect(el.querySelector(".vzd-add")).toBeNull();
     expect(el.querySelector(".vizardry-title--editable")).toBeNull();
   });
 
@@ -1419,7 +1419,7 @@ describe("renderSIPOC — table view", () => {
     const ctx = { sourcePath: "note.md" } as any;
     renderSIPOC(data, el, { source: "type: sipoc", app: editModeApp, ctx });
     expect(el.querySelector(".vzd-sipoc-td--editable")).toBeTruthy();
-    expect(el.querySelector(".vzd-sipoc-add-row")).toBeTruthy();
+    expect(el.querySelector(".vzd-add")).toBeTruthy();
     expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 });

@@ -1,4 +1,5 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { createAddControl } from "./add-control";
 import { Notice } from "obsidian";
 import type { ProContraArgument, ProContraData, ProContraOption, ProContraSide } from "../types/procontra";
 import { PRO_CONTRA_MAX_WEIGHT, proContraTotals } from "../types/procontra";
@@ -67,11 +68,13 @@ export function renderProContra(
   }
 
   if (edit) {
-    const add = root.createEl("button", { cls: "vzd-pc-add vzd-pc-add-option", text: `+ ${t("procontra.addOption")}` });
-    add.setAttribute("type", "button");
-    add.addEventListener("click", () => {
-      const name = uniqueName(t("procontra.newOption"), options.map(o => o.name));
-      if (!insertProContraOption(edit.app, edit.ctx, edit.container, name)) failed();
+    createAddControl(root, {
+      label: t("procontra.addOption"),
+      cls: "vzd-pc-add-option",
+      onAdd: () => {
+        const name = uniqueName(t("procontra.newOption"), options.map(o => o.name));
+        if (!insertProContraOption(edit.app, edit.ctx, edit.container, name)) failed();
+      },
     });
   }
 
@@ -209,10 +212,12 @@ function renderColumn(
   for (const arg of items) renderArgument(ul, arg, edit);
 
   if (edit) {
-    const add = col.createEl("button", { cls: "vzd-pc-add", text: `+ ${t("procontra.addArgument")}` });
-    add.setAttribute("type", "button");
-    add.addEventListener("click", () => {
-      if (!insertProContraArg(edit.app, edit.ctx, edit.container, option.ref, side, t("procontra.newArgument"))) failed();
+    createAddControl(col, {
+      label: t("procontra.addArgument"),
+      alwaysVisible: items.length === 0,
+      onAdd: () => {
+        if (!insertProContraArg(edit.app, edit.ctx, edit.container, option.ref, side, t("procontra.newArgument"))) failed();
+      },
     });
   }
 }

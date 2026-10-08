@@ -64,7 +64,7 @@ describe("renderCompass", () => {
 
   it("read mode: no edit affordances", () => {
     const el = render(SRC);
-    expect(el.querySelectorAll(".vzd-compass-add, .vzd-compass-del")).toHaveLength(0);
+    expect(el.querySelectorAll(".vzd-add, .vzd-compass-del")).toHaveLength(0);
   });
 
   it("edit mode: shows add + delete affordances", () => {
@@ -72,7 +72,7 @@ describe("renderCompass", () => {
     const app = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as never;
     const ctx = { sourcePath: "n.md" } as never;
     const el = render(SRC, { app, ctx, source: `type: compass\n${SRC}` });
-    expect(el.querySelectorAll(".vzd-compass-add").length).toBeGreaterThan(0);
+    expect(el.querySelectorAll(".vzd-add").length).toBeGreaterThan(0);
     expect(el.querySelectorAll(".vzd-compass-del").length).toBeGreaterThan(0);
   });
 
