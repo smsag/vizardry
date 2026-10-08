@@ -134,6 +134,29 @@ describe("sticky-pin selection", () => {
     expect(clone.style.transform).toBe("none");
   });
 
+  it("compensates when a contained ancestor, not the viewport, anchors the fixed clone", () => {
+    // Obsidian's workspace leaf sets `contain`, so `position: fixed` resolves
+    // against the leaf: the clone renders shifted by the leaf's own offset.
+    const LEAF_LEFT = 286, LEAF_TOP = 40;
+    const rectSpy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const left = LEAF_LEFT + parseFloat(this.style.left || "0");
+      const top = LEAF_TOP + parseFloat(this.style.top || "0");
+      return { top, left, width: 800, height: 200, bottom: top + 200, right: left + 800, x: left, y: top, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      const a = makeCanvas("A", 300);
+      activateSticky(a);
+      scrollTo(350);
+
+      const clone = viewContent.querySelector<HTMLElement>(".vizardry-canvas--pinned")!;
+      const r = clone.getBoundingClientRect();
+      expect(r.left).toBe(100);
+      expect(r.top).toBe(CHROME_TOP);
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("releases the pin when the pane is hidden (offsetParent null)", () => {
     const a = makeCanvas("A", 300);
     activateSticky(a);
@@ -233,5 +256,99 @@ describe("sticky-pin carousel", () => {
     const clone = pinnedClone();
     expect(clone.classList.contains("vzd-carousel")).toBe(false);
     expect(clone.querySelector(".vizardry-nav")).toBeNull();
+  });
+});
+
+describe("sticky-pin compact bar (phones)", () => {
+  /** A canvas with a header (title + present button) and `n` blocks. */
+  function makeBarCanvas(name: string, off: number, n: number): HTMLElement {
+    const el = makeCanvas(name, off);
+    const header = el.createEl("div", { cls: "vizardry-header" });
+    header.createEl("span", { cls: "vizardry-title", text: name });
+    const actions = header.createEl("div", { cls: "vizardry-header-actions" });
+    actions.createEl("button", { cls: "vizardry-present-btn" });
+    const grid = el.createEl("div", { cls: "vizardry-grid" });
+    for (let i = 0; i < n; i++) grid.createEl("div", { cls: "vizardry-block", text: `Block ${i + 1}` });
+    setupSlideCarousel(el, ".vizardry-block", "vizardry-block-active", n);
+    return el;
+  }
+
+  function bar(): HTMLElement {
+    return viewContent.querySelector<HTMLElement>(".vizardry-canvas--pinned-bar")!;
+  }
+
+  function header(): HTMLElement {
+    return bar().querySelector<HTMLElement>(".vizardry-header")!;
+  }
+
+  it("pins folded, interactive, with a block counter", () => {
+    const a = makeBarCanvas("A", 300, 3);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+
+    expect(bar().classList.contains("is-collapsed")).toBe(true);
+    expect(bar().hasAttribute("aria-hidden")).toBe(false);
+    expect(bar().querySelector(".vzd-pin-bar-count")?.textContent).toBe("1/3");
+    expect(bar().querySelector(".vzd-pin-bar-toggle")?.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens on a tap of the bar and folds on a tap outside", () => {
+    const a = makeBarCanvas("A", 300, 3);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+
+    header().click();
+    expect(bar().classList.contains("is-collapsed")).toBe(false);
+    expect(bar().querySelector(".vzd-pin-bar-toggle")?.getAttribute("aria-expanded")).toBe("true");
+
+    document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    expect(bar().classList.contains("is-collapsed")).toBe(true);
+  });
+
+  it("folds again once the note scrolls on", () => {
+    const a = makeBarCanvas("A", 300, 3);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+    header().click();
+
+    scrollTo(360); // a nudge stays open
+    expect(bar().classList.contains("is-collapsed")).toBe(false);
+    scrollTo(450);
+    expect(bar().classList.contains("is-collapsed")).toBe(true);
+  });
+
+  it("keeps the counter in step with the carousel", () => {
+    const a = makeBarCanvas("A", 300, 3);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+    header().click();
+
+    bar().querySelectorAll<HTMLButtonElement>(".vizardry-nav-btn")[1].click();
+    expect(bar().querySelector(".vzd-pin-bar-count")?.textContent).toBe("2/3");
+  });
+
+  it("hands fullscreen off to the live canvas's present button", () => {
+    const a = makeBarCanvas("A", 300, 2);
+    const present = vi.fn();
+    a.querySelector(".vizardry-present-btn")!.addEventListener("click", present);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+
+    const btn = Array.from(bar().querySelectorAll<HTMLButtonElement>(".vzd-pin-bar-btn"))
+      .find((b) => !b.classList.contains("vzd-pin-bar-toggle"))!;
+    btn.click();
+    expect(present).toHaveBeenCalledTimes(1);
+    expect(bar().classList.contains("is-collapsed")).toBe(true); // not toggled by the tap
+  });
+
+  it("releases its document listener on unpin", () => {
+    const a = makeBarCanvas("A", 300, 2);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+    const remove = vi.spyOn(document, "removeEventListener");
+    scrollTo(100);
+    expect(pinnedName()).toBeNull();
+    expect(remove).toHaveBeenCalledWith("pointerdown", expect.any(Function), true);
+    remove.mockRestore();
   });
 });

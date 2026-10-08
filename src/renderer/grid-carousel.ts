@@ -126,6 +126,11 @@ export function carouselSlide(container: HTMLElement): number | undefined {
   return carousels.get(container)?.current();
 }
 
+/** How many slides `container`'s carousel has, or undefined without one. */
+export function carouselSize(container: HTMLElement): number | undefined {
+  return carousels.get(container)?.slideCount;
+}
+
 /**
  * Rebuild `source`'s carousel on `clone` (a `cloneNode` copy, which carries the
  * DOM but none of the listeners), forced on and opening on `start` (default:

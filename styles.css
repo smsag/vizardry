@@ -259,6 +259,63 @@ button.vzd-btn {
   min-height: 28px;
 }
 
+/* Compact pin (phones): a slim title bar that opens the canvas on tap. The
+   whole clone takes the pointer, unlike the desktop strip; folded, only the
+   bar shows, opened it is capped well below the desktop 50vh. */
+.vizardry-canvas--pinned-bar {
+  pointer-events: auto;
+  max-height: 45vh;
+  padding: 0 0.25rem 0 0.75rem;
+}
+.vizardry-canvas--pinned-bar.is-collapsed > :not(.vizardry-header) {
+  display: none !important;
+}
+.vizardry-canvas--pinned-bar .vizardry-header {
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  min-height: 44px;
+  margin: 0;
+  cursor: pointer;
+}
+/* Only the title and the bar's own controls; badges, period fields and
+   framework extras would crowd a phone-width bar. */
+.vizardry-canvas--pinned-bar .vizardry-header > :not(.vizardry-title, .vzd-pin-bar-count, .vzd-pin-bar-btn) {
+  display: none;
+}
+.vizardry-canvas--pinned-bar .vizardry-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vzd-pin-bar-count {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+button.vzd-pin-bar-btn {
+  all: unset;
+  box-sizing: border-box;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--icon-color);
+  cursor: pointer;
+}
+.vzd-pin-bar-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.vizardry-canvas--pinned-bar.vzd-carousel .vizardry-nav-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 /* Minimized state: hide all canvas content except the header.
    Only non-layout properties (background, border-radius) change on the header
    so its geometry stays constant and there is no position jump. */
