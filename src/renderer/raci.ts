@@ -8,6 +8,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import type { RenderContext } from "./render-context";
 import { setupSlideCarousel } from "./grid-carousel";
+import { createInlineEl } from "../shared/inline-markdown";
 import { Notice } from "obsidian";
 
 type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
@@ -48,7 +49,7 @@ function activateItemEdit(
       host.empty();
       if (value) {
         host.removeClass("vzd-raci-item--empty");
-        host.createEl("span", { cls: "vzd-raci-item-value", text: value });
+        createInlineEl(host, "span", "vzd-raci-item-value", value);
       } else {
         host.addClass("vzd-raci-item--empty");
       }
@@ -111,7 +112,7 @@ export function renderRACIMatrix(
       });
 
       if (value) {
-        item.createEl("span", { cls: "vzd-raci-item-value", text: value });
+        createInlineEl(item, "span", "vzd-raci-item-value", value);
         renderHeadingLink(item, value, resolver, navigateTo, app, ctx?.sourcePath);
       }
 

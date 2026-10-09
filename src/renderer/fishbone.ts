@@ -15,6 +15,7 @@ import type { KeywordTreeConfig } from "../shared/keyword-tree-edit";
 import { t } from "../i18n";
 import { attachSvgItemMenu } from "../shared/item-menu";
 import { layoutFishbone } from "./fishbone-geometry";
+import { stripInline } from "../shared/inline-markdown";
 import type { FBCategory, FBCause } from "./fishbone-geometry";
 
 const FISHBONE_CONFIG: KeywordTreeConfig = {
@@ -47,7 +48,7 @@ export function renderFishbone(
     viewBox: `0 0 ${layout.width} ${layout.height}`,
     class: "vzd-fishbone-svg",
     role: "img",
-    "aria-label": `Fishbone: ${diagram.effect}`,
+    "aria-label": `Fishbone: ${stripInline(diagram.effect)}`,
   }) as SVGSVGElement;
   if (isEditMode) svg.classList.add("vzd-tree--editable");
 
@@ -173,7 +174,7 @@ function renderCategory(
     x: String(box.x + box.w / 2), y: String(box.y + box.h / 2), "dominant-baseline": "middle",
     "text-anchor": "middle", class: "vzd-fb-cat-label", fill: "var(--text-on-accent)",
   });
-  catLabel.textContent = cat.name;
+  catLabel.textContent = stripInline(cat.name);
   catItem.appendChild(catLabel);
 
   if (editMode) {
@@ -206,13 +207,13 @@ function renderCause(
   const label = createSvgEl("text", {
     x: String(cause.labelX), y: String(cause.labelY), class: "vzd-fb-cause-label",
   });
-  label.textContent = cause.text;
+  label.textContent = cause.label;
   const causeItem = createSvgEl("g", { class: "vzd-fb-item" }) as SVGGElement;
   causeItem.appendChild(label);
   svg.appendChild(causeItem);
   applyLink(label, cause.text, resolver, navigateTo);
 
-  const approxW = cause.text.length * 6.4;
+  const approxW = cause.label.length * 6.4;
   if (editMode) {
     label.classList.add("vzd-fb-editable");
     label.addEventListener("dblclick", (e) => {
@@ -230,7 +231,7 @@ function renderCause(
 
   for (const sub of cause.subs) {
     const subText = createSvgEl("text", { x: String(sub.x), y: String(sub.y), class: "vzd-fb-sub-label" });
-    subText.textContent = `› ${sub.text}`;
+    subText.textContent = `› ${sub.label}`;
     const subItem = createSvgEl("g", { class: "vzd-fb-item" }) as SVGGElement;
     subItem.appendChild(subText);
     svg.appendChild(subItem);
@@ -238,11 +239,11 @@ function renderCause(
       subText.classList.add("vzd-fb-editable");
       subText.addEventListener("dblclick", (e) => {
         e.stopPropagation();
-        ops.openRename(sub.x, sub.y - 12, sub.text.length * 6 + 24, 18, sub.text, "var(--text-muted)",
+        ops.openRename(sub.x, sub.y - 12, Math.max(sub.text.length, sub.label.length) * 6 + 24, 18, sub.text, "var(--text-muted)",
           (v) => ops.doRename(3, sub.text, v));
       });
-      subItem.prepend(itemHit(sub.x - 4, sub.y - 14, sub.text.length * 5.8 + 36, 20));
-      attachDeleteMenu(subItem, sub.x + sub.text.length * 5.8 + 18, sub.y - 4, sub.text,
+      subItem.prepend(itemHit(sub.x - 4, sub.y - 14, sub.label.length * 5.8 + 36, 20));
+      attachDeleteMenu(subItem, sub.x + sub.label.length * 5.8 + 18, sub.y - 4, sub.text,
         () => { ops.closeRename(); ops.doDelete(3, sub.text); });
     }
   }
@@ -299,7 +300,7 @@ function attachDeleteMenu(
   item: SVGGElement, x: number, y: number, label: string, onDelete: () => void, cls?: string,
 ): void {
   attachSvgItemMenu(item, {
-    label: t("menu.actionsFor", { name: label }),
+    label: t("menu.actionsFor", { name: stripInline(label) }),
     x, y, cls,
     actions: () => [{ title: t("tree.deleteNode"), icon: "trash-2", destructive: true, onChoose: onDelete }],
   });

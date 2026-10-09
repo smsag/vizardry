@@ -10,6 +10,7 @@ import { isEditModeActive } from "../shared/editor";
 import { attachItemMenu } from "../shared/item-menu";
 import { activateInlineEdit } from "./inline-edit";
 import { renderHeaderChip } from "./header-chip";
+import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
 import {
   flipProContraArg, insertProContraArg, insertProContraOption, removeProContraArg,
   removeProContraOption, renameProContraOption, writeProContraArgText,
@@ -129,7 +130,7 @@ function renderQuestion(root: HTMLElement, question: string, edit: Edit | undefi
   if (!question && !edit) return;
   const el = root.createEl("div", { cls: "vzd-pc-question" });
   const paint = (host: HTMLElement, v: string): void => {
-    host.setText(v || t("procontra.question"));
+    setInline(host, v || t("procontra.question"));
     host.toggleClass("vzd-pc-question--empty", !v);
   };
   paint(el, question);
@@ -167,7 +168,7 @@ function renderOptionHead(card: HTMLElement, option: ProContraOption, state: Opt
   const head = card.createEl("div", { cls: "vzd-pc-option-head" });
   const name = head.createEl("div", { cls: "vzd-pc-option-name" });
   const paint = (host: HTMLElement, v: string): void => {
-    host.setText(v || t("procontra.untitledOption"));
+    setInline(host, v || t("procontra.untitledOption"));
     host.toggleClass("vzd-pc-option-name--empty", !v);
   };
   paint(name, option.name);
@@ -184,7 +185,7 @@ function renderOptionHead(card: HTMLElement, option: ProContraOption, state: Opt
   });
 
   attachItemMenu(head, {
-    label: t("menu.actionsFor", { name: option.name || t("procontra.untitledOption") }),
+    label: t("menu.actionsFor", { name: stripInline(option.name) || t("procontra.untitledOption") }),
     button: { parent: head, cls: "vzd-pc-item-menu", placement: "row" },
     actions: () => [
       ...(option.name ? [state.chosen
@@ -225,7 +226,7 @@ function renderColumn(
 function renderArgument(ul: HTMLElement, arg: ProContraArgument, edit: Edit | undefined): void {
   const li = ul.createEl("li", { cls: "vzd-pc-item" });
   renderWeight(li, arg, edit);
-  const text = li.createEl("span", { cls: "vzd-pc-text", text: arg.text });
+  const text = createInlineEl(li, "span", "vzd-pc-text", arg.text);
   if (!edit) return;
 
   text.addClass("vzd-pc-editable");
@@ -236,7 +237,7 @@ function renderArgument(ul: HTMLElement, arg: ProContraArgument, edit: Edit | un
   });
 
   attachItemMenu(li, {
-    label: t("menu.actionsFor", { name: arg.text }),
+    label: t("menu.actionsFor", { name: stripInline(arg.text) }),
     button: { parent: li, cls: "vzd-pc-item-menu", placement: "row" },
     actions: () => [
       { title: t(arg.side === "pro" ? "procontra.moveToCon" : "procontra.moveToPro"), icon: "arrow-left-right",

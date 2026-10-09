@@ -14,6 +14,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { JOURNEY_DIVIDERS, lanesForVariant } from "../journey";
 import { isEditModeActive } from "../shared/editor";
 import { textOnlyClone } from "./card-block";
+import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
 import {
   addJourneyCard,
   deleteJourneyCard,
@@ -64,7 +65,7 @@ export function renderJourneyMap(
   const phaseHeaderEls: HTMLElement[] = [];
   for (let i = 0; i < phases.length; i++) {
     const phase = phases[i];
-    const el = grid.createEl("div", { cls: "vzd-journey-phase-header", text: phase.name });
+    const el = createInlineEl(grid, "div", "vzd-journey-phase-header", phase.name);
     el.dataset.phaseCol = String(i);
     phaseHeaderEls.push(el);
 
@@ -204,9 +205,9 @@ export function renderJourneyMap(
   // ── Card rendering ───────────────────────────────────────────────────────
   function renderJourneyCardEl(cell: HTMLElement, card: JourneyCard, phaseName: string, laneKey: JourneyLaneKey, index: number): void {
     const cardEl = cell.createEl("div", { cls: "vzd-journey-card" });
-    const nameDiv = cardEl.createEl("div", { cls: "vzd-journey-card-name", text: card.name });
+    const nameDiv = createInlineEl(cardEl, "div", "vzd-journey-card-name", card.name);
     if (card.subtitle) {
-      cardEl.createEl("div", { cls: "vzd-journey-card-subtitle", text: card.subtitle });
+      createInlineEl(cardEl, "div", "vzd-journey-card-subtitle", card.subtitle);
     }
     renderHeadingLink(cardEl, card.name, resolver, navigateTo, app, ctx?.sourcePath);
 
@@ -226,7 +227,7 @@ export function renderJourneyMap(
       });
 
       attachItemMenu(cardEl, {
-        label: t("menu.actionsFor", { name: card.name }),
+        label: t("menu.actionsFor", { name: stripInline(card.name) }),
         button: { parent: cardEl, cls: "vzd-journey-card-delete" },
         actions: () => [{
           title: t("journey.deleteCard"),
@@ -363,7 +364,7 @@ function setupJourneyCarousel(
       });
     });
 
-    label.textContent = phaseNames[col];
+    setInline(label, phaseNames[col] ?? "");
     prevBtn.disabled = col === 0;
     nextBtn.disabled = col === total - 1;
   }

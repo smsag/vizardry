@@ -10,6 +10,7 @@ import { activateTextareaEdit } from "./inline-edit";
 import { insertSIPOCRowAfter, writeSIPOCCell } from "../shared/sipoc-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
+import { createInlineEl } from "../shared/inline-markdown";
 import { bestTextColor } from "../shared/color-utils";
 import type { RenderContext } from "./render-context";
 import type { FlowNode, FlowEdge, StageDef, FlowRole } from "../types/problem";
@@ -84,7 +85,7 @@ function activateCellEdit(
     renderDisplay: (host, value) => {
       host.empty();
       if (value) {
-        host.createEl("span", { cls: "vzd-sipoc-cell-value", text: value });
+        createInlineEl(host, "span", "vzd-sipoc-cell-value", value);
       } else {
         host.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
       }
@@ -150,7 +151,7 @@ function renderSIPOCTable(
       });
 
       if (value) {
-        td.createEl("span", { cls: "vzd-sipoc-cell-value", text: value });
+        createInlineEl(td, "span", "vzd-sipoc-cell-value", value);
       } else {
         td.createEl("span", { cls: "vzd-sipoc-cell-empty", text: "—" });
       }

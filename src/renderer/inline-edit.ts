@@ -6,6 +6,8 @@
  * revert-on-Escape wiring.
  */
 
+import { setInline } from "../shared/inline-markdown";
+
 interface WireKeysOptions {
   /** Call stopPropagation() on every keydown so keystrokes don't leak to
    *  ancestor handlers — needed inside SVG canvases that bind their own
@@ -66,7 +68,8 @@ export function wireRenameInputKeys(
 }
 
 export interface InlineEditOptions {
-  /** Re-render the host's display content for a value. Defaults to setting plain textContent. */
+  /** Re-render the host's display content for a value. Defaults to the value
+   *  as inline markdown (see setInline). */
   renderDisplay?: (host: HTMLElement, value: string) => void;
   /** Whether a submitted value should be committed vs. reverted to currentValue.
    *  Defaults to: non-empty and different from currentValue. */
@@ -91,7 +94,7 @@ export function activateInlineEdit(
   options: InlineEditOptions = {},
 ): void {
   if (host.classList.contains("vzd-editing")) return;
-  const renderDisplay = options.renderDisplay ?? ((h, v) => { h.textContent = v; });
+  const renderDisplay = options.renderDisplay ?? setInline;
   const shouldCommit = options.shouldCommit ?? ((v, cur) => !!v && v !== cur);
 
   // A placeholder's styling (`…--empty`: faint, italic) must not dress the

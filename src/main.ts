@@ -26,6 +26,7 @@ import { insertTemplateAtCursor } from "./shared/editor";
 import { VizardryHeadingSuggest } from "./heading-suggest";
 import { updatePersistedData } from "./shared/persisted-data";
 import { t } from "./i18n";
+import { canvasFormatGuard } from "./shared/canvas-format-guard";
 
 export default class VizardryPlugin extends Plugin {
   // A fresh normalized object, never the shared frozen DEFAULT_SETTINGS —
@@ -119,6 +120,19 @@ export default class VizardryPlugin extends Plugin {
     } catch (err) {
       console.error(`${tag}: failed to register the "vizardry" processor`, err);
     }
+
+    // ── Formatting commands on canvas text ─────────────────────────────
+    // A selection inside a rendered canvas is invisible to CodeMirror, so
+    // Highlight/Bold/… would insert empty markers next to the block instead.
+    // Drop those edits and say where canvas text is formatted. See
+    // shared/canvas-format-guard.ts.
+    let lastFormatHint = 0;
+    this.registerEditorExtension(canvasFormatGuard(() => {
+      const now = Date.now();
+      if (now - lastFormatHint < 4000) return;
+      lastFormatHint = now;
+      new Notice(t("edit.formatInSource"));
+    }));
 
     // ── Heading autocomplete inside vizardry blocks ────────────────────
     // Obsidian's native [[ suggester still triggers inside a fenced code

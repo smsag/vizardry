@@ -8,6 +8,7 @@ import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { removeWardleyLink } from "../shared/wardley-edit";
 import { attachSvgItemMenu } from "../shared/item-menu";
+import { stripInline } from "../shared/inline-markdown";
 import {
   W, H, PLOT_X, PLOT_Y, PLOT_W, PLOT_H, NODE_R,
   toSvgX, toSvgY, labelAnchor, nudgeLabels, stageEdgesFromPositions, evolveLineEndpoints,
@@ -146,7 +147,7 @@ function renderLinks(
       }));
 
       attachSvgItemMenu(linkG as SVGGElement, {
-        label: t("menu.actionsFor", { name: `${link.from} → ${link.to}` }),
+        label: t("menu.actionsFor", { name: `${stripInline(link.from)} → ${stripInline(link.to)}` }),
         x: mx, y: my,
         floating: true,
         actions: () => [{
@@ -218,7 +219,7 @@ function renderPipelines(svg: SVGSVGElement, data: WardleyMap): void {
         x: String(ix), y: String(y + PIPELINE_BOX_H / 2 + 12),
         class: "vzd-wardley-pipeline-label", "text-anchor": "middle",
       });
-      label.textContent = item.name;
+      label.textContent = stripInline(item.name);
       g.appendChild(label);
     }
 
@@ -268,7 +269,8 @@ function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
     const cx = toSvgX(comp.evolution), cy = toSvgY(comp.visibility);
     const { dx, dy, anchor } = labelAnchor(comp.evolution, comp.visibility);
     const textY = cy + dy;
-    return { componentIndex, textX: cx + dx, textY, naturalY: textY, anchor, name: comp.name };
+    // SVG text draws no formatting yet: markers are stripped, not shown.
+    return { componentIndex, textX: cx + dx, textY, naturalY: textY, anchor, name: stripInline(comp.name) };
   });
   nudgeLabels(labelSlots);
   const slotByIndex = new Map<number, LabelSlot>();
@@ -303,7 +305,7 @@ function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
       x: String(slot.textX), y: String(slot.textY),
       class: "vzd-wardley-label", "text-anchor": slot.anchor,
     }) as SVGTextElement;
-    textEl.textContent = comp.name;
+    textEl.textContent = stripInline(comp.name);
     svg.appendChild(textEl);
 
     nodeRefs.push({ circle, textEl, comp });

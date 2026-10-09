@@ -7,6 +7,7 @@ import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { accentHueExpr } from "../shared/accent-colors";
 import { t } from "../i18n";
+import { createInlineEl } from "../shared/inline-markdown";
 
 const GAUGE_MAX = 10;
 
@@ -53,7 +54,7 @@ function renderGauge(host: HTMLElement, gauge: OdysseyGauge): void {
   svg.appendChild(num);
 
   cell.appendChild(svg);
-  cell.createEl("div", { cls: "vzd-odyssey-gauge-name", text: gauge.name });
+  createInlineEl(cell, "div", "vzd-odyssey-gauge-name", gauge.name);
 }
 
 function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number, count: number): void {
@@ -65,9 +66,9 @@ function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number, count: 
   const header = col.createEl("div", { cls: "vzd-odyssey-plan-header" });
   header.createEl("span", { cls: "vzd-odyssey-plan-label", text: plan.label });
   const titleWrap = header.createEl("div", { cls: "vzd-odyssey-plan-titles" });
-  titleWrap.createEl("div", { cls: "vzd-odyssey-plan-title", text: plan.title });
+  createInlineEl(titleWrap, "div", "vzd-odyssey-plan-title", plan.title);
   if (plan.archetype) {
-    titleWrap.createEl("div", { cls: "vzd-odyssey-plan-archetype", text: plan.archetype });
+    createInlineEl(titleWrap, "div", "vzd-odyssey-plan-archetype", plan.archetype);
   }
 
   if (plan.milestones.length > 0) {
@@ -75,7 +76,7 @@ function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number, count: 
     for (const m of plan.milestones) {
       const row = timeline.createEl("div", { cls: "vzd-odyssey-milestone" });
       row.createEl("span", { cls: "vzd-odyssey-year-badge", text: `Y${m.year}` });
-      row.createEl("div", { cls: "vzd-odyssey-milestone-text", text: m.text });
+      createInlineEl(row, "div", "vzd-odyssey-milestone-text", m.text);
     }
   }
 
@@ -88,7 +89,7 @@ function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number, count: 
     const qWrap = col.createEl("div", { cls: "vzd-odyssey-questions" });
     qWrap.createEl("div", { cls: "vzd-odyssey-questions-heading", text: t("odyssey.questions") });
     const ul = qWrap.createEl("ul");
-    for (const q of plan.questions) ul.createEl("li", { text: q });
+    for (const q of plan.questions) createInlineEl(ul, "li", undefined, q);
   }
 }
 

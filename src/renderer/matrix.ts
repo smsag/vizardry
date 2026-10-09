@@ -9,6 +9,7 @@ import { writeItemPosition, writeItemContent } from "../shared/matrix-edit";
 import { isEditModeActive } from "../shared/editor";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { classifyTicketTarget, type LinkResolver } from "../shared/links";
+import { createInlineEl } from "../shared/inline-markdown";
 import type { RenderContext } from "./render-context";
 
 const DRAG_THRESHOLD = 4; // tighter than DRAG_THRESHOLD_PX: pills are small, a 8px dead zone felt stuck
@@ -65,14 +66,14 @@ export function renderMatrix(
   const wrap = container.createEl("div", { cls: "vzd-mx-wrap" });
   if (data.preset) wrap.dataset.preset = data.preset;
 
-  wrap.createEl("div", { cls: "vzd-mx-yname" }).createEl("span", { text: data.yAxis.title });
+  createInlineEl(wrap.createEl("div", { cls: "vzd-mx-yname" }), "span", undefined, data.yAxis.title);
 
   const main = wrap.createEl("div", { cls: "vzd-mx-main" });
 
   // Y tick bands (top → bottom in the DOM; data ticks are bottom → top).
   const yTicks = main.createEl("div", { cls: "vzd-mx-yticks" });
   for (let r = rows - 1; r >= 0; r--) {
-    yTicks.createEl("div", { cls: "vzd-mx-tick", text: data.yAxis.ticks[r] });
+    createInlineEl(yTicks, "div", "vzd-mx-tick", data.yAxis.ticks[r] ?? "");
   }
 
   const area = main.createEl("div", { cls: "vzd-mx-area" });
@@ -85,7 +86,7 @@ export function renderMatrix(
     for (const cell of data.cells) {
       const el = grid.createEl("div", { cls: "vzd-mx-cell" });
       if (cell.heat) el.classList.add(`vzd-mx-cell--${cell.heat}`);
-      if (cell.name) el.createEl("div", { cls: "vzd-mx-cell-name", text: cell.name });
+      if (cell.name) createInlineEl(el, "div", "vzd-mx-cell-name", cell.name);
     }
   }
 
@@ -96,10 +97,10 @@ export function renderMatrix(
   // X tick bands (left → right).
   const xTicks = main.createEl("div", { cls: "vzd-mx-xticks" });
   for (let c = 0; c < cols; c++) {
-    xTicks.createEl("div", { cls: "vzd-mx-tick", text: data.xAxis.ticks[c] });
+    createInlineEl(xTicks, "div", "vzd-mx-tick", data.xAxis.ticks[c] ?? "");
   }
 
-  wrap.createEl("div", { cls: "vzd-mx-xname", text: data.xAxis.title });
+  createInlineEl(wrap, "div", "vzd-mx-xname", data.xAxis.title);
 }
 
 /** A resolver that returns the item's own explicit link annotation, falling
@@ -202,7 +203,7 @@ function buildPill(
   pill.className = "vzd-mx-pill";
   pill.setAttribute("role", "button");
   pill.tabIndex = 0;
-  const labelEl = pill.createEl("span", { cls: "vzd-mx-item-label", text: item.label });
+  const labelEl = createInlineEl(pill, "span", "vzd-mx-item-label", item.label);
   // Link the label to a heading/ticket: explicit annotation on the item line,
   // or a heading whose name matches the label (auto-detect via the shared resolver).
   renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
@@ -341,7 +342,7 @@ function makePopover(area: HTMLElement): Popover {
     el = pop;
 
     const titleEl = pop.createEl("div", { cls: "vzd-mx-popover-title" });
-    const labelEl = titleEl.createEl("span", { cls: "vzd-mx-item-label", text: item.label });
+    const labelEl = createInlineEl(titleEl, "span", "vzd-mx-item-label", item.label);
     renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
 
     const body = pop.createEl("div", { cls: "vzd-mx-popover-body vizardry-block-body" });

@@ -5,6 +5,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { rectBoundary, type Vec2 } from "../shared/geometry";
+import { stripInline } from "../shared/inline-markdown";
 
 const W = 900;
 const H = 560;
@@ -18,7 +19,7 @@ const LABEL_OFFSET = 13;
 const NODE_MARGIN = 14; // minimum gap between node edges after layout
 
 function nodeWidth(label: string): number {
-  return Math.max(80, Math.ceil(label.length * CHAR_W + NODE_PAD_X * 2));
+  return Math.max(80, Math.ceil(stripInline(label).length * CHAR_W + NODE_PAD_X * 2));
 }
 
 function forceLayout(positions: Vec2[], edgeIdxs: { from: number; to: number }[]): void {
@@ -232,7 +233,8 @@ export function renderConceptMap(
       const px = -edgeDy / edgeLen, py = edgeDx / edgeLen;
       const lx = mx + px * LABEL_OFFSET;
       const ly = my + py * LABEL_OFFSET;
-      const labelW = Math.ceil(edge.label.length * 6.2 + 12);
+      const edgeLabel = stripInline(edge.label);
+      const labelW = Math.ceil(edgeLabel.length * 6.2 + 12);
 
       const bgRect = createSvgEl("rect", {
         x: String(lx - labelW / 2), y: String(ly - 9),
@@ -248,7 +250,7 @@ export function renderConceptMap(
         "text-anchor": "middle",
         "dominant-baseline": "central",
       });
-      labelEl.textContent = edge.label;
+      labelEl.textContent = edgeLabel;
       svg.appendChild(labelEl);
     }
   }
@@ -272,7 +274,7 @@ export function renderConceptMap(
       "text-anchor": "middle",
       "dominant-baseline": "central",
     });
-    label.textContent = data.nodes[i];
+    label.textContent = stripInline(data.nodes[i]);
     svg.appendChild(label);
   }
 

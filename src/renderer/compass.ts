@@ -9,6 +9,7 @@ import { initCanvas, renderCanvasWarnings, renderHeadingLink } from "./controls"
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { activateInlineEdit } from "./inline-edit";
+import { createInlineEl, stripInline } from "../shared/inline-markdown";
 import {
   readCompassValue, writeCompassValue, removeCompassValue, insertCompassValue,
 } from "../shared/compass-edit";
@@ -96,7 +97,7 @@ export function renderCompass(
   /** A text line with an optional link icon; click-to-edit + delete in edit mode. */
   const linkedLine = (parent: HTMLElement, cls: string, text: string, key: string, index: number): void => {
     const el = parent.createEl("div", { cls });
-    const span = el.createEl("span", { cls: "vzd-compass-line-text", text });
+    const span = createInlineEl(el, "span", "vzd-compass-line-text", text);
     renderHeadingLink(el, text, resolver, navigateTo, app, sourcePath);
     if (!edit) return;
     el.addClass("vzd-compass-editable");
@@ -109,7 +110,7 @@ export function renderCompass(
       });
     });
     attachItemMenu(el, {
-      label: t("menu.actionsFor", { name: text }),
+      label: t("menu.actionsFor", { name: stripInline(text) }),
       button: { parent: el, cls: "vzd-compass-del", placement: "row" },
       actions: () => [{
         title: t("compass.deleteEntry"),
@@ -139,8 +140,8 @@ export function renderCompass(
     const stats = challenge.createEl("div", { cls: "vzd-compass-stats" });
     data.insights.forEach((ins, i) => {
       const tile = stats.createEl("div", { cls: "vzd-compass-stat" });
-      if (ins.figure) tile.createEl("div", { cls: "vzd-compass-stat-figure", text: ins.figure });
-      tile.createEl("div", { cls: "vzd-compass-stat-text", text: ins.text });
+      if (ins.figure) createInlineEl(tile, "div", "vzd-compass-stat-figure", ins.figure);
+      createInlineEl(tile, "div", "vzd-compass-stat-text", ins.text);
       if (!edit) return;
       tile.addClass("vzd-compass-editable");
       tile.addEventListener("click", (e) => {
@@ -151,7 +152,7 @@ export function renderCompass(
         });
       });
       attachItemMenu(tile, {
-        label: t("menu.actionsFor", { name: ins.text }),
+        label: t("menu.actionsFor", { name: stripInline(ins.text) }),
         button: { parent: tile, cls: "vzd-compass-del" },
         actions: () => [{
           title: t("compass.deleteEntry"),
@@ -170,7 +171,7 @@ export function renderCompass(
   if (data.northStar) {
     const banner = north.createEl("div", { cls: "vzd-compass-northstar" });
     banner.createEl("span", { cls: "vzd-compass-northstar-star", text: "★" });
-    const text = banner.createEl("span", { cls: "vzd-compass-northstar-text", text: data.northStar });
+    const text = createInlineEl(banner, "span", "vzd-compass-northstar-text", data.northStar);
     if (edit) {
       text.addClass("vzd-compass-editable");
       text.addEventListener("click", (e) => {

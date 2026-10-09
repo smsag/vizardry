@@ -79,6 +79,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "edit.clickToEdit": "Zum Bearbeiten klicken",
   "sipoc.addRowBelow": "Zeile darunter einfügen",
   "edit.writeFailed": "Bearbeitung konnte nicht gespeichert werden — öffne die Notiz im Bearbeitungsmodus",
+  "edit.formatInSource": "Text im Canvas lässt sich hier nicht formatieren. Wechsle in den Quelltextmodus und setze den Text im Codeblock in ==…== (oder **…**).",
 
   // ── Title editing ────────────────────────────────────────────────────────────
   "title.clickToEdit": "Zum Umbenennen klicken",

@@ -32,6 +32,7 @@ These are the rules that most often get broken. Follow all of them:
 - **Comments:** `// comment` on its own line (full-line only; see rule 5).
 - **Blank lines:** ignored.
 - **Heading / ticket links:** append `[[#Heading]]`, `[text](#Anchor)`, or `[text](TICKET-123)` to an element label (see "Links" near the end).
+- **Inline formatting:** `==highlight==`, `==🔴coloured highlight==`, `**bold**`, `*italic*`, `~~strike~~` in any label or line (see "Inline formatting" near the end).
 - **`collapsed: true`** — optional top-level line; starts the canvas minimized (also written back by the minimize button).
 - **`sticky: true`** — optional top-level line; keeps the canvas pinned under the note's header bar while you write the rest of the note below it (also written back by the pin button). A pinned canvas with blocks shows one block at a time, with prev/next arrows and dots to browse them, like the mobile view. On a phone it pins as a slim title bar instead: tap it to open the canvas (one block at a time), tap outside or keep scrolling to fold it. Live Preview only; a no-op elsewhere.
 
@@ -1730,6 +1731,38 @@ pricing: Included in all tiers
 
 ---
 
+## Inline formatting (highlight, bold, italic)
+
+Labels and content lines accept the same inline formatting as an Obsidian note:
+
+| Syntax | Result |
+|---|---|
+| `==text==` | Highlight in the theme's highlight colour |
+| `==🔴text==` `==🟠text==` `==🟡text==` `==🟢text==` `==🔵text==` `==🟣text==` | Coloured highlight (red, orange, yellow, green, blue, purple), the same emoji Obsidian's formatting menu writes. The emoji itself isn't shown |
+| `**text**` | Bold |
+| `*text*` or `_text_` | Italic |
+| `~~text~~` | Strikethrough |
+
+- **Formats nest:** `==a **key** point==`, `**==urgent==**`.
+- **The text touches the markers:** `==text==` highlights, `== text ==` stays literal. An unclosed marker (`a == b`) stays literal too, and so does an underscore inside a word (`snake_case`).
+- **Escape** a marker with a backslash: `\==not highlighted\==`.
+- **Matching ignores formatting:** a label `==Goal==` still auto-links to the heading `Goal`, and an explicit link annotation works as usual.
+
+~~~
+```vizardry
+type: roadmap
+now:
+  item: ==🔴Fix checkout bug== | CORE-1234
+  item: Ship **login** flow
+```
+~~~
+
+**Where it renders.** Grid blocks, cards, matrices, roadmap, journey, story map, RACI, SIPOC, Pro / Contra, compass, odyssey, test card and the other HTML-based canvases render the formatting. Canvases drawn as SVG text (mind map, impact map, OST, fishbone, Wardley, concept map, node-map link labels, Venn circle names, wheel of life) show the words **without** the markers for now.
+
+**How to add it.** Type the markers in the code block (Source mode), or in a canvas's own inline editor, which shows the raw text. Obsidian's Highlight / Bold commands can't reach text selected in a rendered canvas in Live Preview: Vizardry drops the empty `====` they would otherwise insert under the block and shows a hint instead.
+
+---
+
 ## Links (headings & tickets)
 
 Any element label (grid block, matrix item, etc.) can carry a link. A link icon appears on the element.
@@ -1766,7 +1799,7 @@ block: Key Activities [see the roadmap](canvas:Q3 Roadmap)
 ```
 ~~~
 
-5. **Auto-detection** — if a note heading exactly matches an element label (case-insensitive), the heading link icon appears automatically with no extra syntax. (Canvas links have **no** auto-detection — use the explicit `canvas:` form.)
+5. **Auto-detection** — if a note heading matches an element label (case-insensitive, inline formatting such as `==…==` or `**…**` ignored), the heading link icon appears automatically with no extra syntax. (Canvas links have **no** auto-detection — use the explicit `canvas:` form.)
 
 For **matrix items**, place the annotation *before* the position token:
 `item: Fix login [Fix login](CORE-1234) at: t1`.

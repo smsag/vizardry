@@ -47,6 +47,7 @@ export class Plugin {
   app: unknown = {};
   manifest: { version: string } = { version: "0.0.0" };
   registerMarkdownCodeBlockProcessor = () => {};
+  registerEditorExtension = () => {};
   addRibbonIcon = () => ({});
   addCommand = () => {};
 }

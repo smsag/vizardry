@@ -1,3 +1,24 @@
+## Unreleased
+
+- **Highlight canvas text like note text.** `==text==` highlights a label or
+  line, and Obsidian's coloured highlights work too: `==🔴text==`, plus 🟠, 🟡,
+  🟢, 🔵 and 🟣. Highlights nest with **bold**, *italic* and ~~strike~~, and
+  use the same markup as Obsidian, so a theme that styles highlights styles
+  canvas highlights the same way. Canvases drawn as SVG text (mind map,
+  impact map, OST, fishbone, Wardley, concept map) show the words without
+  the markers for now.
+- **Bold, italic and strike now render everywhere, not just in grid blocks.**
+  Matrix items, roadmap and story cards, journey cards, RACI, SIPOC,
+  Pro / Contra, compass, odyssey and the other HTML canvases used to show
+  `**` literally.
+- **Fix: Highlight or Bold on text selected in a canvas inserted an empty
+  `====` under the block.** In Live Preview, Obsidian can't see a selection
+  inside a rendered canvas. Vizardry now drops that stray edit and shows a
+  hint: format canvas text in the code block (Source mode).
+- **A formatted label still finds its heading.** `==Goal==` or `**Goal**`
+  auto-links to the heading *Goal*.
+- **Fix: underscores inside words no longer turn italic** (`snake_case_name`).
+
 ## 0.74.0
 
 Live Edit gets one way to act on any item — the same **⋯** everywhere, and

@@ -593,6 +593,28 @@ button.vzd-pin-bar-btn {
   margin-top: 0.22em;
 }
 
+/* ── Inline highlight (==text==, ==🔴text== …) ──
+   Same DOM as Obsidian's Reading view (<mark data-highlight="red">), so a
+   theme's own mark rules style canvas labels too. The plain highlight sits
+   in :where() (zero specificity) and yields to any theme or Obsidian mark
+   rule; the six colours are one class stronger, so Obsidian's generic yellow
+   `.markdown-rendered mark` can't repaint them. Text keeps the label's own
+   colour, which matters on accent-filled nodes. */
+:where(mark.vzd-mark) {
+  background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+  color: inherit;
+  padding: 0 0.1em;
+  border-radius: 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+mark.vzd-mark[data-highlight="red"]    { background-color: rgba(var(--color-red-rgb, 233, 49, 71), var(--vzd-mark-alpha, 0.3)); }
+mark.vzd-mark[data-highlight="orange"] { background-color: rgba(var(--color-orange-rgb, 236, 117, 0), var(--vzd-mark-alpha, 0.3)); }
+mark.vzd-mark[data-highlight="yellow"] { background-color: rgba(var(--color-yellow-rgb, 224, 172, 0), var(--vzd-mark-alpha, 0.3)); }
+mark.vzd-mark[data-highlight="green"]  { background-color: rgba(var(--color-green-rgb, 8, 185, 78), var(--vzd-mark-alpha, 0.3)); }
+mark.vzd-mark[data-highlight="blue"]   { background-color: rgba(var(--color-blue-rgb, 8, 109, 221), var(--vzd-mark-alpha, 0.3)); }
+mark.vzd-mark[data-highlight="purple"] { background-color: rgba(var(--color-purple-rgb, 120, 82, 238), var(--vzd-mark-alpha, 0.3)); }
+
 /* ── Card-block layout ── */
 
 .vizardry-block-body.vzd-card-block-body {
