@@ -130,6 +130,15 @@ describe("blankStickyLines", () => {
 // ── dispatchVizardry ─────────────────────────────────────────────────────────
 
 describe("dispatchVizardry", () => {
+  it("draws only declared SWOT blocks and warns about a misspelled one", () => {
+    const el = container();
+    dispatchVizardry("type: swot\nblock: Strengths\n  Fast team\nblock: Oportunities\n  Lost bullet", el, fakeCtx(), fakeApp());
+    const labels = Array.from(el.querySelectorAll(".vizardry-block-label"), (l) => l.textContent);
+    expect(labels).toEqual(["Strengths"]);
+    const chip = el.querySelector(".vzd-canvas-warning-chip");
+    expect(chip?.getAttribute("title")).toContain('Unknown block "oportunities"');
+  });
+
   it("shows an error banner when no type: line is present", () => {
     const el = container();
     dispatchVizardry("block: Goal\n  X", el, fakeCtx(), fakeApp());

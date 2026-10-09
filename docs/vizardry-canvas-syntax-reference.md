@@ -18,7 +18,7 @@ These are the rules that most often get broken. Follow all of them:
 4. **Keywords end with a colon** (`block:`, `item:`, `component:`, `phase:`, …) except the free-graph lines in `conceptmap` and the bullet/indent-only lines in `mindmap`/`ost`/`venn`.
 5. **Full-line comments only.** A line whose first non-space characters are `//` is ignored, in every framework. Inline trailing `// …` comments are only stripped in `wardley` and `pacelayers` — do **not** rely on them elsewhere; put comments on their own line.
 6. **Blank lines are always ignored** — use them freely for readability.
-7. **Grid block labels must match the framework's list exactly** (case-insensitive). A typo'd label is silently dropped, and since a block left out of the source isn't drawn, that block disappears from the canvas.
+7. **Grid block labels must match the framework's list exactly** (case-insensitive). A typo'd label isn't drawn (a block left out of the source isn't drawn either); a ⚠ chip in the canvas header names it and lists the framework's blocks.
 8. **Don't quote values.** Write `title: My Map`, not `title: "My Map"`. No YAML, no JSON — this is a line-based mini-language.
 9. **One `title:` line per canvas.** Extra top-level lines a framework doesn't recognise cause an "unexpected syntax" error (grid frameworks are the exception — they ignore unknown top-level lines that aren't `block:`).
 
@@ -101,7 +101,7 @@ These are the rules that most often get broken. Follow all of them:
 
 All grid canvases share one syntax: `block: <Label>` with content lines indented below it. **Block labels must match the framework's defined names exactly** (listed per framework). Blocks may appear in any order.
 
-**Only the blocks you write are drawn.** Leave a block out and the canvas renders without it, closing the gap: a `swot` with just `Strengths` and `Weaknesses` shows those two blocks side by side. To keep an empty block with its prompt, write its `block:` line with nothing under it. A canvas with no (known) `block:` line at all shows every block, as a skeleton to fill in.
+**Only the blocks you write are drawn.** Leave a block out and the canvas renders without it, closing the gap: a `swot` with just `Strengths` and `Weaknesses` shows those two blocks side by side. To keep an empty block with its prompt, write its `block:` line with nothing under it. A canvas with no (known) `block:` line at all shows every block with its prompt, as an outline; to fill one in, add its `block:` line in the source (Live Preview can only edit blocks that have one).
 
 ~~~
 ```vizardry

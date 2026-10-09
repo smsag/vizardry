@@ -129,6 +129,19 @@ function renderPeriodField(
   });
 }
 
+/**
+ * One warning per `block:` label the framework doesn't have. A block left
+ * out of the source isn't drawn, so a misspelled label would otherwise make
+ * the block, and the content written under it, vanish without a trace.
+ */
+export function unknownBlockWarnings(framework: FrameworkDefinition, data: Record<string, string>): string[] {
+  const known = new Set(framework.blocks.map(b => b.label.toLowerCase()));
+  const names = framework.blocks.map(b => b.label).join(", ");
+  return Object.keys(data)
+    .filter(key => !known.has(key))
+    .map(key => `Unknown block "${key}": not drawn. ${framework.label} has: ${names}`);
+}
+
 export function renderCanvas(
   framework: FrameworkDefinition,
   data: Record<string, string>,
@@ -158,12 +171,10 @@ export function renderCanvas(
   // skeleton with its prompts, so a bare `type:` line isn't an empty box.
   const declared = framework.blocks.filter(b => Object.prototype.hasOwnProperty.call(data, b.label.toLowerCase()));
   const visibleBlocks = declared.length > 0 ? declared : framework.blocks;
+  const fullLayout = { template: framework.gridTemplate, columns: framework.gridColumns, rows: framework.gridRows };
   const layout = visibleBlocks.length === framework.blocks.length
-    ? { template: framework.gridTemplate, columns: framework.gridColumns, rows: framework.gridRows }
-    : collapseGridLayout(
-      { template: framework.gridTemplate, columns: framework.gridColumns, rows: framework.gridRows },
-      new Set(visibleBlocks.map(b => b.area)),
-    );
+    ? fullLayout
+    : collapseGridLayout(fullLayout, new Set(visibleBlocks.map(b => b.area)));
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", layout.template);
