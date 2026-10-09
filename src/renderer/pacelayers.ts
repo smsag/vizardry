@@ -8,6 +8,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { writePaceLayerCell } from "../shared/pacelayers-edit";
 import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
+import { createInlineEl } from "../shared/inline-markdown";
 import { isEditModeActive } from "../shared/editor";
 
 export function renderPaceLayers(
@@ -28,7 +29,7 @@ export function renderPaceLayers(
   renderCanvasWarnings(container, data.warnings);
 
   if (data.context) {
-    container.createDiv({ cls: 'vzd-pl-context', text: data.context });
+    createInlineEl(container, 'div', 'vzd-pl-context', data.context);
   }
 
   const stack = container.createDiv('vzd-pl-stack');
@@ -40,7 +41,7 @@ export function renderPaceLayers(
     contentEl.removeAttribute('data-placeholder');
     if (value.trim()) {
       value.split('\n').forEach(line => {
-        const lineEl = contentEl.createDiv({ cls: 'vzd-block-line', text: line });
+        const lineEl = createInlineEl(contentEl, 'div', 'vzd-block-line', line);
         renderHeadingLink(lineEl, line, resolver, navigateTo, app, ctx?.sourcePath);
       });
     } else {

@@ -593,6 +593,67 @@ button.vzd-pin-bar-btn {
   margin-top: 0.22em;
 }
 
+/* ── Inline highlight (==text==, ==🔴text== …) ──
+   Drawn as a felt-tip marker stroke, after the Klartext theme: a 104deg sweep
+   whose ink lands over the first half character (transparent to 0.2em, full
+   by 0.7em, a touch stronger where the pen set down) and lifts off over the
+   last sixth (full to 88%, gone 0.28em before the end). Padding lets the
+   stroke overshoot the letters like a real pen; an equal negative margin
+   hands that width back, so the text never moves. box-decoration-break
+   clones the stroke onto every wrapped line, so each line lands and lifts.
+   No border-radius (a rounded end reads as a chip), no shadow, no border.
+   Vary the ink to tell marks apart, never the angle.
+
+   One <mark> holds the whole highlight with its nested formatting inside
+   (Obsidian's Reading-view shape), so no span ever ends mid-stroke and plain
+   translucent tints are enough: the opaque-ink-plus-blend-mode trick Klartext
+   needs for Live Preview's split spans has nothing to solve here.
+
+   Theme contract: the DOM matches Obsidian's (<mark data-highlight="red">).
+   The stroke sits in :where() (zero specificity), so a theme that draws its
+   own mark background-image (Klartext does) wins and its inks apply. Only
+   background-color and color are pinned one class stronger: Obsidian's
+   `.markdown-rendered mark` would otherwise fill the box flat yellow under
+   the stroke and repaint white text-on-accent labels dark. Themes can also
+   just retint: --vzd-mark-ink / --vzd-mark-ink-strong / --vzd-mark-alpha. */
+:where(mark.vzd-mark) {
+  --vzd-mark-ink: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+  --vzd-mark-ink-strong: var(--vzd-mark-ink);
+  background-image: linear-gradient(
+    104deg,
+    transparent 0.2em,
+    var(--vzd-mark-ink-strong) 0.7em,
+    var(--vzd-mark-ink) 88%,
+    transparent calc(100% - 0.28em)
+  );
+  padding: 0.14em 0.42em;
+  margin: 0 -0.42em;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  text-shadow: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.vizardry-canvas mark.vzd-mark {
+  background-color: transparent;
+  color: inherit;
+}
+/* The six colours change only the ink. Each tint is Obsidian's own swatch
+   colour at one shared alpha; the wet end is 0.08 stronger. */
+mark.vzd-mark[data-highlight] {
+  --vzd-mark-ink: rgba(var(--vzd-mark-rgb), var(--vzd-mark-alpha, 0.3));
+  --vzd-mark-ink-strong: rgba(var(--vzd-mark-rgb), calc(var(--vzd-mark-alpha, 0.3) + 0.08));
+}
+/* A dark ground shows a tint more: lower the shared alpha, as Klartext does. */
+.theme-dark .vizardry-canvas { --vzd-mark-alpha: 0.24; }
+mark.vzd-mark[data-highlight="red"]    { --vzd-mark-rgb: var(--color-red-rgb, 233, 49, 71); }
+mark.vzd-mark[data-highlight="orange"] { --vzd-mark-rgb: var(--color-orange-rgb, 236, 117, 0); }
+mark.vzd-mark[data-highlight="yellow"] { --vzd-mark-rgb: var(--color-yellow-rgb, 224, 172, 0); }
+mark.vzd-mark[data-highlight="green"]  { --vzd-mark-rgb: var(--color-green-rgb, 8, 185, 78); }
+mark.vzd-mark[data-highlight="blue"]   { --vzd-mark-rgb: var(--color-blue-rgb, 8, 109, 221); }
+mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb, 120, 82, 238); }
+
 /* ── Card-block layout ── */
 
 .vizardry-block-body.vzd-card-block-body {
@@ -4609,6 +4670,20 @@ body.vizardry-sketch .vzd-presentation-wrap {
 body.vizardry-sketch .vizardry-canvas svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline),
 body.vizardry-sketch .vzd-presentation-wrap svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline) {
   filter: url(#vzd-sketch-rough);
+}
+
+/* Highlights: one graphite marker. The greyscale filter above would turn the
+   six highlight colours into six near-identical greys, with the default yellow
+   lighter than the rest, so in sketch mode a highlight means emphasis, not a
+   category: every colour draws the same pencil-grey ink, equally strong. The
+   stroke shape (see "Inline highlight") is unchanged and already hand-drawn. */
+body.vizardry-sketch :is(.vizardry-canvas, .vzd-presentation-overlay) mark.vzd-mark {
+  --vzd-mark-ink: rgba(0, 0, 0, 0.14);
+  --vzd-mark-ink-strong: rgba(0, 0, 0, 0.19);
+}
+body.vizardry-sketch.theme-dark :is(.vizardry-canvas, .vzd-presentation-overlay) mark.vzd-mark {
+  --vzd-mark-ink: rgba(255, 255, 255, 0.16);
+  --vzd-mark-ink-strong: rgba(255, 255, 255, 0.22);
 }
 
 /* No type-scale override: Shantell Sans has an x-height close to the UI font,

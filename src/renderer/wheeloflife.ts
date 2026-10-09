@@ -5,6 +5,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { harmonizedAccentColor } from "../shared/accent-colors";
+import { stripInline } from "../shared/inline-markdown";
 
 // Wheel geometry. The wheel is a fixed-size dartboard; the labels ring sits
 // outside the rim, so the viewBox is wider than 2·R to leave room for them.
@@ -60,7 +61,7 @@ function renderWedge(
   const slot = createSvgEl("path", { d: sectorPath(R, start, end), class: "vzd-wol-slot" });
   if (area.note) {
     const titleEl = createSvgEl("title");
-    titleEl.textContent = `${area.name}: ${area.score}/10 — ${area.note}`;
+    titleEl.textContent = stripInline(`${area.name}: ${area.score}/10 — ${area.note}`);
     slot.appendChild(titleEl);
   }
   g.appendChild(slot);
@@ -82,7 +83,7 @@ function renderWedge(
     x: labelPt.x.toFixed(2), y: labelPt.y.toFixed(2), class: "vzd-wol-label",
     "text-anchor": anchor, "dominant-baseline": "central",
   });
-  labelEl.textContent = area.name;
+  labelEl.textContent = stripInline(area.name);
   g.appendChild(labelEl);
 
   svg.appendChild(g);

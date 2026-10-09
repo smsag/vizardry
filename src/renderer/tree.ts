@@ -8,6 +8,7 @@ import { createSvgEl } from "../shared/svg";
 import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { createTextMeasurer, wrapText, type TextMeasurer } from "../shared/text-wrap";
+import { stripInline } from "../shared/inline-markdown";
 import { t } from "../i18n";
 import { attachSvgItemMenu } from "../shared/item-menu";
 import type { LinkResolver } from "../shared/links";
@@ -167,14 +168,15 @@ function buildLaneModel(
   node: TreeNode, opts: TreeRenderOptions, measurer: TextMeasurer, showAddBullet: boolean,
 ): LaneNodeModel {
   const innerW = opts.nodeW - LANE_PAD_X * 2;
-  const captionLines = (opts.captionPosition === "top" && node.sublabel) ? [node.sublabel] : [];
+  // SVG text draws no formatting yet: markers are stripped, not shown.
+  const captionLines = (opts.captionPosition === "top" && node.sublabel) ? [stripInline(node.sublabel)] : [];
   const isPlaceholder = node.text.trim() === "";
   const labelLines = wrapText(
-    isPlaceholder ? EMPTY_LABEL_PLACEHOLDER : node.text, innerW, s => measurer.width(s, LANE_LABEL_SIZE),
+    isPlaceholder ? EMPTY_LABEL_PLACEHOLDER : stripInline(node.text), innerW, s => measurer.width(s, LANE_LABEL_SIZE),
   );
   const bulletInnerW = innerW - LANE_CHEVRON_INDENT;
   const bulletLines = (node.bullets ?? []).map(
-    b => wrapText(b, bulletInnerW, s => measurer.width(s, LANE_BULLET_SIZE)),
+    b => wrapText(stripInline(b), bulletInnerW, s => measurer.width(s, LANE_BULLET_SIZE)),
   );
 
   let h = LANE_PAD_TOP + LANE_PAD_BOTTOM;
@@ -362,7 +364,7 @@ function renderDelButton(
 ): void {
   if (node.level === 0) return;
   attachSvgItemMenu(group, {
-    label: t("menu.actionsFor", { name: node.text }),
+    label: t("menu.actionsFor", { name: stripInline(node.text) }),
     x: opts.nodeW - ITEM_MENU_INSET,
     y: opts.wrap ? ITEM_MENU_INSET : opts.nodeH / 2,
     actions: () => [{
@@ -455,7 +457,7 @@ function renderLaneNode(
   group.appendChild(createSvgEl("rect", rectAttrs));
 
   const title = createSvgEl("title");
-  title.textContent = node.text;
+  title.textContent = stripInline(node.text);
   group.appendChild(title);
 
   let top = LANE_PAD_TOP;
@@ -534,7 +536,7 @@ function renderLaneNode(
         row.append(chevron, bText);
         group.appendChild(row);
         attachSvgItemMenu(row, {
-          label: t("menu.actionsFor", { name: bullet }),
+          label: t("menu.actionsFor", { name: stripInline(bullet) }),
           x: opts.nodeW - ITEM_MENU_INSET,
           y: rowTop + rowH / 2,
           actions: () => [{
@@ -599,9 +601,10 @@ function renderTreeNodes(
 
   renderTreeNodeRect(group, node, opts);
 
-  const label = node.text.length > opts.maxLabelChars
-    ? `${node.text.slice(0, opts.maxLabelChars - 1)}…`
-    : node.text;
+  const text = stripInline(node.text);
+  const label = text.length > opts.maxLabelChars
+    ? `${text.slice(0, opts.maxLabelChars - 1)}…`
+    : text;
 
   // Main label — always vertically centred; sublabel sits in the corner independently
   const textEl = createSvgEl("text", {
@@ -626,12 +629,12 @@ function renderTreeNodes(
       opacity: "0.6",
       class: "vzd-tree-text-sub",
     });
-    sublabelEl.textContent = node.sublabel;
+    sublabelEl.textContent = stripInline(node.sublabel);
     group.appendChild(sublabelEl);
   }
 
   const title = createSvgEl("title");
-  title.textContent = node.text;
+  title.textContent = stripInline(node.text);
   group.appendChild(title);
 
   // Link affordance — full node click + chain-link icon in the right margin

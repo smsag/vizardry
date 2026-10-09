@@ -15,7 +15,7 @@ Full reference: [vizardry-canvas-syntax-reference.md](vizardry-canvas-syntax-ref
 8. Don't quote values: `title: My Map`, not `title: "My Map"`.
 9. One `title:` line per canvas (optional).
 
-Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas under the header while writing (Live Preview; a tap-to-open bar on phones). Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`.
+Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas under the header while writing (Live Preview; a tap-to-open bar on phones). Links on labels: `[[#Heading]]`, `[text](#Anchor%20Text)`, `[text](TICKET-KEY)`, `[text](canvas:Other Title)`. Inline formatting in any label or line: `==highlight==`, `==🔴text==` (also 🟠🟡🟢🔵🟣), `**bold**`, `*italic*`, `~~strike~~`; nestable, text must touch the markers; SVG-text canvases show the words without markers.
 
 ## Framework index
 
@@ -584,7 +584,7 @@ Sections: **Challenge** (`forces:`, `problem:`, `insight:` — all repeatable; `
 
 ## Links
 
-Append to any element label: `[[#Heading]]` (wiki heading), `[text](#Anchor%20Text)` (markdown anchor), `[text](TICKET-KEY)` (Linear/Upvoty ticket), `[text](canvas:Title)` (another canvas in the same note by title). Auto-detection: if a note heading matches a label exactly, the link appears automatically. For matrix items, place link **before** `at:` or `[x,y]`.
+Append to any element label: `[[#Heading]]` (wiki heading), `[text](#Anchor%20Text)` (markdown anchor), `[text](TICKET-KEY)` (Linear/Upvoty ticket), `[text](canvas:Title)` (another canvas in the same note by title). Auto-detection: if a note heading matches a label (formatting ignored), the link appears automatically. For matrix items, place link **before** `at:` or `[x,y]`.
 
 ## Generation checklist
 

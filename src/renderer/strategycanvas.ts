@@ -5,6 +5,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { harmonizedAccentColor } from "../shared/accent-colors";
+import { createInlineEl } from "../shared/inline-markdown";
 
 // Wide viewBox. The plot rectangle leaves a left gutter for the Low→High scale
 // and a bottom band for the (HTML) factor labels, which overlay the wrap.
@@ -45,7 +46,7 @@ export function renderStrategyCanvas(
     const chip = legend.createEl("span", { cls: "vzd-strategy-legend-item" });
     const dot = chip.createEl("span", { cls: "vzd-strategy-legend-dot" });
     dot.style.background = color(s);
-    chip.createEl("span", { text: name });
+    createInlineEl(chip, "span", undefined, name);
   });
 
   const wrap = container.createEl("div", { cls: "vzd-strategy-wrap" });
@@ -115,7 +116,7 @@ export function renderStrategyCanvas(
   // labels wrap; SVG text would clip).
   data.factors.forEach((f, i) => {
     const x = xFor(i, nf);
-    const label = wrap.createEl("div", { cls: "vzd-strategy-factor", text: f.label });
+    const label = createInlineEl(wrap, "div", "vzd-strategy-factor", f.label);
     label.style.left = `${x}%`;
     label.style.top = `${(Y_BOT / VH) * 100 + 2}%`;
     label.style.maxWidth = `${Math.max(12, (X1 - X0) / Math.max(1, nf - 1))}%`;

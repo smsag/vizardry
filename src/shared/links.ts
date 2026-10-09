@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import { LINEAR_KEY_RE } from "./linear-enrichment";
 import { buildKeyRegex } from "./upvoty-enrichment";
 import { getUpvotyService } from "../upvoty";
+import { stripInline } from "./inline-markdown";
 
 /**
  * Resolves a display label to a heading in the same note, combining two
@@ -227,7 +228,8 @@ export function getFileHeadings(app: App, ctx: MarkdownPostProcessorContext): st
  *
  * Resolution order (first match wins):
  *   1. Inline [[#Heading]] annotation on the element line
- *   2. Note heading whose text exactly matches the label (case-insensitive)
+ *   2. Note heading whose text matches the label (case-insensitive; inline
+ *      formatting such as ==highlight== or **bold** is ignored on both sides)
  *
  * `resolveTicket` is explicit-annotation-only — deliberately no auto-detect
  * fallback, since that's already covered by the separate blind text-scan
@@ -243,7 +245,13 @@ export function createLinkResolver(
     resolve(label: string): string | undefined {
       const key = label.toLowerCase().trim();
       if (key in inlineLinks) return inlineLinks[key];
-      return headings.find(h => h.toLowerCase().trim() === key);
+      // Formatting doesn't change what a label names: `==Goal==` and
+      // `**Goal**` match the heading `Goal` (and a heading `==Goal==`).
+      const plain = stripInline(key).trim();
+      return headings.find(h => {
+        const hk = h.toLowerCase().trim();
+        return hk === key || stripInline(hk).trim() === plain;
+      });
     },
     resolveTicket(label: string): TicketMatch | undefined {
       return inlineTicketLinks[label.toLowerCase().trim()];

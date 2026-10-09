@@ -5,6 +5,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { ownerWindow } from "../shared/lifecycle";
+import { renderInline, setInline, stripInline } from "../shared/inline-markdown";
 
 // Obsidian exposes its App instance on window.app, but there is no official
 // type declaration for this undocumented property. We describe only the minimal
@@ -171,7 +172,7 @@ export function renderVennDiagram(
       x: String(g.lx), y: String(g.ly),
       class: "vzd-venn-circle-label", "text-anchor": "middle",
     });
-    t.textContent = venn.circles[i].name;
+    t.textContent = stripInline(venn.circles[i].name);
     svg.appendChild(t);
   });
 
@@ -210,9 +211,9 @@ export function renderVennDiagram(
       if (item.linkTarget) {
         const link = itemEl.createEl("span", {
           cls: "vzd-venn-link",
-          text: item.text,
           attr: { tabindex: "0", role: "link" },
         });
+        renderInline(link, item.text);
         link.dataset.linkTarget = item.linkTarget;
         markInteractive(link);
         const go = (): void => openLink(item.linkTarget!);
@@ -221,7 +222,7 @@ export function renderVennDiagram(
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
         });
       } else {
-        itemEl.setText(item.text);
+        setInline(itemEl, item.text);
       }
     }
   }

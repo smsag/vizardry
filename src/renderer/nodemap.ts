@@ -8,6 +8,7 @@ import { createSvgEl } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { rectBoundary, type Vec2 } from "../shared/geometry";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
+import { setInline, stripInline } from "../shared/inline-markdown";
 const NODEMAP_PALETTE: Record<string, string> = {
   red: "hsl(0, 70%, 55%)",
   orange: "hsl(28, 85%, 55%)",
@@ -69,12 +70,12 @@ interface BoxRef {
 }
 
 function measureBox(box: NodeMapBox): { width: number; height: number } {
-  const nameW = box.name.length * CHAR_W + BOX_PAD_X * 2;
+  const nameW = stripInline(box.name).length * CHAR_W + BOX_PAD_X * 2;
   const width = Math.max(MIN_BOX_WIDTH, Math.min(MAX_BOX_WIDTH, nameW));
   let height = HEADER_H;
   if (box.body) {
     const charsPerLine = estimateCharsPerLine(width - BOX_PAD_X * 2, { charW: CHAR_W, min: 10 });
-    const lines = wrappedLineCount(box.body, charsPerLine);
+    const lines = wrappedLineCount(stripInline(box.body), charsPerLine);
     height += lines * BODY_LINE_H + BODY_PAD_Y;
   }
   return { width, height };
@@ -215,7 +216,8 @@ function renderLinks(
     if (link.label) {
       const px = -dy / len, py = dx / len;
       const lx = mx + px * LABEL_OFFSET, ly = my + py * LABEL_OFFSET;
-      const labelW = Math.ceil(link.label.length * 6.2 + 12);
+      const label = stripInline(link.label);
+      const labelW = Math.ceil(label.length * 6.2 + 12);
       linkG.appendChild(createSvgEl("rect", {
         x: String(lx - labelW / 2), y: String(ly - 9), width: String(labelW), height: "16", rx: "3",
         class: "vzd-nodemap-link-label-bg",
@@ -224,7 +226,7 @@ function renderLinks(
         x: String(lx), y: String(ly), class: "vzd-nodemap-link-label",
         "text-anchor": "middle", "dominant-baseline": "central",
       });
-      labelEl.textContent = link.label;
+      labelEl.textContent = label;
       linkG.appendChild(labelEl);
     }
 
@@ -233,7 +235,7 @@ function renderLinks(
         x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2), class: "vzd-nodemap-link-hit",
       }));
       attachSvgItemMenu(linkG as SVGGElement, {
-        label: t("menu.actionsFor", { name: `${link.from} → ${link.to}` }),
+        label: t("menu.actionsFor", { name: `${stripInline(link.from)} → ${stripInline(link.to)}` }),
         x: mx, y: my,
         floating: true,
         actions: () => [{
@@ -269,12 +271,12 @@ function renderBoxes(svg: SVGSVGElement, boxes: MeasuredBox[]): BoxRef[] {
     host.className = "vzd-nodemap-box-host";
     const nameEl = document.createElement("div");
     nameEl.className = "vzd-nodemap-box-name";
-    nameEl.textContent = box.name;
+    setInline(nameEl, box.name);
     host.appendChild(nameEl);
     if (box.body) {
       const bodyEl = document.createElement("div");
       bodyEl.className = "vzd-nodemap-box-body";
-      bodyEl.textContent = box.body;
+      setInline(bodyEl, box.body);
       host.appendChild(bodyEl);
     }
     fo.appendChild(host);
@@ -552,13 +554,14 @@ function attachEditBehavior(
       e.stopPropagation();
       if (ix.drag || ix.linkDraw || ix.activeEdit) return;
       ix.activeEdit = { close: () => { ix.activeEdit = null; } };
+      ref.nameEl.textContent = ref.box.name; // the editor shows the source, markers included
       editTextInPlace(ref.nameEl, {
         initial: ref.box.name,
         onDone: (commit, value) => {
           ix.activeEdit = null;
           const newName = value.replace(/\s+/g, " ").trim();
-          if (!commit || !newName || newName === ref.box.name) { ref.nameEl.textContent = ref.box.name; return; }
-          ref.nameEl.textContent = newName;
+          if (!commit || !newName || newName === ref.box.name) { setInline(ref.nameEl, ref.box.name); return; }
+          setInline(ref.nameEl, newName);
           renameNodeMapBox(app, ctx, wrap, ref.box.name, newName);
         },
       });
@@ -571,14 +574,15 @@ function attachEditBehavior(
         if (ix.drag || ix.linkDraw || ix.activeEdit) return;
         ix.activeEdit = { close: () => { ix.activeEdit = null; } };
         const before = ref.box.body ?? "";
+        bodyEl.textContent = before; // the editor shows the source, markers included
         editTextInPlace(bodyEl, {
           initial: before,
           multiline: true,
           onDone: (commit, value) => {
             ix.activeEdit = null;
             const newBody = value.split("\n").map(l => l.trim()).filter(Boolean).join("\n");
-            if (!commit || newBody === before) { bodyEl.textContent = before; return; }
-            bodyEl.textContent = newBody;
+            if (!commit || newBody === before) { setInline(bodyEl, before); return; }
+            setInline(bodyEl, newBody);
             writeNodeMapBoxBody(app, ctx, wrap, ref.box.name, newBody);
           },
         });
@@ -659,7 +663,7 @@ function attachBoxControls(
     // it, and right-click / long-press anywhere on the box open the same menu.
     // Colour lives in that menu too, so a box carries a single control.
     const menu = attachSvgItemMenu(ref.g, {
-      label: t("menu.actionsFor", { name: ref.box.name }),
+      label: t("menu.actionsFor", { name: stripInline(ref.box.name) }),
       x: 0, y: 0,
       actions: () => [
         {

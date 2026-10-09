@@ -10,6 +10,7 @@ import { attachSectionPreview } from "./section-preview";
 import { setupSlideCarousel } from "./grid-carousel";
 import { t } from "../i18n";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
+import { createInlineEl } from "../shared/inline-markdown";
 import { addRoadmapItem, renameRoadmapItem, moveRoadmapItem } from "../shared/roadmap-edit";
 import { NULL_RESOLVER } from "../shared/links";
 import type { RenderContext } from "./render-context";
@@ -232,7 +233,7 @@ export function renderRoadmap(
 
     // Title row: title text + optional link icon (same pattern as vizardry-block-label-row)
     const titleRow = card.createEl("div", { cls: "vzd-roadmap-card-title-row" });
-    const titleEl = titleRow.createEl("div", { cls: "vzd-roadmap-card-title", text: item.title });
+    const titleEl = createInlineEl(titleRow, "div", "vzd-roadmap-card-title", item.title);
 
     // Link affordance — chain-link icon appears when this item's title resolves
     // to a heading in the current note via [[#Heading]] annotation or auto-match.
@@ -256,7 +257,7 @@ export function renderRoadmap(
     }
 
     if (item.subtitle) {
-      card.createEl("div", { cls: "vzd-roadmap-card-subtitle", text: item.subtitle });
+      createInlineEl(card, "div", "vzd-roadmap-card-subtitle", item.subtitle);
     }
 
     if (editMode && app && ctx) {

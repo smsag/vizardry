@@ -21,6 +21,7 @@ import { renderHeadingLink } from "./controls";
 import { createSvgEl } from "../shared/svg";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
 import { rectBoundary } from "../shared/geometry";
+import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
 
 // ── Layout constants (SVG user units) ────────────────────────────────────────
 const PAD = 24;
@@ -70,8 +71,11 @@ function cardHeight(node: FlowNode, editMode: boolean): number {
   // In edit mode both fields are always rendered (with placeholders), so
   // reserve at least one line for each even when empty — otherwise the
   // always-present field overflows the fixed-height card and is clipped.
-  const headingLines = node.heading ? Math.max(1, wrappedLineCount(node.heading, cpl)) : (editMode ? 1 : 0);
-  const bodyLines = node.body ? wrappedLineCount(node.body, cpl) : (editMode ? 1 : 0);
+  // Edit mode sizes for the raw text (markers included) the editor shows;
+  // read mode for the formatted text without them.
+  const shown = (s: string): string => (editMode ? s : stripInline(s));
+  const headingLines = node.heading ? Math.max(1, wrappedLineCount(shown(node.heading), cpl)) : (editMode ? 1 : 0);
+  const bodyLines = node.body ? wrappedLineCount(shown(node.body), cpl) : (editMode ? 1 : 0);
   let h = CARD_PAD_TOP + EYEBROW_H;
   if (headingLines) h += headingLines * HEADING_LINE_H;
   if (bodyLines) h += HEADING_BODY_GAP + bodyLines * BODY_LINE_H;
@@ -168,6 +172,7 @@ function makeEditable(el: HTMLElement, initialText: string, commit: (value: stri
   el.addEventListener("click", (e) => {
     e.stopPropagation();
     if (el.getAttribute("contenteditable")) return;
+    el.textContent = initial; // the editor shows the source, markers included
     el.setAttribute("contenteditable", "plaintext-only");
     el.setAttribute("spellcheck", "false");
     el.focus({ preventScroll: true });
@@ -191,8 +196,8 @@ function makeEditable(el: HTMLElement, initialText: string, commit: (value: stri
       el.removeAttribute("contenteditable");
       el.removeAttribute("spellcheck");
       const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-      if (save && text !== initial) { el.textContent = text; initial = text; commit(text); }
-      else el.textContent = initial;
+      if (save && text !== initial) { setInline(el, text); initial = text; commit(text); }
+      else setInline(el, initial);
     };
     const onKey = (ev: KeyboardEvent): void => {
       if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
@@ -223,13 +228,13 @@ function renderCard(svg: SVGElement, node: Placed, rc: RenderContext, edit?: Flo
   if (edit) {
     // Editable in place: heading + body always present so an empty field can be
     // filled; placeholders come from CSS (:empty::before).
-    const headEl = host.createEl("div", { cls: "vzd-flow-heading vzd-flow-heading--edit", text: node.heading });
+    const headEl = createInlineEl(host, "div", "vzd-flow-heading vzd-flow-heading--edit", node.heading);
     makeEditable(headEl, node.heading, (h) => edit.editText(node, h, node.body ?? ""));
-    const bodyEl = host.createEl("div", { cls: "vzd-flow-body vzd-flow-body--edit", text: node.body ?? "" });
+    const bodyEl = createInlineEl(host, "div", "vzd-flow-body vzd-flow-body--edit", node.body ?? "");
     makeEditable(bodyEl, node.body ?? "", (b) => edit.editText(node, node.heading, b));
 
     attachItemMenu(host, {
-      label: t("menu.actionsFor", { name: node.heading }),
+      label: t("menu.actionsFor", { name: stripInline(node.heading) }),
       button: { parent: host, cls: "vzd-flow-card-delete" },
       actions: () => [{
         title: t("flow.deleteCard"),
@@ -240,10 +245,10 @@ function renderCard(svg: SVGElement, node: Placed, rc: RenderContext, edit?: Flo
     });
   } else {
     if (node.heading) {
-      const headEl = host.createEl("div", { cls: "vzd-flow-heading", text: node.heading });
+      const headEl = createInlineEl(host, "div", "vzd-flow-heading", node.heading);
       renderHeadingLink(headEl, node.heading, rc.resolver, rc.navigateTo, rc.app, rc.ctx?.sourcePath);
     }
-    if (node.body) host.createEl("div", { cls: "vzd-flow-body", text: node.body });
+    if (node.body) createInlineEl(host, "div", "vzd-flow-body", node.body);
   }
 
   fo.appendChild(host);

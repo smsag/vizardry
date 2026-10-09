@@ -198,3 +198,29 @@ describe("createLinkResolver — resolveCanvas", () => {
     expect(resolver.resolveCanvas?.("Q3 Roadmap")).toBeUndefined();
   });
 });
+
+describe("createLinkResolver — resolve with inline formatting", () => {
+  const resolver = createLinkResolver({}, ["Goal", "==Risks==", "Plain **bold** heading"]);
+
+  it("matches a highlighted label to a plain heading", () => {
+    expect(resolver.resolve("==Goal==")).toBe("Goal");
+    expect(resolver.resolve("==🔴Goal==")).toBe("Goal");
+  });
+
+  it("matches a bold label to a plain heading", () => {
+    expect(resolver.resolve("**Goal**")).toBe("Goal");
+  });
+
+  it("matches a plain label to a formatted heading, returning the heading as written", () => {
+    expect(resolver.resolve("Risks")).toBe("==Risks==");
+    expect(resolver.resolve("plain bold heading")).toBe("Plain **bold** heading");
+  });
+
+  it("still matches exact labels", () => {
+    expect(resolver.resolve("goal")).toBe("Goal");
+  });
+
+  it("does not match different words", () => {
+    expect(resolver.resolve("==Goals==")).toBeUndefined();
+  });
+});

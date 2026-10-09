@@ -1,4 +1,5 @@
 import type { FishboneDiagram } from "../types";
+import { stripInline } from "../shared/inline-markdown";
 
 /**
  * Pure layout for the herringbone (true Ishikawa) fishbone: a horizontal spine
@@ -35,10 +36,14 @@ const CAUSE_MAX_CHARS = 30;
 const SUB_CHAR_W = 5.8;
 const SUB_MAX_CHARS = 34;
 
-export interface FBSub { text: string; x: number; y: number; }
+/** `text` is the source name (markers included) that edits address;
+ *  `label` is what the SVG draws: markers stripped, then truncated. */
+export interface FBSub { text: string; label: string; x: number; y: number; }
 
 export interface FBCause {
   text: string;
+  /** Drawn text: markers stripped, then truncated (see FBSub). */
+  label: string;
   /** Rib attach point → stub end (label anchor is the stub end). */
   stub: { x1: number; y1: number; x2: number; y2: number };
   labelX: number;
@@ -89,7 +94,7 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
   const colorCount = Math.max(1, cats.length);
 
   // Effect head — sized to its wrapped text.
-  const headLines = wrapChars(diagram.effect || " ", HEAD_WRAP_CHARS);
+  const headLines = wrapChars(stripInline(diagram.effect) || " ", HEAD_WRAP_CHARS);
   const headH = Math.max(HEAD_MIN_H, HEAD_PAD * 2 + headLines.length * HEAD_LINE_H);
 
   const midY = 0; // provisional; shifted to positive at the end
@@ -118,12 +123,14 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
       // above the cause on a top bone, below it on a bottom bone.
       const subs: FBSub[] = c.subcauses.map((s, si) => ({
         text: truncate(s.name, SUB_MAX_CHARS),
+        label: truncate(stripInline(s.name), SUB_MAX_CHARS),
         x: sx + 12,
         y: sy + dir * (si + 1) * SUB_LINE_H,
       }));
       dist += rowH / sin;
       return {
         text: truncate(c.name, CAUSE_MAX_CHARS),
+        label: truncate(stripInline(c.name), CAUSE_MAX_CHARS),
         stub: { x1: px, y1: py, x2: sx, y2: sy },
         labelX: sx + 5,
         labelY: sy - 2,
@@ -174,11 +181,11 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
     grow(cat.box.x, cat.box.y); grow(cat.box.x + cat.box.w, cat.box.y + cat.box.h);
     grow(cat.rib.x2, cat.rib.y2);
     for (const c of cat.causes) {
-      const w = CAUSE_STUB + Math.min(c.text.length, CAUSE_MAX_CHARS) * CAUSE_CHAR_W + 12;
+      const w = CAUSE_STUB + Math.min(c.label.length, CAUSE_MAX_CHARS) * CAUSE_CHAR_W + 12;
       grow(c.stub.x1, c.stub.y1);
       grow(c.stub.x1 + w, c.stub.y1);
       for (const s of c.subs) {
-        grow(s.x + Math.min(s.text.length, SUB_MAX_CHARS) * SUB_CHAR_W + 8, s.y);
+        grow(s.x + Math.min(s.label.length, SUB_MAX_CHARS) * SUB_CHAR_W + 8, s.y);
       }
     }
   }

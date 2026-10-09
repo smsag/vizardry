@@ -4,6 +4,7 @@ import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
+import { createInlineEl } from "../shared/inline-markdown";
 
 // Square viewBox in percentage units; the radar sits in the middle and the
 // statement labels use the surrounding margin (so R is well under 50).
@@ -89,6 +90,6 @@ export function renderRadar(
     label.style.transform = `translate(${tx}, ${ty})`;
     label.style.textAlign = cos > 0.25 ? "left" : cos < -0.25 ? "right" : "center";
     label.createEl("span", { cls: "vzd-radar-num", text: `${i + 1}.` });
-    label.createEl("span", { cls: "vzd-radar-stmt", text: ` ${axis.label}` });
+    createInlineEl(label, "span", "vzd-radar-stmt", ` ${axis.label}`);
   });
 }

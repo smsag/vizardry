@@ -5,7 +5,7 @@ import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings, s
 import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { renderTree } from "./tree";
 import { adaptSCQAToTree, scqaTreeOptions } from "./tree-adapters";
-import { renderInline } from "../shared/inline-markdown";
+import { renderInline, stripInline } from "../shared/inline-markdown";
 import { activateInlineEdit } from "./inline-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
@@ -173,7 +173,7 @@ function renderGrid(
     // Actions menu (any node except the situation root).
     if (node.level > 0) {
       attachItemMenu(card, {
-        label: t("menu.actionsFor", { name: node.text }),
+        label: t("menu.actionsFor", { name: stripInline(node.text) }),
         button: { parent: card, cls: "vzd-scqa-card-del" },
         actions: () => [{
           title: t("tree.deleteNode"),

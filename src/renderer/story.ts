@@ -12,6 +12,7 @@ import { t } from "../i18n";
 import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
+import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
 import { textOnlyClone } from "./card-block";
 import {
   addStoryTask,
@@ -69,7 +70,7 @@ export function renderStoryMap(
   let stepOffset = 0;
   for (const activity of map.activities) {
     const origGridCol = `${colOffset} / span ${activity.steps.length}`;
-    const el = grid.createEl("div", { cls: "vzd-story-activity-header", text: activity.name });
+    const el = createInlineEl(grid, "div", "vzd-story-activity-header", activity.name);
     el.style.gridColumn = origGridCol;
     el.dataset.origGridCol = origGridCol;
     activityHeaderRefs.push({ el, start: stepOffset, end: stepOffset + activity.steps.length - 1, origGridCol });
@@ -91,7 +92,7 @@ export function renderStoryMap(
   const stepHeaderEls: HTMLElement[] = [];
   for (let i = 0; i < allSteps.length; i++) {
     const step = allSteps[i];
-    const el = grid.createEl("div", { cls: "vzd-story-step-header", text: step.name });
+    const el = createInlineEl(grid, "div", "vzd-story-step-header", step.name);
     el.dataset.stepCol = String(i);
     stepHeaderEls.push(el);
 
@@ -250,9 +251,9 @@ export function renderStoryMap(
   // ── Task card rendering ───────────────────────────────────────────────────
   function renderTaskCard(cell: HTMLElement, task: StoryTask, sliceName: string | null, index: number): void {
     const card = cell.createEl("div", { cls: "vzd-story-task-card" });
-    const nameDiv = card.createEl("div", { cls: "vzd-story-task-name", text: task.name });
+    const nameDiv = createInlineEl(card, "div", "vzd-story-task-name", task.name);
     if (task.subtitle) {
-      card.createEl("div", { cls: "vzd-story-task-subtitle", text: task.subtitle });
+      createInlineEl(card, "div", "vzd-story-task-subtitle", task.subtitle);
     }
     renderHeadingLink(card, task.name, resolver, navigateTo, app, ctx?.sourcePath);
     if (isEditMode && app && ctx) {
@@ -274,7 +275,7 @@ export function renderStoryMap(
 
       // Actions menu — ⋯ button, right-click, or long-press. See item-menu.ts.
       attachItemMenu(card, {
-        label: t("menu.actionsFor", { name: task.name }),
+        label: t("menu.actionsFor", { name: stripInline(task.name) }),
         button: { parent: card, cls: "vzd-story-task-delete" },
         actions: () => [{
           title: t("story.deleteTask"),
@@ -310,7 +311,7 @@ export function renderStoryMap(
   for (const slice of map.slices) {
     const band = grid.createEl("div", { cls: "vzd-story-slice-band" });
     band.dataset.sliceName = slice.name;
-    band.createEl("div", { cls: "vzd-story-slice-label", text: slice.name });
+    createInlineEl(band, "div", "vzd-story-slice-label", slice.name);
     const cellsRow = band.createEl("div", { cls: "vzd-story-slice-cells" });
     cellsRow.style.setProperty("--vzd-story-cols", String(totalCols));
 
@@ -458,7 +459,7 @@ function setupStoryCarousel(
     });
 
     const { activityName, stepName } = stepMeta[col];
-    label.textContent = `${activityName} › ${stepName}`;
+    setInline(label, `${activityName} › ${stepName}`);
     prevBtn.disabled = col === 0;
     nextBtn.disabled = col === total - 1;
   }

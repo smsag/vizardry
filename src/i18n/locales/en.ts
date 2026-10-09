@@ -86,6 +86,7 @@ export const en = {
   "edit.clickToEdit":  "Click to edit",
   "sipoc.addRowBelow": "Add row below",
   "edit.writeFailed":  "Edit could not be saved — open the note in editing mode",
+  "edit.formatInSource": "Canvas text can't be formatted from here. Switch to Source mode and wrap the text in ==…== (or **…**) inside the code block.",
 
   // ── Title editing ────────────────────────────────────────────────────────────
   "title.clickToEdit": "Click to rename",

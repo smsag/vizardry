@@ -5,6 +5,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { t } from "../i18n";
+import { createInlineEl } from "../shared/inline-markdown";
 
 // Square viewBox; the three rings are concentric circles centred in it.
 const VIEW = 400;
@@ -38,7 +39,7 @@ function placeRadial(wrap: HTMLElement, tierItems: CircleItem[], tier: CircleTie
   const step = (2 * Math.PI) / n;
   tierItems.forEach((item, i) => {
     const theta = -Math.PI / 2 + step / 2 + i * step;
-    const chip = wrap.createEl("div", { cls: `vzd-coi-chip vzd-coi-chip--${tier}`, text: item.text });
+    const chip = createInlineEl(wrap, "div", `vzd-coi-chip vzd-coi-chip--${tier}`, item.text);
     chip.style.left = `${((C + r * Math.cos(theta)) / VIEW) * 100}%`;
     chip.style.top = `${((C + r * Math.sin(theta)) / VIEW) * 100}%`;
   });
@@ -49,7 +50,7 @@ function placeRadial(wrap: HTMLElement, tierItems: CircleItem[], tier: CircleTie
 function placeControlStack(wrap: HTMLElement, tierItems: CircleItem[]): void {
   const stack = wrap.createEl("div", { cls: "vzd-coi-control-stack" });
   for (const item of tierItems) {
-    stack.createEl("div", { cls: "vzd-coi-chip vzd-coi-chip--control", text: item.text });
+    createInlineEl(stack, "div", "vzd-coi-chip vzd-coi-chip--control", item.text);
   }
 }
 

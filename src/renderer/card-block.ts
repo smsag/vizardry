@@ -211,7 +211,7 @@ export function renderCardBlock(
     ghost.style.width = `${rect.width}px`;
     ghost.style.left = `${clientX + 8}px`;
     ghost.style.top = `${clientY + 8}px`;
-    ghost.createEl("div", { cls: "vzd-story-task-name", text: card.dataset.cardText ?? "" });
+    renderInline(ghost.createEl("div", { cls: "vzd-story-task-name" }), card.dataset.cardText ?? "");
 
     const placeholder = body.createEl("div", {
       cls: "vzd-card-block-card vzd-story-task-card vzd-story-task-card--placeholder",

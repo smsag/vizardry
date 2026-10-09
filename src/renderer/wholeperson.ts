@@ -5,6 +5,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
 import { accentHueExpr, harmonizedAccentColor } from "../shared/accent-colors";
+import { createInlineEl } from "../shared/inline-markdown";
 
 const MAX_SCORE = 10;
 const VIEW = 320;
@@ -103,7 +104,7 @@ function renderCards(host: HTMLElement, entries: WholePersonEntry[]): void {
 
     if (entry.activities.length > 0) {
       const list = card.createEl("ul", { cls: "vzd-wp-card-activities" });
-      for (const a of entry.activities) list.createEl("li", { text: a });
+      for (const a of entry.activities) createInlineEl(list, "li", undefined, a);
     }
   });
 }

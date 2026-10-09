@@ -8,6 +8,7 @@ import { activateTextareaEdit } from "./inline-edit";
 import { renderHeaderChip } from "./header-chip";
 import { writeTestCardField, writeTestCardGauge } from "../shared/testcard-edit";
 import { Notice } from "obsidian";
+import { setInline } from "../shared/inline-markdown";
 import { t } from "../i18n";
 
 const DEADLINE_KEY = "deadline";
@@ -105,7 +106,7 @@ function renderFill(host: HTMLElement, value: string, editable: boolean): void {
   host.empty();
   if (value) {
     host.removeClass("vzd-tc-fill--empty");
-    host.setText(value);
+    setInline(host, value);
   } else {
     host.addClass("vzd-tc-fill--empty");
     host.setText(editable ? "Write here…" : "");

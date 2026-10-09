@@ -3,6 +3,7 @@ import type { RenderContext } from "./render-context";
 import { initCanvas, renderCanvasWarnings } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
+import { createInlineEl } from "../shared/inline-markdown";
 
 export function renderBuyerUtilityMap(
   data: BuyerUtilityMapData,
@@ -42,12 +43,12 @@ export function renderBuyerUtilityMap(
   corner.createEl("span", { cls: "vzd-utility-corner-lever", text: "Levers ↓" });
   corner.createEl("span", { cls: "vzd-utility-corner-stage", text: "Stages →" });
   for (const stage of data.stages) {
-    grid.createEl("div", { cls: "vzd-utility-stage", text: stage });
+    createInlineEl(grid, "div", "vzd-utility-stage", stage);
   }
 
   // Body rows.
   data.levers.forEach((lever, leverIndex) => {
-    grid.createEl("div", { cls: "vzd-utility-lever", text: lever });
+    createInlineEl(grid, "div", "vzd-utility-lever", lever);
     data.stages.forEach((_stage, stageIndex) => {
       const mark = marks.get(`${stageIndex}:${leverIndex}`);
       if (!mark) {
@@ -58,7 +59,7 @@ export function renderBuyerUtilityMap(
       const tag = cell.createEl("span", { cls: "vzd-utility-tag" });
       tag.createEl("span", { cls: "vzd-utility-dot" });
       tag.createEl("span", { text: mark.kind === "utility" ? "Utility" : "Pain" });
-      if (mark.note) cell.createEl("div", { cls: "vzd-utility-note", text: mark.note });
+      if (mark.note) createInlineEl(cell, "div", "vzd-utility-note", mark.note);
     });
   });
 }
