@@ -1,4 +1,8 @@
-## Unreleased
+## 0.75.0
+
+Canvas text takes Obsidian's highlights, in all six colours and drawn like a
+felt-tip marker, bold and italic render on every canvas, and a grid canvas
+draws only the blocks you actually write.
 
 - **Grid canvases draw only the blocks you write.** A SWOT with just
   Strengths and Weaknesses now shows those two blocks side by side, instead
@@ -19,7 +23,7 @@
 - **Bold, italic and strike now render everywhere, not just in grid blocks.**
   Matrix items, roadmap and story cards, journey cards, RACI, SIPOC,
   Pro / Contra, compass, odyssey and the other HTML canvases used to show
-  `**` literally.
+  `**` literally. `__bold__` and `***bold italic***` render like in a note.
 - **Fix: Highlight or Bold on text selected in a canvas inserted an empty
   `====` under the block.** In Live Preview, Obsidian can't see a selection
   inside a rendered canvas. Vizardry now drops that stray edit and shows a
@@ -27,11 +31,9 @@
 - **A formatted label still finds its heading.** `==Goal==` or `**Goal**`
   auto-links to the heading *Goal*.
 - **Fix: underscores inside words no longer turn italic** (`snake_case_name`).
-- **`__bold__` and `***bold italic***` render like in a note.**
-- **Fix: a label full of unmatched `*` or `_` (a list of glob patterns, say)
-  could freeze Obsidian for seconds.** Formatting is now parsed in linear
-  time.
-- **Fix: Fishbone rename and delete failed on long formatted names.**
+- **Fix: renaming or deleting a Fishbone cause or sub-cause with a long name
+  failed.** The edit looked for the shortened label shown on the canvas
+  instead of the full name.
 
 ## 0.74.0
 
