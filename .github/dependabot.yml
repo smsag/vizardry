@@ -15,12 +15,32 @@ updates:
     commit-message:
       prefix: deps
     # Group dev-dependency bumps so lint/test/build tooling updates land together.
+    # Playwright gets its own group: every bump must change the pinned container
+    # image in .github/workflows/visual.yml and regenerate-visual.yml in the
+    # same PR (the browser build must match), so it never holds up the rest.
     groups:
+      playwright:
+        patterns:
+          - "@playwright/*"
       dev-dependencies:
         dependency-type: development
+        exclude-patterns:
+          - "@playwright/*"
     # Hold TypeScript at its current major: @typescript-eslint caps its peer at
     # "<6.1.0", so a TS major (e.g. 7.x) breaks `npm ci` for the whole group.
     # Revisit once @typescript-eslint supports the newer TypeScript major.
     ignore:
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Keep @types/node on the toolchain's Node major. A newer major changes
+      # the global type augmentations (@types/node 26 dropped the Array#at
+      # shim, which broke typecheck under lib ES2020); bump it deliberately
+      # together with .nvmrc.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # vitest 5 requires Node >= 22, CI runs Node 20 (.nvmrc). Hold the major
+      # until .nvmrc moves to 22.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
         update-types: ["version-update:semver-major"]
