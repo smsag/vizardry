@@ -11,7 +11,7 @@ Full reference: [vizardry-canvas-syntax-reference.md](vizardry-canvas-syntax-ref
 4. Keywords end with a colon (`block:`, `item:`) — except in conceptmap, mindmap, ost, venn.
 5. Comments: `// text` on its own line only. Inline `//` stripped only in wardley and pacelayers.
 6. Blank lines are ignored everywhere.
-7. Grid block labels must match exactly (case-insensitive); typos silently dropped.
+7. Grid block labels must match exactly (case-insensitive); typos silently dropped. Only written blocks are drawn: omit a block to leave it out, write `block: X` with no content to keep it empty.
 8. Don't quote values: `title: My Map`, not `title: "My Map"`.
 9. One `title:` line per canvas (optional).
 
