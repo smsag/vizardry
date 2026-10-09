@@ -8,6 +8,7 @@
   that draws its own highlights (Klartext does) draws canvas highlights too.
   Canvases drawn as SVG text (mind map, impact map, OST, fishbone, Wardley,
   concept map) show the words without the markers for now.
+  In sketch mode every highlight is the same pencil-grey marker.
 - **Bold, italic and strike now render everywhere, not just in grid blocks.**
   Matrix items, roadmap and story cards, journey cards, RACI, SIPOC,
   Pro / Contra, compass, odyssey and the other HTML canvases used to show

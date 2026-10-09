@@ -1746,6 +1746,7 @@ Labels and content lines accept the same inline formatting as an Obsidian note:
 - **Formats nest:** `==a **key** point==`, `**==urgent==**`.
 - **The text touches the markers:** `==text==` highlights, `== text ==` stays literal. An unclosed marker (`a == b`) stays literal too, and so does an underscore inside a word (`snake_case`).
 - **Escape** a marker with a backslash: `\==not highlighted\==`.
+- **Sketch mode** draws every highlight as the same pencil-grey marker, since that mode is monochrome: highlights mean emphasis there, not a colour.
 - **Matching ignores formatting:** a label `==Goal==` still auto-links to the heading `Goal`, and an explicit link annotation works as usual.
 
 ~~~

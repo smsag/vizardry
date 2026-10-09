@@ -4672,6 +4672,20 @@ body.vizardry-sketch .vzd-presentation-wrap svg:not(.svg-icon) :is(path, line, c
   filter: url(#vzd-sketch-rough);
 }
 
+/* Highlights: one graphite marker. The greyscale filter above would turn the
+   six highlight colours into six near-identical greys, with the default yellow
+   lighter than the rest, so in sketch mode a highlight means emphasis, not a
+   category: every colour draws the same pencil-grey ink, equally strong. The
+   stroke shape (see "Inline highlight") is unchanged and already hand-drawn. */
+body.vizardry-sketch :is(.vizardry-canvas, .vzd-presentation-overlay) mark.vzd-mark {
+  --vzd-mark-ink: rgba(0, 0, 0, 0.14);
+  --vzd-mark-ink-strong: rgba(0, 0, 0, 0.19);
+}
+body.vizardry-sketch.theme-dark :is(.vizardry-canvas, .vzd-presentation-overlay) mark.vzd-mark {
+  --vzd-mark-ink: rgba(255, 255, 255, 0.16);
+  --vzd-mark-ink-strong: rgba(255, 255, 255, 0.22);
+}
+
 /* No type-scale override: Shantell Sans has an x-height close to the UI font,
    so it reads at the canvas's normal sizes and the A+/A- controls apply as-is. */
 
