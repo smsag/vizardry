@@ -241,17 +241,19 @@ export function createLinkResolver(
   inlineTicketLinks: Record<string, TicketMatch> = {},
   inlineCanvasLinks: Record<string, string> = {},
 ): LinkResolver {
+  // Formatting doesn't change what a label names: `==Goal==` and `**Goal**`
+  // match the heading `Goal` (and a heading `==Goal==`). Headings are
+  // normalised once here, not once per label lookup.
+  const normalised = headings.map(h => {
+    const raw = h.toLowerCase().trim();
+    return { heading: h, raw, plain: stripInline(raw).trim() };
+  });
   return {
     resolve(label: string): string | undefined {
       const key = label.toLowerCase().trim();
       if (key in inlineLinks) return inlineLinks[key];
-      // Formatting doesn't change what a label names: `==Goal==` and
-      // `**Goal**` match the heading `Goal` (and a heading `==Goal==`).
       const plain = stripInline(key).trim();
-      return headings.find(h => {
-        const hk = h.toLowerCase().trim();
-        return hk === key || stripInline(hk).trim() === plain;
-      });
+      return normalised.find(h => h.raw === key || h.plain === plain)?.heading;
     },
     resolveTicket(label: string): TicketMatch | undefined {
       return inlineTicketLinks[label.toLowerCase().trim()];

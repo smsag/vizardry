@@ -47,3 +47,29 @@ describe("layoutFishbone", () => {
     expect(l.head.x + l.head.w).toBeGreaterThan(maxRibX);
   });
 });
+
+describe("layoutFishbone — long and formatted names", () => {
+  const long: FishboneDiagram = {
+    effect: "Churn",
+    categories: [{
+      name: "People",
+      causes: [{
+        name: "**Insufficient training budget**",
+        subcauses: [{ name: "==🔴No onboarding owner assigned this quarter==" }],
+      }],
+    }],
+  };
+
+  it("keeps the full source name as the edit key, whatever the label shows", () => {
+    const cause = layoutFishbone(long).categories[0]!.causes[0]!;
+    expect(cause.text).toBe("**Insufficient training budget**");
+    expect(cause.subs[0]!.text).toBe("==🔴No onboarding owner assigned this quarter==");
+  });
+
+  it("draws the label without markers, truncated", () => {
+    const cause = layoutFishbone(long).categories[0]!.causes[0]!;
+    expect(cause.label).toBe("Insufficient training budget");
+    expect(cause.subs[0]!.label.startsWith("No onboarding owner")).toBe(true);
+    expect(cause.subs[0]!.label).not.toContain("==");
+  });
+});

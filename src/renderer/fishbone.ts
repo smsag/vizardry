@@ -239,7 +239,7 @@ function renderCause(
       subText.classList.add("vzd-fb-editable");
       subText.addEventListener("dblclick", (e) => {
         e.stopPropagation();
-        ops.openRename(sub.x, sub.y - 12, Math.max(sub.text.length, sub.label.length) * 6 + 24, 18, sub.text, "var(--text-muted)",
+        ops.openRename(sub.x, sub.y - 12, Math.max(sub.label.length, Math.min(sub.text.length, 40)) * 6 + 24, 18, sub.text, "var(--text-muted)",
           (v) => ops.doRename(3, sub.text, v));
       });
       subItem.prepend(itemHit(sub.x - 4, sub.y - 14, sub.label.length * 5.8 + 36, 20));

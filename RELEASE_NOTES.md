@@ -20,6 +20,11 @@
 - **A formatted label still finds its heading.** `==Goal==` or `**Goal**`
   auto-links to the heading *Goal*.
 - **Fix: underscores inside words no longer turn italic** (`snake_case_name`).
+- **`__bold__` and `***bold italic***` render like in a note.**
+- **Fix: a label full of unmatched `*` or `_` (a list of glob patterns, say)
+  could freeze Obsidian for seconds.** Formatting is now parsed in linear
+  time.
+- **Fix: Fishbone rename and delete failed on long formatted names.**
 
 ## 0.74.0
 
