@@ -147,12 +147,48 @@ describe("renderCanvas", () => {
     ],
   };
 
-  it("renders header and all blocks", () => {
+  it("renders header and all blocks when every block is declared", () => {
     const el = container();
-    renderCanvas(swot, { strengths: "Fast team", weaknesses: "" }, new Set(), el, NULL_RESOLVER, vi.fn());
+    renderCanvas(swot, { strengths: "Fast team", weaknesses: "", opportunities: "", threats: "" },
+      new Set(), el, NULL_RESOLVER, vi.fn());
     expect(el.querySelector(".vizardry-grid")).toBeTruthy();
     const blocks = el.querySelectorAll(".vizardry-block");
     expect(blocks).toHaveLength(4);
+  });
+
+  // WHEN a SWOT canvas leaves out the Opportunities and Threats blocks
+  // THEN it still renders, with just the two declared blocks.
+  it("renders only the declared blocks when some are left out", () => {
+    const el = container();
+    renderCanvas(swot, { strengths: "Fast team", weaknesses: "" }, new Set(), el, NULL_RESOLVER, vi.fn());
+    const labels = Array.from(el.querySelectorAll(".vizardry-block-label"), (l) => l.textContent);
+    expect(labels).toEqual(["Strengths", "Weaknesses"]);
+    // The empty bottom row is gone, so the two blocks fill the canvas.
+    const grid = el.querySelector<HTMLElement>(".vizardry-grid")!;
+    expect(grid.style.getPropertyValue("--vzd-template")).toBe('"st wk"');
+    expect(grid.style.getPropertyValue("--vzd-rows")).toBe("1fr");
+  });
+
+  it("keeps a declared but empty block, with its prompt", () => {
+    const el = container();
+    renderCanvas(swot, { strengths: "Fast team", threats: "" }, new Set(), el, NULL_RESOLVER, vi.fn());
+    const labels = Array.from(el.querySelectorAll(".vizardry-block-label"), (l) => l.textContent);
+    expect(labels).toEqual(["Strengths", "Threats"]);
+    // Diagonal blocks widen into the empty cells beside them.
+    const grid = el.querySelector<HTMLElement>(".vizardry-grid")!;
+    expect(grid.style.getPropertyValue("--vzd-template")).toBe('"st st" "th th"');
+  });
+
+  it("shows the full skeleton when no block is declared at all", () => {
+    const el = container();
+    renderCanvas(swot, {}, new Set(), el, NULL_RESOLVER, vi.fn());
+    expect(el.querySelectorAll(".vizardry-block")).toHaveLength(4);
+  });
+
+  it("shows the full skeleton when only unknown block labels are declared", () => {
+    const el = container();
+    renderCanvas(swot, { strenghts: "typo" }, new Set(), el, NULL_RESOLVER, vi.fn());
+    expect(el.querySelectorAll(".vizardry-block")).toHaveLength(4);
   });
 
   it("renders the period field from source when the framework enables it", () => {

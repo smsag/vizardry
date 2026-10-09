@@ -14,6 +14,7 @@ import { renderHeaderChip } from "./header-chip";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 import type { FrameworkDefinition } from "../types";
+import { collapseGridLayout } from "../shared/grid-layout";
 
 // ── Relink registry ───────────────────────────────────────────────────────────
 // Keeps track of rendered canvas blocks that need their link buttons refreshed
@@ -151,10 +152,23 @@ export function renderCanvas(
     : undefined;
   initCanvas(container, framework.id, title, extraHeader, source, onTitleEdit, app, ctx);
 
+  // A block left out of the source isn't drawn, and the grid closes the gap
+  // (`type: swot` with only Strengths and Weaknesses → two blocks, one row).
+  // A canvas that declares no known block at all still shows the full
+  // skeleton with its prompts, so a bare `type:` line isn't an empty box.
+  const declared = framework.blocks.filter(b => Object.prototype.hasOwnProperty.call(data, b.label.toLowerCase()));
+  const visibleBlocks = declared.length > 0 ? declared : framework.blocks;
+  const layout = visibleBlocks.length === framework.blocks.length
+    ? { template: framework.gridTemplate, columns: framework.gridColumns, rows: framework.gridRows }
+    : collapseGridLayout(
+      { template: framework.gridTemplate, columns: framework.gridColumns, rows: framework.gridRows },
+      new Set(visibleBlocks.map(b => b.area)),
+    );
+
   const grid = container.createEl("div", { cls: "vizardry-grid" });
-  grid.style.setProperty("--vzd-template", framework.gridTemplate);
-  grid.style.setProperty("--vzd-columns", framework.gridColumns);
-  grid.style.setProperty("--vzd-rows", framework.gridRows);
+  grid.style.setProperty("--vzd-template", layout.template);
+  grid.style.setProperty("--vzd-columns", layout.columns);
+  grid.style.setProperty("--vzd-rows", layout.rows);
 
   // Two passes: the first creates every block's DOM (label, link button,
   // body element) and figures out which ones are card-mode; the second
@@ -165,7 +179,7 @@ export function renderCanvas(
   // renderMatrix().
   const cells: TwoPassCell[] = [];
 
-  for (const blockDef of framework.blocks) {
+  for (const blockDef of visibleBlocks) {
     const labelKey = blockDef.label.toLowerCase();
     const block = grid.createEl("div", { cls: "vizardry-block" });
     // Drive grid placement from a custom property (not an inline grid-area) so
@@ -210,5 +224,5 @@ export function renderCanvas(
   const cardTargets = buildCardDropTargets(cells);
   renderTwoPassCells(cells, cardTargets, container, app, ctx, resolver, navigateTo, t("edit.clickToEdit"));
 
-  setupSlideCarousel(container, ".vizardry-block", "vizardry-block-active", framework.blocks.length);
+  setupSlideCarousel(container, ".vizardry-block", "vizardry-block-active", visibleBlocks.length);
 }
