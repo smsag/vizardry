@@ -23,7 +23,7 @@ import { extractInlineLinks, buildLinkSupport, getFileHeadings, createLinkResolv
 import { parseFrameworkSource } from "./parser";
 import { renderCanvas, renderError } from "./renderer";
 import { renderCanvasWarnings } from "./renderer/controls";
-import { registerCanvasRelink, relinkCanvas } from "./renderer/canvas";
+import { registerCanvasRelink, relinkCanvas, unknownBlockWarnings } from "./renderer/canvas";
 import { FRAMEWORKS_BY_ID, CUSTOM_RENDERERS_BY_ID } from "./catalog";
 import { getPluginVersion } from "./shared/version";
 import { indentOf } from "./shared/indent";
@@ -131,7 +131,7 @@ function renderSingleCanvas(
       const result = parseFrameworkSource(strippedSource);
       const { resolver, navigateTo } = buildLinkSupport(app, ctx, inlineLinks, inlineTicketLinks, inlineCanvasLinks);
       renderCanvas(definition, result.data, result.cardBlocks, el, resolver, navigateTo, app, ctx, source, result.allCards);
-      renderCanvasWarnings(el, result.warnings);
+      renderCanvasWarnings(el, [...(result.warnings ?? []), ...unknownBlockWarnings(definition, result.data)]);
       // Re-evaluate link buttons whenever the note's headings change (e.g. a
       // matching heading is added outside the code block after first render).
       registerCanvasRelink(ctx.sourcePath, () => {

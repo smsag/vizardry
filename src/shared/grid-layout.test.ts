@@ -17,6 +17,20 @@ describe("expandTracks", () => {
 
   it("rejects unbalanced parentheses", () => {
     expect(expandTracks("minmax(1fr")).toBeNull();
+    expect(expandTracks("1fr) (2fr")).toBeNull();
+  });
+
+  it("splits functions written without a space between them", () => {
+    expect(expandTracks("repeat(2,1fr)repeat(1,2fr)")).toEqual(["1fr", "1fr", "2fr"]);
+  });
+
+  it("reads REPEAT case-insensitively", () => {
+    expect(expandTracks("REPEAT(2, 1fr)")).toEqual(["1fr", "1fr"]);
+  });
+
+  it("refuses track lists it can't count safely", () => {
+    expect(expandTracks("[a] 1fr [b] 1fr")).toBeNull();
+    expect(expandTracks("repeat(auto-fill, minmax(100px, 1fr))")).toBeNull();
   });
 });
 
@@ -43,6 +57,11 @@ describe("collapseGridLayout — SWOT", () => {
 
   it("returns the layout unchanged when nothing is present", () => {
     expect(collapse(SWOT, [])).toBe(SWOT);
+  });
+
+  it("returns the layout unchanged for a track list it can't read", () => {
+    const named: GridLayout = { ...SWOT, columns: "[left] 1fr [right] 1fr" };
+    expect(collapse(named, ["sw", "wk"])).toBe(named);
   });
 
   it("returns the layout unchanged when the tracks don't match the template", () => {
@@ -83,6 +102,7 @@ describe("collapseGridLayout — every grid framework", () => {
       expect(expandTracks(out.columns)!.length).toBe(grid[0]!.length);
       expect(expandTracks(out.rows)!.length).toBe(grid.length);
       for (const a of areas) expect(grid.flat().includes(a)).toBe(kept.includes(a));
+      expect(grid.flat(), `${f.id} keeping ${kept.join(",")} leaves a hole: ${out.template}`).not.toContain(".");
     }
   });
 });

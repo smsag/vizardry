@@ -51,7 +51,7 @@ vi.mock("html-to-image", () => ({
 }));
 
 // ── Renderer imports (after mocks are declared) ───────────────────────────────
-import { renderError, renderCanvas } from "./canvas";
+import { renderError, renderCanvas, unknownBlockWarnings } from "./canvas";
 import { renderMatrix } from "./matrix";
 import { parseMatrix } from "../matrix";
 import { renderTree } from "./tree";
@@ -143,7 +143,7 @@ describe("renderCanvas", () => {
       { label: "Strengths", area: "st" },
       { label: "Weaknesses", area: "wk" },
       { label: "Opportunities", area: "op" },
-      { label: "Threats", area: "th" },
+      { label: "Threats", area: "th", placeholder: "What could hurt you?" },
     ],
   };
 
@@ -174,6 +174,9 @@ describe("renderCanvas", () => {
     renderCanvas(swot, { strengths: "Fast team", threats: "" }, new Set(), el, NULL_RESOLVER, vi.fn());
     const labels = Array.from(el.querySelectorAll(".vizardry-block-label"), (l) => l.textContent);
     expect(labels).toEqual(["Strengths", "Threats"]);
+    // The empty Threats block keeps its prompt.
+    const threatsBody = el.querySelectorAll<HTMLElement>(".vizardry-block-body")[1]!;
+    expect(threatsBody.getAttribute("data-placeholder")).toBe("What could hurt you?");
     // Diagonal blocks widen into the empty cells beside them.
     const grid = el.querySelector<HTMLElement>(".vizardry-grid")!;
     expect(grid.style.getPropertyValue("--vzd-template")).toBe('"st st" "th th"');
@@ -183,6 +186,13 @@ describe("renderCanvas", () => {
     const el = container();
     renderCanvas(swot, {}, new Set(), el, NULL_RESOLVER, vi.fn());
     expect(el.querySelectorAll(".vizardry-block")).toHaveLength(4);
+  });
+
+  it("warns about a misspelled block label, which would otherwise vanish", () => {
+    expect(unknownBlockWarnings(swot, { strengths: "x", oportunities: "Lost content" })).toEqual([
+      'Unknown block "oportunities": not drawn. SWOT Analysis has: Strengths, Weaknesses, Opportunities, Threats',
+    ]);
+    expect(unknownBlockWarnings(swot, { strengths: "x", threats: "" })).toEqual([]);
   });
 
   it("shows the full skeleton when only unknown block labels are declared", () => {
