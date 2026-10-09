@@ -1,7 +1,7 @@
 name: Visual
 
 # Visual-regression check. Runs in the Playwright container whose bundled
-# Chromium (build 1194) matches @playwright/test@1.56.0 — the same build the
+# Chromium (build 1243) matches @playwright/test@1.63.0 — the same build the
 # committed baselines were rendered with — so screenshots line up. Kept as its
 # own workflow (a separate `visual` check, not the required `ci` check) so a
 # rendering diff surfaces without blocking merges; promote it in branch
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
-      image: mcr.microsoft.com/playwright:v1.56.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     env:
       # Browsers are preinstalled in the container; don't re-download on npm ci.
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
