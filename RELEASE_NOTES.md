@@ -1,3 +1,13 @@
+## 0.75.1
+
+Hotfix: a pinned canvas on a phone can be tapped again.
+
+- **Fix: a pinned canvas on a phone could not be tapped.** Once Obsidian hid
+  its header while scrolling, the pinned title bar sat under the status bar
+  and the Dynamic Island, where iOS keeps taps for itself, so it could neither
+  be opened nor folded. It now pins below the status bar, and below
+  Obsidian's header while that shows.
+
 ## 0.75.0
 
 Canvas text takes Obsidian's highlights, in all six colours and drawn like a

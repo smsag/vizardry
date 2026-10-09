@@ -448,3 +448,80 @@ describe("sticky-pin in Live Preview (CM6)", () => {
     expect(pinnedName()).toBeNull();
   });
 });
+
+describe("sticky-pin under phone chrome", () => {
+  const SAFE_TOP = 47; // iPhone status bar / Dynamic Island
+
+  let styleSpy: ReturnType<typeof vi.spyOn>;
+  let leaf: HTMLElement;
+  let viewHeader: HTMLElement;
+
+  beforeEach(() => {
+    // The note scrolls under the status bar: the scroller starts at the very
+    // top of the screen.
+    stubRect(scroller, { top: 0, bottom: 800, left: 0, right: 400, width: 400, height: 800 });
+    // Wrap the pane in a leaf with Obsidian's view header.
+    leaf = document.createElement("div");
+    leaf.className = "workspace-leaf-content";
+    document.body.appendChild(leaf);
+    viewHeader = leaf.createDiv({ cls: "view-header" });
+    leaf.appendChild(viewContent);
+    // happy-dom can't resolve env(): report the iPhone's inset for the probe.
+    const real = window.getComputedStyle.bind(window);
+    styleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((el: Element) => {
+      const cs = real(el);
+      if ((el as HTMLElement).classList?.contains("vzd-safe-area-probe")) {
+        return { ...cs, paddingTop: `${SAFE_TOP}px` } as CSSStyleDeclaration;
+      }
+      return cs;
+    });
+  });
+
+  afterEach(() => styleSpy.mockRestore());
+
+  /** A canvas whose rect tracks scrollTop from a scroller at viewport top 0. */
+  function phoneCanvas(off: number): HTMLElement {
+    const el = document.createElement("div");
+    el.className = "vizardry-canvas";
+    el.createEl("div", { cls: "vizardry-header" }).createEl("span", { cls: "vizardry-title", text: "ERRC" });
+    el.getBoundingClientRect = () => {
+      const top = off - scrollTop;
+      return { top, bottom: top + 200, left: 0, right: 400, width: 400, height: 200, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+    };
+    scroller.appendChild(el);
+    return el;
+  }
+
+  function barTop(): string {
+    return viewContent.querySelector<HTMLElement>(".vizardry-canvas--pinned-bar")!.style.top;
+  }
+
+  it("pins the bar below the status bar while the header is hidden", () => {
+    stubRect(viewHeader, { top: -60, bottom: -4, height: 56, width: 400 }); // slid up off screen
+    const a = phoneCanvas(300);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+    expect(barTop()).toBe(`${SAFE_TOP}px`);
+  });
+
+  it("pins the bar below the view header while it shows over the note", () => {
+    stubRect(viewHeader, { top: SAFE_TOP, bottom: SAFE_TOP + 44, height: 44, width: 400 });
+    const a = phoneCanvas(300);
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+    expect(barTop()).toBe(`${SAFE_TOP + 44}px`);
+  });
+
+  it("ignores a header that sits above the scroller (desktop layout)", () => {
+    stubRect(scroller, { top: 100, bottom: 800, left: 0, right: 400, width: 400, height: 700 });
+    stubRect(viewHeader, { top: 60, bottom: 100, height: 40, width: 400 });
+    const a = phoneCanvas(300);
+    a.getBoundingClientRect = () => {
+      const top = 100 + 300 - scrollTop;
+      return { top, bottom: top + 200, left: 0, right: 400, width: 400, height: 200, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+    };
+    activateSticky(a, { compact: true });
+    scrollTo(350);
+    expect(barTop()).toBe("100px");
+  });
+});

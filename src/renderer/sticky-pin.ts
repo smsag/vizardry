@@ -102,7 +102,12 @@ class StickyController {
   /** Releases the compact bar's document listener. */
   private releaseBar: (() => void) | null = null;
 
+  /** Height of the screen's top safe area (status bar, notch), measured once
+   *  and again after a resize (rotation). Null until measured. */
+  private safeTop: number | null = null;
+
   private readonly onScrollOrResize = (): void => this.schedule();
+  private readonly onResize = (): void => { this.safeTop = null; this.schedule(); };
 
   constructor(
     private readonly scroller: HTMLElement,
@@ -110,7 +115,7 @@ class StickyController {
     private readonly compact: boolean,
   ) {
     this.scroller.addEventListener("scroll", this.onScrollOrResize, { passive: true });
-    this.win.addEventListener("resize", this.onScrollOrResize);
+    this.win.addEventListener("resize", this.onResize);
   }
 
   add(container: HTMLElement, isCurrent?: () => boolean): void {
@@ -322,6 +327,25 @@ class StickyController {
     toggle.setAttribute("aria-expanded", String(open));
   }
 
+  /** The viewport y below which the note is visible and reachable. On a
+   *  phone the note scrolls under the status bar once Obsidian hides its
+   *  header, so the scroller's own top is the top of the screen: a bar pinned
+   *  there sits behind the clock and the Dynamic Island, where iOS keeps taps
+   *  for itself. Pin below the top safe area, and below the view header while
+   *  it shows over the note. */
+  private visibleTop(sRect: DOMRect): number {
+    let top = sRect.top;
+    if (this.safeTop === null) this.safeTop = measureSafeTop(this.scroller.ownerDocument);
+    top = Math.max(top, this.safeTop);
+    const header = this.scroller.closest(".workspace-leaf-content")?.querySelector<HTMLElement>(":scope > .view-header");
+    if (header) {
+      const h = header.getBoundingClientRect();
+      // Only a header that is shown and overlaps the scroller's top edge.
+      if (h.height > 0 && h.bottom > top && h.top <= top) top = h.bottom;
+    }
+    return top;
+  }
+
   /** The clone spans the note pane edge to edge right under its header —
    *  an extension of the header, not a box floating over the text — and pads
    *  its content in to the canvas's own column, so the canvas sits exactly
@@ -329,7 +353,7 @@ class StickyController {
   private position(sRect: DOMRect): void {
     const geom = this.pinned && this.geoms.get(this.pinned);
     if (!geom || !this.clone) return;
-    const chromeTop = sRect.top;
+    const chromeTop = this.visibleTop(sRect);
     const left = sRect.left;
     const width = this.scroller.clientWidth || sRect.width; // without the scrollbar
     const s = this.clone.style;
@@ -370,9 +394,20 @@ class StickyController {
     this.disposed = true;
     this.unpin();
     this.scroller.removeEventListener("scroll", this.onScrollOrResize);
-    this.win.removeEventListener("resize", this.onScrollOrResize);
+    this.win.removeEventListener("resize", this.onResize);
     controllers.delete(this.scroller);
   }
+}
+
+/** `env(safe-area-inset-top)` in px: 0 on desktop and on phones without a
+ *  notch or status-bar overlay. CSS env() can't be read from script, so a
+ *  hidden probe takes it as padding. */
+function measureSafeTop(doc: Document): number {
+  const probe = doc.body.createDiv({ cls: "vzd-safe-area-probe" });
+  probe.style.cssText = "position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top, 0px)";
+  const px = parseFloat(doc.defaultView?.getComputedStyle(probe).paddingTop ?? "0") || 0;
+  probe.remove();
+  return px;
 }
 
 const controllers = new WeakMap<HTMLElement, StickyController>();
