@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **Grid canvases draw only the blocks you write.** A SWOT with just
+  Strengths and Weaknesses now shows those two blocks side by side, instead
+  of four with two empty prompts; the remaining blocks grow to close the
+  gap. Write a `block:` line with nothing under it to keep an empty block
+  with its prompt. A canvas with no `block:` lines still shows the full
+  skeleton.
 - **Highlight canvas text like note text.** `==text==` highlights a label or
   line, and Obsidian's coloured highlights work too: `==🔴text==`, plus 🟠, 🟡,
   🟢, 🔵 and 🟣. Highlights nest with **bold**, *italic* and ~~strike~~, and
