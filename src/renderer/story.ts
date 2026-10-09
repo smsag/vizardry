@@ -12,7 +12,7 @@ import { t } from "../i18n";
 import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
-import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
+import { createInlineEl, renderInline, setInline, stripInline } from "../shared/inline-markdown";
 import { textOnlyClone } from "./card-block";
 import {
   addStoryTask,
@@ -459,7 +459,10 @@ function setupStoryCarousel(
     });
 
     const { activityName, stepName } = stepMeta[col];
-    setInline(label, `${activityName} › ${stepName}`);
+    // Each name is formatted on its own, so markers never pair across the separator.
+    setInline(label, activityName);
+    label.appendText(" › ");
+    renderInline(label, stepName);
     prevBtn.disabled = col === 0;
     nextBtn.disabled = col === total - 1;
   }

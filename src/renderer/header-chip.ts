@@ -1,4 +1,5 @@
 import { activateInlineEdit } from "./inline-edit";
+import { setInline } from "../shared/inline-markdown";
 
 export interface HeaderChipOptions {
   /** Extra class on the chip, e.g. "vzd-tc-deadline". */
@@ -26,15 +27,22 @@ export function renderHeaderChip(header: HTMLElement, opts: HeaderChipOptions): 
   const field = header.createEl("div", { cls: opts.cls ? `vizardry-period ${opts.cls}` : "vizardry-period" });
   field.createEl("span", { cls: "vizardry-period-label", text: opts.label });
   const valueEl = field.createEl("span", { cls: "vizardry-period-value" });
-  if (value) valueEl.setText(value);
-  else { valueEl.addClass("vizardry-period-value--empty"); valueEl.setText(opts.placeholder); }
+  // One painter for the first render and after an edit or Escape, so the chip
+  // looks the same either way (inline formatting, or the empty placeholder).
+  const paint = (host: HTMLElement, v: string): void => {
+    host.toggleClass("vizardry-period-value--empty", !v);
+    setInline(host, v || opts.placeholder);
+  };
+  paint(valueEl, value);
 
   if (onCommit) {
     valueEl.addClass("vizardry-period-value--editable");
     valueEl.addEventListener("click", (e) => {
       e.stopPropagation();
-      activateInlineEdit(valueEl, value, onCommit,
-        opts.allowClear ? { shouldCommit: (v, cur) => v !== cur } : {});
+      activateInlineEdit(valueEl, value, onCommit, {
+        renderDisplay: paint,
+        ...(opts.allowClear ? { shouldCommit: (v: string, cur: string) => v !== cur } : {}),
+      });
     });
   }
 

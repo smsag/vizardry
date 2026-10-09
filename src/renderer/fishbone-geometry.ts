@@ -36,8 +36,9 @@ const CAUSE_MAX_CHARS = 30;
 const SUB_CHAR_W = 5.8;
 const SUB_MAX_CHARS = 34;
 
-/** `text` is the source name (markers included) that edits address;
- *  `label` is what the SVG draws: markers stripped, then truncated. */
+/** `text` is the full source name (markers included, never truncated): the
+ *  key rename, delete, add-child and link lookups address. `label` is what
+ *  the SVG draws: markers stripped, then truncated. */
 export interface FBSub { text: string; label: string; x: number; y: number; }
 
 export interface FBCause {
@@ -122,14 +123,14 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
       // Sub-causes extend OUTWARD (away from the spine), so they never cross it:
       // above the cause on a top bone, below it on a bottom bone.
       const subs: FBSub[] = c.subcauses.map((s, si) => ({
-        text: truncate(s.name, SUB_MAX_CHARS),
+        text: s.name,
         label: truncate(stripInline(s.name), SUB_MAX_CHARS),
         x: sx + 12,
         y: sy + dir * (si + 1) * SUB_LINE_H,
       }));
       dist += rowH / sin;
       return {
-        text: truncate(c.name, CAUSE_MAX_CHARS),
+        text: c.name,
         label: truncate(stripInline(c.name), CAUSE_MAX_CHARS),
         stub: { x1: px, y1: py, x2: sx, y2: sy },
         labelX: sx + 5,

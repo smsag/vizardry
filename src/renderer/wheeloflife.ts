@@ -61,7 +61,7 @@ function renderWedge(
   const slot = createSvgEl("path", { d: sectorPath(R, start, end), class: "vzd-wol-slot" });
   if (area.note) {
     const titleEl = createSvgEl("title");
-    titleEl.textContent = stripInline(`${area.name}: ${area.score}/10 — ${area.note}`);
+    titleEl.textContent = `${stripInline(area.name)}: ${area.score}/10 — ${stripInline(area.note)}`;
     slot.appendChild(titleEl);
   }
   g.appendChild(slot);

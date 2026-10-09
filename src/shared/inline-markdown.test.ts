@@ -143,6 +143,33 @@ describe("renderInline — emphasis edge cases", () => {
     expect(render("*a **b** c*").innerHTML).toBe("<em>a <strong>b</strong> c</em>");
   });
 
+  it("renders ***both*** as bold italic", () => {
+    expect(render("***x***").innerHTML).toBe("<em><strong>x</strong></em>");
+  });
+
+  it("closes an inner and an outer format in one marker run", () => {
+    expect(render("**bold *italic***").innerHTML).toBe("<strong>bold <em>italic</em></strong>");
+  });
+
+  it("renders __bold__", () => {
+    expect(render("__bold__").innerHTML).toBe("<strong>bold</strong>");
+  });
+
+  it("leaves glob patterns alone", () => {
+    expect(render("*.md *.ts *.css").innerHTML).toBe("*.md *.ts *.css");
+  });
+
+  it.each([
+    ["unmatched openers", "*a ".repeat(1600)],
+    ["unmatched underscores", "_a ".repeat(1600)],
+    ["unmatched highlights", "==a ".repeat(1200)],
+    ["nested unmatched openers", "*a **b ==c ~~d ".repeat(300)],
+  ])("stays linear on %s", (_label, text) => {
+    const t0 = performance.now();
+    render(text);
+    expect(performance.now() - t0).toBeLessThan(200);
+  });
+
   it("stays fast on unmatched marker soup", () => {
     const soup = "*_~~==**".repeat(300);
     const t0 = performance.now();

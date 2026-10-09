@@ -1739,11 +1739,12 @@ Labels and content lines accept the same inline formatting as an Obsidian note:
 |---|---|
 | `==text==` | Highlight in the theme's highlight colour |
 | `==🔴text==` `==🟠text==` `==🟡text==` `==🟢text==` `==🔵text==` `==🟣text==` | Coloured highlight (red, orange, yellow, green, blue, purple), the same emoji Obsidian's formatting menu writes. The emoji itself isn't shown |
-| `**text**` | Bold |
+| `**text**` or `__text__` | Bold |
+| `***text***` | Bold italic |
 | `*text*` or `_text_` | Italic |
 | `~~text~~` | Strikethrough |
 
-- **Formats nest:** `==a **key** point==`, `**==urgent==**`.
+- **Formats nest:** `==a **key** point==`, `**==urgent==**`, `**bold *and italic***`.
 - **The text touches the markers:** `==text==` highlights, `== text ==` stays literal. An unclosed marker (`a == b`) stays literal too, and so does an underscore inside a word (`snake_case`).
 - **Escape** a marker with a backslash: `\==not highlighted\==`.
 - **Sketch mode** draws every highlight as the same pencil-grey marker, since that mode is monochrome: highlights mean emphasis there, not a colour.
