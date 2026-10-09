@@ -3,10 +3,11 @@
 - **Highlight canvas text like note text.** `==text==` highlights a label or
   line, and Obsidian's coloured highlights work too: `==🔴text==`, plus 🟠, 🟡,
   🟢, 🔵 and 🟣. Highlights nest with **bold**, *italic* and ~~strike~~, and
-  use the same markup as Obsidian, so a theme that styles highlights styles
-  canvas highlights the same way. Canvases drawn as SVG text (mind map,
-  impact map, OST, fishbone, Wardley, concept map) show the words without
-  the markers for now.
+  are drawn as a felt-tip marker stroke (after the Klartext theme) that lands
+  and lifts on every line. They use the same markup as Obsidian, so a theme
+  that draws its own highlights (Klartext does) draws canvas highlights too.
+  Canvases drawn as SVG text (mind map, impact map, OST, fishbone, Wardley,
+  concept map) show the words without the markers for now.
 - **Bold, italic and strike now render everywhere, not just in grid blocks.**
   Matrix items, roadmap and story cards, journey cards, RACI, SIPOC,
   Pro / Contra, compass, odyssey and the other HTML canvases used to show

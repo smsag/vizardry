@@ -594,26 +594,65 @@ button.vzd-pin-bar-btn {
 }
 
 /* ── Inline highlight (==text==, ==🔴text== …) ──
-   Same DOM as Obsidian's Reading view (<mark data-highlight="red">), so a
-   theme's own mark rules style canvas labels too. The plain highlight sits
-   in :where() (zero specificity) and yields to any theme or Obsidian mark
-   rule; the six colours are one class stronger, so Obsidian's generic yellow
-   `.markdown-rendered mark` can't repaint them. Text keeps the label's own
-   colour, which matters on accent-filled nodes. */
+   Drawn as a felt-tip marker stroke, after the Klartext theme: a 104deg sweep
+   whose ink lands over the first half character (transparent to 0.2em, full
+   by 0.7em, a touch stronger where the pen set down) and lifts off over the
+   last sixth (full to 88%, gone 0.28em before the end). Padding lets the
+   stroke overshoot the letters like a real pen; an equal negative margin
+   hands that width back, so the text never moves. box-decoration-break
+   clones the stroke onto every wrapped line, so each line lands and lifts.
+   No border-radius (a rounded end reads as a chip), no shadow, no border.
+   Vary the ink to tell marks apart, never the angle.
+
+   One <mark> holds the whole highlight with its nested formatting inside
+   (Obsidian's Reading-view shape), so no span ever ends mid-stroke and plain
+   translucent tints are enough: the opaque-ink-plus-blend-mode trick Klartext
+   needs for Live Preview's split spans has nothing to solve here.
+
+   Theme contract: the DOM matches Obsidian's (<mark data-highlight="red">).
+   The stroke sits in :where() (zero specificity), so a theme that draws its
+   own mark background-image (Klartext does) wins and its inks apply. Only
+   background-color and color are pinned one class stronger: Obsidian's
+   `.markdown-rendered mark` would otherwise fill the box flat yellow under
+   the stroke and repaint white text-on-accent labels dark. Themes can also
+   just retint: --vzd-mark-ink / --vzd-mark-ink-strong / --vzd-mark-alpha. */
 :where(mark.vzd-mark) {
-  background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
-  color: inherit;
-  padding: 0 0.1em;
-  border-radius: 2px;
+  --vzd-mark-ink: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+  --vzd-mark-ink-strong: var(--vzd-mark-ink);
+  background-image: linear-gradient(
+    104deg,
+    transparent 0.2em,
+    var(--vzd-mark-ink-strong) 0.7em,
+    var(--vzd-mark-ink) 88%,
+    transparent calc(100% - 0.28em)
+  );
+  padding: 0.14em 0.42em;
+  margin: 0 -0.42em;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  text-shadow: none;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-mark.vzd-mark[data-highlight="red"]    { background-color: rgba(var(--color-red-rgb, 233, 49, 71), var(--vzd-mark-alpha, 0.3)); }
-mark.vzd-mark[data-highlight="orange"] { background-color: rgba(var(--color-orange-rgb, 236, 117, 0), var(--vzd-mark-alpha, 0.3)); }
-mark.vzd-mark[data-highlight="yellow"] { background-color: rgba(var(--color-yellow-rgb, 224, 172, 0), var(--vzd-mark-alpha, 0.3)); }
-mark.vzd-mark[data-highlight="green"]  { background-color: rgba(var(--color-green-rgb, 8, 185, 78), var(--vzd-mark-alpha, 0.3)); }
-mark.vzd-mark[data-highlight="blue"]   { background-color: rgba(var(--color-blue-rgb, 8, 109, 221), var(--vzd-mark-alpha, 0.3)); }
-mark.vzd-mark[data-highlight="purple"] { background-color: rgba(var(--color-purple-rgb, 120, 82, 238), var(--vzd-mark-alpha, 0.3)); }
+.vizardry-canvas mark.vzd-mark {
+  background-color: transparent;
+  color: inherit;
+}
+/* The six colours change only the ink. Each tint is Obsidian's own swatch
+   colour at one shared alpha; the wet end is 0.08 stronger. */
+mark.vzd-mark[data-highlight] {
+  --vzd-mark-ink: rgba(var(--vzd-mark-rgb), var(--vzd-mark-alpha, 0.3));
+  --vzd-mark-ink-strong: rgba(var(--vzd-mark-rgb), calc(var(--vzd-mark-alpha, 0.3) + 0.08));
+}
+/* A dark ground shows a tint more: lower the shared alpha, as Klartext does. */
+.theme-dark .vizardry-canvas { --vzd-mark-alpha: 0.24; }
+mark.vzd-mark[data-highlight="red"]    { --vzd-mark-rgb: var(--color-red-rgb, 233, 49, 71); }
+mark.vzd-mark[data-highlight="orange"] { --vzd-mark-rgb: var(--color-orange-rgb, 236, 117, 0); }
+mark.vzd-mark[data-highlight="yellow"] { --vzd-mark-rgb: var(--color-yellow-rgb, 224, 172, 0); }
+mark.vzd-mark[data-highlight="green"]  { --vzd-mark-rgb: var(--color-green-rgb, 8, 185, 78); }
+mark.vzd-mark[data-highlight="blue"]   { --vzd-mark-rgb: var(--color-blue-rgb, 8, 109, 221); }
+mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb, 120, 82, 238); }
 
 /* ── Card-block layout ── */
 
