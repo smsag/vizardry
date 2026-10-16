@@ -1,8 +1,12 @@
 version: 2
 updates:
   # Keep the pinned action SHAs current (Dependabot bumps the SHA + comment).
+  # "/" only covers .github/workflows; composite actions under .github/actions
+  # need their own entry or their pins drift behind the workflows'.
   - package-ecosystem: github-actions
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: weekly
     commit-message:
