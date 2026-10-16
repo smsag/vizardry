@@ -1,4 +1,6 @@
-## Unreleased
+## 0.75.2
+
+Hotfix: sketch-mode canvases no longer freeze Obsidian on an iPhone.
 
 - **Fix: Obsidian froze and reloaded on an iPhone when a note showed a
   canvas in sketch mode.** Since 0.74.0 the hand-drawn wobble filter covered
