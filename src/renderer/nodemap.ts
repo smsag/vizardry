@@ -4,7 +4,7 @@ import type { RenderContext } from "./render-context";
 import { initCanvas, showWriteFailedNotice } from "./controls";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
-import { createSvgEl } from "../shared/svg";
+import { createSvgEl, markFlatShape } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { rectBoundary, type Vec2 } from "../shared/geometry";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
@@ -435,6 +435,7 @@ function attachLinkDrawBehavior(
     const { x, y } = clientToSvg(svg, e.clientX, e.clientY);
     ix.linkDraw.ghostLine.setAttribute("x2", String(x));
     ix.linkDraw.ghostLine.setAttribute("y2", String(y));
+    markFlatShape(ix.linkDraw.ghostLine);
     ix.linkDraw.hasMoved = true;
   };
 

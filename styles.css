@@ -4666,9 +4666,13 @@ body.vizardry-sketch .vzd-presentation-wrap {
    crisp so labels remain legible at small sizes. Not on Obsidian's icons
    (svg.svg-icon): a filter's region is sized from the shape's bounding box,
    and an icon drawn only from straight horizontal/vertical strokes (plus,
-   minus) has a zero-height or zero-width box — filtered, it vanished. */
-body.vizardry-sketch .vizardry-canvas svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline),
-body.vizardry-sketch .vzd-presentation-wrap svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline) {
+   minus) has a zero-height or zero-width box — filtered, it vanished.
+   The same holds for a canvas's own straight strokes (axes, spines, flow
+   edges): createSvgEl marks them `data-vzd-flat` and they stay unfiltered —
+   straight rather than invisible. The filter region is the shape's box on
+   purpose; a page-sized one froze WebKit (see shared/sketch-defs.ts). */
+body.vizardry-sketch .vizardry-canvas svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline):not([data-vzd-flat]),
+body.vizardry-sketch .vzd-presentation-wrap svg:not(.svg-icon) :is(path, line, circle, ellipse, rect, polygon, polyline):not([data-vzd-flat]) {
   filter: url(#vzd-sketch-rough);
 }
 

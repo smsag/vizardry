@@ -8,7 +8,7 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import type { WardleyMap } from "../types";
-import { createSvgEl } from "../shared/svg";
+import { createSvgEl, markFlatShape } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { writeWardleyComponent, addWardleyComponent, renameWardleyComponent, writeWardleyEvolve } from "../shared/wardley-edit";
@@ -204,6 +204,7 @@ export function attachEvolveDragBehavior(
     const { x1, x2 } = evolveLineEndpoints(ref.fromX, cx);
     ref.line.setAttribute("x1", String(x1));
     ref.line.setAttribute("x2", String(x2));
+    markFlatShape(ref.line);
   };
 
   const onMove = (e: MouseEvent): void => { if (active) moveTo(active, e.clientX); };
@@ -307,6 +308,7 @@ export function attachLinkDrawBehavior(
     const cy = Math.max(PLOT_Y, Math.min(PLOT_Y + PLOT_H, y));
     ix.linkDraw.ghostLine.setAttribute("x2", String(cx));
     ix.linkDraw.ghostLine.setAttribute("y2", String(cy));
+    markFlatShape(ix.linkDraw.ghostLine);
     ix.linkDraw.ghostDot.setAttribute("cx", String(cx));
     ix.linkDraw.ghostDot.setAttribute("cy", String(cy));
     if (!ix.linkDraw.hasMoved) {
