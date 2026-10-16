@@ -1,3 +1,15 @@
+## Unreleased
+
+- **Fix: Obsidian froze and reloaded on an iPhone when a note showed a
+  canvas in sketch mode.** Since 0.74.0 the hand-drawn wobble filter covered
+  a fixed 200 000-unit area per shape so straight lines stayed visible.
+  WebKit, which every iOS app uses, works through that whole area for every
+  shape, painted or not: 16–24 seconds per canvas, against a fifth of a
+  second in Chromium, and iOS killed Obsidian before it finished. The filter
+  covers each shape again; perfectly horizontal or vertical strokes (axes,
+  spines, straight edges) are drawn straight instead of being filtered, so
+  they still show.
+
 ## 0.75.1
 
 Hotfix: a pinned canvas on a phone can be tapped again.
