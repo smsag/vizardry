@@ -31,10 +31,14 @@ const SUB_LINE_H = 14;         // vertical height of one sub-cause line
 const CAUSE_STUB = 46;         // horizontal cause connector length
 const CAT_BOX_W = 132;
 const CAT_BOX_H = 30;
-const CAUSE_CHAR_W = 6.4;      // approx label width per char (for bounds only)
+const CAUSE_CHAR_W = 6.4;      // approx label width per char (bounds and spacing)
 const CAUSE_MAX_CHARS = 30;
 const SUB_CHAR_W = 5.8;
 const SUB_MAX_CHARS = 34;
+const CAUSE_ASCENT = 10;       // 12.5px cause text above its baseline
+const SUB_ASCENT = 9;          // 11px sub-cause text above its baseline
+const TEXT_DESCENT = 3;
+const LABEL_CLEARANCE = 12;    // kept between a label's end and the next bone
 
 /** `text` is the full source name (markers included, never truncated): the
  *  key rename, delete, add-child and link lookups address. `label` is what
@@ -90,6 +94,25 @@ function truncate(text: string, maxChars: number): string {
   return text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
 }
 
+/** A label's right end, and how near to and far from the spine it reaches. */
+interface TextSpan { right: number; near: number; far: number; }
+
+function textSpan(left: number, width: number, baseline: number, ascent: number): TextSpan {
+  const a = Math.abs(baseline - ascent), b = Math.abs(baseline + TEXT_DESCENT);
+  return { right: left + width, near: Math.min(a, b), far: Math.max(a, b) };
+}
+
+/** A category bone laid out with its anchor at x = 0. */
+interface Bone {
+  name: string;
+  idx: number;
+  top: boolean;
+  dir: number;
+  ribLen: number;
+  causes: FBCause[];
+  spans: TextSpan[];
+}
+
 export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
   const cats = diagram.categories;
   const colorCount = Math.max(1, cats.length);
@@ -101,12 +124,10 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
   const midY = 0; // provisional; shifted to positive at the end
   const cos = Math.cos(RIB_ANGLE), sin = Math.sin(RIB_ANGLE);
 
-  // Same-side index for staggered horizontal placement.
-  let topN = 0, botN = 0;
-  const categories: FBCategory[] = cats.map((cat, idx) => {
+  // Each bone is first laid out with its anchor at x = 0, so the room its
+  // labels need is known before the bones are spaced along the spine.
+  const bones: Bone[] = cats.map((cat, idx) => {
     const top = idx % 2 === 0;
-    const sideIdx = top ? topN++ : botN++;
-    const anchorX = SPINE_LEFT_PAD + sideIdx * ANCHOR_GAP + (top ? 0 : ANCHOR_GAP * SIDE_STAGGER) + ANCHOR_GAP * 0.5;
     const dir = top ? -1 : 1;
 
     // Walk causes down the rib, advancing by each row's height (so causes with
@@ -114,9 +135,10 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
     // rib; converting a vertical row height to rib distance divides by sin.
     let dist = RIB_BASE_OFFSET;
     const ux = -cos, uy = dir * sin; // rib unit vector (sweeps back toward tail)
+    const spans: TextSpan[] = [];
     const causes: FBCause[] = cat.causes.map((c) => {
       const rowH = CAUSE_ROW_H + c.subcauses.length * SUB_LINE_H;
-      const px = anchorX + ux * dist;
+      const px = ux * dist;
       const py = midY + uy * dist;
       const sx = px + CAUSE_STUB;
       const sy = py;
@@ -129,9 +151,13 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
         y: sy + dir * (si + 1) * SUB_LINE_H,
       }));
       dist += rowH / sin;
+      const label = truncate(stripInline(c.name), CAUSE_MAX_CHARS);
+      spans.push(textSpan(sx + 5, label.length * CAUSE_CHAR_W, sy - 2, CAUSE_ASCENT));
+      // Drawn as "› label", hence the two extra characters.
+      for (const s of subs) spans.push(textSpan(s.x, (s.label.length + 2) * SUB_CHAR_W, s.y, SUB_ASCENT));
       return {
         text: c.name,
-        label: truncate(stripInline(c.name), CAUSE_MAX_CHARS),
+        label,
         stub: { x1: px, y1: py, x2: sx, y2: sy },
         labelX: sx + 5,
         labelY: sy - 2,
@@ -140,26 +166,72 @@ export function layoutFishbone(diagram: FishboneDiagram): FBLayout {
     });
 
     const ribLen = Math.max(RIB_BASE_OFFSET + RIB_TIP_MARGIN, dist + RIB_TIP_MARGIN);
-    const tipX = anchorX + ux * ribLen;
-    const tipY = midY + uy * ribLen;
+    return { name: cat.name, idx, top, dir, ribLen, causes, spans };
+  });
+
+  // The leftmost part of a bone (anchor at 0) between `near` and `far` from the
+  // spine: its rib, or its category box just past the rib's tip.
+  const leftEdge = (bone: Bone, near: number, far: number): number => {
+    const rise = sin * bone.ribLen;
+    let left = Infinity;
+    if (near <= rise) left = -Math.min(far, rise) * cos / sin;
+    if (far >= rise && near <= rise + CAT_BOX_H) left = Math.min(left, -cos * bone.ribLen - CAT_BOX_W / 2);
+    return left;
+  };
+  // Labels run toward the head, so a bone's labels set the gap to the next
+  // bone on its side. ANCHOR_GAP stays the floor: short labels keep the
+  // spacing they always had.
+  const gapAfter = (a: Bone, b: Bone): number =>
+    a.spans.reduce((gap, s) => Math.max(gap, s.right + LABEL_CLEARANCE - leftEdge(b, s.near, s.far)), ANCHOR_GAP);
+
+  const anchors: number[] = [];
+  for (const top of [true, false]) {
+    let x = SPINE_LEFT_PAD + ANCHOR_GAP * 0.5 + (top ? 0 : ANCHOR_GAP * SIDE_STAGGER);
+    let prev: Bone | undefined;
+    for (const bone of bones.filter((b) => b.top === top)) {
+      if (prev) x += gapAfter(prev, bone);
+      anchors[bone.idx] = x;
+      prev = bone;
+    }
+  }
+
+  const categories: FBCategory[] = bones.map((bone) => {
+    const anchorX = anchors[bone.idx];
+    for (const c of bone.causes) {
+      c.stub.x1 += anchorX; c.stub.x2 += anchorX; c.labelX += anchorX;
+      for (const s of c.subs) s.x += anchorX;
+    }
+    const tipX = anchorX - cos * bone.ribLen;
+    const tipY = midY + bone.dir * sin * bone.ribLen;
     const box = {
       x: tipX - CAT_BOX_W / 2,
-      y: top ? tipY - CAT_BOX_H : tipY,
+      y: bone.top ? tipY - CAT_BOX_H : tipY,
       w: CAT_BOX_W,
       h: CAT_BOX_H,
     };
     return {
-      name: cat.name,
-      top,
-      colorIndex: idx,
+      name: bone.name,
+      top: bone.top,
+      colorIndex: bone.idx,
       anchor: { x: anchorX, y: midY },
       rib: { x1: anchorX, y1: midY, x2: tipX, y2: tipY },
       box,
-      causes,
+      causes: bone.causes,
     };
   });
 
-  const spineEndX = SPINE_LEFT_PAD + Math.max(topN, botN, 1) * ANCHOR_GAP + ANCHOR_GAP * (SIDE_STAGGER + 0.5) + 20;
+  const topN = bones.filter((b) => b.top).length;
+  const botN = bones.length - topN;
+  let spineEndX = SPINE_LEFT_PAD + Math.max(topN, botN, 1) * ANCHOR_GAP + ANCHOR_GAP * (SIDE_STAGGER + 0.5) + 20;
+  // Bones pushed apart by long labels push the head along, and a label level
+  // with the head has to end before it.
+  for (const bone of bones) {
+    const anchorX = anchors[bone.idx];
+    spineEndX = Math.max(spineEndX, anchorX + ANCHOR_GAP * (bone.top ? 1.5 : 1) + 20);
+    for (const s of bone.spans) {
+      if (s.near < headH / 2) spineEndX = Math.max(spineEndX, anchorX + s.right + LABEL_CLEARANCE - HEAD_PAD);
+    }
+  }
   const spine = { x1: 0, y1: midY, x2: spineEndX, y2: midY };
   const head = {
     x: spineEndX + HEAD_PAD,

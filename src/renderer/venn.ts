@@ -185,14 +185,17 @@ export function renderVennDiagram(
     "1":   { l: 72.5, t: 50,   w: 20 },
     "0+1": { l: 50,   t: 50,   w: 20 },
   };
+  // Overlap widths use what the shapes leave at the label's height: about
+  // 19–23% of the canvas for a pair and 16% for the centre. Labels wrap
+  // inside these, so a tighter box would break short labels onto two lines.
   const THREE: Record<string, Pos> = {
     "0":     { l: 50,   t: 17,   w: 18 },
     "1":     { l: 75.6, t: 79.6, w: 18 },
     "2":     { l: 24.4, t: 79.6, w: 18 },
-    "0+1":   { l: 60.4, t: 47.4, w: 14 },
-    "0+2":   { l: 39.6, t: 47.4, w: 14 },
-    "1+2":   { l: 50,   t: 75.7, w: 14 },
-    "0+1+2": { l: 50,   t: 56.1, w: 13 },
+    "0+1":   { l: 60.4, t: 47.4, w: 16 },
+    "0+2":   { l: 39.6, t: 47.4, w: 16 },
+    "1+2":   { l: 50,   t: 75.7, w: 16 },
+    "0+1+2": { l: 50,   t: 56.1, w: 15 },
   };
   const posMap = is3 ? THREE : TWO;
 

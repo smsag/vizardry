@@ -1,3 +1,23 @@
+## 0.75.3
+
+Labels stay whole: fishbone causes no longer run into the next bone, Venn
+labels wrap instead of being cut off, and the strategy canvas keeps its last
+factor on the canvas.
+
+- **Fix: long fishbone causes ran into the next bone.** A cause near the
+  30-character limit reached past the next bone on its side, so that bone's
+  line crossed the words. Bones now move apart as far as their longest labels
+  need, and the effect head moves with them. Diagrams with short causes keep
+  their spacing.
+- **Fix: Venn labels ended in "…".** A label longer than its region was cut
+  off, so "Viewing scheduling" read "Viewing scheduli…", and on a phone most
+  overlap labels were cut. Labels now wrap onto a second line, and the
+  overlaps of a three-circle diagram give them a little more room.
+- **Fix: the strategy canvas clipped its last factor.** The label under the
+  rightmost point was centred on it, so half of it hung over the edge of the
+  canvas ("Reporti"). The first and last labels now lean inward and stay
+  whole, and a long single word wraps instead of spilling out.
+
 ## 0.75.2
 
 Hotfix: sketch-mode canvases no longer freeze Obsidian on an iPhone.
