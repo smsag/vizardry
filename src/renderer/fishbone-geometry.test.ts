@@ -48,6 +48,64 @@ describe("layoutFishbone", () => {
   });
 });
 
+describe("layoutFishbone — room for long cause labels", () => {
+  const cause = (name: string): { name: string; subcauses: [] } => ({ name, subcauses: [] });
+  // Two bones per side, causes at or near the 30-character limit.
+  const long: FishboneDiagram = {
+    effect: "Leads go cold before the first viewing",
+    categories: [
+      { name: "Process", causes: [cause("No owner assigned to new leads"), cause("Follow-up is never scheduled")] },
+      { name: "People", causes: [cause("Agents out on viewings all day")] },
+      { name: "Tools", causes: [cause("Portal leads only come by mail"), cause("No reminders in the phone app")] },
+      { name: "Data", causes: [cause("Duplicates split the history"), cause("Search profiles are left empty")] },
+    ],
+  };
+  // The layout's own width estimate for a 12.5px cause label, and how far
+  // the text reaches above and below its baseline.
+  const labelRight = (c: { labelX: number; label: string }): number => c.labelX + c.label.length * 6.4;
+  const textYs = (c: { labelY: number }): number[] => [c.labelY - 10, c.labelY + 3];
+  const ribXAt = (rib: { x1: number; y1: number; x2: number; y2: number }, y: number): number | undefined => {
+    const t = (y - rib.y1) / (rib.y2 - rib.y1);
+    return t >= 0 && t <= 1 ? rib.x1 + t * (rib.x2 - rib.x1) : undefined;
+  };
+
+  it("ends every cause label before the next bone on its side", () => {
+    const l = layoutFishbone(long);
+    for (const top of [true, false]) {
+      const side = l.categories.filter(c => c.top === top);
+      for (let i = 0; i + 1 < side.length; i++) {
+        for (const c of side[i]!.causes) {
+          for (const y of textYs(c)) {
+            const ribX = ribXAt(side[i + 1]!.rib, y);
+            if (ribX !== undefined) expect(labelRight(c)).toBeLessThan(ribX);
+          }
+        }
+      }
+    }
+  });
+
+  it("ends a label level with the effect head before the head", () => {
+    const l = layoutFishbone(long);
+    const half = l.head.h / 2;
+    for (const c of l.categories.flatMap(cat => cat.causes)) {
+      if (textYs(c).some(y => Math.abs(y - l.spine.y1) < half)) expect(labelRight(c)).toBeLessThan(l.head.x);
+    }
+  });
+
+  it("keeps the usual bone spacing when labels are short", () => {
+    const short: FishboneDiagram = {
+      effect: "Churn",
+      categories: ["Process", "People", "Tools", "Data"].map(name => ({
+        name, causes: [cause("Slow setup"), cause("No guidance")],
+      })),
+    };
+    for (const top of [true, false]) {
+      const side = layoutFishbone(short).categories.filter(c => c.top === top);
+      expect(side[1]!.anchor.x - side[0]!.anchor.x).toBe(214);
+    }
+  });
+});
+
 describe("layoutFishbone — long and formatted names", () => {
   const long: FishboneDiagram = {
     effect: "Churn",
