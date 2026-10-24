@@ -65,7 +65,6 @@ describe("HTML canvases render <mark>", () => {
   it.each([
     ["roadmap item", T.ROADMAP_TEMPLATE, "Fix checkout bug"],
     ["matrix item", T.MATRIX_PAIN_TEMPLATE, "Stale search results"],
-    ["journey action", T.JOURNEY_TEMPLATE, "Receives renewal-failed email"],
     ["story task", T.STORY_MAP_TEMPLATE, null],
     ["pro/contra argument", T.PRO_CONTRA_TEMPLATE, null],
     ["odyssey milestone", T.ODYSSEY_TEMPLATE, null],
@@ -103,12 +102,11 @@ describe("HTML canvases render <mark>", () => {
 
 describe("SVG canvases strip the markers", () => {
   it.each([
-    ["mind map node", T.MIND_MAP_TEMPLATE, "Branch Two"],
+    ["impact map node", T.IMPACT_MAP_TEMPLATE, "Support Team"],
     ["wardley component", T.WARDLEY_TEMPLATE, "Auth Service"],
     ["concept map node", T.CONCEPT_MAP_TEMPLATE, "Sunlight"],
     ["concept map edge label", T.CONCEPT_MAP_TEMPLATE, "occurs in"],
     ["node map link label", T.NODE_MAP_TEMPLATE, "places order"],
-    ["fishbone cause", T.FISHBONE_TEMPLATE, null],
   ])("%s", (_label, template, word) => {
     const target = word ?? firstLabel(template);
     const el = render(template, (b) => b.split(target).join(`==🟢${target}==`));

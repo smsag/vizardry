@@ -6,10 +6,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.raci.description":      "Aufgaben zugeordnet nach Verantwortlich, Rechenschaftspflichtig, Konsultiert und Informiert.",
   "framework.bmc.description":        "Das gesamte Geschäftsmodell auf einen Blick.",
   "framework.fourls.description":     "Gefiel, Gelernt, Gefehlt, Gewünscht — plus eine gemeinsame Aktionsliste.",
-  "framework.fishbone.description":   "Ursachen bis zur Wirkung zurückverfolgt.",
-  "framework.fishbone-6m.description": "Fishbone mit den 6M-Kategorien der Fertigung vorbelegt.",
-  "framework.fishbone-service.description": "Fishbone mit den 4S-Kategorien für Services vorbelegt.",
-  "framework.fishbone-marketing.description": "Fishbone mit den 7P-Kategorien für Marketing vorbelegt.",
   "framework.experiment.description": "Hypothese getestet, beobachtet und in eine Entscheidung überführt.",
   "framework.errc.description":       "Blue-Ocean-Vier-Aktionen: Eliminieren, Reduzieren, Steigern, Schaffen.",
   "framework.impact.description":     "Alle Features an Zielen ausgerichtet.",
@@ -17,7 +13,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.kata.description":       "Klarer Weg zum nächsten Experiment.",
   "framework.lean.description":       "Riskanteste Annahmen aufgedeckt und priorisiert.",
   "framework.leanux.description":     "Team abgestimmt bevor die Entwicklung beginnt.",
-  "framework.mindmap.description":    "Komplexe Ideen strukturiert und priorisiert.",
   "framework.nodemap.description":    "Boxen platziert und verbunden, genau wo du sie hinsetzt.",
   "framework.opportunity.description":"Lösungen an echten Ergebnissen ausgerichtet.",
   "framework.ost.description":        "Ergebnis treibt Chancen, Lösungen und Experimente.",
@@ -27,7 +22,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.story.description":      "Release-Umfang und Prioritäten klar.",
   "framework.swot.description":       "Stärken, Schwächen, Chancen und Risiken auf einen Blick.",
   "framework.futureself.description": "Wo du stehst, wo du hinwillst und die Aktionen dorthin in einem festen Zeitraum.",
-  "framework.venn.description":       "Überschneidungen und Lücken klar erkannt.",
   "framework.vpc.description":        "Features treffen echte Kundenbedürfnisse.",
   "framework.wardley.description":    "Wertkette gegen Evolution aufgetragen zur Aufdeckung strategischer Züge.",
   "framework.ptw.description":        "Strategie durch Gewinnaspiration, Spielfeld und Gewinnlogik definiert.",
@@ -35,8 +29,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "framework.conceptmap.description": "Konzepte durch benannte Beziehungen als gerichteter Graph verbunden.",
   "framework.scqa.description":       "Situation, Komplikation, Frage, Antwort als narrative Hierarchie.",
   "framework.scr.description":        "Situation, Komplikation, Lösung — eine kompaktere narrative Hierarchie.",
-  "framework.journey.description":    "Phasen abgebildet auf Aktionen, Gefühle und Schmerzpunkte — erweiterbar zu einer vollständigen Service Blueprint.",
-  "framework.service-blueprint.description": "Customer Journey plus Frontstage-, Backstage- und Support-Prozess-Bahnen.",
   "framework.wheeloflife.description": "Lebensbereiche von 0–10 als segmentiertes Rad — Balance auf einen Blick.",
   "framework.odyssey.description": "Drei Fünf-Jahres-Lebenspläne nebeneinander — Zeitleiste, Dashboard und offene Fragen.",
   "framework.circleofinfluence.description": "Sortiere deine Themen in Sorge, Einfluss und Kontrolle — und richte den Fokus nach innen.",
@@ -84,12 +76,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   // ── Title editing ────────────────────────────────────────────────────────────
   "title.clickToEdit": "Zum Umbenennen klicken",
 
-  // ── Fishbone Diagram level labels ───────────────────────────────────────────
-  "fishbone.level.effect":   "Wirkung",
-  "fishbone.level.category": "Kategorie",
-  "fishbone.level.cause":    "Ursache",
-  "fishbone.level.subcause": "Teilursache",
-
   // ── Impact Map level labels ─────────────────────────────────────────────────
   "impact.level.goal":        "Ziel",
   "impact.level.actor":       "Akteur",
@@ -124,13 +110,6 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "story.newTask":       "Neue Aufgabe",
   "story.deleteTask":    "Aufgabe löschen",
   "story.clickToEdit":   "Zum Bearbeiten klicken",
-
-  // ── Customer Journey Map / Service Blueprint labels ─────────────────────────
-  "journey.label.persona":     "Persona",
-  "journey.label.scenario":    "Szenario",
-  "journey.addCard":           "Karte hinzufügen",
-  "journey.newCard":           "Neue Karte",
-  "journey.deleteCard":        "Karte löschen",
 
   // ── SIPOC column headers ────────────────────────────────────────────────────
   "sipoc.col.suppliers": "Lieferant",

@@ -6,74 +6,6 @@ export function generateCanvasTemplate(framework: FrameworkDefinition): string {
   return `\`\`\`vizardry\ntype: ${framework.id}\ntitle: ${framework.label}\n${period}\n${blocks}\n\`\`\`\n`;
 }
 
-export const FISHBONE_TEMPLATE = `\`\`\`vizardry
-type: fishbone
-title: Fishbone Diagram
-
-effect: Problem statement
-
-category: People
-  cause: Lack of training
-    subcause: No onboarding process
-  cause: High turnover
-
-category: Process
-  cause: Unclear requirements
-  cause: Manual handoffs
-
-category: Technology
-  cause: Legacy system
-    subcause: No API available
-  cause: Missing monitoring
-\`\`\`
-`;
-
-export const FISHBONE_6M_TEMPLATE = `\`\`\`vizardry
-type: fishbone, 6m
-title: 6M Cause Analysis
-
-effect: Assembly line stops several times per shift
-
-category: Machine
-  cause: Ageing PLC
-    subcause: Firmware two versions behind
-category: Method
-  cause: Manual changeover between runs
-category: Material
-  cause: Inconsistent supplier tolerances
-\`\`\`
-`;
-
-export const FISHBONE_SERVICE_TEMPLATE = `\`\`\`vizardry
-type: fishbone, service
-title: Service Cause Analysis (4S)
-
-effect: Support satisfaction dropped this quarter
-
-category: Systems
-  cause: Ticketing tool slow to load
-category: Skills
-  cause: New hires still ramping
-category: Suppliers
-  cause: Upstream API outages
-\`\`\`
-`;
-
-export const FISHBONE_MARKETING_TEMPLATE = `\`\`\`vizardry
-type: fishbone, marketing
-title: Marketing Cause Analysis (7P)
-
-effect: Landing page converts below target
-
-category: Promotion
-  cause: Message doesn't match ad copy
-category: Price
-  cause: No plan comparison above the fold
-category: Process
-  cause: Sign-up needs a credit card too early
-\`\`\`
-`;
-
 export const IMPACT_MAP_TEMPLATE = `\`\`\`vizardry
 type: impact
 title: Impact Map
@@ -153,57 +85,6 @@ slice: V1.1
   step: Sprint Planning | Build sprint, Set goal
   step: QA | Smoke test, Regression
   step: Release | Tag version, Announce
-\`\`\`
-`;
-
-export const MIND_MAP_TEMPLATE = `\`\`\`vizardry
-type: mindmap
-title: Mind Map
-
-root: Central Topic
-
-  Branch One
-    Sub-item A
-    Sub-item B
-
-  Branch Two
-    Nested Group
-      Deep Item 1
-      Deep Item 2
-    Standalone Item
-
-  Branch Three
-\`\`\`
-`;
-
-export const VENN_TEMPLATE = `\`\`\`vizardry
-type: venn
-title: Venn Diagram
-
-circle: Design
-  - User research
-  - Wireframing
-
-circle: Engineering
-  - Architecture
-  - Code review
-
-circle: Business
-  - Market sizing
-  - Revenue model
-
-intersection: Design+Engineering
-  - Prototyping
-  - [[Design System|Shared components]]
-
-intersection: Design+Business
-  - Brand strategy
-
-intersection: Engineering+Business
-  - Build vs. buy
-
-center:
-  - Product vision
 \`\`\`
 `;
 
@@ -733,74 +614,6 @@ situation: Checkout ran at 99.9% uptime all year
     resolution: Add staged rollout with an automated config canary
   complication: On-call paging was delayed by 12 minutes
     resolution: Route payment alerts to a dedicated high-priority channel
-\`\`\`
-`;
-
-export const JOURNEY_TEMPLATE = `\`\`\`vizardry
-type: journey
-title: Customer Journey Map
-
-persona: Returning online shopper
-scenario: Reordering a subscription item after a failed auto-renewal
-
-phase: Awareness
-  action: Receives renewal-failed email
-  action: Opens app to check order status
-  touchpoint: Email notification
-  touchpoint: Mobile app
-  feeling: Confused | Didn't expect the renewal to fail
-  painpoint: Unclear why the renewal failed
-  opportunity: Add a one-tap "retry payment" link in the email
-
-phase: Consideration
-  action: Opens order history
-  action: Compares subscription plans
-  touchpoint: Order history screen
-  feeling: Mildly annoyed | Extra steps to fix something automatic
-  painpoint: No clear CTA to fix the payment method
-  opportunity: Surface "Update payment method" inline on order history
-
-phase: Resolution
-  action: Updates card details
-  action: Confirms reorder
-  touchpoint: Payment settings screen
-  feeling: Relieved | Glad it was quick once found
-  opportunity: Auto-suggest reorder after a successful update
-\`\`\`
-`;
-
-export const SERVICE_BLUEPRINT_TEMPLATE = `\`\`\`vizardry
-type: journey, blueprint
-title: Customer Journey Map — Subscription Recovery
-
-persona: Returning online shopper
-scenario: Reordering a subscription item after a failed auto-renewal
-
-phase: Awareness
-  action: Receives renewal-failed email
-  touchpoint: Email notification
-  feeling: Confused | Didn't expect the renewal to fail
-  painpoint: Unclear why the renewal failed
-  opportunity: Add a one-tap "retry payment" link in the email
-  frontstage: Support chatbot greets user if they open live chat
-  backstage: Billing service logs the failed charge
-  support: Payment gateway webhook retry queue
-
-phase: Consideration
-  action: Opens order history
-  touchpoint: Order history screen
-  feeling: Mildly annoyed | Extra steps to fix something automatic
-  frontstage: Agent reviews account on escalation
-  backstage: CRM pulls billing history for agent view
-  support: Customer data platform sync
-
-phase: Resolution
-  action: Updates card details
-  touchpoint: Payment settings screen
-  feeling: Relieved | Glad it was quick once found
-  frontstage: Confirmation email sent by support team
-  backstage: Billing service retries the charge
-  support: Payment gateway processes the retry
 \`\`\`
 `;
 

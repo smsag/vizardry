@@ -13,10 +13,6 @@ export const en = {
   "framework.raci.description":      "Tasks mapped to who is Responsible, Accountable, Consulted, and Informed.",
   "framework.bmc.description":        "Whole business model made visible.",
   "framework.fourls.description":     "Liked, Learned, Lacked, Longed for — plus a shared action list.",
-  "framework.fishbone.description":   "Root causes traced back to an effect.",
-  "framework.fishbone-6m.description": "Fishbone pre-seeded with the manufacturing 6M category bones.",
-  "framework.fishbone-service.description": "Fishbone pre-seeded with the service 4S category bones.",
-  "framework.fishbone-marketing.description": "Fishbone pre-seeded with the marketing 7P category bones.",
   "framework.experiment.description": "Hypothesis tested, observed, and turned into a decision.",
   "framework.errc.description":       "Blue Ocean Four Actions: Eliminate, Reduce, Raise, Create.",
   "framework.impact.description":     "All features tied to goals.",
@@ -24,7 +20,6 @@ export const en = {
   "framework.kata.description":       "Clear path to next experiment.",
   "framework.lean.description":       "Riskiest assumptions exposed and ranked.",
   "framework.leanux.description":     "Team aligned before building starts.",
-  "framework.mindmap.description":    "Complex ideas structured and prioritised.",
   "framework.nodemap.description":    "Boxes placed and connected exactly where you put them.",
   "framework.opportunity.description":"Solutions tied to real outcomes.",
   "framework.ost.description":        "Outcome drives opportunities, solutions, and experiments.",
@@ -34,7 +29,6 @@ export const en = {
   "framework.story.description":      "Release scope and priorities clear.",
   "framework.swot.description":       "Strengths, weaknesses, opportunities, and threats at a glance.",
   "framework.futureself.description": "Where you are, where you want to be, and the actions to get there in a set period.",
-  "framework.venn.description":       "Overlaps and gaps clearly identified.",
   "framework.vpc.description":        "Features match real customer needs.",
   "framework.wardley.description":    "Value chain plotted against evolution to reveal strategic moves.",
   "framework.pacelayers.description": "Six pace layers — Fashion to Nature — mapped with observations, feedback, and ideas.",
@@ -42,8 +36,6 @@ export const en = {
   "framework.ptw.description":        "Strategy defined through Winning Aspiration, Where to Play, and How to Win.",
   "framework.scqa.description":       "Situation, complication, question, answer as a narrative hierarchy.",
   "framework.scr.description":        "Situation, complication, resolution — a tighter narrative hierarchy.",
-  "framework.journey.description":    "Phases mapped against actions, feelings, and pain points — expandable into a full service blueprint.",
-  "framework.service-blueprint.description": "Customer journey plus frontstage, backstage, and support-process lanes.",
   "framework.wheeloflife.description": "Life areas scored 0–10 as a segmented wheel — balance at a glance.",
   "framework.odyssey.description": "Three five-year life plans side by side — timeline, dashboard, and open questions.",
   "framework.circleofinfluence.description": "Sort what you care about into Concern, Influence, and Control — and focus inward.",
@@ -91,12 +83,6 @@ export const en = {
   // ── Title editing ────────────────────────────────────────────────────────────
   "title.clickToEdit": "Click to rename",
 
-  // ── Fishbone Diagram level labels ───────────────────────────────────────────
-  "fishbone.level.effect":   "Effect",
-  "fishbone.level.category": "Category",
-  "fishbone.level.cause":    "Cause",
-  "fishbone.level.subcause": "Sub-cause",
-
   // ── Impact Map level labels ─────────────────────────────────────────────────
   "impact.level.goal":        "Goal",
   "impact.level.actor":       "Actor",
@@ -142,13 +128,6 @@ export const en = {
   "sipoc.col.customers": "Customer",
   "sipoc.col.owner":     "Owner",
   "sipoc.col.metric":    "Metric",
-
-  // ── Customer Journey Map / Service Blueprint labels ─────────────────────────
-  "journey.label.persona":     "Persona",
-  "journey.label.scenario":    "Scenario",
-  "journey.addCard":           "Add card",
-  "journey.newCard":           "New Card",
-  "journey.deleteCard":        "Delete card",
 
   // ── Wardley Map labels ──────────────────────────────────────────────────────
   "wardley.stage.genesis":   "Genesis",

@@ -55,7 +55,7 @@ import { renderError, renderCanvas, unknownBlockWarnings } from "./canvas";
 import { renderMatrix } from "./matrix";
 import { parseMatrix } from "../matrix";
 import { renderTree } from "./tree";
-import { MINDMAP_OPTS, IMPACT_MAP_OPTS } from "./tree-adapters";
+import { IMPACT_MAP_OPTS } from "./tree-adapters";
 import type { TreeRenderOptions } from "../types";
 
 // A plain top-down classic (non-wrap) tree config for exercising renderTree's
@@ -69,11 +69,10 @@ const CLASSIC_OPTS: TreeRenderOptions = {
     { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
   ],
 };
-import { renderMindMap, renderImpactMap, renderOST } from "./tree-canvases";
+import { renderImpactMap, renderOST } from "./tree-canvases";
 import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
-import { renderVennDiagram } from "./venn";
 import { renderConceptMap } from "./conceptmap";
 import { renderWheelOfLife } from "./wheeloflife";
 import { renderOdyssey } from "./odyssey";
@@ -90,13 +89,11 @@ import type {
   MatrixData,
   TreeNode,
   OSTTree,
-  MindMap,
   ImpactMap,
   StoryMap,
   WardleyMap,
   RACIData,
   SIPOCData,
-  VennDiagram,
   ConceptMap,
   WheelOfLifeData,
   OdysseyData,
@@ -516,9 +513,9 @@ describe("renderTree", () => {
   it("truncates long labels to maxLabelChars", () => {
     const el = container();
     const longText = "A".repeat(40);
-    renderTree({ root: makeNode(longText, 0) }, MINDMAP_OPTS, el);
+    renderTree({ root: makeNode(longText, 0) }, IMPACT_MAP_OPTS, el);
     const mainText = el.querySelector(".vzd-tree-text-main");
-    expect(mainText?.textContent?.length).toBeLessThanOrEqual(MINDMAP_OPTS.maxLabelChars);
+    expect(mainText?.textContent?.length).toBeLessThanOrEqual(IMPACT_MAP_OPTS.maxLabelChars);
   });
 
   it("shows an actions trigger on every non-root node (incl. branches with children), never on the root", () => {
@@ -782,45 +779,6 @@ describe("renderSCQA", () => {
     renderSCQA(data, el, { resolver: NULL_RESOLVER, source: "situation: Situation\n  complication: Complication", app: editModeApp, ctx });
     expect(el.querySelector(".vzd-scqa-card-add")).toBeTruthy();
     expect(el.querySelector(".vzd-scqa-card-del")).toBeTruthy();
-    expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
-  });
-});
-
-// ── renderMindMap ─────────────────────────────────────────────────────────────
-
-describe("renderMindMap", () => {
-  it("renders a mind map without throwing", () => {
-    const el = container();
-    const map: MindMap = {
-      root: {
-        text: "Central Idea",
-        children: [
-          { text: "Branch A", children: [] },
-          { text: "Branch B", children: [{ text: "Leaf", children: [] }] },
-        ],
-      },
-    };
-    expect(() => renderMindMap(map, el)).not.toThrow();
-    expect(el.querySelector("svg")).toBeTruthy();
-  });
-
-  it("does not wire rename/add/delete or title editing when the note is in Reading View", () => {
-    const el = container();
-    const map: MindMap = { root: { text: "Central Idea", children: [{ text: "Branch A", children: [] }] } };
-    const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
-    const ctx = { sourcePath: "note.md" } as any;
-    renderMindMap(map, el, { resolver: NULL_RESOLVER, source: "root: Central Idea\n  Branch A", app: previewApp, ctx });
-    expect(el.querySelector("svg")?.classList.contains("vzd-tree--editable")).toBe(false);
-    expect(el.querySelector(".vizardry-title--editable")).toBeNull();
-  });
-
-  it("wires rename/add/delete and title editing when the note is in Live Preview/Source mode", () => {
-    const el = container();
-    const map: MindMap = { root: { text: "Central Idea", children: [{ text: "Branch A", children: [] }] } };
-    const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
-    const ctx = { sourcePath: "note.md" } as any;
-    renderMindMap(map, el, { resolver: NULL_RESOLVER, source: "root: Central Idea\n  Branch A", app: editModeApp, ctx });
-    expect(el.querySelector("svg")?.classList.contains("vzd-tree--editable")).toBe(true);
     expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 });
@@ -1611,88 +1569,6 @@ describe("renderSIPOC — flow view", () => {
     renderSIPOC(data, el);
     expect(el.querySelector(".vzd-sipoc-wrap")).toBeTruthy();
     expect(el.querySelector("svg")).toBeFalsy();
-  });
-});
-
-// ── renderVennDiagram ─────────────────────────────────────────────────────────
-
-describe("renderVennDiagram", () => {
-  const twoCircle: VennDiagram = {
-    circles: [{ name: "Design" }, { name: "Engineering" }],
-    regions: [
-      { key: "0", items: [{ text: "Research" }] },
-      { key: "1", items: [{ text: "Architecture" }] },
-      { key: "0+1", items: [{ text: "Prototyping" }] },
-    ],
-  };
-
-  const threeCircle: VennDiagram = {
-    circles: [{ name: "A" }, { name: "B" }, { name: "C" }],
-    regions: [
-      { key: "0", items: [{ text: "A only" }] },
-      { key: "1", items: [{ text: "B only" }] },
-      { key: "2", items: [{ text: "C only" }] },
-      { key: "0+1+2", items: [{ text: "Center" }] },
-    ],
-  };
-
-  it("renders SVG for a 2-circle diagram without throwing", () => {
-    const el = container();
-    expect(() => renderVennDiagram(twoCircle, el, { openLink: vi.fn() })).not.toThrow();
-    expect(el.querySelector("svg")).toBeTruthy();
-  });
-
-  it("renders one circle element per circle", () => {
-    const el = container();
-    renderVennDiagram(twoCircle, el, { openLink: vi.fn() });
-    const circles = el.querySelectorAll("circle");
-    expect(circles.length).toBe(2);
-  });
-
-  it("renders circle labels", () => {
-    const el = container();
-    renderVennDiagram(twoCircle, el, { openLink: vi.fn() });
-    const texts = Array.from(el.querySelectorAll("text")).map(t => t.textContent);
-    expect(texts).toContain("Design");
-    expect(texts).toContain("Engineering");
-  });
-
-  it("renders items in regions", () => {
-    const el = container();
-    renderVennDiagram(twoCircle, el, { openLink: vi.fn() });
-    const items = Array.from(el.querySelectorAll(".vzd-venn-item")).map(e => e.textContent);
-    expect(items).toContain("Research");
-    expect(items).toContain("Prototyping");
-  });
-
-  it("renders a 3-circle diagram without throwing", () => {
-    const el = container();
-    expect(() => renderVennDiagram(threeCircle, el, { openLink: vi.fn() })).not.toThrow();
-    expect(el.querySelectorAll("circle").length).toBe(3);
-  });
-
-  it("calls openLink when a wikilink item is clicked", () => {
-    const linked: VennDiagram = {
-      circles: [{ name: "X" }, { name: "Y" }],
-      regions: [
-        { key: "0+1", items: [{ text: "Shared", linkTarget: "Shared Note" }] },
-      ],
-    };
-    const el = container();
-    const openLink = vi.fn();
-    renderVennDiagram(linked, el, { openLink });
-    const linkItem = el.querySelector<HTMLElement>(".vzd-venn-link");
-    linkItem?.click();
-    expect(openLink).toHaveBeenCalledWith("Shared Note");
-  });
-
-  it("renders without throwing when regions list is empty", () => {
-    const el = container();
-    const empty: VennDiagram = {
-      circles: [{ name: "X" }, { name: "Y" }],
-      regions: [],
-    };
-    expect(() => renderVennDiagram(empty, el, { openLink: vi.fn() })).not.toThrow();
   });
 });
 

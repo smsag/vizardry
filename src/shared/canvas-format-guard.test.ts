@@ -8,8 +8,8 @@ const NOTE = [
   "# Note",                 // 1
   "",                       // 2
   "```vizardry",            // 3
-  "type: mindmap",          // 4
-  "- Central Topic",        // 5
+  "type: swot",             // 4
+  "block: Strengths",       // 5
   "```",                    // 6
   "",                       // 7
   "After",                  // 8
@@ -47,7 +47,7 @@ describe("fenceEdges", () => {
   });
 
   it("finds a block inside a callout and adds the callout's own edges", () => {
-    const d = Text.of(["Intro", "> [!note] Map", "> ```vizardry", "> type: mindmap", "> ```", "> after", "", "Tail"]);
+    const d = Text.of(["Intro", "> [!note] Map", "> ```vizardry", "> type: swot", "> ```", "> after", "", "Tail"]);
     const edges = fenceEdges(d, d.line(3).from)!;
     expect(edges).not.toBeNull();
     // The fence's own edges…

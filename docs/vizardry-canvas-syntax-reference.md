@@ -15,7 +15,7 @@ These are the rules that most often get broken. Follow all of them:
 1. **One fence, always:** open with ` ```vizardry ` and close with ` ``` `. Never use a per-framework fence like ` ```bmc ` or ` ```wardley ` — those render as plain code blocks (no migration).
 2. **`type:` is required** and must be the framework id, optionally `id, variant` (one comma), e.g. `type: bmc` or `type: matrix, pain`. If it's missing you get `Missing required "type:" line`. An unknown id gives `Unknown type "<id>"`.
 3. **Indentation is structural.** Child lines are indented under their parent with a **consistent** unit (2 spaces recommended). Mixing indent widths inside one block causes an "unexpected indentation" error. Use spaces, not tabs, to be safe.
-4. **Keywords end with a colon** (`block:`, `item:`, `component:`, `phase:`, …) except the free-graph lines in `conceptmap` and the bullet/indent-only lines in `mindmap`/`ost`/`venn`.
+4. **Keywords end with a colon** (`block:`, `item:`, `component:`, `axis:`, …) except the free-graph lines in `conceptmap` and the bullet/indent-only lines in `ost`.
 5. **Full-line comments only.** A line whose first non-space characters are `//` is ignored, in every framework. Inline trailing `// …` comments are only stripped in `wardley` and `pacelayers` — do **not** rely on them elsewhere; put comments on their own line.
 6. **Blank lines are always ignored** — use them freely for readability.
 7. **Grid block labels must match the framework's list exactly** (case-insensitive). A typo'd label isn't drawn (a block left out of the source isn't drawn either); a ⚠ chip in the canvas header names it and lists the framework's blocks.
@@ -70,18 +70,13 @@ These are the rules that most often get broken. Follow all of them:
 | `scr` | SCR Narrative | Grid / Tree |
 | `conceptmap` | Concept Map | SVG graph |
 | `nodemap` | Node Map | SVG graph |
-| `fishbone` | Fishbone Diagram | SVG tree |
 | `impact` | Impact Map | SVG tree |
-| `mindmap` | Mind Map | SVG tree |
 | `ost` | Opportunity Solution Tree | SVG tree |
 | `pacelayers` / `pacelayers, product` / `pacelayers, retro` | Pace Layer Analysis | SVG layers |
 | `raci` | RACI Matrix | Table |
 | `roadmap` | Now/Next/Later Roadmap | Table |
 | `sipoc` / `sipoc, table` | SIPOC Diagram | Table |
 | `sipoc, flow` | SIPOC Diagram (flow view) | SVG flow |
-| `journey` | Customer Journey Map | Lanes |
-| `journey, blueprint` | Service Blueprint | Lanes |
-| `venn` | Venn Diagram | SVG overlap |
 | `wardley` | Wardley Map | SVG canvas |
 | `wheeloflife` | Wheel of Life | SVG wheel |
 | `odyssey` | Odyssey of Life | Plan cards |
@@ -873,50 +868,6 @@ Palette colours: `red` `orange` `yellow` `green` `teal` `blue` `purple` `pink` `
 
 ---
 
-## Fishbone Diagram (`fishbone`)
-
-Causes of a central effect, grouped into named categories.
-
-~~~
-```vizardry
-type: fishbone
-title: Fishbone Diagram
-
-effect: High customer churn in month 1
-
-category: Product
-  cause: No in-app guidance
-    subcause: Empty state gives no direction
-  cause: Setup takes too long
-
-category: Communication
-  cause: Onboarding emails not relevant
-  cause: No check-in from CS team
-
-category: Expectation
-  cause: Landing page overpromises speed
-```
-~~~
-
-| Keyword | Depth | Meaning |
-| --- | --- | --- |
-| `effect:` | 0 | The problem (head of the fish) — required, one only |
-| `category:` | 0 | A cause group (People, Process, Technology, …) |
-| `cause:` | 1 (under category) | A contributing cause |
-| `subcause:` | 2 (under cause) | A sub-level cause |
-
-**Category presets** — add a variant on the `type:` line to pre-seed the canonical category bones; your `category:` lines then fill a matching bone by name (or add a new one):
-
-| `type:` | Seeded categories |
-| --- | --- |
-| `fishbone, 6m` (or `manufacturing`) | People · Method · Machine · Material · Measurement · Environment |
-| `fishbone, service` (or `4s`) | Surroundings · Suppliers · Systems · Skills |
-| `fishbone, marketing` (or `7p`) | Product · Price · Place · Promotion · People · Process · Physical Evidence |
-
-Parsing is graceful: an orphan `cause:`/`subcause:`, an unrecognised line, or a duplicate `effect:` each skip with a warning chip rather than failing the canvas; indentation is cosmetic (nesting follows the keyword). It is only fatal when there is no `effect:`.
-
----
-
 ## Impact Map (`impact`)
 
 Hierarchical tree: goal → actors → impacts → deliverables.
@@ -947,41 +898,6 @@ actor: Marketing Team
 | `actor:` | 0 | Level 1 — repeatable |
 | `impact:` | 1 | Level 2 — under an actor |
 | `deliverable:` | 2 | Level 3 — under an impact |
-
----
-
-## Mind Map (`mindmap`)
-
-Horizontal tree radiating from one root. **Indent depth = tree level** (no keywords below the root).
-
-~~~
-```vizardry
-type: mindmap
-title: Mind Map
-
-root: What makes a great PM?
-
-  Discovery
-    Talk to users weekly
-    Root cause analysis
-      5 Whys
-    Distinguish problem from solution
-
-  Delivery
-    Short feedback loops
-    Slice by outcome, not feature
-
-  Strategy
-    Align on the north-star metric
-```
-~~~
-
-| Line | Meaning |
-| --- | --- |
-| `root: Text` | Central node — required, one only, no indent |
-| Indented lines | Child nodes; indent depth = tree depth |
-
-Use one consistent indent unit (2 or 4 spaces). This is one of the two frameworks where child lines have **no** keyword.
 
 ---
 
@@ -1197,126 +1113,6 @@ link: Running service -> End users
 ~~~
 
 `link: A -> B` connects two cell values (case-insensitive). A link naming text that matches no cell — or the same text in two columns — errors, but only in flow view.
-
----
-
-## Customer Journey Map / Service Blueprint (`journey` · `journey, blueprint`)
-
-One shared syntax, two variants. `type: journey` shows five lanes; `type: journey, blueprint` adds three service-blueprint lanes below them. All eight lane keywords are always parsed, so switching variants never loses content.
-
-~~~
-```vizardry
-type: journey
-title: Customer Journey Map
-
-persona: Returning online shopper
-scenario: Reordering after a failed auto-renewal
-
-phase: Awareness
-  action: Receives renewal-failed email
-  action: Opens app to check order status
-  touchpoint: Email notification
-  touchpoint: Mobile app
-  feeling: Confused | Didn't expect the renewal to fail
-  painpoint: Unclear why the renewal failed
-  opportunity: Add a one-tap "retry payment" link in the email
-
-phase: Consideration
-  action: Opens order history
-  touchpoint: Order history screen
-  feeling: Mildly annoyed | Extra steps to fix something automatic
-  painpoint: No clear CTA to fix the payment method
-  opportunity: Surface "Update payment method" inline
-
-phase: Resolution
-  action: Updates card details
-  touchpoint: Payment settings screen
-  feeling: Relieved | Glad it was quick once found
-  opportunity: Auto-suggest reorder after a successful update
-```
-~~~
-
-Service Blueprint adds `frontstage:` / `backstage:` / `support:` lanes:
-
-~~~
-```vizardry
-type: journey, blueprint
-title: Subscription Recovery Blueprint
-
-persona: Returning online shopper
-scenario: Reordering after a failed auto-renewal
-
-phase: Awareness
-  action: Receives renewal-failed email
-  touchpoint: Email notification
-  feeling: Confused | Didn't expect the renewal to fail
-  painpoint: Unclear why the renewal failed
-  opportunity: Add a one-tap "retry payment" link
-  frontstage: Support chatbot greets user in live chat
-  backstage: Billing service logs the failed charge
-  support: Payment gateway webhook retry queue
-```
-~~~
-
-| Key | Lane | Variant |
-| --- | --- | --- |
-| `persona:` / `scenario:` | Header | both |
-| `phase: <name>` | A column (unique names) | both |
-| `action:` | Actions | both |
-| `touchpoint:` | Touchpoints | both |
-| `feeling:` | Thoughts & Feelings | both |
-| `painpoint:` | Pain Points | both |
-| `opportunity:` | Opportunities | both |
-| `frontstage:` | Frontstage Actions | blueprint only |
-| `backstage:` | Backstage Actions | blueprint only |
-| `support:` | Support Processes | blueprint only |
-
-Every lane line takes an optional ` | subtitle`: `feeling: Confused | Didn't expect it`. Repeat a keyword within a phase to add several cards to that lane.
-
----
-
-## Venn Diagram (`venn`)
-
-2- or 3-circle overlap. Items are `-`-prefixed bullets under a region.
-
-~~~
-```vizardry
-type: venn
-title: Venn Diagram
-
-circle: Design
-  - User research
-  - Wireframing
-
-circle: Engineering
-  - Architecture
-  - Code review
-
-circle: Business
-  - Market sizing
-
-intersection: Design+Engineering
-  - Prototyping
-  - [[Design System|Shared components]]
-
-intersection: Design+Business
-  - Brand strategy
-
-intersection: Engineering+Business
-  - Build vs. buy
-
-center:
-  - Product vision
-```
-~~~
-
-| Key | Meaning |
-| --- | --- |
-| `circle: <name>` | Defines a circle (2 or 3 total) |
-| `- item` | Item in the parent region |
-| `- [[Note\|Alias]]` | Clickable chip linking to a vault note |
-| `intersection: A+B` | Overlap of two named circles (order-insensitive) |
-| `center:` | 3-circle only — the triple intersection |
 
 ---
 
@@ -1771,7 +1567,7 @@ now:
 ```
 ~~~
 
-**Where it renders.** Grid blocks, cards, matrices, roadmap, journey, story map, RACI, SIPOC, Pro / Contra, compass, odyssey, test card and the other HTML-based canvases render the formatting. Canvases drawn as SVG text (mind map, impact map, OST, fishbone, Wardley, concept map, node-map link labels, Venn circle names, wheel of life) show the words **without** the markers for now.
+**Where it renders.** Grid blocks, cards, matrices, roadmap, story map, RACI, SIPOC, Pro / Contra, compass, odyssey, test card and the other HTML-based canvases render the formatting. Canvases drawn as SVG text (impact map, OST, Wardley, concept map, node-map link labels, wheel of life) show the words **without** the markers for now.
 
 **How to add it.** Type the markers in the code block (Source mode), or in a canvas's own inline editor, which shows the raw text. Obsidian's Highlight / Bold commands can't reach text selected in a rendered canvas in Live Preview: Vizardry drops the empty `====` they would otherwise insert under the block and shows a hint instead.
 

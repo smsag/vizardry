@@ -8,7 +8,7 @@ Full reference: [vizardry-canvas-syntax-reference.md](vizardry-canvas-syntax-ref
 1. Fence with ` ```vizardry ` … ` ``` `. Never ` ```bmc ` or other per-framework fences.
 2. `type: <id>` is required. Variant syntax: `type: matrix, pain`.
 3. Indentation is structural — use 2 spaces consistently, never tabs.
-4. Keywords end with a colon (`block:`, `item:`) — except in conceptmap, mindmap, ost, venn.
+4. Keywords end with a colon (`block:`, `item:`) — except in conceptmap and ost.
 5. Comments: `// text` on its own line only. Inline `//` stripped only in wardley and pacelayers.
 6. Blank lines are ignored everywhere.
 7. Grid block labels must match exactly (case-insensitive); a typo'd block isn't drawn (a ⚠ chip names it). Only written blocks are drawn: omit a block to leave it out, write `block: X` with no content to keep it empty.
@@ -47,18 +47,13 @@ Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas unde
 | `scr` | SCR Narrative | Grid / Tree |
 | `conceptmap` | Concept Map | SVG graph |
 | `nodemap` | Node Map | SVG graph |
-| `fishbone` | Fishbone Diagram | SVG tree |
 | `impact` | Impact Map | SVG tree |
-| `mindmap` | Mind Map | SVG tree |
 | `ost` | Opportunity Solution Tree | SVG tree |
 | `pacelayers` / `pacelayers, product` / `pacelayers, retro` | Pace Layer Analysis | SVG layers |
 | `raci` | RACI Matrix | Table |
 | `roadmap` | Now/Next/Later Roadmap | Table |
 | `sipoc` / `sipoc, table` | SIPOC Diagram | Table |
 | `sipoc, flow` | SIPOC Flow | SVG flow |
-| `journey` | Customer Journey Map | Lanes |
-| `journey, blueprint` | Service Blueprint | Lanes |
-| `venn` | Venn Diagram | SVG overlap |
 | `wardley` | Wardley Map | SVG canvas |
 | `wheeloflife` | Wheel of Life | SVG wheel |
 | `odyssey` | Odyssey of Life | Plan cards |
@@ -221,23 +216,6 @@ link: Service B <-> Service A [color: green, style: dashed]
 
 Links: `->` directed, `<->` bidirectional, `--` undirected. `[color: <c>, style: dashed]` optional. Colors: `red` `orange` `yellow` `green` `teal` `blue` `purple` `pink` `gray` or `#hex`.
 
-## Fishbone (`fishbone`)
-
-~~~
-```vizardry
-type: fishbone
-effect: High customer churn
-category: Product
-  cause: No in-app guidance
-    subcause: Empty state gives no direction
-  cause: Setup takes too long
-category: Communication
-  cause: Onboarding emails irrelevant
-```
-~~~
-
-One `effect:` required (only fatal miss). `category:` → `cause:` → `subcause:`; bad lines skip with a warning. Presets seed canonical bones: `type: fishbone, 6m` / `service` / `marketing`.
-
 ## Impact Map (`impact`)
 
 ~~~
@@ -255,24 +233,6 @@ actor: Marketing
 ~~~
 
 One `goal:` required. `actor:` → `impact:` → `deliverable:`.
-
-## Mind Map (`mindmap`)
-
-Indent depth = tree level. No keywords below root.
-
-~~~
-```vizardry
-type: mindmap
-root: Central topic
-  Branch A
-    Leaf 1
-    Leaf 2
-  Branch B
-    Leaf 3
-```
-~~~
-
-One `root:` required. Use consistent indent unit (2 spaces).
 
 ## Opportunity Solution Tree (`ost`)
 
@@ -363,49 +323,6 @@ row:
 ~~~
 
 Optional: `owner:`, `metric:` (table-only). Flow view adds `link: A -> B` between cell values.
-
-## Journey / Blueprint (`journey`)
-
-`type: journey` = 5 lanes. `type: journey, blueprint` adds frontstage/backstage/support.
-
-~~~
-```vizardry
-type: journey
-persona: Returning shopper
-scenario: Reorder after failed renewal
-phase: Awareness
-  action: Receives failed-renewal email
-  touchpoint: Email notification
-  feeling: Confused | Didn't expect failure
-  painpoint: Unclear why it failed
-  opportunity: One-tap retry link
-phase: Resolution
-  action: Updates card details
-  feeling: Relieved | Quick once found
-```
-~~~
-
-Blueprint adds under `phase:`: `frontstage:`, `backstage:`, `support:`. All lane lines accept `| subtitle`.
-
-## Venn (`venn`)
-
-2 or 3 circles. Items are `- ` prefixed bullets.
-
-~~~
-```vizardry
-type: venn
-circle: Design
-  - User research
-circle: Engineering
-  - Architecture
-intersection: Design+Engineering
-  - Prototyping
-center:
-  - Product vision
-```
-~~~
-
-`center:` = triple intersection (3-circle only). Circle name order in `intersection:` doesn't matter.
 
 ## Wardley Map (`wardley`)
 
