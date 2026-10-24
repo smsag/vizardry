@@ -23,8 +23,8 @@ ok()   { echo "✅  $*"; }
 # Every `id: "…"` in processors.ts — custom renderers and modal-only presets.
 #
 # The anchored form this replaced (`^\s+id: "…"`) required `id:` to be the
-# first thing on its line, which is true of exactly one entry (Venn, the only
-# one spelled out multi-line). Every other id — 35 of 36 — was silently
+# first thing on its line, which was true of exactly one entry at the time
+# (Venn, then the only one spelled out multi-line). Every other id — 35 of 36 — was silently
 # skipped, so the README / syntax-reference / cheatsheet coverage checks below
 # passed without ever looking at them.
 processor_ids() {
@@ -95,7 +95,7 @@ else
   done
 
   # Custom-renderer type: IDs from processors.ts. Hyphenated IDs
-  # (opportunity-matrix, sipoc-flow, service-blueprint, …) are insert-command /
+  # (opportunity-matrix, impact-matrix, sipoc-flow, …) are insert-command /
   # template aliases, not type: values — they surface in the reference as
   # "matrix, opportunity" etc., so skip them here.
   while IFS= read -r id; do

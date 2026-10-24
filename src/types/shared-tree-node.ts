@@ -1,4 +1,4 @@
-// ── Shared Tree Node (used by OST, Mind Map, Impact Map renderers) ──────────
+// ── Shared Tree Node (used by the OST, Impact Map and SCQA renderers) ───────
 
 export interface TreeNode {
   text: string;

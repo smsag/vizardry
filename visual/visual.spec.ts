@@ -4,17 +4,11 @@ import path from "path";
 
 // Must match the fixture names in harness.ts.
 const ALL = [
-  "bmc", "swot", "impact", "story", "mindmap", "ost", "venn",
+  "bmc", "swot", "impact", "story", "ost",
   "sipoc", "sipocflow", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
-  "matrix", "scqa", "journey", "wheeloflife", "odyssey",
+  "matrix", "scqa", "wheeloflife", "odyssey",
   "circleofinfluence", "wholeperson", "futureself", "radar", "problem",
   "testcard", "canvaslink",
-  // NOTE: `fishbone` is intentionally not snapshotted — the herringbone renderer
-  // lays out native-SVG text whose metrics differ enough between this repo's
-  // Playwright container and other environments to trip a hard dimension
-  // mismatch. Its structure is covered by src/renderer/fishbone.render.test.ts
-  // and its geometry by src/renderer/fishbone-geometry.test.ts; the harness
-  // fixture is kept (and still guarded by the page-error check) for manual viewing.
   // NOTE: `compass` is intentionally not snapshotted — its text-heavy brief sits
   // on a line-wrap boundary that renders 10px taller under CI's Playwright
   // chromium than the local browser (a hard dimension mismatch Playwright can't
@@ -24,7 +18,7 @@ const ALL = [
 
 // On mobile we only snapshot the canvases whose layout is width-sensitive
 // (horizontal scrollers / carousels) — where mobile regressions actually bite.
-const MOBILE = ["wardley", "matrix", "sipoc", "journey", "roadmap", "bmc", "odyssey", "wholeperson", "raci"];
+const MOBILE = ["wardley", "matrix", "sipoc", "roadmap", "bmc", "odyssey", "wholeperson", "raci"];
 
 test("canvases render as expected", async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === "mobile";

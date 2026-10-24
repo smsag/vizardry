@@ -1,18 +1,17 @@
-## 0.75.3
+## 0.76.0
 
-Labels stay whole: fishbone causes no longer run into the next bone, Venn
-labels wrap instead of being cut off, and the strategy canvas keeps its last
-factor on the canvas.
+Mind Map, Fishbone, Venn and Customer Journey Map are gone. Obsidian draws
+the same diagrams itself in a ` ```mermaid ` block.
 
-- **Fix: long fishbone causes ran into the next bone.** A cause near the
-  30-character limit reached past the next bone on its side, so that bone's
-  line crossed the words. Bones now move apart as far as their longest labels
-  need, and the effect head moves with them. Diagrams with short causes keep
-  their spacing.
-- **Fix: Venn labels ended in "…".** A label longer than its region was cut
-  off, so "Viewing scheduling" read "Viewing scheduli…", and on a phone most
-  overlap labels were cut. Labels now wrap onto a second line, and the
-  overlaps of a three-circle diagram give them a little more room.
+- **Removed: Mind Map (`mindmap`), Fishbone (`fishbone` and its 6M, 4S and
+  7P presets), Venn (`venn`) and Customer Journey Map (`journey`, including
+  the Service Blueprint, `journey, blueprint`).** Their insert commands and
+  picker entries are gone too. A note that still has one of these blocks
+  shows `Unknown type "…"` in its place; the block's text stays in the note
+  untouched. To keep the drawing, rewrite the block as a ` ```mermaid ` block:
+  `mindmap`, `ishikawa-beta` for a fishbone, `venn-beta`, or `journey`.
+  Mermaid's journey is a satisfaction curve per step; it has no lanes for
+  touchpoints, pain points or a service blueprint.
 - **Fix: the strategy canvas clipped its last factor.** The label under the
   rightmost point was centred on it, so half of it hung over the edge of the
   canvas ("Reporti"). The first and last labels now lean inward and stay

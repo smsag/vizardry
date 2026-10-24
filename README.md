@@ -31,17 +31,13 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `fourls` | 4Ls Retrospective | Grid |
 | `experiment` | Experiment Canvas | Grid |
 | `errc` | ERRC Grid (Blue Ocean Four Actions) | Grid |
-| `fishbone` | Fishbone Diagram | Tree |
 | `impact` | Impact Map | Tree |
-| `journey` | Customer Journey Map | Grid |
-| `journey, blueprint` (or insert as `service-blueprint`) | Service Blueprint | Grid |
 | `jobs` | Jobs Canvas | Grid |
 | `kata` | Product Kata | Grid |
 | `lean` | Lean Canvas | Grid |
 | `leanux` | Lean UX Canvas | Grid |
 | `matrix` | Matrix — blank two-axis chart | Grid |
 | `matrix, pain` · `opportunity` · `impact` · `assumption` · `scenario` | Matrix presets (Pain, Opportunity, Impact/Effort, Assumption Map, Scenario 2×2) — see [preset aliases](#preset-aliases) | Grid |
-| `mindmap` | Mind Map | Tree |
 | `nodemap` | Node Map | Graph |
 | `opportunity` | Opportunity Canvas | Grid |
 | `ost` | Opportunity Solution Tree | Tree |
@@ -59,7 +55,6 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `swot` | SWOT Analysis | Grid |
 | `futureself` | Future Self | Grid |
 | `vpc` | Value Proposition Canvas | Grid |
-| `venn` | Venn Diagram | SVG overlap |
 | `wardley` | Wardley Map | SVG canvas |
 | `ptw` | Playing to Win | Grid |
 | `conceptmap` | Concept Map | SVG graph |
@@ -98,16 +93,12 @@ block it produces carries the `type:` line in the right-hand column.
 
 | Insert alias | Inserts | Kind |
 |---|---|---|
-| `fishbone-6m` | `type: fishbone, 6m` — 6M cause analysis (manufacturing) | Tree |
-| `fishbone-service` | `type: fishbone, service` — 4S cause analysis (service) | Tree |
-| `fishbone-marketing` | `type: fishbone, marketing` — 7P cause analysis (marketing) | Tree |
 | `pain-matrix` | `type: matrix, pain` — Pain Point Matrix | Grid |
 | `opportunity-matrix` | `type: matrix, opportunity` — Opportunity Matrix | Grid |
 | `impact-matrix` | `type: matrix, impact` — Impact / Effort Matrix | Grid |
 | `assumption-matrix` | `type: matrix, assumption` — Assumption Map | Grid |
 | `scenario-matrix` | `type: matrix, scenario` — Scenario 2×2 | Grid |
 | `sipoc-flow` | `type: sipoc, flow` — SIPOC flow view | SVG flow |
-| `service-blueprint` | `type: journey, blueprint` — Service Blueprint | Grid |
 
 ---
 
@@ -377,47 +368,6 @@ block: Minimum Experiment
   A/B test: guided wizard vs blank start with 500 new signups
 ```
 ~~~
-
----
-
-### Mind Map
-
-~~~
-```vizardry
-type: mindmap
-root: What makes a great PM?
-
-  Discovery
-    Talk to users weekly
-    Root Cause Analysis
-      5 Whys
-      Opportunity Canvas
-    Distinguish problem from solution
-
-  Delivery
-    Short feedback loops
-    Slice by outcome, not feature
-    Story Map before planning
-
-  Strategy
-    Understand trade-offs
-    Align on north-star metric
-    Kill features that don't serve the goal
-
-  Mindset
-    Comfort with ambiguity
-    Curiosity over certainty
-    Ship to learn
-```
-~~~
-
-**Layout:** Renders as a horizontal tree — root on the left, branches growing to the right.
-
-**Syntax:**
-- `root:` — central node, no indent, required, one only
-- Indented lines — child nodes; indent level determines depth
-- Any consistent indent unit works (2 spaces, 4 spaces, tab)
-- Blank lines and `// comment` lines are ignored
 
 ---
 
@@ -866,54 +816,6 @@ slice: V1.1
 
 ---
 
-### Customer Journey Map / Service Blueprint
-
-~~~
-```vizardry
-type: journey
-persona: Returning online shopper
-scenario: Reordering a subscription item after a failed auto-renewal
-
-phase: Awareness
-  action: Receives renewal-failed email
-  touchpoint: Email notification
-  feeling: Confused | Didn't expect the renewal to fail
-  painpoint: Unclear why the renewal failed
-  opportunity: Add a one-tap "retry payment" link in the email
-
-phase: Consideration
-  action: Opens order history
-  touchpoint: Order history screen
-  feeling: Mildly annoyed | Extra steps to fix something automatic
-  opportunity: Surface "Update payment method" inline on order history
-```
-~~~
-
-One canvas, two views over the same phase/lane data — a **journey map** (default) and a **service blueprint**. Switch between them just by changing the `type:` line (`type: journey` ↔ `type: journey, blueprint`), the same way SIPOC's table and flow views switch; nothing you've entered is ever lost in either direction, since `frontstage:`/`backstage:`/`support:` lines are always parsed, just not rendered under `type: journey`.
-
-**Syntax:**
-- `persona:` / `scenario:` — optional header metadata
-- `phase: <name>` — one grid column; must be unique
-- `action:`, `touchpoint:`, `feeling:`, `painpoint:`, `opportunity:` — journey lanes, each rendered as a row of cards under every phase
-- `frontstage:`, `backstage:`, `support:` — Service Blueprint-only lanes (Frontstage Actions, Backstage Actions, Support Processes), separated by "Line of Interaction" / "Line of Visibility" / "Line of Internal Interaction" dividers
-- Any lane keyword supports `<keyword>: <name> | <subtitle>` for an optional subtitle
-- Multiple lines with the same keyword under one phase stack as multiple cards, in source order
-- Blueprint-only lane lines are always parsed even under `type: journey` — they simply aren't rendered until you switch the `type:` line to `journey, blueprint`, so nothing is lost switching views by hand
-
-**Visual editing in Live Preview:**
-
-| Action | Gesture |
-|---|---|
-| **Add a card** | In edit mode, `+` button appears on hover in every cell |
-| **Reorder within a lane** | Drag a card up or down within the same lane row |
-| **Move to another phase** | Drag a card to the same lane in a different phase column |
-| **Rename persona / scenario** | Click the badge in the canvas header |
-| **Rename phase** | Double-click a phase header |
-| **Rename card** | Double-click a card's name |
-| **Cancel a drag** | Release outside the grid — card snaps back, no change |
-
----
-
 ### Value Proposition Canvas
 
 ~~~
@@ -945,47 +847,6 @@ block: Gains
   Free up time for higher-value work
 ```
 ~~~
-
----
-
-### Venn Diagram
-
-~~~
-```vizardry
-type: venn
-circle: Design
-  - User research
-  - Wireframing
-
-circle: Engineering
-  - Architecture
-  - Code review
-
-circle: Business
-  - Market sizing
-  - Revenue model
-
-intersection: Design+Engineering
-  - Prototyping
-  - [[Design System|Shared components]]
-
-intersection: Design+Business
-  - Brand strategy
-
-intersection: Engineering+Business
-  - Build vs. buy
-
-center:
-  - Product vision
-```
-~~~
-
-**Syntax:**
-- `circle: <name>` — defines a circle (2 or 3 total)
-- `- item text` — indented bullet placed in the parent region
-- `- [[Note|Alias]]` — clickable chip linking to a note; alias is the display text
-- `intersection: A+B` — items in the overlap of named circles (order-insensitive)
-- `center:` — 3-circle only; shorthand for the triple intersection
 
 ---
 
@@ -1719,37 +1580,6 @@ One row per `task:`, with `responsible:` / `accountable:` / `consulted:` / `info
 
 ---
 
-### Fishbone Diagram
-
-~~~
-```vizardry
-type: fishbone
-title: Why did the launch slip?
-
-effect: Launch slipped by three weeks
-
-category: People
-  cause: Lack of training
-    subcause: No onboarding process
-  cause: High turnover
-
-category: Process
-  cause: Unclear requirements
-  cause: Manual handoffs
-
-category: Technology
-  cause: Legacy system
-    subcause: No API available
-  cause: Missing monitoring
-```
-~~~
-
-An Ishikawa diagram: the `effect:` is the fish head; each `category:` is a bone with `cause:` and nested `subcause:` branches feeding into it.
-
-**Category presets:** add a variant on the `type:` line to pre-seed the canonical category bones — `type: fishbone, 6m` (manufacturing: People · Method · Machine · Material · Measurement · Environment), `fishbone, service` (4S: Surroundings · Suppliers · Systems · Skills), or `fishbone, marketing` (7P). Your `category:` lines fill a matching bone by name or add a new one. Parsing is graceful — an orphan cause, an unrecognised line, or a duplicate effect skips with a warning chip rather than failing the whole canvas (only a missing `effect:` is fatal).
-
----
-
 ### Now/Next/Later Roadmap
 
 ~~~
@@ -1781,7 +1611,7 @@ Any canvas element can navigate to a heading in the same note — not just a who
 
 **Three ways to connect:**
 
-*Inline wiki-link* — append `[[#Heading]]` to any element declaration, including a plain bullet line inside a block's content. Works everywhere: every grid canvas block (both the block itself and each of its content lines), Matrix, RACI, Pace Layers, OST, Impact Map, Mind Map, and every card on the card canvases (card-mode blocks, Story, Roadmap, SCQA grid, Journey):
+*Inline wiki-link* — append `[[#Heading]]` to any element declaration, including a plain bullet line inside a block's content. Works everywhere: every grid canvas block (both the block itself and each of its content lines), Matrix, RACI, Pace Layers, OST, Impact Map, and every card on the card canvases (card-mode blocks, Story, Roadmap, SCQA grid):
 
 ~~~
 ```vizardry
@@ -1847,13 +1677,13 @@ Same-note only for now, and the target is matched by title — so give canvases 
 - Inline annotations (`[[#Heading]]` or `[text](#Anchor)`) take priority over auto-detection
 - Heading text is matched case-insensitively
 - Annotations are stripped from display — only the element name is shown
-- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-line and per-card links (block content lines, card-mode blocks, Matrix, RACI, Pace Layers, Story, Roadmap, SCQA grid, Journey) refresh on the next render
+- Auto-detected links on grid block labels and tree nodes update immediately when headings are added or renamed (no re-render of the code block needed); per-line and per-card links (block content lines, card-mode blocks, Matrix, RACI, Pace Layers, Story, Roadmap, SCQA grid) refresh on the next render
 
 ### Section preview
 
 A linked box or card shows a preview of just the linked section — the heading down to the next heading of the same or higher level, not the whole note. Trigger it with **Cmd/Ctrl + hover** on desktop, or a **long-press** on mobile (a drag needs deliberate movement, so holding still opens the preview). Dismiss by moving away, scrolling, pressing Escape, or tapping the close button on mobile.
 
-Currently available on grid boxes, Roadmap cards, and the card canvases (card-mode blocks, Matrix, Story, SCQA grid). Tree-node preview (OST, Mind Map, Impact, Fishbone, SCQA tree) is not wired yet.
+Currently available on grid boxes, Roadmap cards, and the card canvases (card-mode blocks, Matrix, Story, SCQA grid). Tree-node preview (OST, Impact, SCQA tree) is not wired yet.
 
 ### Explicit ticket annotations
 
@@ -1982,14 +1812,6 @@ It's a global toggle that applies live to all rendered canvases — no re-render
 | `impact:` | Level 2 — indented under an actor |
 | `deliverable:` | Level 3 — indented under an impact |
 
-### Mind Map (type: mindmap)
-
-| Syntax | Meaning |
-|---|---|
-| `root: Text` | Central node — no indent, required, one only |
-| Indented lines | Child nodes at the indented depth |
-| Blank lines / `// comment` | Ignored |
-
 ### Opportunity Solution Tree (type: ost)
 
 Keyword-per-level, strict chain `outcome → opportunity → solution → experiment`, rendered as labelled swim-lanes. Several children are allowed at every level.
@@ -2051,26 +1873,6 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `slice: <name>` | Priority band |
 | Indented `step: <name> \| task A, task B` | Assigns tasks to this slice |
 
-### Customer Journey Map / Service Blueprint (type: journey, journey blueprint)
-
-| Syntax | Meaning |
-|---|---|
-| `persona: Description` | Optional persona in the canvas header |
-| `scenario: Description` | Optional scenario in the canvas header |
-| `phase: <name>` | One grid column; must be unique |
-| `action:` / `touchpoint:` / `feeling:` / `painpoint:` / `opportunity:` | Journey lane card, optionally `\| <subtitle>` |
-| `frontstage:` / `backstage:` / `support:` | Service Blueprint-only lane card (parsed but hidden under `type: journey`) |
-
-### Venn Diagram (type: venn)
-
-| Syntax | Meaning |
-|---|---|
-| `circle: <name>` | Defines a circle (2 or 3 total) |
-| `- item text` | Item in the parent region |
-| `- [[Note\|Alias]]` | Clickable note link |
-| `intersection: A+B` | Items in the overlap of named circles |
-| `center:` | 3-circle triple intersection |
-
 ### Wardley Map (type: wardley)
 
 | Syntax | Meaning |
@@ -2106,18 +1908,6 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `link: A -> B [color: red, style: dashed]` | Link with a color and/or dashed style |
 | `title: <text>` | Optional canvas title |
 | `// comment` | Ignored |
-
----
-
-### Fishbone Diagram (type: fishbone)
-
-| Syntax | Meaning |
-|---|---|
-| `effect: <text>` | The problem at the head of the diagram — required, one only |
-| `category: <name>` | A cause category (e.g. People, Process, Technology) |
-| `cause: <text>` | A contributing cause — indented under `category:` |
-| `subcause: <text>` | A sub-level cause — indented under `cause:` |
-| `type: fishbone, <preset>` | Seed canonical bones: `6m` · `service` · `marketing` |
 
 ---
 

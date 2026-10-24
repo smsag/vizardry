@@ -8,10 +8,9 @@
  * the logic itself lives here so it can be read and tested without the
  * Plugin class or the dispatcher.
  *
- * Most renderers share one of two pipelines — `linked` (strip inline links,
+ * Every renderer shares one of two pipelines — `linked` (strip inline links,
  * parse, render with a heading-link resolver) and `plain` (parse raw, no
- * resolver) — so an entry is usually a single declarative row. Only Venn,
- * which needs bespoke link handling, spells its processor out in full.
+ * resolver) — so an entry is a single declarative row.
  *
  * Adding a new non-grid renderer:
  *   1. Add types to types.ts
@@ -24,12 +23,9 @@
 
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { extractInlineLinks, buildLinkSupport } from "./shared/links";
-import { parseFishbone } from "./fishbone";
 import { parseImpactMap } from "./impact";
 import { parseStoryMap } from "./story";
-import { parseMindMap } from "./mindmap";
 import { parseOST } from "./frameworks/ost";
-import { parseVennDiagram } from "./venn";
 import { parseWardleyMap } from "./wardley";
 import { parseSIPOC } from "./sipoc";
 import { parseRACIMatrix } from "./raci";
@@ -39,7 +35,6 @@ import { parseConceptMap } from "./conceptmap";
 import { parseNodeMap } from "./nodemap";
 import { parseMatrix } from "./matrix";
 import { parseSCQA } from "./scqa";
-import { parseJourney } from "./journey";
 import { parseWheelOfLife } from "./wheeloflife";
 import { parseOdyssey } from "./odyssey";
 import { parseCircleOfInfluence } from "./circleofinfluence";
@@ -52,25 +47,22 @@ import { parseStrategyCanvas } from "./strategycanvas";
 import { parseBuyerUtilityMap } from "./utilitymap";
 import { parseProContra } from "./procontra";
 import {
-  renderFishbone, renderImpactMap, renderStoryMap, renderMindMap, renderOST,
-  renderVennDiagram, renderSIPOC, renderWardleyMap, renderRACIMatrix,
+  renderImpactMap, renderStoryMap, renderOST,
+  renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
-  renderJourneyMap, renderWheelOfLife, renderOdyssey,
+  renderWheelOfLife, renderOdyssey,
   renderCircleOfInfluence, renderWholePerson, renderRadar, renderProblem, renderTestCard,
   renderCompass, renderStrategyCanvas, renderBuyerUtilityMap, renderProContra,
   renderError,
 } from "./renderer";
 import type { RenderContext } from "./renderer/render-context";
 import {
-  FISHBONE_TEMPLATE, FISHBONE_6M_TEMPLATE, FISHBONE_SERVICE_TEMPLATE, FISHBONE_MARKETING_TEMPLATE,
-  IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
-  OST_TEMPLATE, VENN_TEMPLATE,
+  IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, OST_TEMPLATE,
   SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
   MATRIX_PAIN_TEMPLATE, MATRIX_OPP_TEMPLATE, MATRIX_IMPACT_TEMPLATE,
   MATRIX_ASSUMPTION_TEMPLATE, MATRIX_SCENARIO_TEMPLATE, MATRIX_PLOT_TEMPLATE,
   SCQA_TEMPLATE, SCR_TEMPLATE,
-  JOURNEY_TEMPLATE, SERVICE_BLUEPRINT_TEMPLATE,
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
   CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
   PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
@@ -146,9 +138,6 @@ export interface ModalOnlyOption {
 }
 
 export const EXTRA_OPTIONS: ModalOnlyOption[] = [
-  { id: "fishbone-6m",        label: "Fishbone — 6M (Manufacturing)", template: FISHBONE_6M_TEMPLATE },
-  { id: "fishbone-service",   label: "Fishbone — 4S (Service)",       template: FISHBONE_SERVICE_TEMPLATE },
-  { id: "fishbone-marketing", label: "Fishbone — 7P (Marketing)",     template: FISHBONE_MARKETING_TEMPLATE },
   // One entry per documented `type: matrix, <variant>` preset. The Pain
   // Point Matrix is documented in the README and both docs/ references but
   // had no entry here, so its template was unreachable — no insert command,
@@ -159,34 +148,11 @@ export const EXTRA_OPTIONS: ModalOnlyOption[] = [
   { id: "assumption-matrix",  label: "Assumption Map",        template: MATRIX_ASSUMPTION_TEMPLATE },
   { id: "scenario-matrix",    label: "Scenario Matrix",       template: MATRIX_SCENARIO_TEMPLATE },
   { id: "sipoc-flow",         label: "SIPOC Flow Diagram",    template: SIPOC_FLOW_TEMPLATE },
-  { id: "service-blueprint",  label: "Service Blueprint",     template: SERVICE_BLUEPRINT_TEMPLATE },
 ];
 
 export const CUSTOM_RENDERERS: CustomRenderer[] = [
-  { id: "fishbone", label: "Fishbone Diagram",          template: FISHBONE_TEMPLATE,   createProcessor: linked(parseFishbone, renderFishbone) },
   { id: "impact",   label: "Impact Map",                template: IMPACT_MAP_TEMPLATE, createProcessor: linked(parseImpactMap, renderImpactMap) },
   { id: "story",    label: "User Story Map",            template: STORY_MAP_TEMPLATE,  createProcessor: linked(parseStoryMap, renderStoryMap) },
-  { id: "mindmap",  label: "Mind Map",                  template: MIND_MAP_TEMPLATE,   createProcessor: linked(parseMindMap, renderMindMap) },
-
-  // Venn opens arbitrary link targets (not headings), so it needs a bespoke
-  // `openLink` rather than the standard heading resolver.
-  {
-    id: "venn",
-    label: "Venn Diagram",
-    template: VENN_TEMPLATE,
-    createProcessor: (app) => (parseSource, fullSource, _variant, el, ctx) => {
-      const { strippedSource } = extractInlineLinks(parseSource);
-      const result = parseVennDiagram(strippedSource);
-      if (!result.ok) { renderError(result.error, el); return; }
-      renderVennDiagram(result.data, el, {
-        source: fullSource,
-        app,
-        ctx,
-        openLink: (target) => { void app.workspace.openLinkText(target, ctx.sourcePath, false); },
-      });
-    },
-  },
-
   { id: "ost", label: "Opportunity Solution Tree", template: OST_TEMPLATE, createProcessor: linked(parseOST, renderOST) },
 
   { id: "sipoc",      label: "SIPOC Diagram",          template: SIPOC_TEMPLATE,       createProcessor: linked(parseSIPOC, renderSIPOC) },
@@ -209,7 +175,6 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   { id: "matrix",  label: "Matrix",              template: MATRIX_PLOT_TEMPLATE, createProcessor: linked(parseMatrix, renderMatrix) },
   { id: "scqa",    label: "SCQA Narrative",      template: SCQA_TEMPLATE,          createProcessor: linked((src) => parseSCQA(src, "scqa"), renderSCQA) },
   { id: "scr",     label: "SCR Narrative",       template: SCR_TEMPLATE,           createProcessor: linked((src) => parseSCQA(src, "scr"), renderSCQA) },
-  { id: "journey", label: "Customer Journey Map", template: JOURNEY_TEMPLATE,      createProcessor: linked(parseJourney, renderJourneyMap) },
 
   // Wheel of Life parses raw source (its "|"-delimited area lines have no
   // inline-link syntax) and needs no heading-link resolver.

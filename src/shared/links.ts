@@ -158,7 +158,7 @@ export function extractInlineLinks(source: string): {
     return m; // not a recognised target shape — leave the line untouched
   });
 
-  // 3 & 4. Same two styles for lines WITHOUT a keyword prefix (e.g. OST/Mind Map child nodes).
+  // 3 & 4. Same two styles for lines WITHOUT a keyword prefix (e.g. plain indented child lines).
   // Only processes when there is label text before the annotation — a bare link like
   // `  [text](#anchor)` with no preceding label is left untouched (key would be empty).
   // `\S.*?` (label must start with a non-space) keeps the indent group and

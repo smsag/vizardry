@@ -33,7 +33,7 @@ describe("item triggers are styled once", () => {
   it("no canvas restyles its trigger's visibility on its own", () => {
     // A per-canvas `opacity` / `display` rule is how the old drift started.
     for (const cls of [
-      "vzd-story-task-delete", "vzd-journey-card-delete", "vzd-scqa-card-del",
+      "vzd-story-task-delete", "vzd-scqa-card-del",
       "vzd-flow-card-delete", "vzd-compass-del", "vzd-pc-item-menu", "vzd-card-menu",
     ]) {
       expect(css, `.${cls} must not be styled on its own`).not.toMatch(new RegExp(`\\.${cls}\\b`));

@@ -1,6 +1,6 @@
 /**
  * Domain-model → generic TreeNode adapters, and the TreeRenderOptions builders,
- * for every tree-style canvas (Mind Map, Impact Map, OST, Fishbone, SCQA/SCR).
+ * for every tree-style canvas (Impact Map, OST, SCQA/SCR).
  *
  * Pure glue: maps each framework's parsed model onto the generic tree structure
  * the renderer (tree.ts) consumes, and assembles that framework's render
@@ -10,7 +10,7 @@
 
 import { Platform } from "obsidian";
 import type {
-  ImpactMap, MindMap, MindMapNode, OSTNode, OSTTree,
+  ImpactMap, OSTNode, OSTTree,
   SCQAData, SCQANode, TreeNode, TreeNodeStyle, TreeRenderOptions,
 } from "../types";
 import { t } from "../i18n";
@@ -76,19 +76,6 @@ export function ostTreeOptions(): TreeRenderOptions {
   });
 }
 
-export const MINDMAP_OPTS: TreeRenderOptions = {
-  nodeW: 180, nodeH: 40, levelGap: 70, siblingGap: 16,
-  hPadding: 24, vPadding: 24, maxLabelChars: 24,
-  direction: "right",
-  canvasClass: "vizardry-mindmap",
-  wrapperClass: "vizardry-mindmap-wrapper",
-  levelStyles: [
-    { fillVar: "var(--interactive-accent)", textVar: "var(--text-on-accent)", borderRadius: 10, dashed: false },
-    { fillVar: "var(--background-modifier-hover)", textVar: "var(--text-normal)", borderRadius: 7, dashed: false, accentBar: true },
-    { fillVar: "var(--background-secondary)", textVar: "var(--text-normal)", borderRadius: 5, dashed: false },
-  ],
-};
-
 export const IMPACT_MAP_OPTS: TreeRenderOptions = {
   nodeW: 190, nodeH: 46, levelGap: 80, siblingGap: 20,
   hPadding: 24, vPadding: 24, maxLabelChars: 22,
@@ -128,17 +115,6 @@ export function adaptOSTToTree(tree: OSTTree): { root: TreeNode } {
     };
   };
   return { root: convert(tree.root) };
-}
-
-export function adaptMindMapToTree(map: MindMap): { root: TreeNode } {
-  const convert = (node: MindMapNode, level: number): TreeNode => ({
-    text: node.text,
-    level,
-    sublabel: undefined,
-    children: node.children.map(c => convert(c, level + 1)),
-    x: 0, y: 0, width: 0, height: 0,
-  });
-  return { root: convert(map.root, 0) };
 }
 
 export function adaptImpactMapToTree(map: ImpactMap): { root: TreeNode } {
