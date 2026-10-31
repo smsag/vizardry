@@ -42,13 +42,13 @@
   "devDependencies": {
     "@playwright/test": "1.64.0",
     "@types/node": "^20.19.0",
-    "@typescript-eslint/eslint-plugin": "^8.71.2",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.60.0",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "builtin-modules": "^5.4.0",
     "esbuild": "0.28.2",
-    "eslint": "^10.12.0",
-    "happy-dom": "^21.0.1",
+    "eslint": "^10.13.0",
+    "happy-dom": "^21.0.4",
     "obsidian": "1.14.4",
     "typescript": "5.9.3",
     "vitest": "^4.1.7"
