@@ -44,6 +44,7 @@ export const en = {
   "framework.strategycanvas.description": "Blue Ocean value curves — competing factors scored 0–10 for you vs. rivals.",
   "framework.utilitymap.description": "Blue Ocean 6×6 map — where your offering creates buyer utility (or pain).",
   "framework.procontra.description": "Weigh pros and cons (1–3) for one or several options — see which way the decision tips.",
+  "framework.scribble.description": "Freehand sketch with Apple Pencil, stored in the note so it renders everywhere.",
 
   // ── Canvas controls ─────────────────────────────────────────────────────────
   "controls.decreaseFontSize":  "Decrease font size",
@@ -391,6 +392,25 @@ export const en = {
   "procontra.consOutweigh":    "Contras outweigh",
   "procontra.balanced":        "Balanced",
   "procontra.noArguments":     "No arguments yet",
+  "scribble.draw":             "Draw",
+  "scribble.done":             "Done",
+  "scribble.pen":              "Pen",
+  "scribble.eraser":           "Eraser — removes whole strokes",
+  "scribble.color.ink":        "Ink",
+  "scribble.color.red":        "Red",
+  "scribble.color.blue":       "Blue",
+  "scribble.color.green":      "Green",
+  "scribble.color.orange":     "Orange",
+  "scribble.size":             "Pen width {{size}}",
+  "scribble.undo":             "Undo",
+  "scribble.redo":             "Redo",
+  "scribble.finger":           "Draw with finger",
+  "scribble.taller":           "Make the canvas taller",
+  "scribble.clear":            "Clear drawing",
+  "scribble.emptyEdit":        "Tap Draw, then sketch with your pen",
+  "scribble.emptyReadOnly":    "Empty sketch — switch to Live Preview to draw",
+  "scribble.ariaLabel":        "{{title}}: freehand sketch, {{count}} strokes",
+  "scribble.strokeCap":        "This sketch has reached {{max}} strokes — start a new one",
 } as const;
 
 export type TranslationKey = keyof typeof en;

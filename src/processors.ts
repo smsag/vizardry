@@ -46,13 +46,14 @@ import { parseCompass } from "./compass";
 import { parseStrategyCanvas } from "./strategycanvas";
 import { parseBuyerUtilityMap } from "./utilitymap";
 import { parseProContra } from "./procontra";
+import { parseScribble } from "./scribble";
 import {
   renderImpactMap, renderStoryMap, renderOST,
   renderSIPOC, renderWardleyMap, renderRACIMatrix,
   renderRoadmap, renderPaceLayers, renderConceptMap, renderNodeMap, renderMatrix, renderSCQA,
   renderWheelOfLife, renderOdyssey,
   renderCircleOfInfluence, renderWholePerson, renderRadar, renderProblem, renderTestCard,
-  renderCompass, renderStrategyCanvas, renderBuyerUtilityMap, renderProContra,
+  renderCompass, renderStrategyCanvas, renderBuyerUtilityMap, renderProContra, renderScribble,
   renderError,
 } from "./renderer";
 import type { RenderContext } from "./renderer/render-context";
@@ -66,7 +67,7 @@ import {
   WHEEL_OF_LIFE_TEMPLATE, ODYSSEY_TEMPLATE,
   CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
   PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE,
-  STRATEGY_CANVAS_TEMPLATE, BUYER_UTILITY_MAP_TEMPLATE, PRO_CONTRA_TEMPLATE,
+  STRATEGY_CANVAS_TEMPLATE, BUYER_UTILITY_MAP_TEMPLATE, PRO_CONTRA_TEMPLATE, SCRIBBLE_TEMPLATE,
 } from "./templates";
 
 /**
@@ -217,4 +218,9 @@ export const CUSTOM_RENDERERS: CustomRenderer[] = [
   // weight suffix the inline-link stripper would mangle — and needs no
   // heading-link resolver.
   { id: "procontra", label: "Pro / Contra", template: PRO_CONTRA_TEMPLATE, createProcessor: plain(parseProContra, renderProContra) },
+
+  // Scribble parses raw source — its `stroke:` lines carry encoded point data
+  // the inline-link stripper must never touch — and needs no heading-link
+  // resolver.
+  { id: "scribble", label: "Scribble", template: SCRIBBLE_TEMPLATE, createProcessor: plain(parseScribble, renderScribble) },
 ];

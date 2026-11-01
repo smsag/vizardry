@@ -88,6 +88,7 @@ These are the rules that most often get broken. Follow all of them:
 | `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
 | `procontra` | Pro / Contra (weighted decision list) | Card |
+| `scribble` | Scribble (freehand sketch, Apple Pencil) | SVG ink |
 | `compass` | Product Compass | Brief |
 
 ---
@@ -1499,6 +1500,34 @@ decision: Move to Berlin
 - A `|` tail that is not an integer stays part of the text; an out-of-range weight is clamped to 1–3 with a warning.
 - An unknown field, an empty `pro:`/`con:`/`option:`, or a line without a colon is skipped with a warning chip; the canvas never fails outright.
 - Editable in **Live Preview**: click the question, an option name or an argument to edit it; click a weight dot; **+ Add argument** / **+ Add option**; the **⋯** menu moves an argument to the other side, deletes it, deletes an option, or chooses/clears the decision. Renaming the chosen option updates `decision:` too.
+
+---
+
+## Scribble (`scribble`)
+
+A freehand sketch drawn with a pen (Apple Pencil first). The ink lives in the block as one line per stroke, so the drawing renders anywhere the Markdown is read, including the browser extension.
+
+```
+type: scribble
+title: Sketch
+id: k3f9x2q1
+height: 480
+stroke: ink 3 gPgZY8BJIkCNGoCFAoCIH
+stroke: red 6 gyBwlBSoBpBO8BhBM8BJA
+```
+
+| Key | Meaning |
+| --- | --- |
+| `height: <n>` | Canvas height in logical units, **160–4000** (default 480). The width is always 1000 units, so the aspect ratio is `1000 : height` |
+| `id: <id>` | Stable block id, 4–24 letters or digits. Written on the first save; keeps draw mode and the undo history across the re-render a save causes |
+| `stroke: <color> <size> <points>` | One stroke. `color` is `ink`, `red`, `blue`, `green` or `orange` (theme colours); `size` is the pen width, a whole number **1–40** |
+
+**Point encoding.** `<points>` is base64url VLQ (the source-map scheme): for each point the zig-zag deltas of x, y and pressure from the previous point, five bits per character plus a continuation bit. x and y are stored in half units, pressure (0–1) in steps of 1/31. A point string is capped at 4000 points.
+
+**Rules:**
+- Every line is top-level; order is ignored except that strokes draw in source order (later strokes on top).
+- An unreadable stroke, an unknown line, a bad `id:` or an out-of-range `height:` is skipped or clamped with a warning chip; the canvas never fails outright. A sketch shows at most 5000 strokes.
+- Editable in **Live Preview**: **Draw** switches to draw mode, where the pen and mouse draw and a finger scrolls (the hand button lets a finger draw). Pen, stroke eraser, colours, widths, undo / redo, clear and *taller*; the block is rewritten a moment after each edit. In Read View and the browser extension the sketch is read-only.
 
 ---
 

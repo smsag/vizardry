@@ -636,3 +636,12 @@ option: Stay remote
 decision: Move to Berlin
 \`\`\`
 `;
+
+// Starts blank: the strokes, and the block's `id:`, are written on the first
+// save from draw mode.
+export const SCRIBBLE_TEMPLATE = `\`\`\`vizardry
+type: scribble
+title: Sketch
+height: 480
+\`\`\`
+`;

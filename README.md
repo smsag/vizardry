@@ -68,6 +68,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
 | `procontra` | Pro / Contra (weighted decision list) | Card |
+| `scribble` | Scribble (freehand sketch, Apple Pencil) | SVG ink |
 | `compass` | Product Compass | Brief |
 
 ---
@@ -1413,6 +1414,30 @@ decision: Move to Berlin
 - `question:` frames the decision above the board; `decision:` shows as a header chip and, when it names an option, badges that card. The score only advises — nothing is decided for you.
 - An unknown field, an empty argument or a line without `key: value` skips with a warning chip rather than failing the canvas.
 - **Editable in Live Preview:** click any text (question, option name, argument) to edit it, click a weight dot to change the weight, **+ Add argument** / **+ Add option** to grow the board, and use an item's **⋯** menu to move an argument to the other side, delete it, or choose an option as the decision — all written straight back to source. (In Read View, edit as text.)
+
+### Scribble
+
+A **Scribble** is a freehand sketch drawn straight into the note — made for an iPad with Apple Pencil, and also usable with a mouse or a finger. The ink is stored in the code block itself, so the drawing travels with the note: it syncs, shows up in Git, and renders in the browser extension too.
+
+````
+```vizardry
+type: scribble
+title: Sketch
+height: 480
+```
+````
+
+Insert one from the command palette (**Insert canvas → Scribble**), switch to **Live Preview**, and tap **Draw**:
+
+- **Pencil draws, finger scrolls.** In draw mode the pen (or a mouse) draws and a finger still scrolls the note, so a resting palm leaves no marks. Turn on the hand button to draw with a finger instead (on a phone without a pen, for example).
+- **Tools:** pen, eraser (removes whole strokes it touches), five colours that follow the theme, three widths, undo / redo, clear, and **make the canvas taller**. Pen pressure sets the line width.
+- **Saving is automatic,** a moment after each stroke, when you tap **Done**, and when Obsidian goes to the background. In Read View the sketch is a picture only.
+
+**Rules:**
+- The canvas is always 1000 units wide; `height:` sets its height in the same units (160–4000, default 480), so a sketch keeps its shape at any width.
+- Each stroke is one `stroke: <colour> <width> <points>` line. The points are encoded and not meant for editing by hand, but you can delete or reorder whole lines. A damaged line is skipped with a warning chip; the rest of the sketch still renders.
+- The `id:` line is written on the first save. It lets the canvas keep draw mode and its undo history while Obsidian re-renders the block after each save; leave it in place.
+- Colours: `ink`, `red`, `blue`, `green`, `orange`. A sketch holds up to 5000 strokes.
 
 ### Product Compass
 
