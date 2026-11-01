@@ -68,6 +68,7 @@ Every canvas uses the same ` ```vizardry ` fence — the `type:` line inside pic
 | `problem` or `problem, <subtype>` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
 | `procontra` | Pro / Contra (weighted decision list) | Card |
+| `scribble` | Scribble (freehand sketch, Apple Pencil) | SVG ink |
 | `compass` | Product Compass | Brief |
 
 ---
@@ -1413,6 +1414,36 @@ decision: Move to Berlin
 - `question:` frames the decision above the board; `decision:` shows as a header chip and, when it names an option, badges that card. The score only advises — nothing is decided for you.
 - An unknown field, an empty argument or a line without `key: value` skips with a warning chip rather than failing the canvas.
 - **Editable in Live Preview:** click any text (question, option name, argument) to edit it, click a weight dot to change the weight, **+ Add argument** / **+ Add option** to grow the board, and use an item's **⋯** menu to move an argument to the other side, delete it, or choose an option as the decision — all written straight back to source. (In Read View, edit as text.)
+
+### Scribble
+
+A **Scribble** is a freehand sketch on an **endless, zoomable canvas**, drawn straight into the note — made for an iPad with Apple Pencil, and also usable with a mouse, a trackpad or a finger. The ink is stored in the code block itself, so the drawing travels with the note: it syncs, shows up in Git, and renders in the browser extension too.
+
+````
+```vizardry
+type: scribble
+title: Sketch
+height: 480
+```
+````
+
+Insert one from the command palette (**Insert canvas → Scribble**), switch to **Live Preview**, and tap **Draw**:
+
+- **Pencil draws, fingers move the canvas.** In draw mode the pen (or a mouse) draws, one finger pans, and two fingers pinch to zoom (10 %–800 %). A palm resting while the pen is down is ignored. Turn on the hand button to draw with one finger instead; two fingers still pan and zoom. On a Mac trackpad, two-finger scrolling pans and pinching zooms; with a mouse, drag with the middle button to pan.
+- **Endless canvas.** Keep panning — there is no edge. **Fit** brings the whole drawing back into view; the zoom percentage resets to 100 %.
+- **Fullscreen** (⤢ button) opens the same canvas over the whole window, for anything bigger than a quick sketch. Escape or the ⤡ button returns to the note.
+- **Tools:** pen (pressure sets the line width), **highlighter** (wide and see-through), eraser (removes whole strokes it touches), six colours that follow the theme, three widths each, undo / redo and clear.
+- **Straight lines:** at the end of a pen or highlighter stroke, hold still for half a second — the stroke snaps to a straight line, and its end keeps following the pen until you lift it.
+- **Lasso:** circle strokes to select them (or tap one), then drag the selection to move it, tap a colour to recolour it, or delete it.
+- **Paper:** the grid button cycles blank → dots → grid → lines. The pattern pans and zooms with the drawing and is saved as `background:`.
+- **Outside draw mode** — Read View, Live Preview before you tap Draw, the browser extension, PNG export — the frame shows the whole drawing, fitted and never enlarged past 100 %, and the note scrolls over it as usual. The view is never saved, so panning never changes the note.
+- **Saving is automatic,** a moment after each stroke, when you tap **Done**, and when Obsidian goes to the background.
+
+**Rules:**
+- `height:` is the height of the frame in the note, in pixels (160–1600, default 480). The canvas behind it is endless.
+- Each stroke is one `stroke: <colour> <width> <points>` line (`highlight:` for the highlighter). The points are encoded and not meant for editing by hand, but you can delete or reorder whole lines. A damaged line is skipped with a warning chip; the rest of the sketch still renders.
+- The `id:` line is written on the first save. It lets the canvas keep draw mode and its undo history while Obsidian re-renders the block after each save; leave it in place.
+- Colours: `ink`, `red`, `blue`, `green`, `orange`, `yellow`. `background:` is `blank` (default, no line), `dots`, `grid` or `lines`. A sketch holds up to 5000 strokes.
 
 ### Product Compass
 

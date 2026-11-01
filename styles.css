@@ -5194,3 +5194,194 @@ body.vizardry-sketch .vzd-pc-balance-con {
 .vzd-compass-problem,
 .vzd-compass-line { padding-right: 28px; }  /* room for the ⋯ */
 .vzd-compass-stat { position: relative; }
+
+/* ── Scribble (type: scribble) ─────────────────────────────────────────────
+   Freehand ink. The toolbar is always visible (an iPad has no hover to reveal
+   it) and is export chrome, so a PNG shows the drawing only. */
+.vzd-scribble-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.vzd-scribble-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Beats `.vizardry-canvas:hover .vzd-btn`, which would dim the tools on hover.
+   The fullscreen overlay sits outside any canvas, so it is listed too. */
+.vizardry-canvas .vzd-scribble-toolbar button.vzd-btn,
+.vzd-scribble-overlay .vzd-scribble-toolbar button.vzd-btn {
+  opacity: 1;
+  pointer-events: auto;
+  min-width: 32px;
+  min-height: 32px;
+  color: var(--icon-color);
+}
+
+.vizardry-canvas .vzd-scribble-toolbar button.vzd-btn:disabled,
+.vzd-scribble-overlay .vzd-scribble-toolbar button.vzd-btn:disabled {
+  opacity: 0.35;
+}
+
+.vzd-scribble-toolbar button.vzd-scribble-btn--active,
+.vzd-scribble-toolbar button.vzd-scribble-size--active {
+  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  color: var(--interactive-accent);
+}
+
+.vzd-scribble-toolbar button.vzd-scribble-btn--primary {
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.vzd-scribble-btn-text {
+  font-size: var(--font-ui-small);
+}
+
+.vzd-scribble-toolbar button.vzd-scribble-swatch::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--vzd-scribble-swatch);
+  box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+
+.vzd-scribble-toolbar button.vzd-scribble-swatch--active::before {
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent);
+}
+
+.vzd-scribble-dot {
+  display: block;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.vzd-scribble-wrap {
+  width: 100%;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.vzd-scribble-surface {
+  position: relative;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  overflow: hidden;
+}
+
+/* Draw mode: every touch belongs to the canvas (one finger pans, two zoom —
+   see renderer/scribble.ts), no text selection, no iOS callout, and a
+   visible frame. */
+.vzd-scribble-surface--drawing {
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.vzd-scribble-surface--eraser {
+  cursor: cell;
+}
+
+.vzd-scribble-surface--select {
+  cursor: default;
+}
+
+/* Paper backgrounds (SVG pattern, so they pan and zoom with the ink). */
+.vzd-scribble-paper-dot {
+  fill: var(--text-faint);
+}
+
+.vzd-scribble-paper-line {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+
+/* Draw mode on blank paper: faint dots as a hint that the canvas pans. */
+.vzd-scribble-paper--hint {
+  opacity: 0.45;
+}
+
+.vzd-scribble-highlight {
+  opacity: 0.38;
+}
+
+.vzd-scribble-stroke--selected {
+  filter: drop-shadow(0 0 2px var(--interactive-accent));
+}
+
+.vzd-scribble-selection,
+.vzd-scribble-lasso {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.vzd-scribble-selection {
+  fill: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+  cursor: move;
+}
+
+.vzd-scribble-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.vzd-scribble-toolbar button.vzd-scribble-zoom {
+  min-width: 48px;
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fullscreen drawing: the same toolbar and surface over the whole window. */
+.vzd-scribble-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal, 50);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.vzd-scribble-overlay .vzd-scribble-toolbar {
+  margin: 0;
+}
+
+.vzd-scribble-overlay .vzd-scribble-surface {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.vzd-scribble-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  pointer-events: none;
+}
+
+.vzd-scribble-empty--hidden {
+  display: none;
+}

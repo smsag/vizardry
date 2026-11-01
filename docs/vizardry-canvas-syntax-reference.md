@@ -88,6 +88,7 @@ These are the rules that most often get broken. Follow all of them:
 | `problem` / `problem, business` / `problem, research` / `problem, fivew` | Problem Statement | SVG flow |
 | `testcard` | Test Card | Card |
 | `procontra` | Pro / Contra (weighted decision list) | Card |
+| `scribble` | Scribble (freehand sketch, Apple Pencil) | SVG ink |
 | `compass` | Product Compass | Brief |
 
 ---
@@ -1505,6 +1506,39 @@ decision: Move to Berlin
 - A `|` tail that is not an integer stays part of the text; an out-of-range weight is clamped to 1–3 with a warning.
 - An unknown field, an empty `pro:`/`con:`/`option:`, or a line without a colon is skipped with a warning chip; the canvas never fails outright.
 - Editable in **Live Preview**: click the question, an option name or an argument to edit it; click a weight dot; **+ Add argument** / **+ Add option**; the **⋯** menu moves an argument to the other side, deletes it, deletes an option, or chooses/clears the decision. Renaming the chosen option updates `decision:` too.
+
+---
+
+## Scribble (`scribble`)
+
+A freehand sketch on an endless, zoomable canvas, drawn with a pen (Apple Pencil first). The ink lives in the block as one line per stroke, so the drawing renders anywhere the Markdown is read, including the browser extension.
+
+```
+type: scribble
+title: Sketch
+id: k3f9x2q1
+height: 480
+background: dots
+stroke: ink 3 gPgZY8BJIkCNGoCFAoCIH
+stroke: red 6 gyBwlBSoBpBO8BhBM8BJA
+```
+
+| Key | Meaning |
+| --- | --- |
+| `height: <n>` | Height of the frame in the note, in CSS px, **160–1600** (default 480). The canvas behind it is endless |
+| `id: <id>` | Stable block id, 4–24 letters or digits. Written on the first save; keeps draw mode and the undo history across the re-render a save causes |
+| `background: <paper>` | `blank` (default — the line is omitted), `dots`, `grid` or `lines`; a 32-unit pattern that pans and zooms with the ink |
+| `stroke: <color> <size> <points>` | One pen stroke. `color` is `ink`, `red`, `blue`, `green`, `orange` or `yellow` (theme colours); `size` is the width in world units, a whole number **1–40** |
+| `highlight: <color> <size> <points>` | One highlighter stroke: same fields, drawn flat (no pressure thinning) and see-through |
+
+**Point encoding.** `<points>` is base64url VLQ (the source-map scheme): for each point the zig-zag deltas of x, y and pressure from the previous point, five bits per character plus a continuation bit. x and y are world units (one unit = one CSS px at 100 % zoom; negative values allowed, |x|, |y| ≤ 500 000) stored in half units; pressure (0–1) in steps of 1/31. A point string is capped at 4000 points.
+
+**Display.** Outside draw mode the frame fits the whole drawing (padded, never enlarged past 100 %). The view is not stored in the note.
+
+**Rules:**
+- Every line is top-level; order is ignored except that `stroke:` and `highlight:` lines draw in source order (later strokes on top).
+- An unreadable stroke, an unknown line, a bad `id:` or an out-of-range `height:` is skipped or clamped with a warning chip; the canvas never fails outright. A sketch shows at most 5000 strokes.
+- Editable in **Live Preview**: **Draw** switches to draw mode — the pen and mouse draw, one finger pans, two fingers pinch-zoom (10 %–800 %), touches are ignored while the pen is down; the hand button lets one finger draw. Trackpad scroll pans, pinch zooms; middle-drag pans. Pen, highlighter, stroke eraser, lasso (select by circling or tapping; drag to move, a swatch recolours, delete), colours, widths, undo / redo, clear, paper, zoom in / out / 100 %, fit, and fullscreen. Holding the pen still for ~0.5 s at the end of a stroke straightens it. The block is rewritten a moment after each edit. In Read View and the browser extension the sketch is read-only.
 
 ---
 

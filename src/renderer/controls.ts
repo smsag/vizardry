@@ -169,6 +169,8 @@ const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
   // SVG add affordances (the wrapping <g> / text element carries the class)
   "vzd-wardley-add-handle-g", "vzd-nodemap-add-handle-g",
   "vzd-tree-edit-add", "vzd-lane-bullet-add",
+  // Scribble pen/eraser/colour toolbar, and its lasso / selection outline
+  "vzd-scribble-toolbar", "vzd-scribble-ui",
 ]);
 
 /** True when `node` is interaction chrome to omit from the exported image. */
@@ -987,7 +989,7 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
     wrap.empty();
     // Covers all canvas types: grid, story, ost, impact, sipoc, wardley, …
     const contentEl = sourceContainer.querySelector<HTMLElement>(
-      ".vizardry-grid, .vzd-story-grid, .vizardry-ost-wrapper, .vizardry-impact-wrapper, .vzd-sipoc-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-mx-wrap, .vzd-cmap-wrap, .vzd-tc, .vzd-compass, .vzd-pc, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap, .vzd-raci"
+      ".vizardry-grid, .vzd-story-grid, .vizardry-ost-wrapper, .vizardry-impact-wrapper, .vzd-sipoc-wrap, .vzd-wardley-wrap, .vzd-roadmap-grid, .vzd-pl-stack, .vzd-mx-wrap, .vzd-cmap-wrap, .vzd-tc, .vzd-compass, .vzd-pc, .vzd-scqa-scroll, .vizardry-scqa-wrapper, .vzd-nodemap-wrap, .vzd-wol-wrap, .vzd-odyssey-grid, .vzd-coi-wrap, .vzd-wp-wrap, .vzd-radar-wrap, .vzd-strategy-wrap, .vzd-utility-wrap, .vzd-flow-wrap, .vzd-raci, .vzd-scribble-wrap"
     );
     if (!contentEl) return;
 

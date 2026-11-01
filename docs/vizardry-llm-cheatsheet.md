@@ -68,6 +68,7 @@ Globals: `collapsed: true` starts minimised; `sticky: true` pins the canvas unde
 | `problem, fivew` | Problem Statement (5W+H) | SVG flow |
 | `testcard` | Test Card | Card |
 | `procontra` | Pro / Contra | Card |
+| `scribble` | Scribble (freehand sketch) | SVG ink |
 | `compass` | Product Compass | Brief |
 
 ## Grid canvases
@@ -479,6 +480,18 @@ con: Relocation cost | 2
 ~~~
 
 Weight `| 1–3` (default 1); `contra:` = `con:`. To compare alternatives, add `option: <name>` lines — the `pro:`/`con:` below attach to it. `decision: <option name>` badges that option.
+
+## Scribble (`scribble`)
+
+~~~
+```vizardry
+type: scribble
+title: Sketch
+height: 480
+```
+~~~
+
+Drawn by hand in Live Preview on an endless canvas, not generated: emit only `type:`, `title:` and optionally `height:` (frame height in px, 160–1600) and `background:` (`dots`, `grid`, `lines`). Never write `stroke:` / `highlight:` lines — their point data is encoded.
 
 ## Product Compass (`compass`)
 

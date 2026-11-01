@@ -1,9 +1,24 @@
 ## Unreleased
 
-A design pass across the canvases: RACI becomes a real matrix, grid canvases
+New: Scribble, a freehand sketch canvas for iPad and Apple Pencil. And a
+design pass across the canvases: RACI becomes a real matrix, grid canvases
 show what their framework means, and titles, small text and header colours
 read better in light, dark and exports.
 
+- **New: Scribble (`type: scribble`).** Insert it, switch to Live Preview,
+  tap **Draw** and sketch with Apple Pencil on an endless canvas. The pencil
+  draws, one finger pans, two fingers pinch to zoom, and a palm resting while
+  you draw is ignored. **Fullscreen** opens the canvas over the whole window;
+  **Fit** brings everything back into view. On a Mac, the trackpad pans and
+  pinch-zooms. Pen (pressure sets the width), highlighter, stroke eraser, six
+  theme colours, undo / redo and clear. Hold still at the end of a stroke to
+  turn it into a straight line. The lasso selects strokes — circle them or
+  tap one — to move, recolour or delete them. Paper can be blank, dotted,
+  grid or lined. Outside draw mode the note shows the whole drawing, fitted
+  to the frame. The drawing is saved into the note itself, a moment after
+  each stroke, so it syncs with the note, shows up in Git one line per
+  stroke, and renders in the browser extension. On a device without a pen,
+  turn on finger drawing.
 - **RACI is a real matrix.** Tasks run down the side, people across the top,
   and each cell shows the role that person plays on that task: **A** filled,
   **R** tinted, **C** outlined, **I** a soft disc. It reads in black and white
