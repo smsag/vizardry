@@ -8,7 +8,8 @@ read better in light, dark and exports.
 - **New: Scribble (`type: scribble`).** Insert it, switch to Live Preview,
   tap **Draw** and sketch with Apple Pencil on an endless canvas. The pencil
   draws, one finger pans, two fingers pinch to zoom, and a palm resting while
-  you draw is ignored. **Fullscreen** opens the canvas over the whole window;
+  you draw is ignored. **Fullscreen** opens the canvas over the whole window
+  and takes the keyboard (⌘/Ctrl+Z undo, Delete removes the selection);
   **Fit** brings everything back into view. On a Mac, the trackpad pans and
   pinch-zooms. Pen (pressure sets the width), highlighter, stroke eraser, six
   theme colours, undo / redo and clear. Hold still at the end of a stroke to

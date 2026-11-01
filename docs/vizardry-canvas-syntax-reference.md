@@ -1526,7 +1526,7 @@ stroke: red 6 gyBwlBSoBpBO8BhBM8BJA
 | Key | Meaning |
 | --- | --- |
 | `height: <n>` | Height of the frame in the note, in CSS px, **160–1600** (default 480). The canvas behind it is endless |
-| `id: <id>` | Stable block id, 4–24 letters or digits. Written on the first save; keeps draw mode and the undo history across the re-render a save causes |
+| `id: <id>` | Stable block id, 4–24 letters or digits. Written on the first save; keeps draw mode and the undo history across the re-render a save causes. A later block in the same note with the same id (a copy) is given a new one |
 | `background: <paper>` | `blank` (default — the line is omitted), `dots`, `grid` or `lines`; a 32-unit pattern that pans and zooms with the ink |
 | `stroke: <color> <size> <points>` | One pen stroke. `color` is `ink`, `red`, `blue`, `green`, `orange` or `yellow` (theme colours); `size` is the width in world units, a whole number **1–40** |
 | `highlight: <color> <size> <points>` | One highlighter stroke: same fields, drawn flat (no pressure thinning) and see-through |
@@ -1536,7 +1536,7 @@ stroke: red 6 gyBwlBSoBpBO8BhBM8BJA
 **Display.** Outside draw mode the frame fits the whole drawing (padded, never enlarged past 100 %). The view is not stored in the note.
 
 **Rules:**
-- Every line is top-level; order is ignored except that `stroke:` and `highlight:` lines draw in source order (later strokes on top).
+- Lines are read at any indentation and written back top-level; order is ignored except that `stroke:` and `highlight:` lines draw in source order (later strokes on top).
 - An unreadable stroke, an unknown line, a bad `id:` or an out-of-range `height:` is skipped or clamped with a warning chip; the canvas never fails outright. A sketch shows at most 5000 strokes.
 - Editable in **Live Preview**: **Draw** switches to draw mode — the pen and mouse draw, one finger pans, two fingers pinch-zoom (10 %–800 %), touches are ignored while the pen is down; the hand button lets one finger draw. Trackpad scroll pans, pinch zooms; middle-drag pans. Pen, highlighter, stroke eraser, lasso (select by circling or tapping; drag to move, a swatch recolours, delete), colours, widths, undo / redo, clear, paper, zoom in / out / 100 %, fit, and fullscreen. Holding the pen still for ~0.5 s at the end of a stroke straightens it. The block is rewritten a moment after each edit. In Read View and the browser extension the sketch is read-only.
 

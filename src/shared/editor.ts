@@ -1,6 +1,34 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownView } from "obsidian";
 
+/** The two editor reads a fence scan needs — satisfied by an Obsidian Editor or by plain lines. */
+export interface LineSource {
+  lineCount(): number;
+  getLine(line: number): string;
+}
+
+/** A LineSource over the lines of a file's text (for writes made without an editor). */
+export function linesOf(text: string): LineSource & { lines: string[] } {
+  const lines = text.split("\n");
+  return { lines, lineCount: () => lines.length, getLine: (n) => lines[n] ?? "" };
+}
+
+/**
+ * The 0-based editor line `el` is rendered at, or null when it is not inside
+ * this editor's live CodeMirror view. Obsidian's Editor exposes that view as
+ * `cm`; it is not part of the typed API, so it is read defensively.
+ */
+export function lineOfElement(editor: MarkdownView["editor"], el: HTMLElement): number | null {
+  const cm = (editor as unknown as { cm?: { contentDOM?: Node; posAtDOM?(node: Node): number; state?: { doc?: { lineAt?(pos: number): { number: number } } } } }).cm;
+  if (!cm?.contentDOM || !cm.posAtDOM || !cm.state?.doc?.lineAt || !el.isConnected || !cm.contentDOM.contains(el)) return null;
+  try {
+    return cm.state.doc.lineAt(cm.posAtDOM(el)).number - 1;
+  } catch {
+    // posAtDOM throws for a node CodeMirror no longer maps; the caller falls back.
+    return null;
+  }
+}
+
 export type ResolvedEditor = {
   editor: MarkdownView["editor"];
   lineStart: number;
@@ -79,7 +107,7 @@ export function resolveEditor(
   // Needed in Live Preview / source mode where getSectionInfo returns null,
   // and as a recovery path when it returned stale bounds (above).
   if (source) {
-    const range = findCodeFenceBySource(editor, source);
+    const range = findCodeFenceBySource(editor, source, () => lineOfElement(editor, el));
     if (range) return { editor, ...range };
     console.warn(`Vizardry: ${caller} — source scan found no matching code fence`);
     return null;
@@ -111,6 +139,10 @@ function sectionContainsSource(
  * Scans the editor for a code fence whose trimmed body matches source.
  * Returns the lineStart (opening ```) and lineEnd (closing ```) line indices.
  *
+ * When several fences match (byte-identical canvases, e.g. a copied block),
+ * `preferLine` — where the canvas is actually rendered — picks the one that
+ * contains it; only without it does the first match win.
+ *
  * Respects CommonMark fence-length matching: a closing fence must have at
  * least as many backticks as the opening one. Without this, a canvas body
  * that legitimately contains a nested example fenced with fewer backticks
@@ -118,9 +150,10 @@ function sectionContainsSource(
  * backticks) would have its scan stop at that inner fence line, truncating
  * the captured body and causing a false "no matching fence" result.
  */
-function findCodeFenceBySource(
-  editor: MarkdownView["editor"],
+export function findCodeFenceBySource(
+  editor: LineSource,
   source: string,
+  preferLine?: () => number | null,
 ): { lineStart: number; lineEnd: number } | null {
   const lineCount = editor.lineCount();
   const normalised = source.trim();
@@ -146,6 +179,9 @@ function findCodeFenceBySource(
 
   if (matches.length === 0) return null;
   if (matches.length > 1) {
+    const line = preferLine?.() ?? null;
+    const located = line === null ? undefined : matches.find(m => m.lineStart <= line && line <= m.lineEnd);
+    if (located) return located;
     // Two canvases with byte-identical source can't be told apart by a content
     // scan — we edit the first, but surface the ambiguity so it's diagnosable.
     console.warn(`Vizardry: ${matches.length} code fences share identical source; editing the first — give the canvases distinct content to disambiguate`);

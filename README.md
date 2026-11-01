@@ -1430,8 +1430,8 @@ height: 480
 Insert one from the command palette (**Insert canvas → Scribble**), switch to **Live Preview**, and tap **Draw**:
 
 - **Pencil draws, fingers move the canvas.** In draw mode the pen (or a mouse) draws, one finger pans, and two fingers pinch to zoom (10 %–800 %). A palm resting while the pen is down is ignored. Turn on the hand button to draw with one finger instead; two fingers still pan and zoom. On a Mac trackpad, two-finger scrolling pans and pinching zooms; with a mouse, drag with the middle button to pan.
-- **Endless canvas.** Keep panning — there is no edge. **Fit** brings the whole drawing back into view; the zoom percentage resets to 100 %.
-- **Fullscreen** (⤢ button) opens the same canvas over the whole window, for anything bigger than a quick sketch. Escape or the ⤡ button returns to the note.
+- **Endless canvas.** Keep panning — there is no edge. **Fit** brings the whole drawing back into view (at up to 100 %); tap the zoom percentage to return to exactly 100 %.
+- **Fullscreen** (⤢ button) opens the same canvas over the whole window, for anything bigger than a quick sketch. It takes the keyboard: ⌘/Ctrl+Z undoes, ⇧⌘/Ctrl+Z or Ctrl+Y redoes, Backspace or Delete removes the lasso selection. Escape or the ⤡ button returns to the note.
 - **Tools:** pen (pressure sets the line width), **highlighter** (wide and see-through), eraser (removes whole strokes it touches), six colours that follow the theme, three widths each, undo / redo and clear.
 - **Straight lines:** at the end of a pen or highlighter stroke, hold still for half a second — the stroke snaps to a straight line, and its end keeps following the pen until you lift it.
 - **Lasso:** circle strokes to select them (or tap one), then drag the selection to move it, tap a colour to recolour it, or delete it.
@@ -1442,7 +1442,7 @@ Insert one from the command palette (**Insert canvas → Scribble**), switch to 
 **Rules:**
 - `height:` is the height of the frame in the note, in pixels (160–1600, default 480). The canvas behind it is endless.
 - Each stroke is one `stroke: <colour> <width> <points>` line (`highlight:` for the highlighter). The points are encoded and not meant for editing by hand, but you can delete or reorder whole lines. A damaged line is skipped with a warning chip; the rest of the sketch still renders.
-- The `id:` line is written on the first save. It lets the canvas keep draw mode and its undo history while Obsidian re-renders the block after each save; leave it in place.
+- The `id:` line is written on the first save. It lets the canvas keep draw mode and its undo history while Obsidian re-renders the block after each save; leave it in place. A copied scribble block gives itself a new id as soon as it appears, so the two never mix up their strokes.
 - Colours: `ink`, `red`, `blue`, `green`, `orange`, `yellow`. `background:` is `blank` (default, no line), `dots`, `grid` or `lines`. A sketch holds up to 5000 strokes.
 
 ### Product Compass

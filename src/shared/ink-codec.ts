@@ -28,10 +28,14 @@ const PRESSURE_STEPS = 31;  // pressure 0..1 in 1/31 steps
 export const STROKE_SIZE_MIN = 1;
 export const STROKE_SIZE_MAX = 40;
 export const MAX_POINTS_PER_STROKE = 4000;
-/** Longest `stroke:` line the decoder reads; MAX_POINTS at ~6 chars each, plus slack. */
-export const MAX_STROKE_LINE_LENGTH = 30000;
 /** Six 5-bit digits are 30 bits — far beyond any coordinate this format holds. */
 const MAX_DIGITS_PER_VALUE = 6;
+/**
+ * Longest stroke value the decoder reads: the worst case the encoder can
+ * produce (every value at its digit cap) plus room for colour and size, so
+ * no stroke the canvas saves is ever refused on the way back in.
+ */
+export const MAX_STROKE_LINE_LENGTH = MAX_POINTS_PER_STROKE * 3 * MAX_DIGITS_PER_VALUE + 64;
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const DIGIT_OF = new Map<string, number>([...ALPHABET].map((c, i) => [c, i]));
@@ -112,8 +116,16 @@ export function encodeStroke(stroke: InkStroke): string {
 /** The line key for each stroke kind. */
 export const STROKE_KEYS: Record<InkKind, string> = { pen: "stroke", highlight: "highlight" };
 
+// Strokes are immutable, so each one is encoded once however often it is saved.
+const encoded = new WeakMap<InkStroke, string>();
+
 export function encodeStrokeLine(stroke: InkStroke): string {
-  return `${STROKE_KEYS[stroke.kind]}: ${encodeStroke(stroke)}`;
+  let line = encoded.get(stroke);
+  if (line === undefined) {
+    line = `${STROKE_KEYS[stroke.kind]}: ${encodeStroke(stroke)}`;
+    encoded.set(stroke, line);
+  }
+  return line;
 }
 
 /** Parses the value of a `stroke:` / `highlight:` line; the string is the reason it was rejected. */
