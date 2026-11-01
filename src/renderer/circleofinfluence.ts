@@ -7,7 +7,20 @@ import { createSvgEl } from "../shared/svg";
 import { t } from "../i18n";
 import { createInlineEl } from "../shared/inline-markdown";
 
-// Square viewBox; the three rings are concentric circles centred in it.
+/**
+ * Circle of Influence & Concern: the concentric rings as a diagram, each band
+ * showing how many items it holds, and the items themselves listed beside it
+ * in one group per ring, tinted like the ring.
+ *
+ * The items used to be chips scattered round the bands. A chip is wide and a
+ * band only ~60px deep, so outside the very top and bottom of the circle a
+ * chip stuck out across both edges of its band and seemed to sit on the line
+ * between two rings, which is the one thing this canvas must not blur. Lists
+ * read at any count (up to the parser's eight per ring), on a phone and in an
+ * export; the rings keep the picture of where each group sits.
+ */
+
+// Square viewBox; the rings are concentric circles centred in it.
 const VIEW = 400;
 const C = 200;
 
@@ -24,41 +37,55 @@ function ringRadii(hasControl: boolean): Record<CircleTier, number> {
     : { concern: 190, influence: 108, control: 0 };
 }
 
-/** Mid-band radius where a scattered tier's item chips are placed. */
-function chipRadius(tier: CircleTier, radii: Record<CircleTier, number>): number {
-  if (tier === "concern") return (radii.influence + radii.concern) / 2;
-  // Innermost visible ring when there's no control disc — pull chips inward.
-  if (radii.control === 0) return radii.influence * 0.58;
-  return (radii.control + radii.influence) / 2;
+/** Where a band's item count sits: low in the band, under its label. */
+function countY(tier: CircleTier, radii: Record<CircleTier, number>): number {
+  if (tier === "concern") return C + (radii.influence + radii.concern) / 2;
+  if (tier === "control") return C + radii.control * 0.45;
+  return C + (radii.control > 0 ? (radii.control + radii.influence) / 2 : radii.influence * 0.5);
 }
 
-/** Scatter a tier's chips evenly around its band, offset so the top stays clear
- *  for the ring label. */
-function placeRadial(wrap: HTMLElement, tierItems: CircleItem[], tier: CircleTier, r: number): void {
-  const n = tierItems.length;
-  const step = (2 * Math.PI) / n;
-  tierItems.forEach((item, i) => {
-    const theta = -Math.PI / 2 + step / 2 + i * step;
-    const chip = createInlineEl(wrap, "div", `vzd-coi-chip vzd-coi-chip--${tier}`, item.text);
-    chip.style.left = `${((C + r * Math.cos(theta)) / VIEW) * 100}%`;
-    chip.style.top = `${((C + r * Math.sin(theta)) / VIEW) * 100}%`;
-  });
-}
+const tierName = (tier: CircleTier): string => t(TIER_LABEL[tier] as Parameters<typeof t>[0]);
 
-/** Stack the innermost (control) chips vertically in the centre disc — the disc
- *  is too small to scatter them around without overlap. */
-function placeControlStack(wrap: HTMLElement, tierItems: CircleItem[]): void {
-  const stack = wrap.createEl("div", { cls: "vzd-coi-control-stack" });
-  for (const item of tierItems) {
-    createInlineEl(stack, "div", "vzd-coi-chip vzd-coi-chip--control", item.text);
+function renderDiagram(parent: HTMLElement, items: CircleItem[], tiers: CircleTier[], title: string): void {
+  const radii = ringRadii(tiers.includes("control"));
+  const svg = createSvgEl("svg", { viewBox: `0 0 ${VIEW} ${VIEW}`, class: "vzd-coi-svg", role: "img", "aria-label": title }) as SVGSVGElement;
+
+  // Discs from outer to inner so the inner bands paint over the outer ones.
+  for (const tier of tiers) {
+    svg.appendChild(createSvgEl("circle", { cx: String(C), cy: String(C), r: String(radii[tier]), class: `vzd-coi-disc vzd-coi-disc--${tier}` }));
   }
+
+  for (const tier of tiers) {
+    // Ring labels sit at the top of each band (control's at the top of its disc).
+    const y = tier === "control" ? C - radii.control + 24 : C - radii[tier] + 26;
+    const label = createSvgEl("text", { x: String(C), y: String(y), class: `vzd-coi-ring-label vzd-coi-ring-label--${tier}`, "text-anchor": "middle" });
+    label.textContent = tierName(tier);
+    svg.appendChild(label);
+
+    const count = createSvgEl("text", {
+      x: String(C), y: String(countY(tier, radii)),
+      class: `vzd-coi-count vzd-coi-count--${tier}`, "text-anchor": "middle", "dominant-baseline": "middle",
+    });
+    count.textContent = String(items.filter(it => it.tier === tier).length);
+    svg.appendChild(count);
+  }
+
+  parent.createEl("div", { cls: "vzd-coi-diagram" }).appendChild(svg);
 }
 
-function placeChips(wrap: HTMLElement, items: CircleItem[], tier: CircleTier, radii: Record<CircleTier, number>): void {
-  const tierItems = items.filter(it => it.tier === tier);
-  if (tierItems.length === 0) return;
-  if (tier === "control") placeControlStack(wrap, tierItems);
-  else placeRadial(wrap, tierItems, tier, chipRadius(tier, radii));
+function renderLists(parent: HTMLElement, items: CircleItem[], tiers: CircleTier[]): void {
+  const lists = parent.createEl("div", { cls: "vzd-coi-lists" });
+  // Inside out: what you control first, the way the framework asks you to look.
+  for (const tier of [...tiers].reverse()) {
+    const tierItems = items.filter(it => it.tier === tier);
+    const group = lists.createEl("div", { cls: `vzd-coi-group vzd-coi-group--${tier}` });
+    const head = group.createEl("div", { cls: "vzd-coi-group-head" });
+    head.createEl("span", { cls: `vzd-coi-swatch vzd-coi-swatch--${tier}` }).setAttribute("aria-hidden", "true");
+    head.createEl("span", { cls: "vzd-coi-group-name", text: tierName(tier) });
+    head.createEl("span", { cls: "vzd-coi-group-count", text: String(tierItems.length) });
+    const list = group.createEl("ul", { cls: "vzd-coi-list" });
+    for (const item of tierItems) createInlineEl(list, "li", "vzd-coi-item", item.text);
+  }
 }
 
 export function renderCircleOfInfluence(
@@ -77,27 +104,9 @@ export function renderCircleOfInfluence(
   renderCanvasWarnings(container, data.warnings);
 
   const hasControl = data.items.some(it => it.tier === "control");
-  const radii = ringRadii(hasControl);
+  const tiers: CircleTier[] = hasControl ? ["concern", "influence", "control"] : ["concern", "influence"];
 
   const wrap = container.createEl("div", { cls: "vzd-coi-wrap" });
-
-  const svg = createSvgEl("svg", { viewBox: `0 0 ${VIEW} ${VIEW}`, class: "vzd-coi-svg", role: "img", "aria-label": title }) as SVGSVGElement;
-
-  // Discs from outer to inner so the inner bands paint over the outer ones.
-  const tiers: CircleTier[] = hasControl ? ["concern", "influence", "control"] : ["concern", "influence"];
-  for (const tier of tiers) {
-    svg.appendChild(createSvgEl("circle", { cx: String(C), cy: String(C), r: String(radii[tier]), class: `vzd-coi-disc vzd-coi-disc--${tier}` }));
-  }
-
-  // Ring labels sit at the top of each band (control's at the centre).
-  for (const tier of tiers) {
-    const y = tier === "control" ? C - radii.control + 15 : C - radii[tier] + 18;
-    const label = createSvgEl("text", { x: String(C), y: String(y), class: `vzd-coi-ring-label vzd-coi-ring-label--${tier}`, "text-anchor": "middle" });
-    label.textContent = t(TIER_LABEL[tier] as Parameters<typeof t>[0]);
-    svg.appendChild(label);
-  }
-
-  wrap.appendChild(svg);
-
-  for (const tier of tiers) placeChips(wrap, data.items, tier, radii);
+  renderDiagram(wrap, data.items, tiers, title);
+  renderLists(wrap, data.items, tiers);
 }

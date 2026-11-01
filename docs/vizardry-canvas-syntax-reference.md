@@ -1276,7 +1276,7 @@ control: How I respond to setbacks
 | `influence: <text>` | Middle ring — you can affect it |
 | `control: <text>` | Inner ring — entirely within your own doing |
 
-At least 2 items total; each ring holds up to 8. An empty item or an unrecognised keyword skips that line with a warning chip instead of failing the canvas.
+The rings show each ring's item count; the items are listed beside the rings, grouped by ring from Control outward. At least 2 items total; each ring holds up to 8. An empty item or an unrecognised keyword skips that line with a warning chip instead of failing the canvas.
 
 ---
 

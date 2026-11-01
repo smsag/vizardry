@@ -30,6 +30,22 @@ read better in light, dark and exports.
   Complication, Question, Answer; Resolution for SCR) in the same colours as
   the tree view. Answers are no longer drawn dashed and greyed out, which
   made the conclusions look like placeholders.
+- **Wardley labels keep clear of the lines.** Each component's label now
+  takes the free spot around its node instead of always the same corner, so
+  a name no longer prints across a link, an evolution arrow or a pipeline's
+  sub-labels. The visibility axis is marked Visible at the top and
+  Invisible at the bottom.
+- **Circle of Influence lists its items beside the rings.** Items used to
+  sit in the rings as chips, and a chip is wider than a ring is deep, so at
+  the sides of the circle they straddled the line between two rings — the
+  one thing this canvas must keep clear. The rings now show how many items
+  each holds, and the items are listed next to them, one group per ring,
+  Control first.
+- **Matrix: free-placed items read as points.** An item placed by
+  coordinates (`[0.28, 0.24]`) shows a dot at its exact spot with its label
+  beside it, instead of a label centred on the spot that seemed to sit in
+  whichever cell it covered most. The matrix no longer runs a few pixels
+  past the canvas and clips its right edge.
 - **Calmer blocks.** Block labels lose the rule under them, items get a dot
   instead of a "›" chevron (Pace Layers too), and an empty block is shorter,
   so an empty nine-block canvas no longer fills the screen.
