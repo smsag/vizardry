@@ -24,6 +24,7 @@ export default defineConfig({
         "src/**/*.test.ts",
         "src/__mocks__/**",
         "src/test-setup.ts",
+        "src/test-styles.ts",
         "src/shared/obsidian-dom-polyfill.ts",
       ],
       // Thresholds reflect the reality that renderers require the Obsidian

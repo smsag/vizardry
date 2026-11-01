@@ -26,15 +26,6 @@ read better in light, dark and exports.
   Proposition, Jobs Canvas's Main Job, and so on) is highlighted in your
   accent colour. Colour only backs up the label, so nothing depends on
   seeing it.
-- **Journey maps draw an emotion curve.** Give a phase a `mood:` from −2
-  to +2 and an Emotion lane appears above Thoughts & Feelings. It shows a
-  point per phase, joined into a curve over a positive and a negative zone,
-  so the highs and lows of the journey are visible at a glance. In Live
-  Preview, click a point (or the + where none is set) to pick a value. On a
-  phone, each phase shows its point and which way the curve heads next.
-- **Journey phases read as steps.** Phase headers form a chevron ribbon, and
-  the Pain Points and Opportunities lanes use the shared negative and
-  positive colours.
 - **SCQA grid labels its levels.** Each row is named (Situation,
   Complication, Question, Answer; Resolution for SCR) in the same colours as
   the tree view. Answers are no longer drawn dashed and greyed out, which
@@ -44,16 +35,35 @@ read better in light, dark and exports.
   so an empty nine-block canvas no longer fills the screen.
 - **Titles as you wrote them.** Canvas titles are no longer forced into
   spaced-out capitals, which made them louder than the note's own headings.
-- **Small text is readable.** Card subtitles on Story Map, Journey and
-  Roadmap, tree node sub-labels and small caps labels used to shrink to
+- **Small text is readable.** Card subtitles on Story Map and Roadmap,
+  tree node sub-labels and small caps labels used to shrink to
   about 9.5px. They now stay at 10–11px or larger.
 - **Fix: pale Roadmap and SIPOC headers had white text.** Obsidian reports
   those tinted headers' colours in a format Vizardry didn't parse, so it
   fell back to white text, which was barely visible on the Next and Later
   columns. The text colour is now chosen by actual contrast again.
-- **Clearer connectors.** Tree branches and flow arrows (Mind Map, Impact
-  Map, Problem, SIPOC flow) are drawn in a darker, dedicated line colour
+- **Clearer connectors.** Tree branches and flow arrows (Impact Map,
+  OST, Problem, SIPOC flow) are drawn in a darker, dedicated line colour
   instead of the card-border grey, which almost vanished on white.
+
+## 0.76.0
+
+Mind Map, Fishbone, Venn and Customer Journey Map are gone. Obsidian draws
+the same diagrams itself in a ` ```mermaid ` block.
+
+- **Removed: Mind Map (`mindmap`), Fishbone (`fishbone` and its 6M, 4S and
+  7P presets), Venn (`venn`) and Customer Journey Map (`journey`, including
+  the Service Blueprint, `journey, blueprint`).** Their insert commands and
+  picker entries are gone too. A note that still has one of these blocks
+  shows `Unknown type "…"` in its place; the block's text stays in the note
+  untouched. To keep the drawing, rewrite the block as a ` ```mermaid ` block:
+  `mindmap`, `ishikawa-beta` for a fishbone, `venn-beta`, or `journey`.
+  Mermaid's journey is a satisfaction curve per step; it has no lanes for
+  touchpoints, pain points or a service blueprint.
+- **Fix: the strategy canvas clipped its last factor.** The label under the
+  rightmost point was centred on it, so half of it hung over the edge of the
+  canvas ("Reporti"). The first and last labels now lean inward and stay
+  whole, and a long single word wraps instead of spilling out.
 
 ## 0.75.2
 

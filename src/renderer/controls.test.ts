@@ -380,7 +380,7 @@ describe("download / export", () => {
     // Chrome — toolbar, carousel nav, and inline edit affordances — is dropped.
     for (const c of [
       "vizardry-header-actions",
-      "vizardry-nav", "vzd-story-nav", "vzd-journey-nav",
+      "vizardry-nav", "vzd-story-nav",
       "vzd-item-menu",
       "vzd-add", "vzd-wardley-add-handle-g",
       "vzd-tree-edit-add", "vzd-lane-bullet-add",
@@ -390,7 +390,7 @@ describe("download / export", () => {
 
     // Content and link indicators are kept.
     for (const c of [
-      "vizardry-block", "vzd-mx-pill", "vzd-journey-card",
+      "vizardry-block", "vzd-mx-pill", "vzd-story-cell",
       "vzd-card-link-btn", "vizardry-block-link-btn",
     ]) {
       expect(filter(node(c)), `${c} should be kept`).toBe(true);

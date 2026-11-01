@@ -23,6 +23,4 @@ export interface RenderContext {
   resolver?: LinkResolver;
   /** Navigate to a heading in the current note. */
   navigateTo?: (heading: string) => void;
-  /** Venn-only: open an arbitrary link target (not necessarily a heading). */
-  openLink?: (target: string) => void;
 }

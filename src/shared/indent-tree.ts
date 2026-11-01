@@ -9,7 +9,7 @@ export interface IndentLine {
  *  canvas-title `title:` line, and the global `collapsed:` param (both parsed
  *  separately by initCanvas). Takes the raw line: `title:` and `collapsed:`
  *  are canvas config only at indent 0 — an indented `title: …` is content
- *  (a mind-map child, a block line) and used to vanish silently. */
+ *  (a tree child, a block line) and used to vanish silently. */
 export function isSkippableLine(raw: string): boolean {
   const trimmed = raw.trim();
   if (trimmed === "" || trimmed.startsWith("//")) return true;

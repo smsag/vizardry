@@ -98,7 +98,7 @@ export interface ItemMenuHandle {
  * Wires `host` for the actions menu.
  *
  * `host` may be an HTMLElement or an SVG element — the listeners are the same
- * either way, which is what lets the Fishbone, Mind Map and Nodemap canvases
+ * either way, which is what lets the tree, Nodemap and Wardley canvases
  * share this with the card canvases. An SVG host cannot contain an HTML
  * button, so it omits `button` and drives `open()` from its own SVG trigger.
  */
@@ -173,7 +173,7 @@ const SVG_TRIGGER_HIT = 24;
 
 /**
  * The SVG counterpart of the `⋯` button: same size, same look, same reveal,
- * for the canvases drawn in SVG (Mind Map, OST, Fishbone, Nodemap, Wardley).
+ * for the canvases drawn in SVG (the trees, Nodemap, Wardley).
  * An `<svg>` cannot contain an HTML `<button>`, so this draws one — a rounded
  * square with three dots — and gives it the button semantics by hand.
  *

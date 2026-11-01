@@ -141,7 +141,7 @@ describe("resolveEditor", () => {
 
   it("scans past a nested example fence with fewer backticks than the opening fence", () => {
     // A canvas whose body legitimately contains a fenced example (e.g. a
-    // SIPOC/Fishbone note cell) is only valid Markdown if the outer fence
+    // SIPOC note cell) is only valid Markdown if the outer fence
     // uses MORE backticks than the inner one (```` vs ```). The scan must
     // require a closing fence with at least as many backticks as the
     // opening one, not just any bare "```" line — otherwise it would stop

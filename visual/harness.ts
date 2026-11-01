@@ -19,10 +19,10 @@ import { ensureSketchDefs } from "../src/shared/sketch-defs";
 import { generateCanvasTemplate } from "../src/templates";
 import { ALL_FRAMEWORKS } from "../src/frameworks-registry";
 import {
-  FISHBONE_TEMPLATE, IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE, MIND_MAP_TEMPLATE,
-  OST_TEMPLATE, VENN_TEMPLATE, SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
+  IMPACT_MAP_TEMPLATE, STORY_MAP_TEMPLATE,
+  OST_TEMPLATE, SIPOC_TEMPLATE, SIPOC_FLOW_TEMPLATE, WARDLEY_TEMPLATE, RACI_TEMPLATE,
   ROADMAP_TEMPLATE, PACE_LAYERS_TEMPLATE, CONCEPT_MAP_TEMPLATE, NODE_MAP_TEMPLATE,
-  MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, JOURNEY_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
+  MATRIX_IMPACT_TEMPLATE, SCQA_TEMPLATE, WHEEL_OF_LIFE_TEMPLATE,
   ODYSSEY_TEMPLATE, CIRCLE_OF_INFLUENCE_TEMPLATE, WHOLE_PERSON_TEMPLATE, RADAR_TEMPLATE,
   PROBLEM_TEMPLATE, TEST_CARD_TEMPLATE, COMPASS_TEMPLATE, PRO_CONTRA_TEMPLATE,
 } from "../src/templates";
@@ -40,12 +40,9 @@ const FIXTURES: Record<string, string> = {
   bmc: framework("bmc"),
   swot: framework("swot"),
   // Bespoke renderers, from their shipped (content-rich) templates.
-  fishbone: inner(FISHBONE_TEMPLATE),
   impact: inner(IMPACT_MAP_TEMPLATE),
   story: inner(STORY_MAP_TEMPLATE),
-  mindmap: inner(MIND_MAP_TEMPLATE),
   ost: inner(OST_TEMPLATE),
-  venn: inner(VENN_TEMPLATE),
   sipoc: inner(SIPOC_TEMPLATE),
   sipocflow: inner(SIPOC_FLOW_TEMPLATE),
   wardley: inner(WARDLEY_TEMPLATE),
@@ -56,7 +53,6 @@ const FIXTURES: Record<string, string> = {
   nodemap: inner(NODE_MAP_TEMPLATE),
   matrix: inner(MATRIX_IMPACT_TEMPLATE),
   scqa: inner(SCQA_TEMPLATE),
-  journey: inner(JOURNEY_TEMPLATE),
   wheeloflife: inner(WHEEL_OF_LIFE_TEMPLATE),
   odyssey: inner(ODYSSEY_TEMPLATE),
   circleofinfluence: inner(CIRCLE_OF_INFLUENCE_TEMPLATE),

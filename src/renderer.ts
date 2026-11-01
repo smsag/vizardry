@@ -1,8 +1,6 @@
 export { renderCanvas, renderError } from "./renderer/canvas";
-export { renderImpactMap, renderMindMap, renderOST } from "./renderer/tree-canvases";
-export { renderFishbone } from "./renderer/fishbone";
+export { renderImpactMap, renderOST } from "./renderer/tree-canvases";
 export { renderStoryMap } from "./renderer/story";
-export { renderVennDiagram } from "./renderer/venn";
 export { renderSIPOC } from "./renderer/sipoc";
 export { renderWardleyMap } from "./renderer/wardley";
 export { renderRACIMatrix } from "./renderer/raci";
@@ -12,7 +10,6 @@ export { renderConceptMap } from "./renderer/conceptmap";
 export { renderNodeMap } from "./renderer/nodemap";
 export { renderMatrix } from "./renderer/matrix";
 export { renderSCQA } from "./renderer/scqa";
-export { renderJourneyMap } from "./renderer/journey";
 export { renderWheelOfLife } from "./renderer/wheeloflife";
 export { renderOdyssey } from "./renderer/odyssey";
 export { renderCircleOfInfluence } from "./renderer/circleofinfluence";

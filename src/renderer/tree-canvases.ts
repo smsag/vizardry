@@ -1,22 +1,18 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { ImpactMap, MindMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
+import type { ImpactMap, OSTTree, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { renderTree } from "./tree";
-import { adaptImpactMapToTree, adaptMindMapToTree, adaptOSTToTree, IMPACT_MAP_OPTS, MINDMAP_OPTS, ostTreeOptions } from "./tree-adapters";
+import { adaptImpactMapToTree, adaptOSTToTree, IMPACT_MAP_OPTS, ostTreeOptions } from "./tree-adapters";
 import { NULL_RESOLVER } from "../shared/links";
 import type { RenderContext } from "./render-context";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { t } from "../i18n";
-import { renameRootKwTreeNode, addRootKwTreeChild, deleteRootKwTreeNode } from "../shared/rootkw-tree-edit";
-import type { RootKwTreeConfig } from "../shared/rootkw-tree-edit";
 import {
   renameKeywordTreeNode, addKeywordTreeChild, deleteKeywordTreeNode,
   addKeywordTreeBullet, editKeywordTreeBullet, deleteKeywordTreeBullet,
 } from "../shared/keyword-tree-edit";
 import type { KeywordTreeConfig } from "../shared/keyword-tree-edit";
-
-const MINDMAP_CONFIG: RootKwTreeConfig = { rootKeyword: "root" };
 
 const IMPACT_CONFIG: KeywordTreeConfig = {
   levelKeyword: { 0: "goal", 1: "actor", 2: "impact", 3: "deliverable" },
@@ -27,51 +23,6 @@ const OST_CONFIG: KeywordTreeConfig = {
   levelAliases: { 1: ["pain", "desire"] },
   strictNesting: true,
 };
-
-// ── Mind Map ──────────────────────────────────────────────────────────────────
-
-export function renderMindMap(
-  map: MindMap,
-  container: HTMLElement,
-  rc: RenderContext = {},
-): void {
-  const { navigateTo, source, app, ctx } = rc;
-  const resolver = rc.resolver ?? NULL_RESOLVER;
-  const isEditMode = !!(app && ctx && isEditModeActive(app));
-  const defaultTitle = "Mind Map";
-  const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
-  const onTitleEdit = (isEditMode && source !== undefined)
-    ? (newTitle: string) => writeCanvasTitle(app!, ctx!, container, newTitle, defaultTitle)
-    : undefined;
-  initCanvas(container, "mindmap", title, undefined, source, onTitleEdit, app, ctx);
-
-  const editHandlers = isEditMode ? makeMindMapHandlers(app!, ctx!, container) : undefined;
-  renderTree(adaptMindMapToTree(map), MINDMAP_OPTS, container, resolver, navigateTo, editHandlers);
-}
-
-function makeMindMapHandlers(
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  container: HTMLElement,
-): TreeEditHandlers {
-  return {
-    onRename(node: TreeNode, newText: string): void {
-      if (!renameRootKwTreeNode(app, ctx, container, MINDMAP_CONFIG, node.text, newText)) {
-        showWriteFailedNotice(container);
-      }
-    },
-    onAddChild(node: TreeNode): void {
-      if (!addRootKwTreeChild(app, ctx, container, MINDMAP_CONFIG, node.text, t("tree.newNode"))) {
-        showWriteFailedNotice(container);
-      }
-    },
-    onDelete(node: TreeNode): void {
-      if (!deleteRootKwTreeNode(app, ctx, container, MINDMAP_CONFIG, node.text)) {
-        showWriteFailedNotice(container);
-      }
-    },
-  };
-}
 
 // ── Impact Map ────────────────────────────────────────────────────────────────
 
