@@ -14,18 +14,7 @@
  * this test pins the stylesheet facts that make that behaviour possible.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
-const css = readFileSync(resolve(__dirname, "../styles.css"), "utf8");
-
-/** The declarations of the first rule whose selector list is exactly `selector`. */
-function rule(selector: string): string {
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const m = css.match(new RegExp(`(^|\\n)${escaped}\\s*\\{([^}]*)\\}`, "m"));
-  expect(m, `a rule for ${selector} must exist`).not.toBeNull();
-  return m![2];
-}
+import { css, rule } from "./test-styles";
 
 /** The body of the single `@media (hover: none)` block. */
 function hoverNoneBlock(): string {
@@ -44,7 +33,7 @@ describe("item triggers are styled once", () => {
   it("no canvas restyles its trigger's visibility on its own", () => {
     // A per-canvas `opacity` / `display` rule is how the old drift started.
     for (const cls of [
-      "vzd-story-task-delete", "vzd-journey-card-delete", "vzd-scqa-card-del",
+      "vzd-story-task-delete", "vzd-scqa-card-del",
       "vzd-flow-card-delete", "vzd-compass-del", "vzd-pc-item-menu", "vzd-card-menu",
     ]) {
       expect(css, `.${cls} must not be styled on its own`).not.toMatch(new RegExp(`\\.${cls}\\b`));

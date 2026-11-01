@@ -1,13 +1,13 @@
 /**
  * Shared in-place source editing engine for the "keyword-per-level" tree
- * family: every level has its own keyword (Fishbone's effect/category/
- * cause/subcause, Impact Map's goal/actor/impact/deliverable). Levels 0 and
- * 1 both sit at root indent (e.g. "effect:" and "category:"); levels 2+ are
- * indented one unit per level under their parent.
+ * family: every level has its own keyword (Impact Map's goal/actor/impact/
+ * deliverable, OST's outcome/need/solution/experiment). Without strict
+ * nesting, levels 0 and 1 both sit at root indent (e.g. "goal:" and
+ * "actor:"); levels 2+ are indented one unit per level under their parent.
  *
- * Fishbone and Impact Map are otherwise structurally identical, so this
- * engine is parametrized entirely by a KeywordTreeConfig — see
- * fishbone-edit.ts / impact-edit.ts for the thin per-framework wrappers.
+ * The canvases differ only in their keywords and nesting, so this engine is
+ * parametrized entirely by a KeywordTreeConfig — see tree-canvases.ts for
+ * the per-canvas configs.
  *
  * Node identity is resolved by scanning for `keyword: text` within the
  * block. Since the source has no stable per-node id, a (level, text) pair
@@ -41,7 +41,7 @@ export interface KeywordTreeConfig {
   /** When true, EVERY level nests one indent unit under its parent, including
    *  level 1 (OST's outcome→opportunity, SCQA's situation→complication). When
    *  false/omitted, level 1 sits at root indent alongside level 0 (Impact
-   *  Map's goal+actor, Fishbone's effect+category). */
+   *  Map's goal+actor). */
   strictNesting?: boolean;
 }
 

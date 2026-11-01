@@ -21,6 +21,20 @@ const GRID = [0, 2, 4, 6, 8, 10];
 const xFor = (i: number, n: number): number => n <= 1 ? (X0 + X1) / 2 : X0 + (i * (X1 - X0)) / (n - 1);
 const yFor = (score: number): number => Y_BOT - (score / MAX_SCORE) * (Y_BOT - Y_TOP);
 
+/**
+ * Where factor label `i` of `n` sits, in % of the canvas width: a slot
+ * centred under its point, cut back at the canvas edges. The first and last
+ * points sit near the edges, so a label centred on them would hang over the
+ * side and be clipped; cut back, it stays whole and only leans inward.
+ */
+export function factorLabelBox(i: number, n: number): { left: number; width: number } {
+  const x = xFor(i, n);
+  const slot = Math.max(12, (X1 - X0) / Math.max(1, n - 1));
+  const left = Math.max(0, x - slot / 2);
+  const right = Math.min(VW, x + slot / 2);
+  return { left, width: right - left };
+}
+
 export function renderStrategyCanvas(
   data: StrategyCanvasData,
   container: HTMLElement,
@@ -115,10 +129,10 @@ export function renderStrategyCanvas(
   // Factor labels along the bottom, one under each point (HTML overlay so long
   // labels wrap; SVG text would clip).
   data.factors.forEach((f, i) => {
-    const x = xFor(i, nf);
+    const box = factorLabelBox(i, nf);
     const label = createInlineEl(wrap, "div", "vzd-strategy-factor", f.label);
-    label.style.left = `${x}%`;
+    label.style.left = `${box.left}%`;
+    label.style.width = `${box.width}%`;
     label.style.top = `${(Y_BOT / VH) * 100 + 2}%`;
-    label.style.maxWidth = `${Math.max(12, (X1 - X0) / Math.max(1, nf - 1))}%`;
   });
 }
