@@ -1496,6 +1496,21 @@ describe("renderRACIMatrix", () => {
     expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 
+  it("edits a formatted task name on its source text, and restores the formatting on cancel", () => {
+    const el = container();
+    const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
+    const ctx = { sourcePath: "note.md" } as any;
+    const fmt: RACIData = { rows: [{ ...data.rows[0], task: "**Ship** it" }] };
+    renderRACIMatrix(fmt, el, { source: "type: raci", app: editModeApp, ctx });
+    const name = el.querySelector<HTMLElement>(".vzd-raci-task-name")!;
+    expect(name.querySelector("strong")?.textContent).toBe("Ship");
+    name.click();
+    // The markers are in the editable text, so an unchanged edit can't drop them.
+    expect(name.textContent).toBe("**Ship** it");
+    name.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(name.querySelector("strong")?.textContent).toBe("Ship");
+  });
+
   it("renders a link button on a task whose name resolves to a heading", () => {
     const el = container();
     const navigateTo = vi.fn();
