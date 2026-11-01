@@ -73,7 +73,7 @@ import { renderImpactMap, renderOST } from "./tree-canvases";
 import { renderStoryMap } from "./story";
 import { renderWardleyMap } from "./wardley";
 import { renderSIPOC } from "./sipoc";
-import { renderConceptMap } from "./conceptmap";
+import { renderConceptMap, hubIndex } from "./conceptmap";
 import { renderWheelOfLife } from "./wheeloflife";
 import { renderOdyssey } from "./odyssey";
 import { renderCircleOfInfluence } from "./circleofinfluence";
@@ -1579,6 +1579,13 @@ describe("renderSIPOC — flow view", () => {
     expect(labels).toContain("Customer");
   });
 
+  it("lets the flow shrink to the canvas: its natural width is handed to CSS, and the wrap watches for overflow", () => {
+    const el = container();
+    renderSIPOC({ variant: "flow", rows, links: [] }, el);
+    const svg = el.querySelector<SVGSVGElement>(".vzd-flow-svg")!;
+    expect(svg.style.getPropertyValue("--vzd-flow-w")).toBe(`${svg.getAttribute("width")}px`);
+  });
+
   it("derives one node per distinct non-empty cell across the 5 core columns", () => {
     const el = container();
     const data: SIPOCData = { variant: "flow", rows, links: [] };
@@ -1694,6 +1701,20 @@ describe("renderConceptMap", () => {
     const el = container();
     expect(() => renderConceptMap(map, el)).not.toThrow();
     expect(el.querySelector("svg")).toBeTruthy();
+  });
+
+  it("marks the concept with clearly the most links as the hub", () => {
+    const el = container();
+    renderConceptMap(map, el);
+    const hub = el.querySelectorAll(".vzd-cmap-node--hub");
+    expect(hub).toHaveLength(1);
+    expect(el.querySelector(".vzd-cmap-node-label--hub")?.textContent).toBe("Photosynthesis");
+  });
+
+  it("marks no hub on a tie or when nothing has three links", () => {
+    expect(hubIndex(3, [{ from: 0, to: 1 }, { from: 1, to: 2 }])).toBe(-1);
+    expect(hubIndex(4, [{ from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 1, to: 2 }, { from: 1, to: 3 }])).toBe(-1);
+    expect(hubIndex(4, [{ from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }])).toBe(0);
   });
 
   it("renders one rect per node", () => {

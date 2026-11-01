@@ -46,6 +46,24 @@ read better in light, dark and exports.
   beside it, instead of a label centred on the spot that seemed to sit in
   whichever cell it covered most. The matrix no longer runs a few pixels
   past the canvas and clips its right edge.
+- **Flow diagrams fit the note.** The SIPOC flow and the Problem flow
+  shrink to the width of the note (down to 80%, so the text stays
+  readable) before they scroll. Before, the SIPOC flow's Customer column
+  was cut off at the edge. When a flow, the SIPOC table or the RACI matrix
+  still runs past the edge, that edge fades so you can tell there is more
+  to scroll to. Exports and the presentation view are never faded.
+- **Graph details.** In the Node Map, a coloured link's arrowhead now
+  matches its line. Link labels on the Node Map and Concept Map are a size
+  larger. A concept map marks its central concept, the one with clearly
+  the most links.
+- **Odyssey plans no longer look good, bad and neutral.** Each plan's colour
+  now comes from a narrow band around your accent. From Obsidian's default
+  indigo, the three plans used to be indigo, red and green, which read as
+  a verdict next to the red-to-green score meters. Year and plan badges are
+  a shade darker, so their white letters stay readable.
+- **Whole Person: every dimension's colour shows.** The dots and card
+  borders are mixed toward the text colour, so a light hue (the yellow
+  Heart from an indigo accent) still reads on a white page.
 - **Calmer blocks.** Block labels lose the rule under them, items get a dot
   instead of a "›" chevron (Pace Layers too), and an empty block is shorter,
   so an empty nine-block canvas no longer fills the screen.

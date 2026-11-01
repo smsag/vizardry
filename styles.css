@@ -3118,6 +3118,14 @@ button.vzd-item-menu::after {
   font-family: var(--font-interface);
 }
 
+/* The central concept (most links): a stronger fill and a bold label, so the
+   map has a visible centre to read outward from. */
+.vzd-cmap-node--hub {
+  fill-opacity: 0.28;
+  stroke-width: 2;
+}
+.vzd-cmap-node-label--hub { font-weight: 650; }
+
 .vzd-cmap-edge {
   stroke: var(--text-muted);
   stroke-width: 1.5;
@@ -3135,7 +3143,7 @@ button.vzd-item-menu::after {
 
 .vzd-cmap-edge-label {
   fill: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-interface);
   font-style: italic;
 }
@@ -3241,6 +3249,9 @@ button.vzd-item-menu::after {
 
 .vzd-nodemap-arrowhead {
   fill: var(--text-muted);
+  /* The head takes its own link's colour (a green link, a green head); an
+     engine without context-stroke keeps the grey above. */
+  fill: context-stroke;
 }
 
 .vzd-nodemap-link-label-bg {
@@ -3250,7 +3261,7 @@ button.vzd-item-menu::after {
 
 .vzd-nodemap-link-label {
   fill: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-interface);
   font-style: italic;
 }
@@ -3427,7 +3438,8 @@ button.vzd-item-menu::after {
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Darkened a step so the white letters hold contrast on every hue. */
+  background: color-mix(in srgb, hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 82%, #000);
   color: var(--text-on-accent, #fff);
   font-weight: 700;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
@@ -3482,7 +3494,8 @@ button.vzd-item-menu::after {
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Darkened a step so the white letters hold contrast on every hue. */
+  background: color-mix(in srgb, hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 82%, #000);
   color: var(--text-on-accent, #fff);
   font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
   font-weight: 700;
@@ -3773,7 +3786,9 @@ button.vzd-item-menu::after {
 
 .vzd-wp-card {
   border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Mixed toward the text colour so a light hue (the yellow from an indigo
+     accent) still shows as a line on white; the wheel keeps the pure hue. */
+  border-left: 3px solid color-mix(in srgb, hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 78%, var(--text-normal));
   border-radius: var(--radius-m);
   padding: 0.5rem 0.6rem;
   background: var(--background-secondary);
@@ -3789,7 +3804,7 @@ button.vzd-item-menu::after {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  background: color-mix(in srgb, hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 78%, var(--text-normal));
   flex: 0 0 auto;
 }
 
@@ -4493,9 +4508,26 @@ button.vzd-scqa-card-add {
   overflow-x: auto;
   padding: 0.25rem 0 0.5rem;
 }
+/* Shrinks with the canvas down to 80% of its natural width (12px card text
+   stays ~10px), then scrolls; the overflow hint fades the cut edge. */
 .vzd-flow-svg {
   display: block;
-  max-width: none;
+  width: 100%;
+  max-width: var(--vzd-flow-w, none);
+  min-width: calc(var(--vzd-flow-w, 0px) * 0.8);
+  height: auto;
+}
+
+/* Sideways-scrolling area with more to the right (shared/overflow-hint.ts). */
+.vzd-overflow--right {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+}
+/* An export or the presentation view shows everything: never faded. */
+.vizardry-capturing .vzd-overflow--right,
+.vzd-presentation-wrap .vzd-overflow--right {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* Link paths + arrowheads */
