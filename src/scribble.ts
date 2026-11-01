@@ -4,7 +4,7 @@ import { decodeStroke } from "./shared/ink-codec";
 
 export const SCRIBBLE_DEFAULT_HEIGHT = 480;
 export const SCRIBBLE_MIN_HEIGHT = 160;
-export const SCRIBBLE_MAX_HEIGHT = 4000;
+export const SCRIBBLE_MAX_HEIGHT = 1600;
 export const SCRIBBLE_MAX_STROKES = 5000;
 const ID_RE = /^[a-z0-9]{4,24}$/i;
 
@@ -12,23 +12,22 @@ const ID_RE = /^[a-z0-9]{4,24}$/i;
  * Parses Scribble syntax:
  *
  *   id: k3f9x2q1          (written on the first save)
- *   height: 480           (logical units; the width is always 1000)
+ *   height: 480           (the frame's height in the note, CSS px)
  *   stroke: ink 4 <points>
  *
+ * The canvas itself is endless; `height:` only sizes the window onto it.
  * Every line is top-level config. Parsing is graceful: an unreadable stroke,
  * an unknown line or an out-of-range height is skipped or clamped with a
  * warning, so one damaged line never hides the rest of the drawing. Nothing
  * here is fatal — an empty scribble is a valid, blank canvas.
- *
- * `height:` is read before any stroke is decoded, wherever it sits, because
- * decoding clamps points to the canvas.
  */
 export function parseScribble(source: string): ScribbleResult {
   const lines = source.split("\n");
   const warnings: string[] = [];
   let height = SCRIBBLE_DEFAULT_HEIGHT;
   let id: string | undefined;
-  const strokeLines: { value: string; lineNum: number }[] = [];
+  const strokes: InkStroke[] = [];
+  let capped = false;
 
   for (let i = 0; i < lines.length; i++) {
     if (isSkippableLine(lines[i])) continue;
@@ -39,7 +38,14 @@ export function parseScribble(source: string): ScribbleResult {
     const value = colon === -1 ? "" : trimmed.slice(colon + 1).trim();
 
     if (key === "stroke") {
-      strokeLines.push({ value, lineNum });
+      if (strokes.length >= SCRIBBLE_MAX_STROKES) {
+        if (!capped) warnings.push(`Only the first ${SCRIBBLE_MAX_STROKES} strokes are shown.`);
+        capped = true;
+        continue;
+      }
+      const stroke = decodeStroke(value);
+      if (typeof stroke === "string") warnings.push(`Line ${lineNum}: skipped stroke — ${stroke}`);
+      else strokes.push(stroke);
     } else if (key === "height") {
       const n = Number(value);
       if (!Number.isFinite(n)) {
@@ -54,20 +60,6 @@ export function parseScribble(source: string): ScribbleResult {
     } else {
       warnings.push(`Line ${lineNum}: ignored — expected a "stroke:", "height:" or "id:" line`);
     }
-  }
-
-  const strokes: InkStroke[] = [];
-  for (const { value, lineNum } of strokeLines) {
-    if (strokes.length >= SCRIBBLE_MAX_STROKES) {
-      warnings.push(`Only the first ${SCRIBBLE_MAX_STROKES} strokes are shown.`);
-      break;
-    }
-    const stroke = decodeStroke(value, height);
-    if (typeof stroke === "string") {
-      warnings.push(`Line ${lineNum}: skipped stroke — ${stroke}`);
-      continue;
-    }
-    strokes.push(stroke);
   }
 
   return { ok: true, data: { id, height, strokes, warnings: warnings.length > 0 ? warnings : undefined } };

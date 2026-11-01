@@ -12,8 +12,8 @@ export const INK_COLORS = ["ink", "red", "blue", "green", "orange"] as const;
 export type InkColor = typeof INK_COLORS[number];
 
 /**
- * One sampled point in logical canvas units: x across a fixed 1000-unit
- * width, y down the block's `height:`, pressure 0–1. Values are already
+ * One sampled point in world units on the endless canvas (one unit is one CSS
+ * pixel at 100 % zoom), pressure 0–1. Values are already
  * quantised to what the stroke encoding can represent, so encoding a parsed
  * stroke reproduces its source line exactly.
  */
@@ -21,7 +21,7 @@ export type InkPoint = readonly [x: number, y: number, pressure: number];
 
 export interface InkStroke {
   readonly color: InkColor;
-  /** Nominal pen width in logical units. */
+  /** Nominal pen width in world units. */
   readonly size: number;
   readonly points: readonly InkPoint[];
 }
@@ -29,7 +29,7 @@ export interface InkStroke {
 export interface ScribbleData {
   /** Stable block id (`id:` line); written on the first save when missing. */
   id?: string;
-  /** Logical canvas height; the width is always SCRIBBLE_WIDTH. */
+  /** Height of the frame the canvas is shown in, in CSS px. */
   height: number;
   strokes: InkStroke[];
   /** Non-fatal parse issues surfaced as a header chip (graceful degradation). */

@@ -5,14 +5,16 @@ Fishbone, Venn and Customer Journey Map are gone. Obsidian draws the same
 diagrams itself in a ` ```mermaid ` block.
 
 - **New: Scribble (`type: scribble`).** Insert it, switch to Live Preview,
-  tap **Draw** and sketch with Apple Pencil. The pencil draws while a finger
-  keeps scrolling the note, so a resting palm leaves no marks. Pen, stroke
-  eraser, five theme colours, three widths, undo / redo, clear, and a button
-  to make the canvas taller. Pen pressure sets the line width. The drawing is
-  saved into the note itself, a moment after each stroke, so it syncs with
-  the note, shows up in Git one line per stroke, and renders in the browser
-  extension. With a mouse it works the same; on a device without a pen, turn
-  on finger drawing.
+  tap **Draw** and sketch with Apple Pencil on an endless canvas. The pencil
+  draws, one finger pans, two fingers pinch to zoom, and a palm resting while
+  you draw is ignored. **Fullscreen** opens the canvas over the whole window;
+  **Fit** brings everything back into view. On a Mac, the trackpad pans and
+  pinch-zooms. Pen, stroke eraser, five theme colours, three widths, undo /
+  redo and clear; pen pressure sets the line width. Outside draw mode the
+  note shows the whole drawing, fitted to the frame. The drawing is saved
+  into the note itself, a moment after each stroke, so it syncs with the
+  note, shows up in Git one line per stroke, and renders in the browser
+  extension. On a device without a pen, turn on finger drawing.
 - **Removed: Mind Map (`mindmap`), Fishbone (`fishbone` and its 6M, 4S and
   7P presets), Venn (`venn`) and Customer Journey Map (`journey`, including
   the Service Blueprint, `journey, blueprint`).** Their insert commands and

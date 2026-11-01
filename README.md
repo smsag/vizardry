@@ -1417,7 +1417,7 @@ decision: Move to Berlin
 
 ### Scribble
 
-A **Scribble** is a freehand sketch drawn straight into the note — made for an iPad with Apple Pencil, and also usable with a mouse or a finger. The ink is stored in the code block itself, so the drawing travels with the note: it syncs, shows up in Git, and renders in the browser extension too.
+A **Scribble** is a freehand sketch on an **endless, zoomable canvas**, drawn straight into the note — made for an iPad with Apple Pencil, and also usable with a mouse, a trackpad or a finger. The ink is stored in the code block itself, so the drawing travels with the note: it syncs, shows up in Git, and renders in the browser extension too.
 
 ````
 ```vizardry
@@ -1429,12 +1429,15 @@ height: 480
 
 Insert one from the command palette (**Insert canvas → Scribble**), switch to **Live Preview**, and tap **Draw**:
 
-- **Pencil draws, finger scrolls.** In draw mode the pen (or a mouse) draws and a finger still scrolls the note, so a resting palm leaves no marks. Turn on the hand button to draw with a finger instead (on a phone without a pen, for example).
-- **Tools:** pen, eraser (removes whole strokes it touches), five colours that follow the theme, three widths, undo / redo, clear, and **make the canvas taller**. Pen pressure sets the line width.
-- **Saving is automatic,** a moment after each stroke, when you tap **Done**, and when Obsidian goes to the background. In Read View the sketch is a picture only.
+- **Pencil draws, fingers move the canvas.** In draw mode the pen (or a mouse) draws, one finger pans, and two fingers pinch to zoom (10 %–800 %). A palm resting while the pen is down is ignored. Turn on the hand button to draw with one finger instead; two fingers still pan and zoom. On a Mac trackpad, two-finger scrolling pans and pinching zooms; with a mouse, drag with the middle button to pan.
+- **Endless canvas.** Keep panning — there is no edge. **Fit** brings the whole drawing back into view; the zoom percentage resets to 100 %.
+- **Fullscreen** (⤢ button) opens the same canvas over the whole window, for anything bigger than a quick sketch. Escape or the ⤡ button returns to the note.
+- **Tools:** pen, eraser (removes whole strokes it touches), five colours that follow the theme, three widths, undo / redo and clear. Pen pressure sets the line width.
+- **Outside draw mode** — Read View, Live Preview before you tap Draw, the browser extension, PNG export — the frame shows the whole drawing, fitted and never enlarged past 100 %, and the note scrolls over it as usual. The view is never saved, so panning never changes the note.
+- **Saving is automatic,** a moment after each stroke, when you tap **Done**, and when Obsidian goes to the background.
 
 **Rules:**
-- The canvas is always 1000 units wide; `height:` sets its height in the same units (160–4000, default 480), so a sketch keeps its shape at any width.
+- `height:` is the height of the frame in the note, in pixels (160–1600, default 480). The canvas behind it is endless.
 - Each stroke is one `stroke: <colour> <width> <points>` line. The points are encoded and not meant for editing by hand, but you can delete or reorder whole lines. A damaged line is skipped with a warning chip; the rest of the sketch still renders.
 - The `id:` line is written on the first save. It lets the canvas keep draw mode and its undo history while Obsidian re-renders the block after each save; leave it in place.
 - Colours: `ink`, `red`, `blue`, `green`, `orange`. A sketch holds up to 5000 strokes.

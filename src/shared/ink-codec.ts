@@ -8,17 +8,19 @@ import { INK_COLORS } from "../types/scribble";
  *
  * `<points>` is a base64url VLQ string (the source-map scheme): per point the
  * zig-zag deltas of x, y and pressure from the previous point, five bits per
- * character with a continuation bit. Coordinates are quantised to half a
- * logical unit and pressure to 1/31, so a typical pen sample costs three
- * characters and a 200-point stroke stays well under a kilobyte.
+ * character with a continuation bit. Coordinates are world units on an
+ * endless canvas (one unit is one CSS pixel at 100 % zoom; negative values
+ * are fine), quantised to half a unit, and pressure to 1/31 — so a typical
+ * pen sample costs three characters and a 200-point stroke stays well under a
+ * kilobyte.
  *
  * Decoding is bounded (characters per value, points per stroke, line length)
  * and rejects anything it can't read, because the text comes from a note and
  * a note is untrusted input.
  */
 
-/** Fixed logical width; the height comes from the block. */
-export const SCRIBBLE_WIDTH = 1000;
+/** How far from the origin a point may lie; keeps every value well inside 30 bits. */
+export const WORLD_LIMIT = 500_000;
 
 const COORD_SCALE = 2;      // half-unit precision
 const PRESSURE_STEPS = 31;  // pressure 0..1 in 1/31 steps
@@ -37,16 +39,16 @@ export function isInkColor(value: string): value is InkColor {
   return (INK_COLORS as readonly string[]).includes(value);
 }
 
-/** Snaps a raw sample to the precision the encoding stores, clamped to the canvas. */
-export function quantizePoint(x: number, y: number, pressure: number, height: number): InkPoint {
-  const qx = Math.round(clamp(x, 0, SCRIBBLE_WIDTH) * COORD_SCALE) / COORD_SCALE;
-  const qy = Math.round(clamp(y, 0, height) * COORD_SCALE) / COORD_SCALE;
+/** Snaps a raw sample to the precision the encoding stores, clamped to the world. */
+export function quantizePoint(x: number, y: number, pressure: number): InkPoint {
+  const qx = Math.round(clamp(x, -WORLD_LIMIT, WORLD_LIMIT) * COORD_SCALE) / COORD_SCALE;
+  const qy = Math.round(clamp(y, -WORLD_LIMIT, WORLD_LIMIT) * COORD_SCALE) / COORD_SCALE;
   const qp = Math.round(clamp(pressure, 0, 1) * PRESSURE_STEPS) / PRESSURE_STEPS;
   return [qx, qy, qp];
 }
 
 function clamp(v: number, lo: number, hi: number): number {
-  return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo;
+  return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : 0;
 }
 
 function encodeValue(value: number): string {
@@ -75,7 +77,7 @@ export function encodePoints(points: readonly InkPoint[]): string {
 }
 
 /** Decodes a point string, or returns null when it is malformed or over the caps. */
-export function decodePoints(data: string, height: number): InkPoint[] | null {
+export function decodePoints(data: string): InkPoint[] | null {
   const values: number[] = [];
   let acc = 0, shift = 0, digits = 0;
   for (const ch of data) {
@@ -96,7 +98,7 @@ export function decodePoints(data: string, height: number): InkPoint[] | null {
   let qx = 0, qy = 0, qp = 0;
   for (let i = 0; i < values.length; i += 3) {
     qx += values[i]; qy += values[i + 1]; qp += values[i + 2];
-    points.push(quantizePoint(qx / COORD_SCALE, qy / COORD_SCALE, qp / PRESSURE_STEPS, height));
+    points.push(quantizePoint(qx / COORD_SCALE, qy / COORD_SCALE, qp / PRESSURE_STEPS));
   }
   return points;
 }
@@ -111,7 +113,7 @@ export function encodeStrokeLine(stroke: InkStroke): string {
 }
 
 /** Parses the value of a `stroke:` line; the string is the reason it was rejected. */
-export function decodeStroke(value: string, height: number): InkStroke | string {
+export function decodeStroke(value: string): InkStroke | string {
   if (value.length > MAX_STROKE_LINE_LENGTH) return "stroke is too long";
   const parts = value.trim().split(/\s+/);
   if (parts.length !== 3) return `expected "stroke: <color> <size> <points>"`;
@@ -121,7 +123,7 @@ export function decodeStroke(value: string, height: number): InkStroke | string 
   if (!Number.isInteger(size) || size < STROKE_SIZE_MIN || size > STROKE_SIZE_MAX) {
     return `size must be a whole number from ${STROKE_SIZE_MIN} to ${STROKE_SIZE_MAX}`;
   }
-  const points = decodePoints(data, height);
+  const points = decodePoints(data);
   if (!points) return "point data is unreadable";
   return { color, size, points };
 }

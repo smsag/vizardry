@@ -4869,8 +4869,10 @@ body.vizardry-sketch .vzd-pc-balance-con {
   gap: 2px;
 }
 
-/* Beats `.vizardry-canvas:hover .vzd-btn`, which would dim the tools on hover. */
-.vizardry-canvas .vzd-scribble-toolbar button.vzd-btn {
+/* Beats `.vizardry-canvas:hover .vzd-btn`, which would dim the tools on hover.
+   The fullscreen overlay sits outside any canvas, so it is listed too. */
+.vizardry-canvas .vzd-scribble-toolbar button.vzd-btn,
+.vzd-scribble-overlay .vzd-scribble-toolbar button.vzd-btn {
   opacity: 1;
   pointer-events: auto;
   min-width: 32px;
@@ -4878,7 +4880,8 @@ body.vizardry-sketch .vzd-pc-balance-con {
   color: var(--icon-color);
 }
 
-.vizardry-canvas .vzd-scribble-toolbar button.vzd-btn:disabled {
+.vizardry-canvas .vzd-scribble-toolbar button.vzd-btn:disabled,
+.vzd-scribble-overlay .vzd-scribble-toolbar button.vzd-btn:disabled {
   opacity: 0.35;
 }
 
@@ -4930,10 +4933,11 @@ body.vizardry-sketch .vzd-pc-balance-con {
   overflow: hidden;
 }
 
-/* Draw mode: no text selection, no iOS callout, and a visible frame. Touch
-   still pans (a finger scrolls the note); pencil touches are cancelled in
-   script instead — see renderer/scribble.ts. */
+/* Draw mode: every touch belongs to the canvas (one finger pans, two zoom —
+   see renderer/scribble.ts), no text selection, no iOS callout, and a
+   visible frame. */
 .vzd-scribble-surface--drawing {
+  touch-action: none;
   cursor: crosshair;
   user-select: none;
   -webkit-user-select: none;
@@ -4944,10 +4948,6 @@ body.vizardry-sketch .vzd-pc-balance-con {
   background-size: 24px 24px;
 }
 
-.vzd-scribble-surface--finger {
-  touch-action: none;
-}
-
 .vzd-scribble-surface--eraser {
   cursor: cell;
 }
@@ -4955,7 +4955,36 @@ body.vizardry-sketch .vzd-pc-balance-con {
 .vzd-scribble-svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+}
+
+.vzd-scribble-toolbar button.vzd-scribble-zoom {
+  min-width: 48px;
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fullscreen drawing: the same toolbar and surface over the whole window. */
+.vzd-scribble-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal, 50);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.vzd-scribble-overlay .vzd-scribble-toolbar {
+  margin: 0;
+}
+
+.vzd-scribble-overlay .vzd-scribble-surface {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .vzd-scribble-empty {
