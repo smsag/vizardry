@@ -2257,7 +2257,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 .vzd-story-task-card,
 .vzd-scqa-card,
 .vzd-block-line,
-.vzd-raci-item {
+.vzd-raci-task-line {
   position: relative;
 }
 
@@ -3144,48 +3144,203 @@ button.vzd-item-menu::after {
   button.vzd-add--dot::after { content: ""; position: absolute; inset: -12px; }
 }
 
-/* ── RACI Matrix ────────────────────────────────────────────────────────────── */
-/* The column boxes use vizardry-block/label-row/label/body — no custom
-   structural CSS needed. Only RACI-specific additions below. */
+/* ── RACI Matrix ────────────────────────────────────────────────────────────
+   Tasks down, people across, the role in the crossing cell (renderer/raci.ts).
+   Emphasis falls A → R → C → I through fill, tint, outline and plain ink, so
+   the letters carry the meaning without colour. */
 
-/* Highlight the Responsible column (accent border) */
-.vzd-raci-col--accent {
-  border-color: var(--color-accent);
-  border-width: 2px;
+.vzd-raci-wrap {
+  width: 100%;
+  overflow-x: auto;
 }
 
-/* Override white-space so stacked item divs don't inherit pre-wrap */
-.vzd-raci-body {
-  white-space: normal;
+.vzd-raci-table {
+  width: 100%;
+  /* Obsidian's `.markdown-rendered table` margin outranks a class (see SIPOC). */
+  margin: 0 !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--vzd-fs-md);
+}
+
+.vzd-raci-th,
+.vzd-raci-task,
+.vzd-raci-cell {
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 0.5rem 0.6rem;
+  background: var(--background-primary);
+}
+
+.vzd-raci-th {
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
+  color: var(--text-normal);
+  vertical-align: bottom;
+  border-bottom: 1.5px solid var(--text-faint);
+}
+
+.vzd-raci-th--task {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.vzd-raci-th--person {
+  text-align: center;
+  min-width: 5.5rem;
+  line-height: 1.25;
+}
+.vzd-raci-th--person { position: relative; }
+
+/* The task column stays put while the people scroll past it on a phone. */
+.vzd-raci-th--task,
+.vzd-raci-task {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 11rem;
+  max-width: 22rem;
+}
+
+.vzd-raci-task {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-normal);
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.vzd-raci-task-line {
   display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding-right: 1.1em; /* room for the corner link button */
+}
+.vzd-raci-task-name { min-width: 0; overflow-wrap: anywhere; }
+
+.vzd-raci-row:hover > * {
+  background: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary));
 }
 
-/* Individual row entry within a column */
-.vzd-raci-item {
-  padding: 0.375rem 0.5rem;
-  border-radius: var(--radius-s);
-  font-size: var(--font-ui-small);
-  line-height: 1.4;
-  word-break: break-word;
+.vzd-raci-row--issue > .vzd-raci-task {
+  box-shadow: inset 3px 0 0 var(--vzd-tone-caution);
+}
+
+.vzd-raci-issues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  margin-top: 0.2rem;
+  font-size: var(--vzd-fs-xs);
+  font-weight: 500;
+  color: var(--vzd-tone-ink);
+}
+
+.vzd-raci-cell {
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.vzd-raci-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75em;
+  height: 1.75em;
+  margin: 0 0.1em;
+  border-radius: 50%;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 700;
+  line-height: 1;
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+}
+
+.vzd-raci-badge--accountable {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.vzd-raci-badge--responsible {
+  background: color-mix(in srgb, var(--interactive-accent) 18%, var(--background-primary));
+  color: color-mix(in srgb, var(--interactive-accent) 70%, var(--text-normal));
+  border: 1.5px solid color-mix(in srgb, var(--interactive-accent) 55%, var(--background-primary));
+}
+.vzd-raci-badge--consulted {
+  color: var(--text-normal);
+  border: 1.5px solid var(--text-faint);
+}
+.vzd-raci-badge--informed {
   background: var(--background-secondary);
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
-.vzd-raci-item--editable {
+.vzd-raci-workload > * {
+  border-bottom: none;
+  padding-top: 0.45rem;
+  font-size: var(--vzd-fs-xs);
+  color: var(--text-muted);
+}
+.vzd-raci-workload-label { font-weight: 600; }
+.vzd-raci-stat { margin: 0 0.35em; }
+.vzd-raci-stat-n { font-weight: 700; color: var(--text-normal); margin-right: 0.2em; }
+
+.vzd-raci-empty {
+  padding: 0.75rem 0.6rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: var(--vzd-fs-sm);
+}
+
+/* Key below the table — part of the canvas, so an export explains itself. */
+.vzd-raci-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin-top: 0.75rem;
+  font-size: var(--vzd-fs-xs);
+  color: var(--text-muted);
+}
+.vzd-raci-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.vzd-raci-legend .vzd-raci-badge { font-size: var(--vzd-fs-2xs); }
+.vzd-raci-legend-term { font-weight: 650; color: var(--text-normal); }
+
+/* Edit affordances (Live Preview) */
+.vzd-raci-editable {
   cursor: text;
+  border-radius: var(--radius-s);
+}
+.vzd-raci-editable:hover { box-shadow: inset 0 -1px 0 var(--text-faint); }
+.vzd-raci-cell--editable { cursor: pointer; }
+.vzd-raci-cell--editable:hover,
+.vzd-raci-cell--editable:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--interactive-accent) 60%, transparent);
+  border-radius: var(--radius-s);
+}
+.vzd-raci-th--add,
+.vzd-raci-cell--add {
+  width: 2rem;
+  padding: 0 0.25rem;
+  border-bottom-color: transparent;
+}
+.vzd-raci-add-task { margin-top: 0.4rem; }
+
+@media (max-width: 600px) {
+  .vzd-raci-th--task,
+  .vzd-raci-task { min-width: 7.5rem; }
+  .vzd-raci-th--person { min-width: 4.25rem; }
 }
 
-.vzd-raci-item--editable:hover {
-  background: var(--background-modifier-hover);
-}
-
-/* Empty slot — row exists but value is blank for this column */
-.vzd-raci-item--empty {
-  background: transparent;
-  border: 1px dashed var(--background-modifier-border);
-  min-height: 1.75rem;
-}
+/* Presentation: a static clone — no edit hover, larger letters, more air. */
+.vzd-presentation-wrap .vzd-raci-cell--editable,
+.vzd-presentation-wrap .vzd-raci-editable { cursor: default; box-shadow: none; }
+.vzd-presentation-wrap .vzd-raci-table { font-size: calc(var(--vzd-base) * 1.25); }
+.vzd-presentation-wrap .vzd-raci-th,
+.vzd-presentation-wrap .vzd-raci-task,
+.vzd-presentation-wrap .vzd-raci-cell { padding: 0.7rem 0.9rem; }
 
 /* ── Concept Map ─────────────────────────────────────────────────────────── */
 

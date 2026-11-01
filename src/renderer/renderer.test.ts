@@ -1400,13 +1400,53 @@ describe("renderRACIMatrix", () => {
   const data: RACIData = {
     rows: [
       { task: "Write code", responsible: "Dev", accountable: "PM", consulted: "QA", informed: "Stakeholder" },
+      { task: "Review", responsible: "QA, Dev", accountable: "", consulted: "", informed: "pm" },
     ],
   };
 
-  it("renders the RACI grid without throwing", () => {
+  it("renders one row per task and one column per person, in reading order", () => {
     const el = container();
-    expect(() => renderRACIMatrix(data, el)).not.toThrow();
-    expect(el.querySelectorAll(".vzd-raci-item").length).toBeGreaterThan(0);
+    renderRACIMatrix(data, el);
+    const heads = [...el.querySelectorAll(".vzd-raci-person")].map(h => h.textContent);
+    expect(heads).toEqual(["Dev", "PM", "QA", "Stakeholder"]);
+    const rows = el.querySelectorAll("tbody .vzd-raci-row");
+    expect(rows.length).toBe(2);
+    // Each body row has the task cell plus one cell per person, so a column
+    // reads as one person's roles regardless of how the source is ordered.
+    expect(rows[0].querySelectorAll(".vzd-raci-cell").length).toBe(4);
+  });
+
+  it("puts each person's role letter in the crossing cell, matching names case-insensitively", () => {
+    const el = container();
+    renderRACIMatrix(data, el);
+    const letters = (r: number) => [...el.querySelectorAll("tbody .vzd-raci-row")[r].querySelectorAll(".vzd-raci-cell")]
+      .map(td => [...td.querySelectorAll(".vzd-raci-badge")].map(b => b.textContent).join(""));
+    expect(letters(0)).toEqual(["R", "A", "C", "I"]);
+    expect(letters(1)).toEqual(["R", "I", "R", ""]);
+  });
+
+  it("flags a task that breaks the RACI rules in its row", () => {
+    const el = container();
+    renderRACIMatrix(data, el);
+    const rows = el.querySelectorAll("tbody .vzd-raci-row");
+    expect(rows[0].classList.contains("vzd-raci-row--issue")).toBe(false);
+    expect(rows[1].classList.contains("vzd-raci-row--issue")).toBe(true);
+    expect(rows[1].querySelector(".vzd-raci-issue")?.textContent).toBe("No one accountable");
+  });
+
+  it("totals what each person does and owns in a workload row", () => {
+    const el = container();
+    renderRACIMatrix(data, el);
+    const cells = [...el.querySelectorAll("tfoot .vzd-raci-cell")].map(td => td.textContent);
+    expect(cells).toEqual(["2R", "1A", "1R", ""]);
+  });
+
+  it("shows the legend, and a hint instead of a table body when there are no tasks", () => {
+    const el = container();
+    renderRACIMatrix({ rows: [] }, el);
+    expect(el.querySelectorAll(".vzd-raci-legend-item").length).toBe(4);
+    expect(el.querySelector(".vzd-raci-empty")).toBeTruthy();
+    expect(el.querySelector("tbody .vzd-raci-row")).toBeNull();
   });
 
   it("does not wire cell editing or title editing when the note is in Reading View", () => {
@@ -1414,25 +1454,30 @@ describe("renderRACIMatrix", () => {
     const previewApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "preview" }) } } as any;
     const ctx = { sourcePath: "note.md" } as any;
     renderRACIMatrix(data, el, { source: "type: raci", app: previewApp, ctx });
-    expect(el.querySelector(".vzd-raci-item--editable")).toBeNull();
+    expect(el.querySelector(".vzd-raci-cell--editable")).toBeNull();
+    expect(el.querySelector(".vzd-raci-editable")).toBeNull();
+    expect(el.querySelector(".vzd-add")).toBeNull();
     expect(el.querySelector(".vizardry-title--editable")).toBeNull();
   });
 
-  it("wires cell editing and title editing in Live Preview/Source mode", () => {
+  it("wires cell, name and title editing, plus add controls, in Live Preview/Source mode", () => {
     const el = container();
     const editModeApp = { workspace: { getActiveViewOfType: () => ({ getMode: () => "source" }) } } as any;
     const ctx = { sourcePath: "note.md" } as any;
     renderRACIMatrix(data, el, { source: "type: raci", app: editModeApp, ctx });
-    expect(el.querySelector(".vzd-raci-item--editable")).toBeTruthy();
+    expect(el.querySelector(".vzd-raci-cell--editable")).toBeTruthy();
+    expect(el.querySelector(".vzd-raci-task-name.vzd-raci-editable")).toBeTruthy();
+    expect(el.querySelector(".vzd-raci-person.vzd-raci-editable")).toBeTruthy();
+    expect(el.querySelectorAll(".vzd-add").length).toBe(2); // add person, add task
     expect(el.querySelector(".vizardry-title--editable")).toBeTruthy();
   });
 
-  it("renders a link button on a cell whose value resolves to a heading", () => {
+  it("renders a link button on a task whose name resolves to a heading", () => {
     const el = container();
     const navigateTo = vi.fn();
     const resolver = { resolve: (label: string) => label === "Write code" ? "Spec Heading" : undefined };
     renderRACIMatrix(data, el, { resolver, navigateTo });
-    const btn = el.querySelector<HTMLButtonElement>(".vzd-card-link-btn");
+    const btn = el.querySelector<HTMLButtonElement>(".vzd-raci-task .vzd-card-link-btn");
     expect(btn).toBeTruthy();
     btn?.click();
     expect(navigateTo).toHaveBeenCalledWith("Spec Heading");

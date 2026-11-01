@@ -56,6 +56,7 @@ export class Menu {
       setTitle: (t: string) => { row.title = t; return item; },
       setIcon: () => item,
       setWarning: (w: boolean) => { row.warning = w; return item; },
+      setChecked: () => item,
       onClick: (fn: () => void) => { row.run = fn; return item; },
     };
     cb(item);
