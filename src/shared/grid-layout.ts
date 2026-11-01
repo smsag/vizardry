@@ -129,3 +129,51 @@ export function collapseGridLayout(layout: GridLayout, present: ReadonlySet<stri
     rows: rows.filter((_, ri) => keepRows[ri]).join(" "),
   };
 }
+
+export interface AxisCell {
+  /** Grid area name the label is placed in. */
+  area: string;
+  label: string;
+  orient: "column" | "row";
+}
+
+/**
+ * Adds a label row above the grid and/or a label column to its left, one
+ * label per framework column/row. Returns null when neither label list
+ * matches the grid's shape, so the caller draws the plain grid.
+ */
+export function withAxes(
+  layout: GridLayout,
+  axes: { columns?: string[]; rows?: string[] },
+): { layout: GridLayout; cells: AxisCell[] } | null {
+  const grid = parseTemplate(layout.template);
+  const colTracks = expandTracks(layout.columns);
+  const rowTracks = expandTracks(layout.rows);
+  if (!grid || !colTracks || !rowTracks) return null;
+  const width = grid[0]!.length;
+  const cols = axes.columns?.length === width && colTracks.length === width ? axes.columns : undefined;
+  const rows = axes.rows?.length === grid.length && rowTracks.length === grid.length ? axes.rows : undefined;
+  if (!cols && !rows) return null;
+
+  const cells: AxisCell[] = [];
+  const lines = grid.map((row, i) => {
+    if (!rows) return row;
+    cells.push({ area: `vzd-axr${i}`, label: rows[i]!, orient: "row" });
+    return [`vzd-axr${i}`, ...row];
+  });
+  if (cols) {
+    const header = cols.map((label, i) => {
+      cells.push({ area: `vzd-axc${i}`, label, orient: "column" });
+      return `vzd-axc${i}`;
+    });
+    lines.unshift(rows ? [EMPTY, ...header] : header);
+  }
+  return {
+    layout: {
+      template: lines.map(r => `"${r.join(" ")}"`).join(" "),
+      columns: rows ? `auto ${colTracks.join(" ")}` : colTracks.join(" "),
+      rows: cols ? `auto ${rowTracks.join(" ")}` : rowTracks.join(" "),
+    },
+    cells,
+  };
+}

@@ -286,7 +286,7 @@ function renderTreeEdges(
 ): void {
   for (const child of node.children) {
     // Connectors flowing into a level take that level's colour, when set.
-    const stroke = getTreeStyle(child.level, opts).strokeVar ?? "var(--background-modifier-border)";
+    const stroke = getTreeStyle(child.level, opts).strokeVar ?? "var(--vzd-edge)";
     let d: string;
     if (direction === "down" || direction === "lanes") {
       const x1 = node.x + opts.nodeW / 2,  y1 = node.y + node.height;

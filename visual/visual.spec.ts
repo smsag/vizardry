@@ -8,7 +8,7 @@ const ALL = [
   "sipoc", "sipocflow", "wardley", "raci", "roadmap", "pacelayers", "conceptmap", "nodemap",
   "matrix", "scqa", "wheeloflife", "odyssey",
   "circleofinfluence", "wholeperson", "futureself", "radar", "problem",
-  "testcard", "canvaslink",
+  "testcard", "canvaslink", "swotfull",
   // NOTE: `compass` is intentionally not snapshotted — its text-heavy brief sits
   // on a line-wrap boundary that renders 10px taller under CI's Playwright
   // chromium than the local browser (a hard dimension mismatch Playwright can't

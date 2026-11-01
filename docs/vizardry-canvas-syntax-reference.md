@@ -117,6 +117,8 @@ block: <Exact Label>
 
 **Card mode (optional):** append `| card` to a block to render each of its indented lines as a draggable card instead of plain text (`block: Label | card`); or set `cards: all` once at the top level to make every block card mode. Card-mode blocks support drag-to-reorder in Live Preview.
 
+**Built-in emphasis (no syntax).** Some frameworks colour blocks by what they mean and label their axes: SWOT (helpful / harmful × internal / external), ERRC (lower cost / lift value), Value Proposition Canvas (value map / customer profile) and 4Ls. The block a canvas is built around is drawn in the accent colour: Value Propositions (`bmc`), Unique Value Proposition (`lean`), Problem / Opportunity (`opportunity`), Main Job (`jobs`), Target Condition (`kata`), Hypothesis (`experiment`), Winning Aspiration (`ptw`) and To-Be (`futureself`); Top Riskiest Assumptions (`rac`) is drawn in the caution colour. Axis labels appear only when every block is drawn.
+
 **Period field (optional):** a framework may add an editable `period:` line — a short free-text timeframe shown in the canvas header. Currently only **Future Self** uses it.
 
 ### Future Self (`futureself`)
@@ -1023,6 +1025,8 @@ task: Build feature
 | `informed:` | Who is kept in the loop |
 
 Multiple people per cell: comma-separated.
+
+**How it renders.** One row per task and one column per person. People are taken from the names in the cells, matched without regard to case, in the order they first appear. Each cell shows that person's role letter. A task with no accountable person, more than one, or no responsible person is flagged in its row. A workload row counts each person's R and A once there are two or more tasks.
 
 ---
 

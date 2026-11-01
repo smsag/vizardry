@@ -7,7 +7,21 @@ export interface FrameworkDefinition {
   gridRows: string;
   /** Show an editable `period:` timeframe field in the canvas header. */
   periodField?: boolean;
+  /**
+   * Labels for the axes the framework is built on, drawn beside the grid:
+   * one per column above it, one per row to its left (SWOT's helpful /
+   * harmful × internal / external). A count that doesn't match the grid's
+   * tracks is ignored, and so are both when blocks are left out.
+   */
+  axes?: { columns?: string[]; rows?: string[] };
 }
+
+/**
+ * A meaning a block carries in its framework — helpful or harmful, cut or
+ * add — or, as `accent`, the block the canvas exists to fill (BMC's Value
+ * Propositions). Drawn with the shared tone tokens in styles.css.
+ */
+export type BlockTone = "positive" | "negative" | "caution" | "info" | "accent";
 
 export interface BlockDefinition {
   label: string;
@@ -16,6 +30,8 @@ export interface BlockDefinition {
   placeholder?: string;
   /** Render block content as draggable cards (one card per non-empty line). */
   cardBlock?: boolean;
+  /** Set only where the framework itself has that axis; most blocks have none. */
+  tone?: BlockTone;
 }
 
 /**

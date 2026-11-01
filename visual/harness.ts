@@ -89,6 +89,21 @@ block: Actions
   // offset, and a sub-pixel shift changes the rounded height of their
   // element screenshots (canvaslink/futureself flipped by 1px).
   procontra: inner(PRO_CONTRA_TEMPLATE),
+  // A filled grid whose framework carries tones and axis labels (helpful /
+  // harmful × internal / external) — the empty skeletons above show neither.
+  swotfull: `type: swot
+title: Platform SWOT
+block: Strengths
+  Senior platform team with deep domain knowledge
+  Fast release cadence — weekly, low change-failure rate
+block: Weaknesses
+  Onboarding takes three weeks for a new customer
+  Reporting is spreadsheet-driven
+block: Opportunities
+  Mid-market teams moving off legacy tools
+  Partner channel through two integrators
+block: Threats
+  A well-funded competitor bundling the same feature for free`,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

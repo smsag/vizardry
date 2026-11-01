@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseRACIMatrix } from "./raci";
+import { parseRACIMatrix, raciPeople, rolesOf, withRole, withRenamedPerson, raciIssues, splitNames } from "./raci";
+import type { RACIRow } from "./types";
 
 describe("parseRACIMatrix", () => {
   // ── Happy paths ────────────────────────────────────────────────────────────
@@ -125,5 +126,51 @@ describe("parseRACIMatrix", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/line 3/i);
+  });
+});
+
+// ── People × roles helpers ───────────────────────────────────────────────────
+
+const row = (p: Partial<RACIRow>): RACIRow =>
+  ({ task: "T", responsible: "", accountable: "", consulted: "", informed: "", ...p });
+
+describe("RACI people × roles", () => {
+  it("splits a cell on commas and drops blanks", () => {
+    expect(splitNames(" Dev , QA,, ")).toEqual(["Dev", "QA"]);
+  });
+
+  it("lists everyone once, first spelling, in task-then-R/A/C/I order", () => {
+    const rows = [row({ accountable: "PM", responsible: "Dev" }), row({ informed: "pm, Client", consulted: "Dev" })];
+    expect(raciPeople(rows)).toEqual(["Dev", "PM", "Client"]);
+  });
+
+  it("reports every role a person holds on a task", () => {
+    expect(rolesOf(row({ responsible: "Dev", consulted: "dev, QA" }), "DEV")).toEqual(["responsible", "consulted"]);
+    expect(rolesOf(row({ responsible: "Dev" }), "QA")).toEqual([]);
+  });
+
+  it("moves a person to exactly one role, keeping everyone else", () => {
+    const r = row({ responsible: "Dev, QA", consulted: "Dev" });
+    expect(withRole(r, "dev", "accountable")).toEqual({
+      responsible: "QA", accountable: "dev", consulted: "", informed: "",
+    });
+    expect(withRole(r, "Dev", null)).toEqual({ responsible: "QA", accountable: "", consulted: "", informed: "" });
+  });
+
+  it("renames a person in every cell, merging when the new name is already there", () => {
+    const r = row({ responsible: "Dev, Alex", informed: "dev" });
+    expect(withRenamedPerson(r, "Dev", "Alex")).toEqual({
+      responsible: "Alex", accountable: "", consulted: "", informed: "Alex",
+    });
+  });
+
+  it("flags missing or doubled accountability and a missing responsible", () => {
+    expect(raciIssues(row({ responsible: "Dev", accountable: "PM" }))).toEqual([]);
+    expect(raciIssues(row({ informed: "All" }))).toEqual(["noAccountable", "noResponsible"]);
+    expect(raciIssues(row({ responsible: "Dev", accountable: "PM, CTO" }))).toEqual(["multipleAccountable"]);
+  });
+
+  it("does not flag a task with nobody named yet", () => {
+    expect(raciIssues(row({}))).toEqual([]);
   });
 });

@@ -156,13 +156,25 @@ function scqaLevelKeys(variant: SCQAData["variant"]): TranslationKey[] {
   return variant === "scqa" ? SCQA_LEVEL_KEYS : SCR_LEVEL_KEYS;
 }
 
+/** Hue variable suffix per level (`--vzd-scqa-<hue>` in styles.css). */
+function scqaLevelHues(variant: SCQAData["variant"]): string[] {
+  return variant === "scqa"
+    ? ["situation", "complication", "question", "answer"]
+    : ["situation", "complication", "resolution"];
+}
+
+/** Role name and hue of each narrative level — the tree's lanes and the
+ *  grid's row labels, so both views name and colour a level the same way. */
+export function scqaLevels(variant: SCQAData["variant"]): { label: string; hue: string }[] {
+  const hues = scqaLevelHues(variant);
+  return scqaLevelKeys(variant).map((k, i) => ({ label: t(k), hue: hues[i]! }));
+}
+
 /** SCQA/SCR swim-lane options — one lane per narrative level, each with a
  *  theme-aware hue; lane labels reuse the role names. */
 export function scqaTreeOptions(variant: SCQAData["variant"]): TreeRenderOptions {
   const keys = scqaLevelKeys(variant);
-  const hueName = variant === "scqa"
-    ? ["situation", "complication", "question", "answer"]
-    : ["situation", "complication", "resolution"];
+  const hueName = scqaLevelHues(variant);
   return laneTreeOptions({
     canvasClass: "vizardry-scqa",
     wrapperClass: "vizardry-scqa-wrapper",

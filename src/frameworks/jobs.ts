@@ -12,7 +12,7 @@ export const JOBS: FrameworkDefinition = {
   gridRows: "repeat(3, 1fr)",
   blocks: [
     { label: "Job Performer",      area: "jp", placeholder: "Who is trying to get this done — describe the real person in context?" },
-    { label: "Main Job",           area: "mj", placeholder: "What outcome are they ultimately trying to achieve?" },
+    { label: "Main Job",           area: "mj", tone: "accent", placeholder: "What outcome are they ultimately trying to achieve?" },
     { label: "Circumstances",      area: "ci", placeholder: "When and where does this job arise — what triggers it?" },
     { label: "Functional Aspects", area: "fa", placeholder: "What does success look like in practical, measurable terms?" },
     { label: "Emotional Aspects",  area: "ea", placeholder: "How do they want to feel when the job is done?" },

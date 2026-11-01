@@ -16,6 +16,7 @@ export const PTW: FrameworkDefinition = {
     {
       label: "Winning Aspiration",
       area: "wa",
+      tone: "accent",
       placeholder: "What does winning look like — for your customers, against your competition?\n\nExample: Be the most trusted project management tool for distributed engineering teams, winning on simplicity and time-to-value.",
     },
     {
