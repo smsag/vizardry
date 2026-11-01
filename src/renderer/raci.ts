@@ -12,7 +12,7 @@ import {
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import type { RenderContext } from "./render-context";
-import { createInlineEl } from "../shared/inline-markdown";
+import { createInlineEl, setInline } from "../shared/inline-markdown";
 
 /**
  * RACI Matrix — a real matrix: one row per task, one column per person, and
@@ -80,29 +80,40 @@ function openRoleMenu(e: MouseEvent, row: RACIRow, rowIndex: number, person: str
   menu.showAtMouseEvent(e);
 }
 
-function renameTask(nameEl: HTMLElement, task: string, rowIndex: number, ed: EditCtx): void {
+/**
+ * Edits a name in place on its source text: the element shows rendered
+ * markdown, so editing it as displayed would drop `**`/`==` markers from the
+ * value and write the name back without them. On cancel (or no change) the
+ * formatted name comes back.
+ */
+function editName(nameEl: HTMLElement, raw: string, onCommit: (next: string) => void): void {
+  nameEl.textContent = raw;
   editTextInPlace(nameEl, {
-    initial: task,
+    initial: raw,
     onDone: (commit, value) => {
       const next = value.trim();
-      if (!commit || !next || next === task) { nameEl.textContent = task; return; }
-      failed(writeRACICell(ed.app, ed.ctx, ed.container, rowIndex, "task", next));
+      if (!commit || !next || next === raw) { setInline(nameEl, raw); return; }
+      onCommit(next);
     },
   });
 }
 
+function renameTask(nameEl: HTMLElement, task: string, rowIndex: number, ed: EditCtx): void {
+  editName(nameEl, task, (next) => {
+    failed(writeRACICell(ed.app, ed.ctx, ed.container, rowIndex, "task", next));
+  });
+}
+
 function renamePerson(nameEl: HTMLElement, person: string, rows: RACIRow[], ed: EditCtx): void {
-  editTextInPlace(nameEl, {
-    initial: person,
-    onDone: (commit, value) => {
-      const next = value.trim().replace(/,/g, " ");
-      if (!commit || !next || next === person) { nameEl.textContent = person; return; }
-      const updates = new Map<number, ReturnType<typeof withRenamedPerson>>();
-      rows.forEach((row, i) => {
-        if (rolesOf(row, person).length > 0) updates.set(i, withRenamedPerson(row, person, next));
-      });
-      failed(writeRACIRolesMany(ed.app, ed.ctx, ed.container, updates));
-    },
+  editName(nameEl, person, (typed) => {
+    // A comma would split the name into two people on the next parse.
+    const next = typed.replace(/,/g, " ").trim();
+    if (!next || next === person) { setInline(nameEl, person); return; }
+    const updates = new Map<number, ReturnType<typeof withRenamedPerson>>();
+    rows.forEach((row, i) => {
+      if (rolesOf(row, person).length > 0) updates.set(i, withRenamedPerson(row, person, next));
+    });
+    failed(writeRACIRolesMany(ed.app, ed.ctx, ed.container, updates));
   });
 }
 
