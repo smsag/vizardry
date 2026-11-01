@@ -26,6 +26,10 @@ read better in light, dark and exports.
   Proposition, Jobs Canvas's Main Job, and so on) is highlighted in your
   accent colour. Colour only backs up the label, so nothing depends on
   seeing it.
+- **SCQA grid labels its levels.** Each row is named (Situation,
+  Complication, Question, Answer; Resolution for SCR) in the same colours as
+  the tree view. Answers are no longer drawn dashed and greyed out, which
+  made the conclusions look like placeholders.
 - **Calmer blocks.** Block labels lose the rule under them, items get a dot
   instead of a "›" chevron (Pace Layers too), and an empty block is shorter,
   so an empty nine-block canvas no longer fills the screen.

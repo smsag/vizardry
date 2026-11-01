@@ -2207,12 +2207,10 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 
 /* Cell header label — mirrors .vizardry-block-label-row style */
 .vzd-pl-cell-header {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 700;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
   color: var(--text-normal);
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.25rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.3rem;
   white-space: nowrap;
 }
 
@@ -4294,43 +4292,52 @@ button.vzd-item-menu::after {
 
 .vzd-scqa-grid {
   display: grid;
-  grid-template-columns: repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
+  /* A gutter column for the level labels, then one column per leaf. */
+  grid-template-columns: auto repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
   gap: 0.6rem;
   /* Stretch (not start) so cards sharing a row — e.g. several answers under
      different questions — all match the tallest card in that row. */
   align-items: stretch;
 }
 
+/* Row label: the level's role name in its hue, like the tree view's lanes. */
+.vzd-scqa-level {
+  grid-column: 1;
+  align-self: center;
+  padding-right: 0.25rem;
+  font-size: var(--vzd-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--vzd-scqa-hue) 55%, var(--text-normal));
+  white-space: nowrap;
+}
+
+/* Every level shares one card shape; the level hue marks it with a left bar
+   and the faintest tint, so the four rows read as one narrative instead of
+   a filled banner over grey boxes and faded, placeholder-looking answers. */
 .vzd-scqa-card {
   position: relative;
   border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--vzd-scqa-hue, var(--interactive-accent));
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
-  background: var(--background-secondary);
+  background: color-mix(in srgb, var(--vzd-scqa-hue, var(--interactive-accent)) 6%, var(--background-primary));
   color: var(--text-normal);
   font-size: var(--vzd-base, var(--font-ui-small));
   line-height: 1.35;
   min-height: 1.6rem;
 }
 
-/* Level 0 — situation: accent fill, spans the whole top row */
+/* Situation: the premise everything hangs from — a little more weight. */
 .vzd-scqa-card--l0 {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
   font-weight: var(--font-semibold, 600);
+  background: color-mix(in srgb, var(--vzd-scqa-hue, var(--interactive-accent)) 12%, var(--background-primary));
 }
 
-/* Level 1 — complication: hover bg + left accent bar */
-.vzd-scqa-card--l1 {
-  background: var(--background-modifier-hover);
-  border-left: 3px solid var(--interactive-accent);
-}
-
-/* Level 3 — answer: dashed, muted (mirrors the OST leaf style) */
+/* Answer: the point of the narrative — set in medium weight, never faded. */
 .vzd-scqa-card--l3 {
-  border-style: dashed;
-  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .vzd-scqa-card-text {
