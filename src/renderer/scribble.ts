@@ -10,7 +10,8 @@ import { isEditModeActive } from "../shared/editor";
 import { createSvgEl, FLAT_SHAPE_ATTR } from "../shared/svg";
 import { onDisconnected, ownerWindow } from "../shared/lifecycle";
 import { encodeStrokeLine, MAX_POINTS_PER_STROKE, quantizePoint } from "../shared/ink-codec";
-import { writeScribble } from "../shared/scribble-edit";
+import { isLaterDuplicate, isNoteOpen, saveNoteNow, writeScribble, writeScribbleToFile } from "../shared/scribble-edit";
+import type { ScribbleUpdate } from "../shared/scribble-edit";
 import { SCRIBBLE_MAX_STROKES } from "../scribble";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n/locales/en";
@@ -29,7 +30,8 @@ import type { TranslationKey } from "../i18n/locales/en";
  * ignored while the pen is down and briefly after (palm rejection). With
  * "Draw with finger" on, one finger uses the tool and two still pan and zoom.
  * On a Mac trackpad, two-finger scrolling pans and pinching zooms. Fullscreen
- * opens the same canvas over the whole window.
+ * opens the same canvas over the whole window and takes the keyboard (undo,
+ * redo, delete selection, Escape).
  *
  * Tools: pen and highlighter (hold still at the end of a stroke to turn it
  * into a straight line), a stroke eraser, and a lasso that selects strokes to
@@ -39,7 +41,8 @@ import type { TranslationKey } from "../i18n/locales/en";
  * never while the pen is down. A save changes the block, so Obsidian re-renders
  * it — the session store below carries draw mode, tool, view, selection,
  * fullscreen and the undo history across that re-render, keyed by note path +
- * the block's `id:`.
+ * the block's `id:` (or, before the first save, its content). A pen stroke cut
+ * off by that re-render keeps its ink and carries on in the new canvas.
  */
 
 const SAVE_DELAY_MS = 900;
@@ -116,8 +119,24 @@ interface Snapshot {
   strokes: InkStroke[];
 }
 
+/** What the note holds, as the session last saved or rendered it — the base a rebase merges against. */
+interface Saved {
+  lines: string[];
+  height: number;
+  background: ScribbleBackground;
+  signature: string;
+}
+
+/** A pen stroke cut off by a re-render, to be continued on the next canvas. */
+interface Resume {
+  pointerId: number;
+  ink: InkKind;
+  pen: boolean;
+  last: InkPoint;
+}
+
 interface Session {
-  /** Session-store key: note path + block id. */
+  /** Session-store key: note path + block id, or + content before the first save. */
   key: string;
   id: string;
   strokes: InkStroke[];
@@ -137,13 +156,19 @@ interface Session {
   fullscreen: boolean;
   /** The fullscreen layer, appended to the document body while open. */
   overlay: HTMLElement | null;
-  /** Signature of the drawing the note holds (as of the last save or render). */
-  saved: string;
+  /** Where keyboard focus was before fullscreen opened, to hand it back. */
+  returnFocus: Element | null;
+  /** Keyboard handler of the canvas currently in the overlay. */
+  onOverlayKey: (e: KeyboardEvent) => void;
+  saved: Saved;
+  /** The note changed under unsaved edits; merged before the next save. */
+  pendingRebase: { data: ScribbleData; lines: string[] } | null;
   dirty: boolean;
   timer: number | null;
   /** A pointer is mid-gesture; saving waits for it. */
   busy: boolean;
   failShown: boolean;
+  resume: Resume | null;
   /** The latest mounted canvas for this block — the one saves resolve against. */
   el: HTMLElement;
   app: App;
@@ -152,13 +177,23 @@ interface Session {
   refresh: () => void;
   /** Rebuilds the latest mounted canvas, inline or fullscreen. */
   relayout: () => void;
+  /** Ends the gesture in progress on the canvas about to be replaced, keeping its ink. */
+  abort: () => void;
 }
 
 const sessions = new Map<string, Session>();
 let paperSeq = 0;
 
-function signature(strokes: readonly InkStroke[], height: number, background: ScribbleBackground): string {
-  return `${height}\n${background}\n${strokes.map(encodeStrokeLine).join("\n")}`;
+function signatureOf(lines: readonly string[], height: number, background: ScribbleBackground): string {
+  return `${height}\n${background}\n${lines.join("\n")}`;
+}
+
+function savedState(lines: string[], height: number, background: ScribbleBackground): Saved {
+  return { lines, height, background, signature: signatureOf(lines, height, background) };
+}
+
+function keyFor(path: string, id: string): string {
+  return `${path}\u0000${id}`;
 }
 
 function newBlockId(): string {
@@ -295,9 +330,14 @@ function lassoShare(stroke: InkStroke, poly: readonly InkPoint[]): number {
   return n === 0 ? 0 : hits / n;
 }
 
-/** Evenly spaced points on the segment a → b, at one pressure. */
+/**
+ * Evenly spaced points on the segment a → b, at one pressure — never more
+ * than a stroke may hold, so a long line drawn zoomed out still decodes.
+ */
 function straightLine(a: InkPoint, b: InkPoint, pressure: number): InkPoint[] {
-  const n = Math.max(2, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / STRAIGHT_STEP) + 1);
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const step = Math.max(STRAIGHT_STEP, len / (MAX_POINTS_PER_STROKE - 1));
+  const n = Math.min(MAX_POINTS_PER_STROKE, Math.max(2, Math.ceil(len / step) + 1));
   const out: InkPoint[] = [];
   for (let i = 0; i < n; i++) {
     const f = i / (n - 1);
@@ -323,31 +363,96 @@ function scheduleSave(s: Session): void {
   }, SAVE_DELAY_MS);
 }
 
-function flush(s: Session): void {
+function reportSaveFailure(s: Session): void {
+  // The strokes stay on screen and in memory; the next edit retries.
+  if (s.failShown) return;
+  s.failShown = true;
+  new Notice(t("edit.writeFailed"));
+}
+
+/** Records what the note now holds, and moves a session keyed by content to its id. */
+function markSaved(s: Session, source: string, lines: string[]): void {
+  // Until Obsidian re-renders the block, the next save must still find it.
+  s.el.dataset.vzSource = source;
+  s.saved = savedState(lines, s.height, s.background);
+  s.failShown = false;
+  const idKey = keyFor(s.ctx.sourcePath, s.id);
+  if (s.key !== idKey) {
+    if (sessions.get(s.key) === s) sessions.delete(s.key);
+    s.key = idKey;
+    sessions.set(idKey, s);
+  }
+}
+
+/**
+ * Writes pending edits. While the note is open the write goes through its
+ * editor; once nothing holds it (closed, or its tab moved to another note),
+ * straight into the file. `toDisk` also asks Obsidian to save the editor now
+ * rather than on its own debounce — for the moment the app is backgrounded.
+ */
+function flush(s: Session, toDisk = false): void {
   if (s.timer !== null) {
     ownerWindow(s.el).clearTimeout(s.timer);
     s.timer = null;
   }
-  if (!s.dirty) return;
-  const source = writeScribble(s.app, s.ctx, s.el, {
+  if (s.pendingRebase) applyRebase(s);
+  const path = s.ctx.sourcePath;
+  if (!s.dirty) {
+    if (toDisk) saveNoteNow(s.app, path);
+    return;
+  }
+  const lines = s.strokes.map(encodeStrokeLine);
+  const update: ScribbleUpdate = {
     id: s.id,
     height: s.height,
     background: s.background === "blank" ? null : s.background,
-    strokeLines: s.strokes.map(encodeStrokeLine),
-  });
-  if (source === null) {
-    // The strokes stay on screen and in memory; the next edit retries.
-    if (!s.failShown) {
-      s.failShown = true;
-      new Notice(t("edit.writeFailed"));
-    }
+    strokeLines: lines,
+  };
+  if (isNoteOpen(s.app, path)) {
+    const source = writeScribble(s.app, s.ctx, s.el, update);
+    if (source === null) { reportSaveFailure(s); return; }
+    s.dirty = false;
+    markSaved(s, source, lines);
+    if (toDisk) saveNoteNow(s.app, path);
     return;
   }
-  // Until Obsidian re-renders the block, the next save must still find it.
-  s.el.dataset.vzSource = source;
-  s.saved = signature(s.strokes, s.height, s.background);
+  const from = s.el.dataset.vzSource ?? "";
   s.dirty = false;
-  s.failShown = false;
+  writeScribbleToFile(s.app, s.ctx, from, update)
+    .then((source) => {
+      if (source === null) { s.dirty = true; reportSaveFailure(s); return; }
+      markSaved(s, source, lines);
+    })
+    .catch((err: unknown) => {
+      s.dirty = true;
+      console.error("Vizardry: could not save the scribble to its note", err);
+      reportSaveFailure(s);
+    });
+}
+
+/**
+ * The note changed under unsaved edits (a sync from another device, an edit
+ * in Source mode). Three-way merge on whole stroke lines against what was
+ * last saved: strokes added here are kept, strokes removed here stay removed,
+ * and everything else comes from the note. Height and paper follow the note
+ * when it changed them.
+ */
+function applyRebase(s: Session): void {
+  const pending = s.pendingRebase;
+  if (!pending) return;
+  s.pendingRebase = null;
+  const { data, lines } = pending;
+  const base = new Set(s.saved.lines);
+  const local = new Set(s.strokes.map(encodeStrokeLine));
+  const removedHere = new Set(s.saved.lines.filter(l => !local.has(l)));
+  const fromNote = data.strokes.filter((_, i) => !removedHere.has(lines[i]));
+  const noteLines = new Set(fromNote.map(encodeStrokeLine));
+  const addedHere = s.strokes.filter(st => !base.has(encodeStrokeLine(st)) && !noteLines.has(encodeStrokeLine(st)));
+  s.strokes = [...fromNote, ...addedHere];
+  s.selection = new Set(s.strokes.filter(st => s.selection.has(st)));
+  if (data.height !== s.saved.height) s.height = data.height;
+  if (data.background !== s.saved.background) s.background = data.background;
+  s.saved = savedState(lines, data.height, data.background);
 }
 
 function pushHistory(s: Session): void {
@@ -374,33 +479,8 @@ function stepHistory(s: Session, from: Snapshot[], to: Snapshot[]): void {
   s.refresh();
 }
 
-/**
- * The session for this block, reused when it still describes what the note
- * holds (or has unsaved edits of its own); otherwise a fresh one, so an edit
- * made in the source or on another device resets tool state and history
- * rather than being overwritten by stale strokes.
- */
-function acquireSession(
-  data: ScribbleData,
-  container: HTMLElement,
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-): Session {
-  const id = data.id ?? newBlockId();
-  const key = `${ctx.sourcePath}\u0000${id}`;
-  const sig = signature(data.strokes, data.height, data.background);
-  const existing = sessions.get(key);
-  if (existing && (existing.dirty || existing.saved === sig)) {
-    existing.el = container;
-    existing.app = app;
-    existing.ctx = ctx;
-    return existing;
-  }
-  if (existing) {
-    if (existing.timer !== null) ownerWindow(existing.el).clearTimeout(existing.timer);
-    closeOverlay(existing);
-  }
-  const s: Session = {
+function newSession(key: string, id: string, data: ScribbleData, lines: string[], container: HTMLElement, app: App, ctx: MarkdownPostProcessorContext): Session {
+  return {
     key,
     id,
     strokes: data.strokes,
@@ -417,49 +497,102 @@ function acquireSession(
     view: null,
     fullscreen: false,
     overlay: null,
-    saved: sig,
+    returnFocus: null,
+    onOverlayKey: () => {},
+    saved: savedState(lines, data.height, data.background),
+    pendingRebase: null,
     dirty: false,
     timer: null,
     busy: false,
     failShown: false,
+    resume: null,
     el: container,
     app,
     ctx,
     refresh: () => {},
     relayout: () => {},
+    abort: () => {},
   };
+}
+
+/** The session's mount before another canvas took it over — enough to hand it back. */
+interface PreviousMount {
+  session: Session;
+  el: HTMLElement;
+  refresh: () => void;
+  relayout: () => void;
+}
+
+/**
+ * The session for this block, reused when it still describes what the note
+ * holds or has unsaved edits of its own (merged with the note's changes
+ * before the next save); otherwise a fresh one. A block without an `id:` yet
+ * is keyed by its content until its first save writes one.
+ *
+ * Whether this is the same block re-rendering or a copied block sharing the
+ * id can only be told once the canvas is in the editor's DOM — so the
+ * previous mount is returned for `renderScribble` to hand back if it was.
+ */
+function acquireSession(
+  data: ScribbleData,
+  container: HTMLElement,
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+): { s: Session; previous: PreviousMount | null } {
+  const lines = data.strokes.map(encodeStrokeLine);
+  const sig = signatureOf(lines, data.height, data.background);
+  const key = keyFor(ctx.sourcePath, data.id ?? `anon\u0000${sig}`);
+  const existing = sessions.get(key);
+  const previous = existing
+    ? { session: existing, el: existing.el, refresh: existing.refresh, relayout: existing.relayout }
+    : null;
+  if (existing && (existing.dirty || existing.saved.signature === sig)) {
+    if (existing.saved.signature !== sig) existing.pendingRebase = { data, lines };
+    return { s: existing, previous };
+  }
+  const s = newSession(key, data.id ?? newBlockId(), data, lines, container, app, ctx);
   sessions.set(key, s);
-  return s;
+  return { s, previous };
 }
 
 /**
  * The canvas `container` left the DOM. If it is still the session's latest
- * canvas, save what is pending and release the session once the block is gone
- * for good (note closed, block deleted) — a re-render puts a new canvas in
- * `s.el` well within the TTL.
+ * canvas, save what is pending — to the file, if the note has closed — and
+ * release the session once the block is gone for good (note closed, block
+ * deleted); a re-render puts a new canvas in `s.el` well within the TTL.
  */
 function releaseCanvas(s: Session, container: HTMLElement): void {
   if (s.el !== container) return;
-  flush(s);
+  s.abort();
+  flush(s, true);
   ownerWindow(container).setTimeout(() => {
-    if (s.el.isConnected || s.dirty || sessions.get(s.key) !== s) return;
+    if (s.el.isConnected || sessions.get(s.key) !== s) return;
     closeOverlay(s);
     sessions.delete(s.key);
   }, SESSION_TTL_MS);
 }
 
+/** Opens (or returns) the fullscreen layer and gives it the keyboard. */
 function openOverlay(s: Session, doc: Document): HTMLElement {
   if (s.overlay?.isConnected) return s.overlay;
   const overlay = doc.createElement("div");
   overlay.className = "vzd-scribble-overlay";
+  overlay.tabIndex = -1;
+  overlay.setAttribute("role", "dialog");
+  overlay.addEventListener("keydown", (e) => s.onOverlayKey(e));
+  s.returnFocus = doc.activeElement;
   doc.body.appendChild(overlay);
   s.overlay = overlay;
   return overlay;
 }
 
 function closeOverlay(s: Session): void {
-  s.overlay?.remove();
+  if (!s.overlay) return;
+  s.overlay.remove();
   s.overlay = null;
+  const back = s.returnFocus;
+  s.returnFocus = null;
+  if (back instanceof HTMLElement && back.isConnected) back.focus({ preventScroll: true });
 }
 
 // ── Ink view: a frame onto the endless canvas ─────────────────────────────────
@@ -478,6 +611,8 @@ interface InkView {
   ui: SVGGElement;
   /** Re-creates the paper and every stroke path. */
   paint: () => void;
+  /** Re-creates the paper only. */
+  paintPaper: () => void;
   addPath: (stroke: InkStroke) => void;
   removePath: (stroke: InkStroke) => void;
   pathFor: (stroke: InkStroke) => SVGPathElement | undefined;
@@ -571,13 +706,17 @@ function createInkView(
     paths.delete(stroke);
   };
 
-  const paint = (): void => {
+  const paintPaper = (): void => {
     const p = paper();
     pattern.replaceChildren();
     if (p.kind !== "blank") paperTile(pattern, p.kind);
     else if (p.hint) paperTile(pattern, "dots");
     sheet.style.display = p.kind === "blank" && !p.hint ? "none" : "";
     sheet.classList.toggle("vzd-scribble-paper--hint", p.kind === "blank" && p.hint);
+  };
+
+  const paint = (): void => {
+    paintPaper();
     layer.replaceChildren();
     paths.clear();
     for (const stroke of strokes()) addPath(stroke);
@@ -593,7 +732,7 @@ function createInkView(
     ro.observe(surface);
   }
 
-  return { surface, svg, layer, ui, paint, addPath, removePath, pathFor: (st) => paths.get(st), applyView };
+  return { surface, svg, layer, ui, paint, paintPaper, addPath, removePath, pathFor: (st) => paths.get(st), applyView };
 }
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -613,47 +752,96 @@ export function renderScribble(
   initCanvas(container, "scribble", title, undefined, source, onTitleEdit, app, ctx);
   renderCanvasWarnings(container, data.warnings);
 
-  const host = container.createEl("div", { cls: "vzd-scribble-wrap" });
   const ariaLabel = (n: number): string => t("scribble.ariaLabel", { title, count: n });
 
   if (!isEditMode) {
+    const host = container.createEl("div", { cls: "vzd-scribble-wrap" });
     renderStatic(host, data.strokes, data.height, data.background, t("scribble.emptyReadOnly"), ariaLabel);
     return;
   }
 
-  const s = acquireSession(data, container, app!, ctx!);
+  // The toolbar sits outside the wrap: presentation mode clones the wrap,
+  // and a clone of the toolbar would be buttons that do nothing.
+  const bar = container.createDiv();
+  const host = container.createEl("div", { cls: "vzd-scribble-wrap" });
   const doc = container.ownerDocument;
+  const win = ownerWindow(container);
+  const { s: acquired, previous } = acquireSession(data, container, app!, ctx!);
+  let current = acquired;
 
-  const layout = (): void => {
+  const layoutFor = (session: Session): void => {
+    // A gesture on the canvas being replaced keeps its ink (and carries on).
+    session.abort();
+    bar.replaceChildren();
     host.replaceChildren();
-    if (s.fullscreen) {
+    if (session.fullscreen) {
       // The note keeps a fitted picture; the editor lives in the overlay.
-      renderStatic(host, s.strokes, s.height, s.background, t("scribble.emptyEdit"), ariaLabel);
-      const overlay = openOverlay(s, doc);
+      renderStatic(host, session.strokes, session.height, session.background, t("scribble.emptyEdit"), ariaLabel);
+      const overlay = openOverlay(session, doc);
       overlay.replaceChildren();
-      s.refresh = mountEditor(overlay, s, null, ariaLabel);
+      session.refresh = mountEditor(overlay, overlay, session, null, ariaLabel);
     } else {
-      closeOverlay(s);
-      s.refresh = mountEditor(host, s, s.height, ariaLabel);
+      closeOverlay(session);
+      session.refresh = mountEditor(bar, host, session, session.height, ariaLabel);
     }
   };
-  s.relayout = layout;
-  layout();
 
-  // iOS can suspend the app the moment it is backgrounded; save first.
-  const onVisibility = (): void => { if (doc.visibilityState === "hidden") flush(s); };
+  const bind = (session: Session): void => {
+    current = session;
+    session.el = container;
+    session.app = app!;
+    session.ctx = ctx!;
+    session.relayout = () => layoutFor(session);
+    session.relayout();
+  };
+  bind(acquired);
+
+  // Once the canvas is in the editor's DOM, tell a re-render of this block
+  // from a copied block sharing its id: a copy hands the session back to the
+  // block it came from and starts its own under a new id (written right
+  // away, so the note stops holding two blocks with one id).
+  win.requestAnimationFrame(() => {
+    if (current !== acquired || !container.isConnected) return;
+    if (isLaterDuplicate(app!, ctx!, container, data.id ?? null, source ?? "")) {
+      if (previous) {
+        const p = previous;
+        p.session.pendingRebase = null;
+        p.session.el = p.el;
+        p.session.refresh = p.refresh;
+        p.session.relayout = p.relayout;
+        sessions.set(p.session.key, p.session);
+        if (p.el.isConnected) p.session.relayout();
+      }
+      const id = newBlockId();
+      const forked = newSession(keyFor(ctx!.sourcePath, id), id, data, data.strokes.map(encodeStrokeLine), container, app!, ctx!);
+      sessions.set(forked.key, forked);
+      bind(forked);
+      scheduleSave(forked);
+      return;
+    }
+    if (acquired.pendingRebase) {
+      applyRebase(acquired);
+      scheduleSave(acquired);
+      acquired.refresh();
+    }
+    // A real re-render that started a fresh session: retire the old one.
+    if (previous && previous.session !== acquired) closeOverlay(previous.session);
+  });
+
+  // iOS can suspend the app the moment it is backgrounded; save to disk first.
+  const onVisibility = (): void => { if (doc.visibilityState === "hidden") flush(current, true); };
   const onKey = (e: KeyboardEvent): void => {
-    if (e.key !== "Escape" || !s.fullscreen || s.el !== container) return;
+    if (e.key !== "Escape" || !current.fullscreen || current.el !== container) return;
     e.preventDefault();
-    s.fullscreen = false;
-    s.relayout();
+    current.fullscreen = false;
+    current.relayout();
   };
   doc.addEventListener("visibilitychange", onVisibility);
   doc.addEventListener("keydown", onKey);
   onDisconnected(container, () => {
     doc.removeEventListener("visibilitychange", onVisibility);
     doc.removeEventListener("keydown", onKey);
-    releaseCanvas(s, container);
+    releaseCanvas(current, container);
   });
 }
 
@@ -674,17 +862,20 @@ function renderStatic(
 }
 
 /**
- * The interactive canvas: toolbar + surface, inline (`frameHeight` px tall)
- * or filling the fullscreen overlay (`frameHeight` null). Returns the repaint
- * function the session calls after undo / redo.
+ * The interactive canvas: toolbar (in `barHost`) + surface (in
+ * `surfaceHost`), inline (`frameHeight` px tall) or both filling the
+ * fullscreen overlay (`frameHeight` null). Returns the repaint function the
+ * session calls after undo / redo.
  */
 function mountEditor(
-  host: HTMLElement,
+  barHost: HTMLElement,
+  surfaceHost: HTMLElement,
   s: Session,
   frameHeight: number | null,
   ariaLabel: (n: number) => string,
 ): () => void {
-  const toolbar = host.createEl("div", { cls: "vzd-scribble-toolbar" });
+  const fullscreen = frameHeight === null;
+  const toolbar = barHost.createEl("div", { cls: "vzd-scribble-toolbar" });
   let zoomLabel: HTMLElement | null = null;
 
   const view = (w: number, h: number): View => {
@@ -692,14 +883,15 @@ function mountEditor(
     s.view ??= fitView(s.strokes, w, h);
     return s.view;
   };
-  const iv = createInkView(host, () => s.strokes, view, () => ({ kind: s.background, hint: s.drawing }), frameHeight, (v) => {
+  const iv = createInkView(surfaceHost, () => s.strokes, view, () => ({ kind: s.background, hint: s.drawing }), frameHeight, (v) => {
     zoomLabel?.setText(`${Math.round(v.scale * 100)}%`);
     drawSelection();
   });
   const { surface, svg, layer, ui } = iv;
   svg.setAttribute("role", "img");
   const empty = surface.createEl("div", { cls: "vzd-scribble-empty", text: t("scribble.emptyEdit") });
-  const win = ownerWindow(host);
+  const win = ownerWindow(surfaceHost);
+  const doc = surfaceHost.ownerDocument;
 
   let frame: number | null = null;
   const scheduleView = (): void => {
@@ -771,9 +963,37 @@ function mountEditor(
     drawSelection();
   };
 
+  /** In fullscreen the overlay keeps the keyboard, even after its buttons are rebuilt. */
+  const keepFocus = (): void => {
+    if (fullscreen && !barHost.contains(doc.activeElement)) barHost.focus({ preventScroll: true });
+  };
+
+  /** Toolbar and state classes only — for changes that leave the ink as it is. */
+  const refreshChrome = (): void => {
+    renderToolbar();
+    syncState();
+    keepFocus();
+  };
+
+  /** Everything, ink included — after the strokes changed. */
+  const refresh = (): void => {
+    renderToolbar();
+    iv.paint();
+    syncState();
+    keepFocus();
+  };
+
   const setTool = (tool: Tool): void => {
     s.tool = tool;
     if (tool !== "select") s.selection = new Set();
+    refreshChrome();
+  };
+
+  const undo = (): void => stepHistory(s, s.undo, s.redo);
+  const redo = (): void => stepHistory(s, s.redo, s.undo);
+  const deleteSelection = (): void => {
+    if (s.selection.size === 0) return;
+    commitStrokes(s, s.strokes.filter(st => !s.selection.has(st)), new Set());
     refresh();
   };
 
@@ -788,7 +1008,7 @@ function mountEditor(
     return btn;
   };
 
-  const renderToolbar = (): void => {
+  function renderToolbar(): void {
     toolbar.empty();
     zoomLabel = null;
     const main = toolbar.createEl("div", { cls: "vzd-scribble-group" });
@@ -830,16 +1050,17 @@ function mountEditor(
           e.stopPropagation();
           if (inkKind) {
             s.color[inkKind] = color;
-          } else {
-            const recoloured = new Set<InkStroke>();
-            const next = s.strokes.map(st => {
-              if (!s.selection.has(st)) return st;
-              const c = { ...st, color };
-              recoloured.add(c);
-              return c;
-            });
-            commitStrokes(s, next, recoloured);
+            refreshChrome();
+            return;
           }
+          const recoloured = new Set<InkStroke>();
+          const next = s.strokes.map(st => {
+            if (!s.selection.has(st)) return st;
+            const c = { ...st, color };
+            recoloured.add(c);
+            return c;
+          });
+          commitStrokes(s, next, recoloured);
           refresh();
         });
       }
@@ -855,21 +1076,18 @@ function mountEditor(
         btn.setAttribute("aria-pressed", String(on));
         const dot = btn.createEl("span", { cls: "vzd-scribble-dot" });
         dot.style.width = dot.style.height = `${Math.min(18, 3 + size / (inkKind === "highlight" ? 2 : 1))}px`;
-        btn.addEventListener("click", (e) => { e.stopPropagation(); s.sizeIndex = i; refresh(); });
+        btn.addEventListener("click", (e) => { e.stopPropagation(); s.sizeIndex = i; refreshChrome(); });
       });
     }
 
     if (recolouring) {
       const sel = toolbar.createEl("div", { cls: "vzd-scribble-group" });
-      button(sel, "trash", t("scribble.deleteSelection", { count: s.selection.size }), () => {
-        commitStrokes(s, s.strokes.filter(st => !s.selection.has(st)), new Set());
-        refresh();
-      });
+      button(sel, "trash", t("scribble.deleteSelection", { count: s.selection.size }), deleteSelection);
     }
 
     const history = toolbar.createEl("div", { cls: "vzd-scribble-group" });
-    button(history, "undo-2", t("scribble.undo"), () => stepHistory(s, s.undo, s.redo)).disabled = s.undo.length === 0;
-    button(history, "redo-2", t("scribble.redo"), () => stepHistory(s, s.redo, s.undo)).disabled = s.redo.length === 0;
+    button(history, "undo-2", t("scribble.undo"), undo).disabled = s.undo.length === 0;
+    button(history, "redo-2", t("scribble.redo"), redo).disabled = s.redo.length === 0;
 
     const zoom = toolbar.createEl("div", { cls: "vzd-scribble-group" });
     button(zoom, "zoom-out", t("scribble.zoomOut"), () => zoomCentered(1 / ZOOM_STEP));
@@ -888,22 +1106,33 @@ function mountEditor(
     button(extra, "layout-grid", t("scribble.background", { name: t(BACKGROUND_LABEL[s.background]) }), () => {
       s.background = SCRIBBLE_BACKGROUNDS[(SCRIBBLE_BACKGROUNDS.indexOf(s.background) + 1) % SCRIBBLE_BACKGROUNDS.length];
       scheduleSave(s);
-      refresh();
+      iv.paintPaper();
+      refreshChrome();
     }, s.background !== "blank");
-    button(extra, "hand", t("scribble.finger"), () => { s.finger = !s.finger; refresh(); }, s.finger);
+    button(extra, "hand", t("scribble.finger"), () => { s.finger = !s.finger; refreshChrome(); }, s.finger);
     button(extra, "trash-2", t("scribble.clear"), () => {
       if (s.strokes.length === 0) return;
       commitStrokes(s, [], new Set());
       refresh();
     }).disabled = s.strokes.length === 0;
-  };
+  }
 
-  const refresh = (): void => {
-    renderToolbar();
-    iv.paint();
-    syncState();
-  };
   refresh();
+
+  // In fullscreen the overlay holds the keyboard, so keys no longer reach the
+  // note hidden behind it; the canvas's own shortcuts are handled here.
+  if (fullscreen) {
+    s.onOverlayKey = (e: KeyboardEvent): void => {
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      if (mod && key === "z") e.shiftKey ? redo() : undo();
+      else if (mod && key === "y") redo();
+      else if ((e.key === "Backspace" || e.key === "Delete") && s.selection.size > 0) deleteSelection();
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+  }
 
   // ── Pointer input ───────────────────────────────────────────────────────
   interface DrawGesture {
@@ -974,7 +1203,11 @@ function mountEditor(
     if (hit.length === 0) return;
     if (!g.erased) { pushHistory(s); g.erased = true; }
     const gone = new Set(hit);
-    for (const st of hit) iv.removePath(st);
+    for (const st of hit) {
+      iv.removePath(st);
+      // The pen's eraser end works in any tool, the lasso included.
+      s.selection.delete(st);
+    }
     s.strokes = s.strokes.filter(st => !gone.has(st));
   };
 
@@ -1062,12 +1295,11 @@ function mountEditor(
       case "pan":
         return;
       case "erase":
-        if (g.erased) { scheduleSave(s); renderToolbar(); syncState(); }
+        if (g.erased) { scheduleSave(s); refreshChrome(); }
         return;
       case "lasso":
         finishLasso(g);
-        renderToolbar();
-        syncState();
+        refreshChrome();
         return;
       case "move":
         if (commit) finishMove(g);
@@ -1081,12 +1313,38 @@ function mountEditor(
         const stroke: InkStroke = { kind: g.ink, color: s.color[g.ink], size: SIZES[g.ink][s.sizeIndex], points: g.points };
         commitStrokes(s, [...s.strokes, stroke]);
         iv.addPath(stroke);
-        renderToolbar();
-        syncState();
+        refreshChrome();
         iv.applyView();
         return;
       }
     }
+  };
+
+  // This canvas is about to be replaced (a re-render after a save, a switch
+  // to or from fullscreen): finish the gesture here, keeping its ink, and let
+  // a pen stroke carry on in the new canvas from where it was cut off.
+  s.abort = (): void => {
+    const g = gesture;
+    if (!g) return;
+    if (g.kind === "draw" && g.points.length > 0) {
+      s.resume = { pointerId: g.pointerId, ink: g.ink, pen: g.pen, last: g.points[g.points.length - 1] };
+    }
+    endGesture(true);
+    touches.clear();
+  };
+
+  const beginDraw = (e: PointerEvent, ink: InkKind, pen: boolean, from?: InkPoint): void => {
+    try { surface.setPointerCapture(e.pointerId); } catch { /* not capturable (synthetic event) */ }
+    s.busy = true;
+    const path = createStrokePath(ink, s.color[ink]);
+    layer.appendChild(path);
+    const g: DrawGesture = {
+      kind: "draw", pointerId: e.pointerId, ink, points: from ? [from] : [], path, pen, frame: null,
+      straight: false, hold: { x: e.clientX, y: e.clientY, timer: null },
+    };
+    gesture = g;
+    sample(e);
+    drawLive(g);
   };
 
   const startTool = (e: PointerEvent, pen: boolean): void => {
@@ -1096,6 +1354,7 @@ function mountEditor(
       if (!strokeCapShown) { strokeCapShown = true; new Notice(t("scribble.strokeCap", { max: SCRIBBLE_MAX_STROKES })); }
       return;
     }
+    if (tool === "pen" || tool === "highlight") { beginDraw(e, tool, pen); return; }
     try { surface.setPointerCapture(e.pointerId); } catch { /* not capturable (synthetic event) */ }
     s.busy = true;
     if (tool === "eraser") {
@@ -1103,35 +1362,24 @@ function mountEditor(
       sample(e);
       return;
     }
-    if (tool === "select") {
-      const p = toWorld(e, false);
-      const b = selectionBounds();
-      if (p && b && p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]) {
-        gesture = { kind: "move", pointerId: e.pointerId, from: p, dx: 0, dy: 0 };
-        return;
-      }
-      const line = createSvgEl("polyline", { class: "vzd-scribble-lasso", "vector-effect": "non-scaling-stroke" });
-      line.setAttribute(FLAT_SHAPE_ATTR, "");
-      ui.appendChild(line);
-      gesture = { kind: "lasso", pointerId: e.pointerId, points: [], line, startX: e.clientX, startY: e.clientY, far: false };
-      sample(e);
+    const p = toWorld(e, false);
+    const b = selectionBounds();
+    if (p && b && p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]) {
+      gesture = { kind: "move", pointerId: e.pointerId, from: p, dx: 0, dy: 0 };
       return;
     }
-    const path = createStrokePath(tool, s.color[tool]);
-    layer.appendChild(path);
-    const g: DrawGesture = {
-      kind: "draw", pointerId: e.pointerId, ink: tool, points: [], path, pen, frame: null,
-      straight: false, hold: { x: e.clientX, y: e.clientY, timer: null },
-    };
-    gesture = g;
+    const line = createSvgEl("polyline", { class: "vzd-scribble-lasso", "vector-effect": "non-scaling-stroke" });
+    line.setAttribute(FLAT_SHAPE_ATTR, "");
+    ui.appendChild(line);
+    gesture = { kind: "lasso", pointerId: e.pointerId, points: [], line, startX: e.clientX, startY: e.clientY, far: false };
     sample(e);
-    drawLive(g);
   };
 
   surface.addEventListener("pointerdown", (e) => {
     if (!s.drawing) return;
     e.preventDefault();
     e.stopPropagation();
+    s.resume = null;
     if (e.pointerType === "pen") {
       if (gesture) return;
       // The pen wins: a palm that landed first must not keep panning.
@@ -1160,6 +1408,13 @@ function mountEditor(
   });
 
   surface.addEventListener("pointermove", (e) => {
+    // A stroke cut off by the re-render of the previous canvas carries on here.
+    const r = s.resume;
+    if (!gesture && r && r.pointerId === e.pointerId && s.drawing) {
+      s.resume = null;
+      if (e.buttons !== 0) beginDraw(e, r.ink, r.pen, r.last);
+      return;
+    }
     if (gesture && e.pointerId === gesture.pointerId) {
       e.preventDefault();
       // Keep a finger's position current, so a second finger pinches from where it is.
@@ -1183,9 +1438,9 @@ function mountEditor(
     } else if (touches.size === 2) {
       const other = [...touches].find(([id]) => id !== e.pointerId)?.[1];
       if (other) {
-        const r = surface.getBoundingClientRect();
-        const c0 = { x: (prev.x + other.x) / 2 - r.left, y: (prev.y + other.y) / 2 - r.top };
-        const c1 = { x: (next.x + other.x) / 2 - r.left, y: (next.y + other.y) / 2 - r.top };
+        const rect = surface.getBoundingClientRect();
+        const c0 = { x: (prev.x + other.x) / 2 - rect.left, y: (prev.y + other.y) / 2 - rect.top };
+        const c1 = { x: (next.x + other.x) / 2 - rect.left, y: (next.y + other.y) / 2 - rect.top };
         const d0 = Math.hypot(prev.x - other.x, prev.y - other.y);
         const d1 = Math.hypot(next.x - other.x, next.y - other.y);
         if (d0 > 0) zoomAt(c0.x, c0.y, d1 / d0);
@@ -1197,6 +1452,7 @@ function mountEditor(
 
   const lift = (e: PointerEvent, commit: boolean): void => {
     touches.delete(e.pointerId);
+    if (s.resume?.pointerId === e.pointerId) s.resume = null;
     if (!gesture || e.pointerId !== gesture.pointerId) return;
     if (e.pointerType === "pen") lastPenUp = performance.now();
     endGesture(commit);
@@ -1211,8 +1467,8 @@ function mountEditor(
     e.preventDefault();
     const unit = e.deltaMode === 1 ? 16 : 1;
     if (e.ctrlKey || e.metaKey) {
-      const r = surface.getBoundingClientRect();
-      zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * unit * WHEEL_ZOOM_RATE));
+      const rect = surface.getBoundingClientRect();
+      zoomAt(e.clientX - rect.left, e.clientY - rect.top, Math.exp(-e.deltaY * unit * WHEEL_ZOOM_RATE));
     } else {
       panBy(-e.deltaX * unit, -e.deltaY * unit);
     }
