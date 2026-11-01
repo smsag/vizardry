@@ -135,6 +135,8 @@ export const en = {
   "wardley.stage.product":   "Product",
   "wardley.stage.commodity": "Commodity",
   "wardley.axis.visibility": "Visibility",
+  "wardley.axis.visible":    "Visible",
+  "wardley.axis.invisible":  "Invisible",
   "wardley.axis.evolution":  "Evolution →",
 
   // ── Commands ────────────────────────────────────────────────────────────────

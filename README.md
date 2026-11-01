@@ -1150,7 +1150,7 @@ control: How I respond to setbacks
 ```
 ~~~
 
-The `control:` tier is optional — omit it for the classic two-ring Covey diagram.
+The `control:` tier is optional — omit it for the classic two-ring Covey diagram. The rings are drawn as a diagram with each ring's item count in its band, and the items are listed beside it, one group per ring (Control first), tinted like their ring.
 
 **Syntax:**
 

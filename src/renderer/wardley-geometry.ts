@@ -104,6 +104,120 @@ export interface LabelSlot {
   name: string;
 }
 
+// ── Collision-aware label placement ──────────────────────────────────────────
+
+/** Axis-aligned box in svg units. */
+export interface Box { x1: number; y1: number; x2: number; y2: number }
+/** Line segment in svg units (a link, an evolution arrow). */
+export interface Segment { x1: number; y1: number; x2: number; y2: number }
+
+/** What a label should keep clear of. */
+export interface LabelObstacles {
+  segments: Segment[];
+  /** Nodes, pipeline boxes, pipeline sub-labels — anything drawn as a block. */
+  boxes: Box[];
+}
+
+export interface LabelNode {
+  componentIndex: number;
+  cx: number;
+  cy: number;
+  evo: number;
+  vis: number;
+  name: string;
+}
+
+/** Cap height and descender of the 12px label font, for its box. */
+const LABEL_ASCENT = 10;
+const LABEL_DESCENT = 3;
+/** How far (svg units) a label box may cross the canvas edge before it counts as off it. */
+const EDGE_SLACK = 4;
+
+/** The box a label of `name` occupies when drawn at (x, y) with `anchor`. */
+export function labelBox(name: string, x: number, y: number, anchor: string): Box {
+  const w = name.length * WARDLEY_CHAR_W_PX;
+  const x1 = anchor === "end" ? x - w : anchor === "middle" ? x - w / 2 : x;
+  return { x1, y1: y - LABEL_ASCENT, x2: x1 + w, y2: y + LABEL_DESCENT };
+}
+
+const boxesOverlap = (a: Box, b: Box): boolean =>
+  a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
+
+/** True if the segment passes through the box (either end inside, or it
+ *  crosses one of the box's edges). */
+export function segmentHitsBox(s: Segment, b: Box): boolean {
+  const inside = (x: number, y: number): boolean => x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
+  if (inside(s.x1, s.y1) || inside(s.x2, s.y2)) return true;
+  // Liang–Barsky clip: does any part of the segment fall inside the box?
+  const dx = s.x2 - s.x1, dy = s.y2 - s.y1;
+  let t0 = 0, t1 = 1;
+  const edges: [number, number][] = [[-dx, s.x1 - b.x1], [dx, b.x2 - s.x1], [-dy, s.y1 - b.y1], [dy, b.y2 - s.y1]];
+  for (const [p, q] of edges) {
+    if (p === 0) { if (q < 0) return false; continue; }
+    const r = q / p;
+    if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+    else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t0 <= t1;
+}
+
+/** Candidate spots around a node, the quadrant default first so it wins ties. */
+function labelCandidates(n: LabelNode): { x: number; y: number; anchor: string; cost: number }[] {
+  const d = labelAnchor(n.evo, n.vis);
+  const g = NODE_R + 4;
+  return [
+    { x: n.cx + d.dx, y: n.cy + d.dy, anchor: d.anchor, cost: 0 },
+    { x: n.cx + g, y: n.cy - g, anchor: "start", cost: 1 },
+    { x: n.cx - g, y: n.cy - g, anchor: "end", cost: 1 },
+    { x: n.cx + g, y: n.cy + NODE_R + 12, anchor: "start", cost: 1 },
+    { x: n.cx - g, y: n.cy + NODE_R + 12, anchor: "end", cost: 1 },
+    { x: n.cx + g + 1, y: n.cy + 4, anchor: "start", cost: 2 },
+    { x: n.cx - g - 1, y: n.cy + 4, anchor: "end", cost: 2 },
+    { x: n.cx, y: n.cy - NODE_R - 6, anchor: "middle", cost: 3 },
+    { x: n.cx, y: n.cy + NODE_R + 15, anchor: "middle", cost: 3 },
+  ];
+}
+
+/**
+ * Picks each component's label position from the spots around its node,
+ * scoring every spot by what its box would cover: a link or evolution arrow
+ * running through the text, another node or a pipeline, a label already
+ * placed, or the edge of the canvas. The quadrant default (labelAnchor) wins
+ * whenever it is clear, so maps that were readable keep their layout; a
+ * crowded spot gives way to the cleanest alternative instead of printing the
+ * name over a line. Labels are placed top-down, so the upper ones settle first.
+ *
+ * Returns slots ready for nudgeLabels, which still separates what no spot
+ * could (a cluster of components on one point).
+ */
+export function placeLabels(nodes: LabelNode[], obstacles: LabelObstacles): LabelSlot[] {
+  const placed: Box[] = [];
+  const order = [...nodes].sort((a, b) => a.cy - b.cy || a.cx - b.cx);
+  const slots: LabelSlot[] = [];
+  for (const n of order) {
+    const ownBox: Box = { x1: n.cx - NODE_R, y1: n.cy - NODE_R, x2: n.cx + NODE_R, y2: n.cy + NODE_R };
+    let best: { x: number; y: number; anchor: string } | null = null;
+    let bestScore = Infinity;
+    for (const c of labelCandidates(n)) {
+      const box = labelBox(n.name, c.x, c.y, c.anchor);
+      let score = c.cost;
+      // A few units of slack: the box is a generous estimate, and a label on a
+      // top-edge node has always drawn its ascenders just past the frame.
+      if (box.x1 < -EDGE_SLACK || box.x2 > W + EDGE_SLACK || box.y1 < -EDGE_SLACK || box.y2 > H + EDGE_SLACK) score += 1000;
+      for (const s of obstacles.segments) if (segmentHitsBox(s, box)) score += 100;
+      // The node's own circle (and a pipeline it sits on) is what the label
+      // names, not something to keep clear of.
+      for (const b of obstacles.boxes) if (boxesOverlap(b, box) && !boxesOverlap(b, ownBox)) score += 100;
+      for (const b of placed) if (boxesOverlap(b, box)) score += 200;
+      if (score < bestScore) { bestScore = score; best = c; }
+    }
+    const pick = best!;
+    placed.push(labelBox(n.name, pick.x, pick.y, pick.anchor));
+    slots.push({ componentIndex: n.componentIndex, textX: pick.x, textY: pick.y, naturalY: pick.y, anchor: pick.anchor, name: n.name });
+  }
+  return slots;
+}
+
 export function nudgeLabels(slots: LabelSlot[]): void {
   slots.sort((a, b) => a.textX - b.textX || a.textY - b.textY);
 
@@ -113,12 +227,8 @@ export function nudgeLabels(slots: LabelSlot[]): void {
 
       if (b.textY - b.naturalY >= WARDLEY_LABEL_MAX_NUDGE_PX) continue;
 
-      const aW = a.name.length * WARDLEY_CHAR_W_PX;
-      const bW = b.name.length * WARDLEY_CHAR_W_PX;
-      const aLeft  = a.anchor === "end" ? a.textX - aW : a.textX;
-      const aRight = a.anchor === "end" ? a.textX      : a.textX + aW;
-      const bLeft  = b.anchor === "end" ? b.textX - bW : b.textX;
-      const bRight = b.anchor === "end" ? b.textX      : b.textX + bW;
+      const { x1: aLeft, x2: aRight } = labelBox(a.name, a.textX, a.textY, a.anchor);
+      const { x1: bLeft, x2: bRight } = labelBox(b.name, b.textX, b.textY, b.anchor);
 
       if (aRight + WARDLEY_LABEL_OVERLAP_X_PX < bLeft || bRight + WARDLEY_LABEL_OVERLAP_X_PX < aLeft) continue;
 

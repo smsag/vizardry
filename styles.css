@@ -1834,6 +1834,11 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
   font-size: 11px;
   font-family: var(--font-interface);
 }
+.vzd-wardley-axis-hint {
+  fill: var(--text-faint);
+  font-size: 10px;
+  font-style: italic;
+}
 
 .vzd-wardley-link {
   stroke: var(--text-muted);
@@ -3581,10 +3586,17 @@ button.vzd-item-menu::after {
 /* ── Circle of Influence & Concern ───────────────────────────────────────── */
 
 .vzd-coi-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 460px;
-  margin: 0.5rem auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem 1.75rem;
+  padding: 0.5rem 0;
+}
+
+.vzd-coi-diagram {
+  flex: 0 1 300px;
+  min-width: 200px;
   aspect-ratio: 1 / 1;
 }
 
@@ -3616,53 +3628,79 @@ button.vzd-item-menu::after {
   stroke: color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border));
 }
 
+/* Ring tints, shared by the discs above and the list swatches below. */
+.vzd-coi-swatch--concern { background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary)); border-color: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-modifier-border)); }
+.vzd-coi-swatch--influence { background: color-mix(in srgb, var(--interactive-accent) 13%, var(--background-primary)); border-color: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border)); }
+.vzd-coi-swatch--control { background: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-primary)); border-color: color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border)); }
+
 .vzd-coi-ring-label {
-  font-size: 13px;
+  /* viewBox units: the diagram draws at ~300px for a 400-unit box. */
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   fill: var(--text-muted);
 }
 
-.vzd-coi-chip {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  max-width: 27%;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: var(--background-primary);
-  border: 1.5px solid var(--background-modifier-border);
-  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
-  line-height: 1.15;
-  text-align: center;
-  color: var(--text-normal);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+/* How many items a band holds — the list beside the rings names them. */
+.vzd-coi-count {
+  font-size: 28px;
+  font-weight: 700;
+  fill: color-mix(in srgb, var(--interactive-accent) 70%, var(--text-normal));
 }
 
-.vzd-coi-chip--concern { border-color: color-mix(in srgb, var(--interactive-accent) 30%, var(--background-modifier-border)); }
-.vzd-coi-chip--influence { border-color: color-mix(in srgb, var(--interactive-accent) 50%, var(--background-modifier-border)); }
-.vzd-coi-chip--control { border-color: color-mix(in srgb, var(--interactive-accent) 78%, var(--background-modifier-border)); }
-
-/* Innermost tier: chips stack vertically in the centre disc rather than
-   scattering (the disc is too small to place them around without overlap). */
-.vzd-coi-control-stack {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  margin-top: 10px;
+.vzd-coi-lists {
+  flex: 1 1 280px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  max-width: 32%;
+  gap: 0.85rem;
 }
 
-.vzd-coi-control-stack .vzd-coi-chip {
-  position: static;
-  transform: none;
-  max-width: 100%;
+.vzd-coi-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
 }
+
+.vzd-coi-swatch {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 1.5px solid;
+  box-sizing: border-box;
+}
+
+.vzd-coi-group-name {
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
+  color: var(--text-normal);
+}
+
+.vzd-coi-group-count {
+  font-size: var(--vzd-fs-xs);
+  color: var(--text-muted);
+}
+
+.vzd-coi-list {
+  margin: 0;
+  padding: 0 0 0 1.35rem;
+  list-style: none;
+}
+
+.vzd-coi-item {
+  position: relative;
+  font-size: var(--vzd-fs-md);
+  line-height: 1.45;
+  color: var(--text-normal);
+}
+.vzd-coi-item + .vzd-coi-item { margin-top: 0.2em; }
+
+/* Control, the ring the framework says to act on, reads strongest. */
+.vzd-coi-group--control .vzd-coi-item { font-weight: 500; }
+.vzd-coi-group--concern .vzd-coi-item { color: var(--text-muted); }
 
 /* ── Whole Person / Four Dimensions ──────────────────────────────────────── */
 
@@ -4098,6 +4136,9 @@ button.vzd-item-menu::after {
   grid-template-rows: 1fr auto;
   gap: 4px 6px;
   width: 100%;
+  /* Padding inside the 100%: content-box made the wrap 4px wider than the
+     canvas, which clipped the last column's right edge. */
+  box-sizing: border-box;
   overflow-x: auto;
   padding: 6px 2px;
 }
@@ -4237,6 +4278,26 @@ button.vzd-item-menu::after {
   width: max-content;
   max-width: 180px;
 }
+
+/* At rest a free item is a point, not a cell member: a dot exactly at its
+   coordinates with the pill beside it (on the left near the right edge). A
+   pill centred on the point read as sitting in whichever cell it covered
+   most, or on the line between two. While dragged, the pill centres on the
+   pointer again. */
+.vzd-mx-point {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--vzd-matrix-base) 75%, var(--text-normal));
+  box-shadow: 0 0 0 2px var(--background-primary);
+}
+.vzd-mx-item--pinned > .vzd-mx-pill { transform: translate(8px, -50%); }
+.vzd-mx-item--pinned.vzd-mx-item--flip > .vzd-mx-pill { transform: translate(calc(-100% - 8px), -50%); }
+.vzd-mx-item--dragging > .vzd-mx-point { display: none; }
+.vzd-mx-item--pinned.vzd-mx-item--dragging > .vzd-mx-pill,
+.vzd-mx-item--pinned.vzd-mx-item--flip.vzd-mx-item--dragging > .vzd-mx-pill { transform: translate(-50%, -50%); }
 .vzd-mx-item--editable > .vzd-mx-pill { cursor: grab; }
 .vzd-mx-item--dragging { z-index: 5; }
 .vzd-mx-item--dragging > .vzd-mx-pill { cursor: grabbing; }

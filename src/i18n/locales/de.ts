@@ -126,6 +126,8 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "wardley.stage.product":   "Produkt",
   "wardley.stage.commodity": "Rohstoff",
   "wardley.axis.visibility": "Sichtbarkeit",
+  "wardley.axis.visible":    "Sichtbar",
+  "wardley.axis.invisible":  "Unsichtbar",
   "wardley.axis.evolution":  "Evolution →",
 
   // ── Commands ────────────────────────────────────────────────────────────────

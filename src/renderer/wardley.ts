@@ -9,10 +9,11 @@ import { createSvgEl } from "../shared/svg";
 import { removeWardleyLink } from "../shared/wardley-edit";
 import { attachSvgItemMenu } from "../shared/item-menu";
 import { stripInline } from "../shared/inline-markdown";
+import { WARDLEY_CHAR_W_PX } from "../shared/constants";
 import {
   W, H, PLOT_X, PLOT_Y, PLOT_W, PLOT_H, NODE_R,
-  toSvgX, toSvgY, labelAnchor, nudgeLabels, stageEdgesFromPositions, evolveLineEndpoints,
-  type LabelSlot, type NodeRef, type EvolveRef,
+  toSvgX, toSvgY, nudgeLabels, placeLabels, stageEdgesFromPositions, evolveLineEndpoints,
+  type Box, type LabelObstacles, type LabelSlot, type Segment, type NodeRef, type EvolveRef,
 } from "./wardley-geometry";
 import {
   attachDragBehavior, attachEvolveDragBehavior, attachLinkDrawBehavior, attachRenameBehavior,
@@ -104,6 +105,20 @@ function renderAxes(svg: SVGSVGElement): void {
   });
   yLabel.textContent = t("wardley.axis.visibility");
   svg.appendChild(yLabel);
+  // Which end is which: the user's needs at the top, what they never see at
+  // the bottom — the reading every Wardley Map relies on.
+  for (const [key, y, anchor] of [
+    ["wardley.axis.visible", PLOT_Y, "end"],
+    ["wardley.axis.invisible", PLOT_Y + PLOT_H, "start"],
+  ] as const) {
+    const hint = createSvgEl("text", {
+      x: String(PLOT_X - 10), y: String(y),
+      class: "vzd-wardley-axis-label vzd-wardley-axis-hint", "text-anchor": anchor,
+      transform: `rotate(-90, ${PLOT_X - 10}, ${y})`,
+    });
+    hint.textContent = t(key);
+    svg.appendChild(hint);
+  }
   const xLabel = createSvgEl("text", {
     x: String(PLOT_X + PLOT_W / 2), y: String(H - 8),
     class: "vzd-wardley-axis-label", "text-anchor": "middle",
@@ -264,14 +279,59 @@ function renderEvolutions(svg: SVGSVGElement, data: WardleyMap): EvolveRef[] {
   return refs;
 }
 
-function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
-  const labelSlots: LabelSlot[] = data.components.map((comp, componentIndex) => {
+/**
+ * Everything drawn on the map that a component label should not cover: link
+ * lines, evolution arrows and their to-be markers, every node, pipeline boxes
+ * and the sub-labels under them. Mirrors the geometry the render functions
+ * above draw.
+ */
+function labelObstacles(data: WardleyMap): LabelObstacles {
+  const compMap = new Map(data.components.map(c => [c.name, c] as const));
+  const segments: Segment[] = [];
+  const boxes: Box[] = [];
+  for (const link of data.links) {
+    const from = compMap.get(link.from), to = compMap.get(link.to);
+    if (!from || !to) continue;
+    segments.push({ x1: toSvgX(from.evolution), y1: toSvgY(from.visibility), x2: toSvgX(to.evolution), y2: toSvgY(to.visibility) });
+  }
+  const pipelined = new Set(data.pipelines.map(p => p.component));
+  for (const comp of data.components) {
     const cx = toSvgX(comp.evolution), cy = toSvgY(comp.visibility);
-    const { dx, dy, anchor } = labelAnchor(comp.evolution, comp.visibility);
-    const textY = cy + dy;
-    // SVG text draws no formatting yet: markers are stripped, not shown.
-    return { componentIndex, textX: cx + dx, textY, naturalY: textY, anchor, name: stripInline(comp.name) };
-  });
+    boxes.push({ x1: cx - NODE_R, y1: cy - NODE_R, x2: cx + NODE_R, y2: cy + NODE_R });
+    if (comp.evolveTo !== undefined) {
+      const y = cy - (pipelined.has(comp.name) ? PIPELINE_EVOLVE_OFFSET : 0);
+      const x2 = toSvgX(comp.evolveTo);
+      segments.push({ x1: cx, y1: y, x2, y2: y });
+      boxes.push({ x1: x2 - NODE_R, y1: y - NODE_R, x2: x2 + NODE_R, y2: y + NODE_R });
+    }
+  }
+  for (const pipe of data.pipelines) {
+    const comp = compMap.get(pipe.component);
+    if (!comp) continue;
+    const y = toSvgY(comp.visibility);
+    boxes.push({
+      x1: toSvgX(pipe.x1) - PIPELINE_BOX_PAD_X, y1: y - PIPELINE_BOX_H / 2,
+      x2: toSvgX(pipe.x2) + PIPELINE_BOX_PAD_X, y2: y + PIPELINE_BOX_H / 2,
+    });
+    for (const item of pipe.items) {
+      const w = stripInline(item.name).length * WARDLEY_CHAR_W_PX;
+      const ix = toSvgX(item.evolution), ly = y + PIPELINE_BOX_H / 2 + 12;
+      boxes.push({ x1: ix - w / 2, y1: ly - 10, x2: ix + w / 2, y2: ly + 3 });
+    }
+  }
+  return { segments, boxes };
+}
+
+function renderNodes(svg: SVGSVGElement, data: WardleyMap): NodeRef[] {
+  // SVG text draws no formatting yet: markers are stripped, not shown.
+  const labelSlots: LabelSlot[] = placeLabels(data.components.map((comp, componentIndex) => ({
+    componentIndex,
+    cx: toSvgX(comp.evolution),
+    cy: toSvgY(comp.visibility),
+    evo: comp.evolution,
+    vis: comp.visibility,
+    name: stripInline(comp.name),
+  })), labelObstacles(data));
   nudgeLabels(labelSlots);
   const slotByIndex = new Map<number, LabelSlot>();
   for (const slot of labelSlots) slotByIndex.set(slot.componentIndex, slot);

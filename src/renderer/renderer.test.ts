@@ -431,6 +431,16 @@ describe("renderMatrix", () => {
     expect(el.querySelectorAll(".vzd-mx-item")).toHaveLength(0);
   });
 
+  it("marks a free item's exact point with a dot, its label beside it (left of it near the right edge)", () => {
+    const el = container();
+    renderMatrix(build("item: Near left [0.28, 0.24]\nitem: Near right [0.9, 0.5]", "impact"), el);
+    const [left, right] = Array.from(el.querySelectorAll<HTMLElement>(".vzd-mx-item"));
+    expect(left.querySelector(".vzd-mx-point")).toBeTruthy();
+    expect(left.classList.contains("vzd-mx-item--pinned")).toBe(true);
+    expect(left.classList.contains("vzd-mx-item--flip")).toBe(false);
+    expect(right.classList.contains("vzd-mx-item--flip")).toBe(true);
+  });
+
   it("cascades coincident free-coordinate items so their pills don't fully overlap", () => {
     const el = container();
     renderMatrix(build("item: A [0.7,0.7]\nitem: B [0.7,0.7]", "impact"), el);
@@ -1906,13 +1916,16 @@ describe("renderCircleOfInfluence", () => {
     expect(el.querySelector(".vzd-coi-disc--control")).toBeFalsy();
   });
 
-  it("renders one chip per item with its text and tier class", () => {
+  it("lists each ring's items in its own group, inside out, and counts them in the rings", () => {
     const el = container();
     renderCircleOfInfluence(data, el);
-    expect(el.querySelectorAll(".vzd-coi-chip")).toHaveLength(4);
-    expect(el.querySelectorAll(".vzd-coi-chip--concern")).toHaveLength(2);
-    const texts = Array.from(el.querySelectorAll(".vzd-coi-chip")).map(c => c.textContent);
-    expect(texts).toContain("The economy");
+    const groups = [...el.querySelectorAll(".vzd-coi-group")];
+    expect(groups.map(g => g.querySelector(".vzd-coi-group-name")?.textContent)).toEqual(["Control", "Influence", "Concern"]);
+    expect(el.querySelectorAll(".vzd-coi-item")).toHaveLength(4);
+    const concern = el.querySelector(".vzd-coi-group--concern")!;
+    expect([...concern.querySelectorAll(".vzd-coi-item")].map(i => i.textContent)).toContain("The economy");
+    expect(concern.querySelector(".vzd-coi-group-count")?.textContent).toBe("2");
+    expect(el.querySelector(".vzd-coi-count--concern")?.textContent).toBe("2");
   });
 
   it("surfaces parser warnings as a header chip", () => {
