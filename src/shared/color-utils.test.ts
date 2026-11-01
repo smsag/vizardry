@@ -44,6 +44,20 @@ describe("bestTextColor", () => {
     expect(bestTextColor(document.createElement("div"))).toBe("var(--text-normal)");
   });
 
+  it("parses Chromium's color(srgb r g b) serialisation of a color-mix() result", () => {
+    // What Obsidian's Electron reports for the Roadmap/SIPOC header tints; an
+    // unparsed value fell back to white text on a pale header.
+    mockComputedStyle("color(srgb 0.889804 0.895686 0.954902)");
+    expect(bestTextColor(document.createElement("div"))).toBe("var(--text-normal)");
+  });
+
+  it("parses color(srgb …) with an alpha channel, and still picks white on a dark one", () => {
+    mockComputedStyle("color(srgb 0.1 0.1 0.12 / 0.9)");
+    expect(bestTextColor(document.createElement("div"))).toBe("#ffffff");
+    mockComputedStyle("color(srgb 0.95 0.95 0.95 / 0.9)");
+    expect(bestTextColor(document.createElement("div"))).toBe("var(--text-normal)");
+  });
+
   it("falls back to white when the computed colour cannot be parsed at all", () => {
     mockComputedStyle("color-mix(in srgb, red 50%, blue)"); // unresolved in this environment
     expect(bestTextColor(document.createElement("div"))).toBe("#ffffff");

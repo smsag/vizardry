@@ -42,6 +42,55 @@
   transition: margin-bottom 0.2s ease, --vzd-base 0.2s ease;
 }
 
+/* ── Shared design tokens ──────────────────────────────────────────────
+   One scale and one palette for every canvas, all derived from the host
+   theme so they follow light, dark and a forced-light export (which puts
+   .theme-light on the canvas) without a per-canvas override.
+
+   Type: every step follows --vzd-base, so A+/A− still scales the whole
+   canvas. The two small steps have a pixel floor — secondary text at
+   0.68 × 14px (9.5px) was below what anyone reads comfortably.
+
+   Tones carry meaning (helpful/harmful, keep/drop, does/owns), never
+   decoration: a canvas reaches for one only when the framework itself has
+   that axis. Each comes as ink (text, strokes), tint (fills) and line
+   (borders), all mixed against the theme so they hold contrast in both
+   light and dark. */
+.vizardry-canvas,
+.vzd-presentation-overlay {
+  --vzd-fs-2xs: max(10px, calc(var(--vzd-base) * 0.72));
+  --vzd-fs-xs: max(11px, calc(var(--vzd-base) * 0.8));
+  --vzd-fs-sm: calc(var(--vzd-base) * 0.9);
+  --vzd-fs-md: var(--vzd-base);
+  --vzd-fs-lg: calc(var(--vzd-base) * 1.15);
+  --vzd-fs-title: calc(var(--vzd-base) * 1.45);
+
+  /* Connectors (tree edges, flow arrows): visible on both grounds, but
+     quieter than a card border's text. */
+  --vzd-edge: color-mix(in srgb, var(--text-muted) 70%, var(--background-primary));
+
+  --vzd-tone-positive: rgb(var(--color-green-rgb, 8, 185, 78));
+  --vzd-tone-negative: rgb(var(--color-red-rgb, 233, 49, 71));
+  --vzd-tone-caution:  rgb(var(--color-orange-rgb, 236, 117, 0));
+  --vzd-tone-info:     rgb(var(--color-blue-rgb, 8, 109, 221));
+  --vzd-tone-accent:   var(--interactive-accent);
+  --vzd-tone-neutral:  var(--text-muted);
+}
+
+/* A toned element sets --vzd-tone to one of the tones above and reads the
+   three derived colours. */
+[data-vzd-tone] {
+  --vzd-tone-ink:  color-mix(in srgb, var(--vzd-tone) 72%, var(--text-normal));
+  --vzd-tone-tint: color-mix(in srgb, var(--vzd-tone) 9%, var(--background-primary));
+  --vzd-tone-line: color-mix(in srgb, var(--vzd-tone) 45%, var(--background-modifier-border));
+}
+[data-vzd-tone="positive"] { --vzd-tone: var(--vzd-tone-positive); }
+[data-vzd-tone="negative"] { --vzd-tone: var(--vzd-tone-negative); }
+[data-vzd-tone="caution"]  { --vzd-tone: var(--vzd-tone-caution); }
+[data-vzd-tone="info"]     { --vzd-tone: var(--vzd-tone-info); }
+[data-vzd-tone="accent"]   { --vzd-tone: var(--vzd-tone-accent); }
+[data-vzd-tone="neutral"]  { --vzd-tone: var(--vzd-tone-neutral); }
+
 .markdown-preview-sizer > .vizardry-canvas,
 .markdown-preview-sizer .el-pre > .vizardry-canvas,
 .markdown-preview-view .block-language-story,
@@ -468,11 +517,14 @@ button.vzd-pin-bar-btn {
 }
 
 .vizardry-title {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.5);
-  font-weight: 600;
+  /* As written, not upper-cased: a title is the author's text (often a
+     sentence — "Q3 prioritisation"), and caps plus tracking made it louder
+     than the note's own headings. */
+  font-size: var(--vzd-fs-title, calc(var(--vzd-base, var(--font-ui-small)) * 1.45));
+  font-weight: 650;
   color: var(--text-normal);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -948,7 +1000,7 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 }
 
 .vzd-story-task-subtitle {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
+  font-size: var(--vzd-fs-xs);
   user-select: none;
   color: var(--text-muted);
   margin-top: 0.35rem;
@@ -1133,7 +1185,7 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 }
 
 .vzd-journey-divider-label {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-faint);
@@ -1207,7 +1259,7 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 }
 
 .vzd-journey-card-subtitle {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
+  font-size: var(--vzd-fs-xs);
   user-select: none;
   color: var(--text-muted);
   margin-top: 0.35rem;
@@ -1308,9 +1360,8 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 
 .vzd-presentation-title {
   font-size: var(--font-ui-large);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-normal);
   /* 5rem (~80px) each side clears macOS traffic lights on the left and the
      reload/close button group on the right regardless of window width. */
@@ -1490,7 +1541,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 /* Sub-label (e.g. "Outcome", "Actor") — bottom-right corner of node, visually unobtrusive */
 .vzd-tree-text-sub {
   font-family: var(--font-interface);
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
+  font-size: var(--vzd-fs-xs);
   user-select: none;
 }
 
@@ -2243,7 +2294,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 }
 
 .vzd-roadmap-card-subtitle {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.75);
+  font-size: var(--vzd-fs-xs);
   color: var(--text-muted);
   margin-top: 0.2rem;
   line-height: 1.3;
@@ -4050,7 +4101,7 @@ button.vzd-item-menu::after {
   justify-content: flex-end;
   gap: 2px;
   padding: 6px 8px;
-  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.78);
+  font-size: var(--vzd-fs-xs);
   color: var(--text-muted);
 }
 
@@ -4111,7 +4162,7 @@ button.vzd-item-menu::after {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -4535,10 +4586,10 @@ button.vzd-scqa-card-add {
 /* Link paths + arrowheads */
 .vzd-flow-edge {
   fill: none;
-  stroke: var(--background-modifier-border);
+  stroke: var(--vzd-edge);
   stroke-width: 1.6;
 }
-.vzd-flow-arrowhead { fill: var(--background-modifier-border); }
+.vzd-flow-arrowhead { fill: var(--vzd-edge); }
 
 /* Card background rect (drawn behind the foreignObject text host) */
 .vzd-flow-card {
@@ -4735,7 +4786,7 @@ body.vizardry-sketch .vzd-tree-rename-input {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 700;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   color: var(--text-muted);
   margin-bottom: 0.4rem;
 }
@@ -4884,7 +4935,7 @@ body.vizardry-sketch .vzd-tree-rename-input {
 
 .vzd-pc-badge {
   flex: none;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -5078,7 +5129,7 @@ body.vizardry-sketch .vzd-pc-balance-con {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 700;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.74);
+  font-size: var(--vzd-fs-2xs);
   color: var(--text-muted);
   margin-bottom: 0.55rem;
 }
