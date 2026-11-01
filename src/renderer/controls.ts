@@ -169,8 +169,8 @@ const EXPORT_CHROME_CLASSES: ReadonlySet<string> = new Set([
   // SVG add affordances (the wrapping <g> / text element carries the class)
   "vzd-wardley-add-handle-g", "vzd-nodemap-add-handle-g",
   "vzd-tree-edit-add", "vzd-lane-bullet-add",
-  // Scribble pen/eraser/colour toolbar
-  "vzd-scribble-toolbar",
+  // Scribble pen/eraser/colour toolbar, and its lasso / selection outline
+  "vzd-scribble-toolbar", "vzd-scribble-ui",
 ]);
 
 /** True when `node` is interaction chrome to omit from the exported image. */

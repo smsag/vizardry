@@ -1,8 +1,9 @@
-import type { InkColor, InkPoint, InkStroke } from "../types/scribble";
+import type { InkColor, InkKind, InkPoint, InkStroke } from "../types/scribble";
 import { INK_COLORS } from "../types/scribble";
 
 /**
- * Text encoding for scribble strokes — one `stroke:` line each:
+ * Text encoding for scribble strokes — one line each, `stroke:` for the pen
+ * and `highlight:` for the highlighter:
  *
  *   stroke: <color> <size> <points>
  *
@@ -108,12 +109,15 @@ export function encodeStroke(stroke: InkStroke): string {
   return `${stroke.color} ${stroke.size} ${encodePoints(stroke.points)}`;
 }
 
+/** The line key for each stroke kind. */
+export const STROKE_KEYS: Record<InkKind, string> = { pen: "stroke", highlight: "highlight" };
+
 export function encodeStrokeLine(stroke: InkStroke): string {
-  return `stroke: ${encodeStroke(stroke)}`;
+  return `${STROKE_KEYS[stroke.kind]}: ${encodeStroke(stroke)}`;
 }
 
-/** Parses the value of a `stroke:` line; the string is the reason it was rejected. */
-export function decodeStroke(value: string): InkStroke | string {
+/** Parses the value of a `stroke:` / `highlight:` line; the string is the reason it was rejected. */
+export function decodeStroke(value: string, kind: InkKind): InkStroke | string {
   if (value.length > MAX_STROKE_LINE_LENGTH) return "stroke is too long";
   const parts = value.trim().split(/\s+/);
   if (parts.length !== 3) return `expected "stroke: <color> <size> <points>"`;
@@ -125,5 +129,5 @@ export function decodeStroke(value: string): InkStroke | string {
   }
   const points = decodePoints(data);
   if (!points) return "point data is unreadable";
-  return { color, size, points };
+  return { kind, color, size, points };
 }

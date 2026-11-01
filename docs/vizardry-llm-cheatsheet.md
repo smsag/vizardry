@@ -491,7 +491,7 @@ height: 480
 ```
 ~~~
 
-Drawn by hand in Live Preview on an endless canvas, not generated: emit only `type:`, `title:` and optionally `height:` (frame height in px, 160–1600). Never write `stroke:` lines — their point data is encoded.
+Drawn by hand in Live Preview on an endless canvas, not generated: emit only `type:`, `title:` and optionally `height:` (frame height in px, 160–1600) and `background:` (`dots`, `grid`, `lines`). Never write `stroke:` / `highlight:` lines — their point data is encoded.
 
 ## Product Compass (`compass`)
 

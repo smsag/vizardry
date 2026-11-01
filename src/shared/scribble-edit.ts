@@ -5,17 +5,22 @@ import { indentOf } from "./indent";
 
 /**
  * Source write-back for the Scribble canvas. A save rewrites the block's
- * `stroke:` lines, `id:` and `height:` together in one replaceRange over the
- * fence body: one write is one undo step in the editor, and the lines can't
- * drift apart between several smaller writes.
+ * stroke lines (`stroke:` and `highlight:`), `id:`, `height:` and
+ * `background:` together in one replaceRange over the fence body: one write
+ * is one undo step in the editor, and the lines can't drift apart between
+ * several smaller writes.
  */
 
 export interface ScribbleUpdate {
   id: string;
   height: number;
-  /** Complete `stroke: …` lines, in drawing order. */
+  /** null removes the line (the default, blank paper). */
+  background: string | null;
+  /** Complete stroke lines, in drawing order. */
   strokeLines: string[];
 }
+
+const STROKE_LINE_KEYS = new Set(["stroke", "highlight"]);
 
 function topLevelKey(line: string): string | null {
   if (indentOf(line) !== 0) return null;
@@ -27,42 +32,44 @@ function topLevelKey(line: string): string | null {
 /**
  * The block body with the update applied. Other lines keep their place. The
  * strokes go where the first stroke line was (or after the last content line
- * when there were none); a missing `id:` goes right after `type:`, and a
- * missing `height:` right after the `id:`.
+ * when there were none). Each config field replaces its first line (later
+ * duplicates are dropped); a missing one is inserted after `type:` or the
+ * field before it, so a fresh block reads type → id → height → background.
  */
 export function rewriteScribbleBody(body: string[], update: ScribbleUpdate): string[] {
+  const fields: [key: string, value: string | null][] = [
+    ["id", update.id],
+    ["height", String(update.height)],
+    ["background", update.background],
+  ];
+  const values = new Map(fields);
+  const written = new Set<string>();
   const out: string[] = [];
   let strokeAt = -1;
-  let hasId = false;
-  let hasHeight = false;
+
   for (const line of body) {
     const key = topLevelKey(line);
-    if (key === "stroke") {
+    if (key !== null && STROKE_LINE_KEYS.has(key)) {
       if (strokeAt === -1) strokeAt = out.length;
       continue;
     }
-    if (key === "id") {
-      if (!hasId) out.push(`id: ${update.id}`);
-      hasId = true;
-      continue;
-    }
-    if (key === "height") {
-      if (!hasHeight) out.push(`height: ${update.height}`);
-      hasHeight = true;
+    if (key !== null && values.has(key)) {
+      const value = values.get(key);
+      if (!written.has(key) && value !== null && value !== undefined) out.push(`${key}: ${value}`);
+      written.add(key);
       continue;
     }
     out.push(line);
   }
 
-  let headerEnd = out.findIndex(l => topLevelKey(l) === "type") + 1;
-  if (!hasId) {
-    out.splice(headerEnd, 0, `id: ${update.id}`);
-    if (strokeAt >= headerEnd) strokeAt++;
-  }
-  if (!hasHeight) {
-    headerEnd = out.findIndex(l => topLevelKey(l) === "id") + 1;
-    out.splice(headerEnd, 0, `height: ${update.height}`);
-    if (strokeAt >= headerEnd) strokeAt++;
+  let anchor = "type";
+  for (const [key, value] of fields) {
+    if (!written.has(key) && value !== null) {
+      const at = out.findIndex(l => topLevelKey(l) === anchor) + 1;
+      out.splice(at, 0, `${key}: ${value}`);
+      if (strokeAt >= at) strokeAt++;
+    }
+    if (value !== null && out.some(l => topLevelKey(l) === key)) anchor = key;
   }
 
   if (strokeAt === -1) {

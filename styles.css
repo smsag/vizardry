@@ -4944,12 +4944,51 @@ body.vizardry-sketch .vzd-pc-balance-con {
   -webkit-touch-callout: none;
   border-color: var(--interactive-accent);
   box-shadow: 0 0 0 1px var(--interactive-accent);
-  background-image: radial-gradient(color-mix(in srgb, var(--text-faint) 35%, transparent) 1px, transparent 1px);
-  background-size: 24px 24px;
 }
 
 .vzd-scribble-surface--eraser {
   cursor: cell;
+}
+
+.vzd-scribble-surface--select {
+  cursor: default;
+}
+
+/* Paper backgrounds (SVG pattern, so they pan and zoom with the ink). */
+.vzd-scribble-paper-dot {
+  fill: var(--text-faint);
+}
+
+.vzd-scribble-paper-line {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+
+/* Draw mode on blank paper: faint dots as a hint that the canvas pans. */
+.vzd-scribble-paper--hint {
+  opacity: 0.45;
+}
+
+.vzd-scribble-highlight {
+  opacity: 0.38;
+}
+
+.vzd-scribble-stroke--selected {
+  filter: drop-shadow(0 0 2px var(--interactive-accent));
+}
+
+.vzd-scribble-selection,
+.vzd-scribble-lasso {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.vzd-scribble-selection {
+  fill: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+  cursor: move;
 }
 
 .vzd-scribble-svg {

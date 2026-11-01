@@ -9,8 +9,11 @@ diagrams itself in a ` ```mermaid ` block.
   draws, one finger pans, two fingers pinch to zoom, and a palm resting while
   you draw is ignored. **Fullscreen** opens the canvas over the whole window;
   **Fit** brings everything back into view. On a Mac, the trackpad pans and
-  pinch-zooms. Pen, stroke eraser, five theme colours, three widths, undo /
-  redo and clear; pen pressure sets the line width. Outside draw mode the
+  pinch-zooms. Pen (pressure sets the width), highlighter, stroke eraser, six
+  theme colours, undo / redo and clear. Hold still at the end of a stroke to
+  turn it into a straight line. The lasso selects strokes — circle them or
+  tap one — to move, recolour or delete them. Paper can be blank, dotted,
+  grid or lined. Outside draw mode the
   note shows the whole drawing, fitted to the frame. The drawing is saved
   into the note itself, a moment after each stroke, so it syncs with the
   note, shows up in Git one line per stroke, and renders in the browser
