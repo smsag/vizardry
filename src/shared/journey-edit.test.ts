@@ -29,6 +29,7 @@ import {
   reorderJourneyCard,
   moveJourneyCardCrossPhase,
   writeJourneyMeta,
+  writeJourneyMood,
 } from "./journey-edit";
 import { MarkdownView } from "obsidian";
 
@@ -313,3 +314,52 @@ describe("phases defined more than once", () => {
   });
 });
 
+
+// ── writeJourneyMood ─────────────────────────────────────────────────────────
+
+
+/** An editor over one text buffer, so inserted line breaks become lines. */
+function makeBufferEditor(lines: string[]) {
+  const doc = { text: lines.join("\n") };
+  const all = () => doc.text.split("\n");
+  const offset = (p: { line: number; ch: number }) =>
+    all().slice(0, p.line).reduce((n, l) => n + l.length + 1, 0) + p.ch;
+  return {
+    getLine: (n: number) => all()[n] ?? "",
+    lineCount: () => all().length,
+    replaceRange: (text: string, from: { line: number; ch: number }, to?: { line: number; ch: number }) => {
+      const a = offset(from), b = offset(to ?? from);
+      doc.text = doc.text.slice(0, a) + text + doc.text.slice(b);
+    },
+    lines: all,
+  };
+}
+
+describe("writeJourneyMood", () => {
+  const BASE = [
+    "```vizardry", "type: journey",
+    "phase: Awareness", "  action: See ad", "  feeling: Curious", "  painpoint: Slow",
+    "phase: Decision", "  action: Buy", "  mood: -1",
+    "```",
+  ];
+  const run = (lines: string[], phase: string, mood: number | null) => {
+    const ed = makeBufferEditor(lines);
+    const ok = writeJourneyMood(makeApp(PATH, ed as never) as never, makeCtx(PATH, 0, lines.length - 1) as never, el, phase, mood);
+    return { ok, lines: ed.lines() };
+  };
+
+  it("adds a mood under the phase's Thoughts & Feelings cards", () => {
+    const { ok, lines } = run(BASE, "Awareness", 2);
+    expect(ok).toBe(true);
+    expect(lines.slice(2, 7)).toEqual(["phase: Awareness", "  action: See ad", "  feeling: Curious", "  mood: 2", "  painpoint: Slow"]);
+  });
+
+  it("rewrites an existing mood in place", () => {
+    expect(run(BASE, "Decision", 1).lines[8]).toBe("  mood: 1");
+  });
+
+  it("removes the mood line when cleared", () => {
+    const { lines } = run(BASE, "Decision", null);
+    expect(lines).toEqual(BASE.filter(l => l !== "  mood: -1"));
+  });
+});

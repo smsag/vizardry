@@ -1185,19 +1185,27 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
   cursor: text;
 }
 
-/* Phase headers — one column each */
+/* Phase headers — one column each, drawn as a ribbon of chevrons so the
+   columns read as steps in order rather than as unrelated boxes. */
 .vzd-journey-phase-header {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  padding: 0.35rem 0.6rem;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 600;
-  color: var(--text-muted);
+  --vzd-chevron: 0.6rem;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+  padding: 0.4rem calc(0.6rem + var(--vzd-chevron));
+  clip-path: polygon(0 0, calc(100% - var(--vzd-chevron)) 0, 100% 50%,
+    calc(100% - var(--vzd-chevron)) 100%, 0 100%, var(--vzd-chevron) 50%);
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
+  color: var(--text-normal);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.vzd-journey-phase-header[data-phase-col="0"] {
+  clip-path: polygon(0 0, calc(100% - var(--vzd-chevron)) 0, 100% 50%,
+    calc(100% - var(--vzd-chevron)) 100%, 0 100%);
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
 }
 
 .vzd-journey-phase-header--editable {
@@ -1231,18 +1239,84 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 
 /* Lane row — full-width wrapper giving each lane a tinted background */
 .vzd-journey-lane-row {
+  --vzd-lane-hue: var(--interactive-accent);
   grid-column: 1 / -1;
-  background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
+  background: color-mix(in srgb, var(--vzd-lane-hue) 7%, transparent);
   border-radius: var(--radius-m);
   overflow: hidden;
 }
 
-.vzd-journey-lane-row[data-lane-key="painpoint"] {
-  background: color-mix(in srgb, var(--text-error) 6%, transparent);
+.vzd-journey-lane-row[data-lane-key="painpoint"] { --vzd-lane-hue: var(--vzd-tone-negative); }
+.vzd-journey-lane-row[data-lane-key="opportunity"] { --vzd-lane-hue: var(--vzd-tone-positive); }
+.vzd-journey-lane-row[data-lane-key="mood"] { --vzd-lane-hue: var(--text-muted); background: transparent; }
+
+/* ── Emotion curve (mood: −2…+2 per phase, renderer/journey.ts) ── */
+.vzd-journey-mood-row { overflow: visible; }
+
+.vzd-journey-mood-cell {
+  position: relative;
+  height: 4.5rem;
 }
 
-.vzd-journey-lane-row[data-lane-key="opportunity"] {
-  background: color-mix(in srgb, var(--text-success) 6%, transparent);
+/* Overhangs the cell by half the 0.4rem column gap each side, so the curve
+   pieces of neighbouring phases meet in the gap. */
+.vzd-journey-mood-svg {
+  position: absolute;
+  inset: 0 -0.2rem;
+  width: calc(100% + 0.4rem);
+  height: 100%;
+  overflow: visible;
+}
+/* Positive zone above, negative below, a neutral line between — drawn once
+   across the lane; the cells sit on it with no bottom padding, so 50% of the
+   lane is the mood-0 line of every cell. */
+.vzd-journey-mood-row .vzd-journey-lane-cells {
+  padding-bottom: 0;
+  background:
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), var(--background-modifier-border) calc(50% - 0.5px),
+      var(--background-modifier-border) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, color-mix(in srgb, var(--vzd-tone-positive) 6%, transparent) 50%,
+      color-mix(in srgb, var(--vzd-tone-negative) 6%, transparent) 50%);
+}
+.vzd-journey-mood-line {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.vzd-journey-mood-point {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.3rem;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--background-primary);
+  border: 2px solid var(--vzd-tone);
+  color: var(--vzd-tone-ink);
+  font-size: var(--vzd-fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.vzd-journey-mood-point--editable { cursor: pointer; }
+.vzd-journey-mood-point--editable:hover,
+.vzd-journey-mood-point--editable:focus-visible {
+  outline: none;
+  background: var(--vzd-tone-tint);
+}
+.vzd-journey-mood-add.vzd-add--dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Inner cell grid — mirrors the parent grid's column template */
@@ -1257,7 +1331,7 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 .vzd-journey-lane-label {
   background: transparent;
   border: none;
-  border-left: 3px solid var(--interactive-accent);
+  border-left: 3px solid var(--vzd-lane-hue);
   padding: 0.3rem 0.75rem;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
   font-weight: 600;
@@ -2494,12 +2568,10 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 
 /* Cell header label — mirrors .vizardry-block-label-row style */
 .vzd-pl-cell-header {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 700;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
   color: var(--text-normal);
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.25rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.3rem;
   white-space: nowrap;
 }
 
@@ -4639,43 +4711,52 @@ button.vzd-item-menu::after {
 
 .vzd-scqa-grid {
   display: grid;
-  grid-template-columns: repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
+  /* A gutter column for the level labels, then one column per leaf. */
+  grid-template-columns: auto repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
   gap: 0.6rem;
   /* Stretch (not start) so cards sharing a row — e.g. several answers under
      different questions — all match the tallest card in that row. */
   align-items: stretch;
 }
 
+/* Row label: the level's role name in its hue, like the tree view's lanes. */
+.vzd-scqa-level {
+  grid-column: 1;
+  align-self: center;
+  padding-right: 0.25rem;
+  font-size: var(--vzd-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--vzd-scqa-hue) 55%, var(--text-normal));
+  white-space: nowrap;
+}
+
+/* Every level shares one card shape; the level hue marks it with a left bar
+   and the faintest tint, so the four rows read as one narrative instead of
+   a filled banner over grey boxes and faded, placeholder-looking answers. */
 .vzd-scqa-card {
   position: relative;
   border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--vzd-scqa-hue, var(--interactive-accent));
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
-  background: var(--background-secondary);
+  background: color-mix(in srgb, var(--vzd-scqa-hue, var(--interactive-accent)) 6%, var(--background-primary));
   color: var(--text-normal);
   font-size: var(--vzd-base, var(--font-ui-small));
   line-height: 1.35;
   min-height: 1.6rem;
 }
 
-/* Level 0 — situation: accent fill, spans the whole top row */
+/* Situation: the premise everything hangs from — a little more weight. */
 .vzd-scqa-card--l0 {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
   font-weight: var(--font-semibold, 600);
+  background: color-mix(in srgb, var(--vzd-scqa-hue, var(--interactive-accent)) 12%, var(--background-primary));
 }
 
-/* Level 1 — complication: hover bg + left accent bar */
-.vzd-scqa-card--l1 {
-  background: var(--background-modifier-hover);
-  border-left: 3px solid var(--interactive-accent);
-}
-
-/* Level 3 — answer: dashed, muted (mirrors the OST leaf style) */
+/* Answer: the point of the narrative — set in medium weight, never faded. */
 .vzd-scqa-card--l3 {
-  border-style: dashed;
-  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .vzd-scqa-card-text {

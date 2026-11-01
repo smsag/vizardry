@@ -688,6 +688,17 @@ describe("renderSCQA", () => {
     expect(el.querySelectorAll(".vzd-scqa-card").length).toBe(4);
   });
 
+  it("labels each level in use in a gutter column, and shifts the cards past it", () => {
+    const el = container();
+    renderSCQA(data, el);
+    const labels = [...el.querySelectorAll<HTMLElement>(".vzd-scqa-level")];
+    expect(labels.map(l => l.textContent)).toEqual(["Situation", "Complication", "Question", "Answer"]);
+    expect(labels.map(l => l.style.gridRow)).toEqual(["1", "2", "3", "4"]);
+    const root = el.querySelector<HTMLElement>(".vzd-scqa-card--l0")!;
+    expect(root.style.gridColumn).toMatch(/^2 \/ span/);
+    expect(root.style.getPropertyValue("--vzd-scqa-hue")).toBe("var(--vzd-scqa-situation)");
+  });
+
   it("degrades gracefully: warning chip + placeholder for an empty node, canvas still renders", () => {
     const el = container();
     const withEmpty = {

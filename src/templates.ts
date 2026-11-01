@@ -749,6 +749,7 @@ phase: Awareness
   touchpoint: Email notification
   touchpoint: Mobile app
   feeling: Confused | Didn't expect the renewal to fail
+  mood: -1
   painpoint: Unclear why the renewal failed
   opportunity: Add a one-tap "retry payment" link in the email
 
@@ -757,6 +758,7 @@ phase: Consideration
   action: Compares subscription plans
   touchpoint: Order history screen
   feeling: Mildly annoyed | Extra steps to fix something automatic
+  mood: -2
   painpoint: No clear CTA to fix the payment method
   opportunity: Surface "Update payment method" inline on order history
 
@@ -765,6 +767,7 @@ phase: Resolution
   action: Confirms reorder
   touchpoint: Payment settings screen
   feeling: Relieved | Glad it was quick once found
+  mood: 1
   opportunity: Auto-suggest reorder after a successful update
 \`\`\`
 `;

@@ -126,6 +126,14 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "story.clickToEdit":   "Zum Bearbeiten klicken",
 
   // ── Customer Journey Map / Service Blueprint labels ─────────────────────────
+  "journey.lane.mood":     "Emotion",
+  "journey.mood.2":        "Sehr positiv",
+  "journey.mood.1":        "Positiv",
+  "journey.mood.0":        "Neutral",
+  "journey.mood.-1":       "Negativ",
+  "journey.mood.-2":       "Sehr negativ",
+  "journey.mood.set":      "Stimmung festlegen",
+  "journey.mood.clear":    "Stimmung entfernen",
   "journey.label.persona":     "Persona",
   "journey.label.scenario":    "Szenario",
   "journey.addCard":           "Karte hinzufügen",

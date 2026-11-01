@@ -26,6 +26,19 @@ read better in light, dark and exports.
   Proposition, Jobs Canvas's Main Job, and so on) is highlighted in your
   accent colour. Colour only backs up the label, so nothing depends on
   seeing it.
+- **Journey maps draw an emotion curve.** Give a phase a `mood:` from −2
+  to +2 and an Emotion lane appears above Thoughts & Feelings. It shows a
+  point per phase, joined into a curve over a positive and a negative zone,
+  so the highs and lows of the journey are visible at a glance. In Live
+  Preview, click a point (or the + where none is set) to pick a value. On a
+  phone, each phase shows its point and which way the curve heads next.
+- **Journey phases read as steps.** Phase headers form a chevron ribbon, and
+  the Pain Points and Opportunities lanes use the shared negative and
+  positive colours.
+- **SCQA grid labels its levels.** Each row is named (Situation,
+  Complication, Question, Answer; Resolution for SCR) in the same colours as
+  the tree view. Answers are no longer drawn dashed and greyed out, which
+  made the conclusions look like placeholders.
 - **Calmer blocks.** Block labels lose the rule under them, items get a dot
   instead of a "›" chevron (Pace Layers too), and an empty block is shorter,
   so an empty nine-block canvas no longer fills the screen.

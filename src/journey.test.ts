@@ -146,3 +146,29 @@ describe("parseJourney", () => {
     expect(result.data.warnings?.some(w => /no text/.test(w))).toBe(true);
   });
 });
+
+describe("parseJourney — mood", () => {
+  const src = (mood: string) => `phase: A\n  action: x\n  mood: ${mood}\nphase: B\n  action: y`;
+
+  it("reads a whole-number mood from -2 to +2 onto its phase", () => {
+    for (const [raw, n] of [["-2", -2], ["0", 0], ["+2", 2], [" 1 ", 1]] as const) {
+      const r = parseJourney(src(raw));
+      expect(r.ok && r.data.phases[0].mood).toBe(n);
+      expect(r.ok && r.data.phases[1].mood).toBeUndefined();
+    }
+  });
+
+  it("skips an out-of-range or non-numeric mood with a warning", () => {
+    for (const raw of ["3", "-5", "1.5", "happy", ""]) {
+      const r = parseJourney(src(raw));
+      expect(r.ok && r.data.phases[0].mood).toBeUndefined();
+      expect(r.ok && r.data.warnings?.[0]).toMatch(/mood must be a whole number/);
+    }
+  });
+
+  it("uses the last mood when a phase has several, and says so", () => {
+    const r = parseJourney("phase: A\n  mood: -1\n  mood: 2");
+    expect(r.ok && r.data.phases[0].mood).toBe(2);
+    expect(r.ok && r.data.warnings?.[0]).toMatch(/more than one mood/);
+  });
+});

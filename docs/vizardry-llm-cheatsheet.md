@@ -385,7 +385,7 @@ phase: Resolution
 ```
 ~~~
 
-Blueprint adds under `phase:`: `frontstage:`, `backstage:`, `support:`. All lane lines accept `| subtitle`.
+Blueprint adds under `phase:`: `frontstage:`, `backstage:`, `support:`. All lane lines accept `| subtitle`. Optional `mood: <-2…2>` per phase (one whole number) draws an emotion curve.
 
 ## Venn (`venn`)
 

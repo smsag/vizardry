@@ -393,3 +393,76 @@ export function moveJourneyCardCrossPhase(
 
   return true;
 }
+
+/** Every `mood:` line inside the named phase's blocks, in source order. */
+function findMoodLines(
+  editor: { getLine: (n: number) => string },
+  lineStart: number,
+  lineEnd: number,
+  phaseName: string,
+): number[] {
+  const phaseKey = phaseName.toLowerCase().trim();
+  const lines: number[] = [];
+  let inside = false;
+  for (let ln = lineStart; ln <= lineEnd; ln++) {
+    const raw = editor.getLine(ln);
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    if (indentOf(raw) === 0) {
+      inside = trimmed.toLowerCase().startsWith("phase:")
+        && trimmed.slice("phase:".length).trim().toLowerCase() === phaseKey;
+      continue;
+    }
+    if (inside && /^mood\s*:/i.test(trimmed)) lines.push(ln);
+  }
+  return lines;
+}
+
+/**
+ * Sets the named phase's `mood:` (−2…+2), or removes it for `null`. An
+ * existing line is rewritten in place (the parser uses the last one, so
+ * that is the one changed); a new one goes under the phase's Thoughts &
+ * Feelings cards, where it is read, or after its last lane line.
+ */
+export function writeJourneyMood(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  phaseName: string,
+  mood: number | null,
+): boolean {
+  const resolved = resolveEditor(app, ctx, el, "writeJourneyMood");
+  if (!resolved) return false;
+  const { editor, lineStart, lineEnd } = resolved;
+
+  const block = findPhaseBlock(editor, lineStart, lineEnd, phaseName);
+  if (!block) {
+    new Notice(`Vizardry: phase "${phaseName}" not found in journey map.`, 4000);
+    return false;
+  }
+  const moodLines = findMoodLines(editor, lineStart, lineEnd, phaseName);
+
+  editorWrite(() => {
+    if (mood === null) {
+      // Bottom-up, each with its line break, so earlier line numbers hold.
+      for (const ln of [...moodLines].reverse()) {
+        editor.replaceRange("", { line: ln - 1, ch: editor.getLine(ln - 1).length }, { line: ln, ch: editor.getLine(ln).length });
+      }
+      return;
+    }
+    const value = String(mood);
+    const last = moodLines[moodLines.length - 1];
+    if (last !== undefined) {
+      const raw = editor.getLine(last);
+      editor.replaceRange(`${raw.match(/^(\s*)/)![1]}mood: ${value}`, { line: last, ch: 0 }, { line: last, ch: raw.length });
+      return;
+    }
+    const feelings = block.laneLines.filter(l => l.key === "feeling");
+    const insertAfter = feelings.length > 0
+      ? feelings[feelings.length - 1].line
+      : (block.laneLines.length > 0 ? block.laneLines[block.laneLines.length - 1].line : block.phaseLine);
+    const indentStr = block.laneIndent !== -1 ? " ".repeat(block.laneIndent) : " ".repeat(block.phaseIndent + 2);
+    editor.replaceRange(`\n${indentStr}mood: ${value}`, { line: insertAfter, ch: editor.getLine(insertAfter).length });
+  }, el);
+  return true;
+}

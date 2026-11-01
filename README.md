@@ -878,6 +878,7 @@ phase: Awareness
   action: Receives renewal-failed email
   touchpoint: Email notification
   feeling: Confused | Didn't expect the renewal to fail
+  mood: -1
   painpoint: Unclear why the renewal failed
   opportunity: Add a one-tap "retry payment" link in the email
 
@@ -885,6 +886,7 @@ phase: Consideration
   action: Opens order history
   touchpoint: Order history screen
   feeling: Mildly annoyed | Extra steps to fix something automatic
+  mood: -2
   opportunity: Surface "Update payment method" inline on order history
 ```
 ~~~
@@ -896,6 +898,7 @@ One canvas, two views over the same phase/lane data — a **journey map** (defau
 - `phase: <name>` — one grid column; must be unique
 - `action:`, `touchpoint:`, `feeling:`, `painpoint:`, `opportunity:` — journey lanes, each rendered as a row of cards under every phase
 - `frontstage:`, `backstage:`, `support:` — Service Blueprint-only lanes (Frontstage Actions, Backstage Actions, Support Processes), separated by "Line of Interaction" / "Line of Visibility" / "Line of Internal Interaction" dividers
+- `mood: <-2…2>` — optional, one whole number per phase (−2 very negative … +2 very positive); draws an **Emotion** curve above Thoughts & Feelings
 - Any lane keyword supports `<keyword>: <name> | <subtitle>` for an optional subtitle
 - Multiple lines with the same keyword under one phase stack as multiple cards, in source order
 - Blueprint-only lane lines are always parsed even under `type: journey` — they simply aren't rendered until you switch the `type:` line to `journey, blueprint`, so nothing is lost switching views by hand
@@ -910,6 +913,7 @@ One canvas, two views over the same phase/lane data — a **journey map** (defau
 | **Rename persona / scenario** | Click the badge in the canvas header |
 | **Rename phase** | Double-click a phase header |
 | **Rename card** | Double-click a card's name |
+| **Set a phase's mood** | Click its point on the Emotion curve (or the `+` where none is set) and pick −2…+2 |
 | **Cancel a drag** | Release outside the grid — card snaps back, no change |
 
 ---
@@ -2060,6 +2064,7 @@ One shared syntax, two views — `type: sipoc` (or `type: sipoc, table`) renders
 | `phase: <name>` | One grid column; must be unique |
 | `action:` / `touchpoint:` / `feeling:` / `painpoint:` / `opportunity:` | Journey lane card, optionally `\| <subtitle>` |
 | `frontstage:` / `backstage:` / `support:` | Service Blueprint-only lane card (parsed but hidden under `type: journey`) |
+| `mood: <-2…2>` | Optional; plots the phase on the Emotion curve |
 
 ### Venn Diagram (type: venn)
 

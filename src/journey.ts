@@ -36,6 +36,17 @@ export function lanesForVariant(variant: JourneyVariant): JourneyLaneConfig[] {
   return JOURNEY_LANE_CONFIG.filter(l => !l.blueprintOnly || variant === "blueprint");
 }
 
+export const MOOD_MIN = -2;
+export const MOOD_MAX = 2;
+
+/** `mood:` value: a whole number from −2 to +2 (a leading `+` is fine), or null. */
+export function parseMood(value: string): number | null {
+  const m = /^\s*([+-]?\d+)\s*$/.exec(value);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= MOOD_MIN && n <= MOOD_MAX ? n : null;
+}
+
 function resolveJourneyVariant(value: string): JourneyVariant | null {
   const v = value.trim().toLowerCase();
   if (v === "journey" || v === "blueprint") return v;
@@ -53,6 +64,7 @@ function resolveJourneyVariant(value: string): JourneyVariant | null {
  *     action: Receives renewal-failed email
  *     touchpoint: Email notification
  *     feeling: Confused | Didn't expect the renewal to fail
+ *     mood: -1
  *     painpoint: Unclear why the renewal failed
  *     opportunity: Add a one-tap "retry payment" link in the email
  *     frontstage: Support chatbot greets user if they open live chat
@@ -148,6 +160,18 @@ export function parseJourney(source: string, typeOverride?: string): JourneyResu
     }
 
     const key = trimmed.slice(0, colonIdx).trim().toLowerCase() as JourneyLaneKey;
+    if ((key as string) === "mood") {
+      const mood = parseMood(trimmed.slice(colonIdx + 1));
+      if (mood === null) {
+        warnings.push(`Line ${i + 1}: mood must be a whole number from -2 to 2 — skipped`);
+      } else {
+        if (currentPhase.mood !== undefined) {
+          warnings.push(`Line ${i + 1}: phase "${currentPhase.name}" has more than one mood — using the last`);
+        }
+        currentPhase.mood = mood;
+      }
+      continue;
+    }
     if (!LANE_KEYS.includes(key)) {
       warnings.push(`Line ${i + 1}: unknown lane keyword "${key}" — skipped`);
       continue;

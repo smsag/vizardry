@@ -144,6 +144,14 @@ export const en = {
   "sipoc.col.metric":    "Metric",
 
   // ── Customer Journey Map / Service Blueprint labels ─────────────────────────
+  "journey.lane.mood":     "Emotion",
+  "journey.mood.2":        "Very positive",
+  "journey.mood.1":        "Positive",
+  "journey.mood.0":        "Neutral",
+  "journey.mood.-1":       "Negative",
+  "journey.mood.-2":       "Very negative",
+  "journey.mood.set":      "Set mood",
+  "journey.mood.clear":    "Clear mood",
   "journey.label.persona":     "Persona",
   "journey.label.scenario":    "Scenario",
   "journey.addCard":           "Add card",

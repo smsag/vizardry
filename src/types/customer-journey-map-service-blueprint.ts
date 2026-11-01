@@ -24,6 +24,9 @@ export interface JourneyCard {
 export interface JourneyPhase {
   name: string;
   lanes: Partial<Record<JourneyLaneKey, JourneyCard[]>>;
+  /** How the persona feels in this phase, −2 (very negative) to +2 (very
+   *  positive), from an optional `mood:` line. Drawn as the emotion curve. */
+  mood?: number;
 }
 
 export interface JourneyData {

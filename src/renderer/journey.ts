@@ -1,7 +1,7 @@
-import { setIcon } from "obsidian";
+import { Menu, Notice, setIcon } from "obsidian";
 import { createAddControl } from "./add-control";
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { JourneyCard, JourneyData, JourneyLaneKey } from "../types";
+import type { JourneyCard, JourneyData, JourneyLaneKey, JourneyPhase } from "../types";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
 import type { RenderContext } from "./render-context";
 import { SWIPE_THRESHOLD_PX } from "../shared/constants";
@@ -11,7 +11,8 @@ import { activateInlineEdit } from "./inline-edit";
 import { t } from "../i18n";
 import { attachItemMenu } from "../shared/item-menu";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
-import { JOURNEY_DIVIDERS, lanesForVariant } from "../journey";
+import { JOURNEY_DIVIDERS, MOOD_MAX, MOOD_MIN, lanesForVariant } from "../journey";
+import { createSvgEl } from "../shared/svg";
 import { isEditModeActive } from "../shared/editor";
 import { textOnlyClone } from "./card-block";
 import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
@@ -23,6 +24,7 @@ import {
   renamePhase,
   reorderJourneyCard,
   writeJourneyMeta,
+  writeJourneyMood,
 } from "../shared/journey-edit";
 
 export function renderJourneyMap(
@@ -249,7 +251,20 @@ export function renderJourneyMap(
   // ── Lane rows ────────────────────────────────────────────────────────────
   const cellsByPhase: HTMLElement[][] = Array.from({ length: totalCols }, () => []);
 
+  // The emotion curve sits right above Thoughts & Feelings, the lane it
+  // summarises. Shown once any phase has a mood, and always while editing
+  // so the first one can be set.
+  const showMood = phases.some(p => p.mood !== undefined) || isEditMode;
+
   for (const lane of lanes) {
+    if (lane.key === "feeling" && showMood) {
+      const moodCells = renderMoodRow(grid, phases, isEditMode && app && ctx
+        ? (phaseName, mood) => {
+          if (!writeJourneyMood(app, ctx, container, phaseName, mood)) new Notice(t("edit.writeFailed"));
+        }
+        : null);
+      moodCells.forEach((cell, i) => cellsByPhase[i].push(cell));
+    }
     const dividerLabel = JOURNEY_DIVIDERS[lane.key];
     if (dividerLabel) {
       const divider = grid.createEl("div", { cls: "vzd-journey-divider-row" });
@@ -287,6 +302,119 @@ export function renderJourneyMap(
   }
 
   setupJourneyCarousel(container, grid, phases.map(p => p.name), phaseHeaderEls, cellsByPhase);
+}
+
+// ── Emotion curve ──────────────────────────────────────────────────────────
+//
+// One cell per phase, like every other lane, so the phone carousel can show
+// a phase at a time. Each cell draws its own piece of the curve: a point at
+// its centre and, toward each neighbour that has a mood, a half-segment
+// ending midway between the two. The SVG overhangs the cell by half the
+// column gap on each side, so neighbouring pieces meet in the gap and read
+// as one continuous line. Every piece is flat where it meets the next, so
+// the joins are smooth without any cell knowing the whole curve. The
+// positive/negative zones and the neutral line are one background on the
+// lane (styles.css), so they have no seams at the gaps.
+
+/** Vertical position (0 top … 100 bottom) of a mood on the curve. */
+const moodY = (mood: number): number => 50 - (mood / MOOD_MAX) * 38;
+
+const moodTone = (mood: number): string => mood > 0 ? "positive" : mood < 0 ? "negative" : "neutral";
+
+const formatMood = (mood: number): string => mood > 0 ? `+${mood}` : mood < 0 ? `\u2212${-mood}` : "0";
+
+function renderMoodRow(
+  grid: HTMLElement,
+  phases: JourneyPhase[],
+  onSet: ((phaseName: string, mood: number | null) => void) | null,
+): HTMLElement[] {
+  const row = grid.createEl("div", { cls: "vzd-journey-lane-row vzd-journey-mood-row" });
+  row.dataset.laneKey = "mood";
+  row.createEl("div", { cls: "vzd-journey-lane-label", text: t("journey.lane.mood") });
+  const cellsRow = row.createEl("div", { cls: "vzd-journey-lane-cells" });
+  cellsRow.style.setProperty("--vzd-journey-cols", String(phases.length));
+
+  const cells: HTMLElement[] = [];
+  phases.forEach((phase, i) => {
+    const cell = cellsRow.createEl("div", { cls: "vzd-journey-mood-cell" });
+    cell.dataset.phaseCol = String(i);
+    cells.push(cell);
+
+    const svg = createSvgEl("svg", {
+      class: "vzd-journey-mood-svg",
+      viewBox: "0 0 100 100",
+      preserveAspectRatio: "none",
+      "aria-hidden": "true",
+    });
+    cell.appendChild(svg);
+
+    const mood = phase.mood;
+    if (mood !== undefined) {
+      const y = moodY(mood);
+      const prev = phases[i - 1]?.mood;
+      const next = phases[i + 1]?.mood;
+      let d = "";
+      if (prev !== undefined) {
+        const yl = (moodY(prev) + y) / 2;
+        d += `M 0 ${yl} C 25 ${yl}, 25 ${y}, 50 ${y} `;
+      }
+      if (next !== undefined) {
+        const yr = (moodY(next) + y) / 2;
+        d += `M 50 ${y} C 75 ${y}, 75 ${yr}, 100 ${yr}`;
+      }
+      if (d) svg.appendChild(createSvgEl("path", { d: d.trim(), class: "vzd-journey-mood-line" }));
+
+      // The point is HTML, not SVG: the stretched viewBox would squash a circle.
+      const point = cell.createEl("span", { cls: "vzd-journey-mood-point" });
+      point.style.top = `${y}%`;
+      point.setAttribute("data-vzd-tone", moodTone(mood));
+      const label = `${t("journey.lane.mood")}: ${formatMood(mood)} — ${t(`journey.mood.${mood}` as Parameters<typeof t>[0])}`;
+      point.setAttribute("title", label);
+      point.setAttribute("aria-label", label);
+      point.setAttribute("role", "img");
+      point.createEl("span", { cls: "vzd-journey-mood-value", text: formatMood(mood) });
+    }
+
+    if (onSet) {
+      const open = (anchor: HTMLElement): void => {
+        const r = anchor.getBoundingClientRect();
+        const menu = new Menu();
+        for (let m = MOOD_MAX; m >= MOOD_MIN; m--) {
+          menu.addItem(item => {
+            item.setTitle(`${formatMood(m)}  ${t(`journey.mood.${m}` as Parameters<typeof t>[0])}`);
+            item.setChecked(m === mood);
+            item.onClick(() => onSet(phase.name, m));
+          });
+        }
+        if (mood !== undefined) {
+          menu.addSeparator();
+          menu.addItem(item => item.setTitle(t("journey.mood.clear")).onClick(() => onSet(phase.name, null)));
+        }
+        menu.showAtPosition({ x: r.left, y: r.bottom }, cell.ownerDocument);
+      };
+      const point = cell.querySelector<HTMLElement>(".vzd-journey-mood-point");
+      if (point) {
+        point.addClass("vzd-journey-mood-point--editable");
+        point.setAttribute("role", "button");
+        point.setAttribute("tabindex", "0");
+        point.addEventListener("click", (e) => { e.stopPropagation(); open(point); });
+        point.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          open(point);
+        });
+      } else {
+        const add = createAddControl(cell, {
+          label: t("journey.mood.set"),
+          variant: "dot",
+          cls: "vzd-journey-mood-add",
+          alwaysVisible: true,
+          onAdd: () => open(add),
+        });
+      }
+    }
+  });
+  return cells;
 }
 
 // ── Meta badge (persona / scenario) ────────────────────────────────────────

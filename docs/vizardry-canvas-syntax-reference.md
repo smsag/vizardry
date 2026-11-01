@@ -1269,11 +1269,14 @@ phase: Awareness
 | `action:` | Actions | both |
 | `touchpoint:` | Touchpoints | both |
 | `feeling:` | Thoughts & Feelings | both |
+| `mood: <-2…2>` | Emotion curve (one whole number per phase; −2 very negative … +2 very positive) | both |
 | `painpoint:` | Pain Points | both |
 | `opportunity:` | Opportunities | both |
 | `frontstage:` | Frontstage Actions | blueprint only |
 | `backstage:` | Backstage Actions | blueprint only |
 | `support:` | Support Processes | blueprint only |
+
+**Emotion curve.** Give a phase a `mood:` from −2 to +2 and an Emotion lane appears above Thoughts & Feelings: a point per phase, joined into a curve across neighbouring phases that have one, over a positive (top) and negative (bottom) zone. A phase without `mood:` leaves a gap. In Live Preview, click a point (or the **+** where none is set) to pick a value. Values outside −2…+2 are skipped with a warning.
 
 Every lane line takes an optional ` | subtitle`: `feeling: Confused | Didn't expect it`. Repeat a keyword within a phase to add several cards to that lane.
 
