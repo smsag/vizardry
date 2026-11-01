@@ -1151,7 +1151,7 @@ control: How I respond to setbacks
 ```
 ~~~
 
-The `control:` tier is optional — omit it for the classic two-ring Covey diagram.
+The `control:` tier is optional — omit it for the classic two-ring Covey diagram. The rings are drawn as a diagram with each ring's item count in its band, and the items are listed beside it, one group per ring (Control first), tinted like their ring.
 
 **Syntax:**
 
@@ -1607,7 +1607,7 @@ task: Test & sign off
 ```
 ~~~
 
-One row per `task:`, with `responsible:` / `accountable:` / `consulted:` / `informed:` roles below it (comma-separate multiple names). Renders as a table with people as columns and R/A/C/I badges in the cells.
+One row per `task:`, with `responsible:` / `accountable:` / `consulted:` / `informed:` roles below it (comma-separate multiple names). Renders as a table with people as columns and R/A/C/I badges in the cells. A row with no accountable person, more than one, or no responsible person is flagged, and a workload row totals each person's R and A. In Live Preview, click a cell to choose that person's role, click a task or person to rename it, and use **+** to add a task or person.
 
 ---
 

@@ -42,6 +42,55 @@
   transition: margin-bottom 0.2s ease, --vzd-base 0.2s ease;
 }
 
+/* ── Shared design tokens ──────────────────────────────────────────────
+   One scale and one palette for every canvas, all derived from the host
+   theme so they follow light, dark and a forced-light export (which puts
+   .theme-light on the canvas) without a per-canvas override.
+
+   Type: every step follows --vzd-base, so A+/A− still scales the whole
+   canvas. The two small steps have a pixel floor — secondary text at
+   0.68 × 14px (9.5px) was below what anyone reads comfortably.
+
+   Tones carry meaning (helpful/harmful, keep/drop, does/owns), never
+   decoration: a canvas reaches for one only when the framework itself has
+   that axis. Each comes as ink (text, strokes), tint (fills) and line
+   (borders), all mixed against the theme so they hold contrast in both
+   light and dark. */
+.vizardry-canvas,
+.vzd-presentation-overlay {
+  --vzd-fs-2xs: max(10px, calc(var(--vzd-base) * 0.72));
+  --vzd-fs-xs: max(11px, calc(var(--vzd-base) * 0.8));
+  --vzd-fs-sm: calc(var(--vzd-base) * 0.9);
+  --vzd-fs-md: var(--vzd-base);
+  --vzd-fs-lg: calc(var(--vzd-base) * 1.15);
+  --vzd-fs-title: calc(var(--vzd-base) * 1.45);
+
+  /* Connectors (tree edges, flow arrows): visible on both grounds, but
+     quieter than a card border's text. */
+  --vzd-edge: color-mix(in srgb, var(--text-muted) 70%, var(--background-primary));
+
+  --vzd-tone-positive: rgb(var(--color-green-rgb, 8, 185, 78));
+  --vzd-tone-negative: rgb(var(--color-red-rgb, 233, 49, 71));
+  --vzd-tone-caution:  rgb(var(--color-orange-rgb, 236, 117, 0));
+  --vzd-tone-info:     rgb(var(--color-blue-rgb, 8, 109, 221));
+  --vzd-tone-accent:   var(--interactive-accent);
+  --vzd-tone-neutral:  var(--text-muted);
+}
+
+/* A toned element sets --vzd-tone to one of the tones above and reads the
+   three derived colours. */
+[data-vzd-tone] {
+  --vzd-tone-ink:  color-mix(in srgb, var(--vzd-tone) 72%, var(--text-normal));
+  --vzd-tone-tint: color-mix(in srgb, var(--vzd-tone) 9%, var(--background-primary));
+  --vzd-tone-line: color-mix(in srgb, var(--vzd-tone) 45%, var(--background-modifier-border));
+}
+[data-vzd-tone="positive"] { --vzd-tone: var(--vzd-tone-positive); }
+[data-vzd-tone="negative"] { --vzd-tone: var(--vzd-tone-negative); }
+[data-vzd-tone="caution"]  { --vzd-tone: var(--vzd-tone-caution); }
+[data-vzd-tone="info"]     { --vzd-tone: var(--vzd-tone-info); }
+[data-vzd-tone="accent"]   { --vzd-tone: var(--vzd-tone-accent); }
+[data-vzd-tone="neutral"]  { --vzd-tone: var(--vzd-tone-neutral); }
+
 .markdown-preview-sizer > .vizardry-canvas,
 .markdown-preview-sizer .el-pre > .vizardry-canvas,
 .markdown-preview-view .block-language-story,
@@ -468,11 +517,14 @@ button.vzd-pin-bar-btn {
 }
 
 .vizardry-title {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 1.5);
-  font-weight: 600;
+  /* As written, not upper-cased: a title is the author's text (often a
+     sentence — "Q3 prioritisation"), and caps plus tracking made it louder
+     than the note's own headings. */
+  font-size: var(--vzd-fs-title, calc(var(--vzd-base, var(--font-ui-small)) * 1.45));
+  font-weight: 650;
   color: var(--text-normal);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -516,13 +568,48 @@ button.vzd-pin-bar-btn {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.8rem 0.75rem;
   display: flex;
   flex-direction: column;
   align-content: start;
-  gap: 0.35rem;
-  min-height: 180px;
+  gap: 0.45rem;
+  /* Room to write into, without an empty nine-block canvas running to
+     three screens: the grid's own row tracks still stretch filled blocks. */
+  min-height: 8.5rem;
 }
+
+/* A block whose framework gives it a meaning (data-vzd-tone, see the shared
+   tokens): a coloured top edge and label, a barely-there tint, and bullets
+   in the same hue. The label carries the meaning, so colour only reinforces. */
+.vizardry-block[data-vzd-tone] {
+  border-top: 3px solid color-mix(in srgb, var(--vzd-tone) 70%, var(--background-primary));
+  background: color-mix(in srgb, var(--vzd-tone) 4%, var(--background-primary));
+}
+.vizardry-block[data-vzd-tone] .vizardry-block-label { color: var(--vzd-tone-ink); }
+.vizardry-block[data-vzd-tone] .vzd-block-line::before { background: var(--vzd-tone-line); }
+
+/* Axis labels around the grid (FrameworkDefinition.axes). */
+.vzd-grid-axis {
+  grid-area: var(--vzd-area);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--vzd-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.vzd-grid-axis--column { padding: 0 0 0.1rem; }
+.vzd-grid-axis--row { padding: 0 0.1rem 0 0; }
+.vzd-grid-axis--row .vzd-grid-axis-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+/* One block at a time on a phone: the axes have nothing to sit beside. */
+.vzd-carousel .vzd-grid-axis { display: none; }
+.vizardry-capturing .vzd-grid-axis,
+.vzd-presentation-wrap .vzd-grid-axis { display: flex !important; }
 
 .vizardry-block:hover {
   border-color: var(--background-modifier-border);
@@ -532,9 +619,7 @@ button.vzd-pin-bar-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.1rem;
+  min-height: 1.5em;
 }
 
 /* Increased size and contrast vs original 0.65rem / --text-muted:
@@ -542,8 +627,8 @@ button.vzd-pin-bar-btn {
    No-wrap prevents long labels (e.g. UNIQUE VALUE PROPOSITION) from
    breaking the block header height across the row. */
 .vizardry-block-label {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 700;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
   color: var(--text-normal);
   white-space: nowrap;
   overflow: hidden;
@@ -574,23 +659,27 @@ button.vzd-pin-bar-btn {
 }
 
 .vzd-block-line {
-  padding-left: 0.9em;
-  text-indent: -0.9em;
+  position: relative;
+  padding-left: 0.95em;
 }
 
-/* Arrow marker (›) — sits in the hanging-indent space so wrapped lines
-   remain clearly subordinate to their parent item. */
+/* Dot marker in the hanging-indent space, centred on the first line, so
+   wrapped lines stay clearly subordinate to their item. (A "›" glyph sat on
+   the baseline and read as a stray character.) */
 .vzd-block-line::before {
-  content: "›";
-  color: var(--text-faint);
-  margin-right: 0.2em;
-  font-size: 0.95em;
-  line-height: 1;
+  content: "";
+  position: absolute;
+  left: 0.1em;
+  top: calc(0.725em - 0.17em);
+  width: 0.34em;
+  height: 0.34em;
+  border-radius: 50%;
+  background: var(--text-faint);
 }
 
-/* Minimal gap between items — enough to separate, not enough to feel like a blank line */
+/* Enough to separate items, not enough to read as a blank line. */
 .vzd-block-line + .vzd-block-line {
-  margin-top: 0.22em;
+  margin-top: 0.3em;
 }
 
 /* ── Inline highlight (==text==, ==🔴text== …) ──
@@ -948,7 +1037,7 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 }
 
 .vzd-story-task-subtitle {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
+  font-size: var(--vzd-fs-xs);
   user-select: none;
   color: var(--text-muted);
   margin-top: 0.35rem;
@@ -1098,9 +1187,8 @@ mark.vzd-mark[data-highlight="purple"] { --vzd-mark-rgb: var(--color-purple-rgb,
 
 .vzd-presentation-title {
   font-size: var(--font-ui-large);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-normal);
   /* 5rem (~80px) each side clears macOS traffic lights on the left and the
      reload/close button group on the right regardless of window width. */
@@ -1277,7 +1365,7 @@ g.vzd-tree-node--linked:hover .vzd-tree-link-icon {
 /* Sub-label (e.g. "Outcome", "Actor") — bottom-right corner of node, visually unobtrusive */
 .vzd-tree-text-sub {
   font-family: var(--font-interface);
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.68);
+  font-size: var(--vzd-fs-xs);
   user-select: none;
 }
 
@@ -1746,6 +1834,11 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
   font-size: 11px;
   font-family: var(--font-interface);
 }
+.vzd-wardley-axis-hint {
+  fill: var(--text-faint);
+  font-size: 10px;
+  font-style: italic;
+}
 
 .vzd-wardley-link {
   stroke: var(--text-muted);
@@ -1919,7 +2012,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 .vzd-story-task-card,
 .vzd-scqa-card,
 .vzd-block-line,
-.vzd-raci-item {
+.vzd-raci-task-line {
   position: relative;
 }
 
@@ -1956,7 +2049,7 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 }
 
 .vzd-roadmap-card-subtitle {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.75);
+  font-size: var(--vzd-fs-xs);
   color: var(--text-muted);
   margin-top: 0.2rem;
   line-height: 1.3;
@@ -2119,12 +2212,10 @@ g.vzd-tree-node--editable:hover .vzd-tree-edit-add {
 
 /* Cell header label — mirrors .vizardry-block-label-row style */
 .vzd-pl-cell-header {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 700;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
   color: var(--text-normal);
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.25rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.3rem;
   white-space: nowrap;
 }
 
@@ -2799,48 +2890,203 @@ button.vzd-item-menu::after {
   button.vzd-add--dot::after { content: ""; position: absolute; inset: -12px; }
 }
 
-/* ── RACI Matrix ────────────────────────────────────────────────────────────── */
-/* The column boxes use vizardry-block/label-row/label/body — no custom
-   structural CSS needed. Only RACI-specific additions below. */
+/* ── RACI Matrix ────────────────────────────────────────────────────────────
+   Tasks down, people across, the role in the crossing cell (renderer/raci.ts).
+   Emphasis falls A → R → C → I through fill, tint, outline and plain ink, so
+   the letters carry the meaning without colour. */
 
-/* Highlight the Responsible column (accent border) */
-.vzd-raci-col--accent {
-  border-color: var(--color-accent);
-  border-width: 2px;
+.vzd-raci-wrap {
+  width: 100%;
+  overflow-x: auto;
 }
 
-/* Override white-space so stacked item divs don't inherit pre-wrap */
-.vzd-raci-body {
-  white-space: normal;
+.vzd-raci-table {
+  width: 100%;
+  /* Obsidian's `.markdown-rendered table` margin outranks a class (see SIPOC). */
+  margin: 0 !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--vzd-fs-md);
+}
+
+.vzd-raci-th,
+.vzd-raci-task,
+.vzd-raci-cell {
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 0.5rem 0.6rem;
+  background: var(--background-primary);
+}
+
+.vzd-raci-th {
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
+  color: var(--text-normal);
+  vertical-align: bottom;
+  border-bottom: 1.5px solid var(--text-faint);
+}
+
+.vzd-raci-th--task {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.vzd-raci-th--person {
+  text-align: center;
+  min-width: 5.5rem;
+  line-height: 1.25;
+}
+.vzd-raci-th--person { position: relative; }
+
+/* The task column stays put while the people scroll past it on a phone. */
+.vzd-raci-th--task,
+.vzd-raci-task {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 11rem;
+  max-width: 22rem;
+}
+
+.vzd-raci-task {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-normal);
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.vzd-raci-task-line {
   display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding-right: 1.1em; /* room for the corner link button */
+}
+.vzd-raci-task-name { min-width: 0; overflow-wrap: anywhere; }
+
+.vzd-raci-row:hover > * {
+  background: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary));
 }
 
-/* Individual row entry within a column */
-.vzd-raci-item {
-  padding: 0.375rem 0.5rem;
-  border-radius: var(--radius-s);
-  font-size: var(--font-ui-small);
-  line-height: 1.4;
-  word-break: break-word;
+.vzd-raci-row--issue > .vzd-raci-task {
+  box-shadow: inset 3px 0 0 var(--vzd-tone-caution);
+}
+
+.vzd-raci-issues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  margin-top: 0.2rem;
+  font-size: var(--vzd-fs-xs);
+  font-weight: 500;
+  color: var(--vzd-tone-ink);
+}
+
+.vzd-raci-cell {
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.vzd-raci-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75em;
+  height: 1.75em;
+  margin: 0 0.1em;
+  border-radius: 50%;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 700;
+  line-height: 1;
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+}
+
+.vzd-raci-badge--accountable {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.vzd-raci-badge--responsible {
+  background: color-mix(in srgb, var(--interactive-accent) 18%, var(--background-primary));
+  color: color-mix(in srgb, var(--interactive-accent) 70%, var(--text-normal));
+  border: 1.5px solid color-mix(in srgb, var(--interactive-accent) 55%, var(--background-primary));
+}
+.vzd-raci-badge--consulted {
+  color: var(--text-normal);
+  border: 1.5px solid var(--text-faint);
+}
+.vzd-raci-badge--informed {
   background: var(--background-secondary);
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
-.vzd-raci-item--editable {
+.vzd-raci-workload > * {
+  border-bottom: none;
+  padding-top: 0.45rem;
+  font-size: var(--vzd-fs-xs);
+  color: var(--text-muted);
+}
+.vzd-raci-workload-label { font-weight: 600; }
+.vzd-raci-stat { margin: 0 0.35em; }
+.vzd-raci-stat-n { font-weight: 700; color: var(--text-normal); margin-right: 0.2em; }
+
+.vzd-raci-empty {
+  padding: 0.75rem 0.6rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: var(--vzd-fs-sm);
+}
+
+/* Key below the table — part of the canvas, so an export explains itself. */
+.vzd-raci-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin-top: 0.75rem;
+  font-size: var(--vzd-fs-xs);
+  color: var(--text-muted);
+}
+.vzd-raci-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.vzd-raci-legend .vzd-raci-badge { font-size: var(--vzd-fs-2xs); }
+.vzd-raci-legend-term { font-weight: 650; color: var(--text-normal); }
+
+/* Edit affordances (Live Preview) */
+.vzd-raci-editable {
   cursor: text;
+  border-radius: var(--radius-s);
+}
+.vzd-raci-editable:hover { box-shadow: inset 0 -1px 0 var(--text-faint); }
+.vzd-raci-cell--editable { cursor: pointer; }
+.vzd-raci-cell--editable:hover,
+.vzd-raci-cell--editable:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--interactive-accent) 60%, transparent);
+  border-radius: var(--radius-s);
+}
+.vzd-raci-th--add,
+.vzd-raci-cell--add {
+  width: 2rem;
+  padding: 0 0.25rem;
+  border-bottom-color: transparent;
+}
+.vzd-raci-add-task { margin-top: 0.4rem; }
+
+@media (max-width: 600px) {
+  .vzd-raci-th--task,
+  .vzd-raci-task { min-width: 7.5rem; }
+  .vzd-raci-th--person { min-width: 4.25rem; }
 }
 
-.vzd-raci-item--editable:hover {
-  background: var(--background-modifier-hover);
-}
-
-/* Empty slot — row exists but value is blank for this column */
-.vzd-raci-item--empty {
-  background: transparent;
-  border: 1px dashed var(--background-modifier-border);
-  min-height: 1.75rem;
-}
+/* Presentation: a static clone — no edit hover, larger letters, more air. */
+.vzd-presentation-wrap .vzd-raci-cell--editable,
+.vzd-presentation-wrap .vzd-raci-editable { cursor: default; box-shadow: none; }
+.vzd-presentation-wrap .vzd-raci-table { font-size: calc(var(--vzd-base) * 1.25); }
+.vzd-presentation-wrap .vzd-raci-th,
+.vzd-presentation-wrap .vzd-raci-task,
+.vzd-presentation-wrap .vzd-raci-cell { padding: 0.7rem 0.9rem; }
 
 /* ── Concept Map ─────────────────────────────────────────────────────────── */
 
@@ -2872,6 +3118,14 @@ button.vzd-item-menu::after {
   font-family: var(--font-interface);
 }
 
+/* The central concept (most links): a stronger fill and a bold label, so the
+   map has a visible centre to read outward from. */
+.vzd-cmap-node--hub {
+  fill-opacity: 0.28;
+  stroke-width: 2;
+}
+.vzd-cmap-node-label--hub { font-weight: 650; }
+
 .vzd-cmap-edge {
   stroke: var(--text-muted);
   stroke-width: 1.5;
@@ -2889,7 +3143,7 @@ button.vzd-item-menu::after {
 
 .vzd-cmap-edge-label {
   fill: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-interface);
   font-style: italic;
 }
@@ -2995,6 +3249,9 @@ button.vzd-item-menu::after {
 
 .vzd-nodemap-arrowhead {
   fill: var(--text-muted);
+  /* The head takes its own link's colour (a green link, a green head); an
+     engine without context-stroke keeps the grey above. */
+  fill: context-stroke;
 }
 
 .vzd-nodemap-link-label-bg {
@@ -3004,7 +3261,7 @@ button.vzd-item-menu::after {
 
 .vzd-nodemap-link-label {
   fill: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-interface);
   font-style: italic;
 }
@@ -3181,7 +3438,8 @@ button.vzd-item-menu::after {
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Darkened a step so the white letters hold contrast on every hue. */
+  background: color-mix(in srgb, hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 82%, #000);
   color: var(--text-on-accent, #fff);
   font-weight: 700;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
@@ -3236,7 +3494,8 @@ button.vzd-item-menu::after {
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Darkened a step so the white letters hold contrast on every hue. */
+  background: color-mix(in srgb, hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 82%, #000);
   color: var(--text-on-accent, #fff);
   font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
   font-weight: 700;
@@ -3340,10 +3599,17 @@ button.vzd-item-menu::after {
 /* ── Circle of Influence & Concern ───────────────────────────────────────── */
 
 .vzd-coi-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 460px;
-  margin: 0.5rem auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem 1.75rem;
+  padding: 0.5rem 0;
+}
+
+.vzd-coi-diagram {
+  flex: 0 1 300px;
+  min-width: 200px;
   aspect-ratio: 1 / 1;
 }
 
@@ -3375,53 +3641,79 @@ button.vzd-item-menu::after {
   stroke: color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border));
 }
 
+/* Ring tints, shared by the discs above and the list swatches below. */
+.vzd-coi-swatch--concern { background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary)); border-color: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-modifier-border)); }
+.vzd-coi-swatch--influence { background: color-mix(in srgb, var(--interactive-accent) 13%, var(--background-primary)); border-color: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border)); }
+.vzd-coi-swatch--control { background: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-primary)); border-color: color-mix(in srgb, var(--interactive-accent) 60%, var(--background-modifier-border)); }
+
 .vzd-coi-ring-label {
-  font-size: 13px;
+  /* viewBox units: the diagram draws at ~300px for a 400-unit box. */
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   fill: var(--text-muted);
 }
 
-.vzd-coi-chip {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  max-width: 27%;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: var(--background-primary);
-  border: 1.5px solid var(--background-modifier-border);
-  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
-  line-height: 1.15;
-  text-align: center;
-  color: var(--text-normal);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+/* How many items a band holds — the list beside the rings names them. */
+.vzd-coi-count {
+  font-size: 28px;
+  font-weight: 700;
+  fill: color-mix(in srgb, var(--interactive-accent) 70%, var(--text-normal));
 }
 
-.vzd-coi-chip--concern { border-color: color-mix(in srgb, var(--interactive-accent) 30%, var(--background-modifier-border)); }
-.vzd-coi-chip--influence { border-color: color-mix(in srgb, var(--interactive-accent) 50%, var(--background-modifier-border)); }
-.vzd-coi-chip--control { border-color: color-mix(in srgb, var(--interactive-accent) 78%, var(--background-modifier-border)); }
-
-/* Innermost tier: chips stack vertically in the centre disc rather than
-   scattering (the disc is too small to place them around without overlap). */
-.vzd-coi-control-stack {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  margin-top: 10px;
+.vzd-coi-lists {
+  flex: 1 1 280px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  max-width: 32%;
+  gap: 0.85rem;
 }
 
-.vzd-coi-control-stack .vzd-coi-chip {
-  position: static;
-  transform: none;
-  max-width: 100%;
+.vzd-coi-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
 }
+
+.vzd-coi-swatch {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 1.5px solid;
+  box-sizing: border-box;
+}
+
+.vzd-coi-group-name {
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
+  color: var(--text-normal);
+}
+
+.vzd-coi-group-count {
+  font-size: var(--vzd-fs-xs);
+  color: var(--text-muted);
+}
+
+.vzd-coi-list {
+  margin: 0;
+  padding: 0 0 0 1.35rem;
+  list-style: none;
+}
+
+.vzd-coi-item {
+  position: relative;
+  font-size: var(--vzd-fs-md);
+  line-height: 1.45;
+  color: var(--text-normal);
+}
+.vzd-coi-item + .vzd-coi-item { margin-top: 0.2em; }
+
+/* Control, the ring the framework says to act on, reads strongest. */
+.vzd-coi-group--control .vzd-coi-item { font-weight: 500; }
+.vzd-coi-group--concern .vzd-coi-item { color: var(--text-muted); }
 
 /* ── Whole Person / Four Dimensions ──────────────────────────────────────── */
 
@@ -3494,7 +3786,9 @@ button.vzd-item-menu::after {
 
 .vzd-wp-card {
   border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Mixed toward the text colour so a light hue (the yellow from an indigo
+     accent) still shows as a line on white; the wheel keeps the pure hue. */
+  border-left: 3px solid color-mix(in srgb, hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 78%, var(--text-normal));
   border-radius: var(--radius-m);
   padding: 0.5rem 0.6rem;
   background: var(--background-secondary);
@@ -3510,7 +3804,7 @@ button.vzd-item-menu::after {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  background: color-mix(in srgb, hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 78%, var(--text-normal));
   flex: 0 0 auto;
 }
 
@@ -3756,7 +4050,7 @@ button.vzd-item-menu::after {
   justify-content: flex-end;
   gap: 2px;
   padding: 6px 8px;
-  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.78);
+  font-size: var(--vzd-fs-xs);
   color: var(--text-muted);
 }
 
@@ -3817,7 +4111,7 @@ button.vzd-item-menu::after {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -3857,6 +4151,9 @@ button.vzd-item-menu::after {
   grid-template-rows: 1fr auto;
   gap: 4px 6px;
   width: 100%;
+  /* Padding inside the 100%: content-box made the wrap 4px wider than the
+     canvas, which clipped the last column's right edge. */
+  box-sizing: border-box;
   overflow-x: auto;
   padding: 6px 2px;
 }
@@ -3996,6 +4293,26 @@ button.vzd-item-menu::after {
   width: max-content;
   max-width: 180px;
 }
+
+/* At rest a free item is a point, not a cell member: a dot exactly at its
+   coordinates with the pill beside it (on the left near the right edge). A
+   pill centred on the point read as sitting in whichever cell it covered
+   most, or on the line between two. While dragged, the pill centres on the
+   pointer again. */
+.vzd-mx-point {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--vzd-matrix-base) 75%, var(--text-normal));
+  box-shadow: 0 0 0 2px var(--background-primary);
+}
+.vzd-mx-item--pinned > .vzd-mx-pill { transform: translate(8px, -50%); }
+.vzd-mx-item--pinned.vzd-mx-item--flip > .vzd-mx-pill { transform: translate(calc(-100% - 8px), -50%); }
+.vzd-mx-item--dragging > .vzd-mx-point { display: none; }
+.vzd-mx-item--pinned.vzd-mx-item--dragging > .vzd-mx-pill,
+.vzd-mx-item--pinned.vzd-mx-item--flip.vzd-mx-item--dragging > .vzd-mx-pill { transform: translate(-50%, -50%); }
 .vzd-mx-item--editable > .vzd-mx-pill { cursor: grab; }
 .vzd-mx-item--dragging { z-index: 5; }
 .vzd-mx-item--dragging > .vzd-mx-pill { cursor: grabbing; }
@@ -4051,43 +4368,52 @@ button.vzd-item-menu::after {
 
 .vzd-scqa-grid {
   display: grid;
-  grid-template-columns: repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
+  /* A gutter column for the level labels, then one column per leaf. */
+  grid-template-columns: auto repeat(var(--vzd-scqa-cols, 1), minmax(150px, 1fr));
   gap: 0.6rem;
   /* Stretch (not start) so cards sharing a row — e.g. several answers under
      different questions — all match the tallest card in that row. */
   align-items: stretch;
 }
 
+/* Row label: the level's role name in its hue, like the tree view's lanes. */
+.vzd-scqa-level {
+  grid-column: 1;
+  align-self: center;
+  padding-right: 0.25rem;
+  font-size: var(--vzd-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--vzd-scqa-hue) 55%, var(--text-normal));
+  white-space: nowrap;
+}
+
+/* Every level shares one card shape; the level hue marks it with a left bar
+   and the faintest tint, so the four rows read as one narrative instead of
+   a filled banner over grey boxes and faded, placeholder-looking answers. */
 .vzd-scqa-card {
   position: relative;
   border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--vzd-scqa-hue, var(--interactive-accent));
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
-  background: var(--background-secondary);
+  background: color-mix(in srgb, var(--vzd-scqa-hue, var(--interactive-accent)) 6%, var(--background-primary));
   color: var(--text-normal);
   font-size: var(--vzd-base, var(--font-ui-small));
   line-height: 1.35;
   min-height: 1.6rem;
 }
 
-/* Level 0 — situation: accent fill, spans the whole top row */
+/* Situation: the premise everything hangs from — a little more weight. */
 .vzd-scqa-card--l0 {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
   font-weight: var(--font-semibold, 600);
+  background: color-mix(in srgb, var(--vzd-scqa-hue, var(--interactive-accent)) 12%, var(--background-primary));
 }
 
-/* Level 1 — complication: hover bg + left accent bar */
-.vzd-scqa-card--l1 {
-  background: var(--background-modifier-hover);
-  border-left: 3px solid var(--interactive-accent);
-}
-
-/* Level 3 — answer: dashed, muted (mirrors the OST leaf style) */
+/* Answer: the point of the narrative — set in medium weight, never faded. */
 .vzd-scqa-card--l3 {
-  border-style: dashed;
-  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .vzd-scqa-card-text {
@@ -4182,18 +4508,35 @@ button.vzd-scqa-card-add {
   overflow-x: auto;
   padding: 0.25rem 0 0.5rem;
 }
+/* Shrinks with the canvas down to 80% of its natural width (12px card text
+   stays ~10px), then scrolls; the overflow hint fades the cut edge. */
 .vzd-flow-svg {
   display: block;
-  max-width: none;
+  width: 100%;
+  max-width: var(--vzd-flow-w, none);
+  min-width: calc(var(--vzd-flow-w, 0px) * 0.8);
+  height: auto;
+}
+
+/* Sideways-scrolling area with more to the right (shared/overflow-hint.ts). */
+.vzd-overflow--right {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+}
+/* An export or the presentation view shows everything: never faded. */
+.vizardry-capturing .vzd-overflow--right,
+.vzd-presentation-wrap .vzd-overflow--right {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* Link paths + arrowheads */
 .vzd-flow-edge {
   fill: none;
-  stroke: var(--background-modifier-border);
+  stroke: var(--vzd-edge);
   stroke-width: 1.6;
 }
-.vzd-flow-arrowhead { fill: var(--background-modifier-border); }
+.vzd-flow-arrowhead { fill: var(--vzd-edge); }
 
 /* Card background rect (drawn behind the foreignObject text host) */
 .vzd-flow-card {
@@ -4390,7 +4733,7 @@ body.vizardry-sketch .vzd-tree-rename-input {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 700;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   color: var(--text-muted);
   margin-bottom: 0.4rem;
 }
@@ -4539,7 +4882,7 @@ body.vizardry-sketch .vzd-tree-rename-input {
 
 .vzd-pc-badge {
   flex: none;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.72);
+  font-size: var(--vzd-fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -4733,7 +5076,7 @@ body.vizardry-sketch .vzd-pc-balance-con {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 700;
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.74);
+  font-size: var(--vzd-fs-2xs);
   color: var(--text-muted);
   margin-bottom: 0.55rem;
 }

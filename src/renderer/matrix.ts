@@ -177,9 +177,13 @@ function renderItems(
     const ck = `${x.toFixed(3)},${y.toFixed(3)}`;
     const k = seen.get(ck) ?? 0;
     seen.set(ck, k + 1);
-    const wrap = overlay.createEl("div", { cls: "vzd-mx-item" });
+    const wrap = overlay.createEl("div", { cls: "vzd-mx-item vzd-mx-item--pinned" });
     wrap.style.left = pct(x);
     wrap.style.top = pct(1 - y);
+    // The label goes to the left of the point near the right edge, so it
+    // stays inside the plane.
+    if (x > 0.72) wrap.addClass("vzd-mx-item--flip");
+    wrap.createEl("span", { cls: "vzd-mx-point" }).setAttribute("aria-hidden", "true");
     if (k > 0) {
       wrap.style.transform = `translate(${k * 12}px, ${k * 12}px)`;
       wrap.style.zIndex = String(2 + k);

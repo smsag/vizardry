@@ -4,7 +4,7 @@ import type { SCQAData, SCQANode, TreeEditHandlers, TreeNode } from "../types";
 import { initCanvas, markInteractive, renderHeadingLink, renderCanvasWarnings, showWriteFailedNotice } from "./controls";
 import { EMPTY_LABEL_PLACEHOLDER } from "../shared/keyword-tree";
 import { renderTree } from "./tree";
-import { adaptSCQAToTree, scqaTreeOptions } from "./tree-adapters";
+import { adaptSCQAToTree, scqaLevels, scqaTreeOptions } from "./tree-adapters";
 import { renderInline, stripInline } from "../shared/inline-markdown";
 import { activateInlineEdit } from "./inline-edit";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
@@ -127,13 +127,26 @@ function renderGrid(
   const totalCols = Math.max(1, leafSpan(data.root));
 
   const scroller = el.createEl("div", { cls: "vzd-scqa-scroll" });
-  const grid = scroller.createEl("div", { cls: "vzd-scqa-grid" });
+  // vizardry-scqa carries the per-level hues the tree view uses too.
+  const grid = scroller.createEl("div", { cls: "vzd-scqa-grid vizardry-scqa" });
   grid.style.setProperty("--vzd-scqa-cols", String(totalCols));
+
+  // Row labels in a gutter column, one per level in use, so a reader can tell
+  // a complication from a question without knowing the framework.
+  const levels = scqaLevels(data.variant);
+  const deepest = Math.max(...placed.map(p => p.node.level));
+  for (let level = 0; level <= deepest && level < levels.length; level++) {
+    const label = grid.createEl("div", { cls: "vzd-scqa-level", text: levels[level]!.label });
+    label.style.gridRow = String(level + 1);
+    label.style.setProperty("--vzd-scqa-hue", `var(--vzd-scqa-${levels[level]!.hue})`);
+  }
 
   for (const { node, col, span } of placed) {
     const card = grid.createEl("div", { cls: `vzd-scqa-card vzd-scqa-card--l${node.level}` });
-    card.style.gridColumn = `${col + 1} / span ${span}`;
+    card.style.gridColumn = `${col + 2} / span ${span}`;
     card.style.gridRow = String(node.level + 1);
+    const hue = levels[node.level]?.hue;
+    if (hue) card.style.setProperty("--vzd-scqa-hue", `var(--vzd-scqa-${hue})`);
     card.dataset.scqaText = node.text;
     card.dataset.scqaLevel = String(node.level);
 

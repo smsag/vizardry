@@ -1,60 +1,235 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import type { RACIData } from "../types";
+import { Menu, Notice } from "obsidian";
+import type { RACIData, RACIRow } from "../types";
 import { t } from "../i18n";
 import { initCanvas, renderHeadingLink, renderCanvasWarnings } from "./controls";
-import { activateTextareaEdit } from "./inline-edit";
-import { writeRACICell } from "../shared/raci-edit";
+import { editTextInPlace } from "./inline-edit";
+import { createAddControl } from "./add-control";
+import { appendRACITask, writeRACICell, writeRACIRoles, writeRACIRolesMany } from "../shared/raci-edit";
+import {
+  RACI_ROLES, raciIssues, raciPeople, rolesOf, withRenamedPerson, withRole, type RACIRole,
+} from "../raci";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import type { RenderContext } from "./render-context";
-import { setupSlideCarousel } from "./grid-carousel";
-import { createInlineEl } from "../shared/inline-markdown";
-import { Notice } from "obsidian";
+import { createInlineEl, setInline } from "../shared/inline-markdown";
+import { watchOverflowHint } from "../shared/overflow-hint";
 
-type CellKey = "task" | "responsible" | "accountable" | "consulted" | "informed";
+/**
+ * RACI Matrix — a real matrix: one row per task, one column per person, and
+ * the role each person plays on each task as a letter in the crossing cell.
+ *
+ * The source is written per task (`responsible: Dev, QA`), which is easy to
+ * type but was rendered as five independent lists: row alignment held only
+ * while every list kept the same line count, and nobody could read a column
+ * to see what one person owns. The matrix answers the questions a RACI chart
+ * is for — who is accountable here, who is overloaded, which task has no
+ * owner — and flags the last one in the row.
+ *
+ * The letters are the framework's own (R/A/C/I in every language); emphasis
+ * runs from A (filled) through R (tinted) and C (outlined) to I (plain), so
+ * the chart still reads in monochrome, in sketch mode and on paper.
+ */
 
-/** Definition shown as placeholder when a column has no data. */
-const RACI_DEFINITIONS: Record<CellKey, string> = {
-  task:        "Name of the activity or deliverable",
-  responsible: "Who does the work",
-  accountable: "Who owns the outcome — one person per task",
-  consulted:   "Whose input is needed before deciding",
-  informed:    "Who is kept in the loop but not involved",
+const LETTER: Record<RACIRole, string> = {
+  responsible: "R", accountable: "A", consulted: "C", informed: "I",
 };
 
-function getCols(): { key: CellKey; label: string; accent?: boolean }[] {
-  return [
-    { key: "task",        label: t("raci.col.task") },
-    { key: "responsible", label: t("raci.col.responsible"), accent: true },
-    { key: "accountable", label: t("raci.col.accountable") },
-    { key: "consulted",   label: t("raci.col.consulted") },
-    { key: "informed",    label: t("raci.col.informed") },
-  ];
+const roleLabel = (role: RACIRole): string => t(`raci.col.${role}`);
+
+function renderBadge(parent: HTMLElement, role: RACIRole): void {
+  const badge = parent.createEl("span", { cls: `vzd-raci-badge vzd-raci-badge--${role}`, text: LETTER[role] });
+  badge.setAttribute("title", roleLabel(role));
 }
 
-function activateItemEdit(
-  item: HTMLElement,
-  cellKey: CellKey,
-  rowIndex: number,
-  currentValue: string,
-  app: App,
-  ctx: MarkdownPostProcessorContext,
-  container: HTMLElement,
-): void {
-  activateTextareaEdit(item, item, currentValue, (value) => {
-    if (!writeRACICell(app, ctx, container, rowIndex, cellKey, value)) new Notice(t("edit.writeFailed"));
-  }, {
-    editingClass: "vzd-raci-editing",
-    renderDisplay: (host, value) => {
-      host.empty();
-      if (value) {
-        host.removeClass("vzd-raci-item--empty");
-        createInlineEl(host, "span", "vzd-raci-item-value", value);
-      } else {
-        host.addClass("vzd-raci-item--empty");
-      }
+function renderLegend(container: HTMLElement): void {
+  const legend = container.createEl("div", { cls: "vzd-raci-legend" });
+  for (const role of RACI_ROLES) {
+    const item = legend.createEl("span", { cls: "vzd-raci-legend-item" });
+    renderBadge(item, role);
+    item.createEl("span", { cls: "vzd-raci-legend-term", text: roleLabel(role) });
+    item.createEl("span", { cls: "vzd-raci-legend-hint", text: t(`raci.hint.${role}`) });
+  }
+}
+
+interface EditCtx {
+  app: App;
+  ctx: MarkdownPostProcessorContext;
+  container: HTMLElement;
+}
+
+const failed = (ok: boolean): void => { if (!ok) new Notice(t("edit.writeFailed")); };
+
+function openRoleMenu(e: MouseEvent, row: RACIRow, rowIndex: number, person: string, ed: EditCtx): void {
+  const current = rolesOf(row, person);
+  const menu = new Menu();
+  const choose = (role: RACIRole | null): void =>
+    failed(writeRACIRoles(ed.app, ed.ctx, ed.container, rowIndex, withRole(row, person, role)));
+  for (const role of RACI_ROLES) {
+    menu.addItem(item => {
+      item.setTitle(`${LETTER[role]} · ${roleLabel(role)}`);
+      item.setChecked(current.length === 1 && current[0] === role);
+      item.onClick(() => choose(role));
+    });
+  }
+  menu.addSeparator();
+  menu.addItem(item => {
+    item.setTitle(t("raci.notInvolved"));
+    item.setChecked(current.length === 0);
+    item.onClick(() => choose(null));
+  });
+  menu.showAtMouseEvent(e);
+}
+
+/**
+ * Edits a name in place on its source text: the element shows rendered
+ * markdown, so editing it as displayed would drop `**`/`==` markers from the
+ * value and write the name back without them. On cancel (or no change) the
+ * formatted name comes back.
+ */
+function editName(nameEl: HTMLElement, raw: string, onCommit: (next: string) => void): void {
+  nameEl.textContent = raw;
+  editTextInPlace(nameEl, {
+    initial: raw,
+    onDone: (commit, value) => {
+      const next = value.trim();
+      if (!commit || !next || next === raw) { setInline(nameEl, raw); return; }
+      onCommit(next);
     },
   });
+}
+
+function renameTask(nameEl: HTMLElement, task: string, rowIndex: number, ed: EditCtx): void {
+  editName(nameEl, task, (next) => {
+    failed(writeRACICell(ed.app, ed.ctx, ed.container, rowIndex, "task", next));
+  });
+}
+
+function renamePerson(nameEl: HTMLElement, person: string, rows: RACIRow[], ed: EditCtx): void {
+  editName(nameEl, person, (typed) => {
+    // A comma would split the name into two people on the next parse.
+    const next = typed.replace(/,/g, " ").trim();
+    if (!next || next === person) { setInline(nameEl, person); return; }
+    const updates = new Map<number, ReturnType<typeof withRenamedPerson>>();
+    rows.forEach((row, i) => {
+      if (rolesOf(row, person).length > 0) updates.set(i, withRenamedPerson(row, person, next));
+    });
+    failed(writeRACIRolesMany(ed.app, ed.ctx, ed.container, updates));
+  });
+}
+
+function renderTable(
+  wrap: HTMLElement,
+  rows: RACIRow[],
+  people: string[],
+  rc: RenderContext,
+  ed: EditCtx | null,
+): void {
+  wrap.empty();
+  const { resolver, navigateTo, app, ctx } = rc;
+  const table = wrap.createEl("table", { cls: "vzd-raci-table" });
+
+  const headRow = table.createEl("thead").createEl("tr");
+  headRow.createEl("th", { cls: "vzd-raci-th vzd-raci-th--task", text: t("raci.col.task") });
+  for (const person of people) {
+    const th = headRow.createEl("th", { cls: "vzd-raci-th vzd-raci-th--person" });
+    th.setAttribute("scope", "col");
+    const name = createInlineEl(th, "span", "vzd-raci-person", person);
+    renderHeadingLink(th, person, resolver, navigateTo, app, ctx?.sourcePath);
+    if (ed) {
+      name.addClass("vzd-raci-editable");
+      name.addEventListener("click", () => renamePerson(name, person, rows, ed));
+    }
+  }
+  if (ed) {
+    const th = headRow.createEl("th", { cls: "vzd-raci-th vzd-raci-th--add" });
+    createAddControl(th, {
+      label: t("raci.addPerson"),
+      variant: "dot",
+      onAdd: () => {
+        // A person exists in the source only through a role, so a new column
+        // is local until a cell in it is given one — that write re-renders
+        // the canvas from the source, where the name now appears.
+        renderTable(wrap, rows, [...people, t("raci.newPerson")], rc, ed);
+        const added = wrap.querySelectorAll<HTMLElement>(".vzd-raci-person");
+        const el = added[added.length - 1];
+        if (!el) return;
+        editTextInPlace(el, {
+          initial: el.textContent ?? "",
+          selectAll: true,
+          onDone: (commit, value) => {
+            const next = value.trim().replace(/,/g, " ");
+            renderTable(wrap, rows, commit && next ? [...people, next] : people, rc, ed);
+          },
+        });
+      },
+    });
+  }
+
+  const tbody = table.createEl("tbody");
+  rows.forEach((row, rowIndex) => {
+    const tr = tbody.createEl("tr", { cls: "vzd-raci-row" });
+    const taskCell = tr.createEl("th", { cls: "vzd-raci-task" });
+    taskCell.setAttribute("scope", "row");
+    const taskLine = taskCell.createEl("div", { cls: "vzd-raci-task-line" });
+    const name = createInlineEl(taskLine, "span", "vzd-raci-task-name", row.task);
+    renderHeadingLink(taskLine, row.task, resolver, navigateTo, app, ctx?.sourcePath);
+    if (ed) {
+      name.addClass("vzd-raci-editable");
+      name.addEventListener("click", () => renameTask(name, row.task, rowIndex, ed));
+    }
+    const issues = raciIssues(row);
+    if (issues.length > 0) {
+      tr.addClass("vzd-raci-row--issue");
+      const list = taskCell.createEl("div", { cls: "vzd-raci-issues" });
+      list.setAttribute("data-vzd-tone", "caution");
+      for (const issue of issues) list.createEl("span", { cls: "vzd-raci-issue", text: t(`raci.issue.${issue}`) });
+    }
+
+    for (const person of people) {
+      const td = tr.createEl("td", { cls: "vzd-raci-cell" });
+      const roles = rolesOf(row, person);
+      td.setAttribute("aria-label", `${t("raci.cellLabel", { person, task: row.task })}: ${
+        roles.length ? roles.map(roleLabel).join(", ") : t("raci.notInvolved")}`);
+      for (const role of roles) renderBadge(td, role);
+      if (ed) {
+        td.addClass("vzd-raci-cell--editable");
+        td.setAttribute("tabindex", "0");
+        td.addEventListener("click", (e) => openRoleMenu(e, row, rowIndex, person, ed));
+        td.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          const r = td.getBoundingClientRect();
+          openRoleMenu(new MouseEvent("click", { clientX: r.left, clientY: r.bottom }), row, rowIndex, person, ed);
+        });
+      }
+    }
+    if (ed) tr.createEl("td", { cls: "vzd-raci-cell vzd-raci-cell--add" });
+  });
+
+  // Workload: how much each person does (R) and owns (A). Only worth a row
+  // once there is more than one task to add up.
+  if (rows.length > 1 && people.length > 0) {
+    const tr = table.createEl("tfoot").createEl("tr", { cls: "vzd-raci-workload" });
+    tr.createEl("th", { cls: "vzd-raci-task vzd-raci-workload-label", text: t("raci.workload") });
+    for (const person of people) {
+      const td = tr.createEl("td", { cls: "vzd-raci-cell" });
+      for (const role of ["responsible", "accountable"] as const) {
+        const n = rows.filter(r => rolesOf(r, person).includes(role)).length;
+        if (n === 0) continue;
+        const stat = td.createEl("span", { cls: "vzd-raci-stat" });
+        stat.createEl("span", { cls: "vzd-raci-stat-n", text: String(n) });
+        stat.createEl("span", { cls: "vzd-raci-stat-role", text: LETTER[role] });
+        stat.setAttribute("title", roleLabel(role));
+      }
+    }
+    if (ed) tr.createEl("td", { cls: "vzd-raci-cell vzd-raci-cell--add" });
+  }
+
+  if (rows.length === 0 || people.length === 0) {
+    const hint = wrap.createEl("div", { cls: "vzd-raci-empty", text: t(rows.length === 0 ? "raci.empty" : "raci.noPeople") });
+    hint.setAttribute("role", "note");
+  }
 }
 
 export function renderRACIMatrix(
@@ -62,7 +237,7 @@ export function renderRACIMatrix(
   container: HTMLElement,
   rc: RenderContext = {},
 ): void {
-  const { source, app, ctx, resolver, navigateTo } = rc;
+  const { source, app, ctx } = rc;
   const isEditMode = !!(app && ctx && isEditModeActive(app));
   const defaultTitle = "RACI Matrix";
   const title = source !== undefined ? parseTitle(source, defaultTitle) : defaultTitle;
@@ -73,60 +248,24 @@ export function renderRACIMatrix(
   renderCanvasWarnings(container, data?.warnings);
 
   const rows = data?.rows ?? [];
+  const ed: EditCtx | null = isEditMode ? { app: app!, ctx: ctx!, container } : null;
 
-  // Use the same grid structure as all other canvases
-  const grid = container.createEl("div", { cls: "vizardry-grid" });
-  grid.style.setProperty("--vzd-template", '"task responsible accountable consulted informed"');
-  grid.style.setProperty("--vzd-columns", "repeat(5, 1fr)");
-  grid.style.setProperty("--vzd-rows", "1fr");
+  // Scrolls sideways on a phone with the task column pinned, instead of the
+  // one-column-at-a-time carousel the old five-list layout needed.
+  // One root for table, add control and legend, so the presentation view
+  // (which clones a canvas's content root) shows the key too.
+  const root = container.createEl("div", { cls: "vzd-raci" });
+  const wrap = root.createEl("div", { cls: "vzd-raci-wrap" });
+  renderTable(wrap, rows, raciPeople(rows), rc, ed);
+  watchOverflowHint(wrap);
 
-  getCols().forEach((col) => {
-    // Use vizardry-block so the design is identical to all other canvases
-    const block = grid.createEl("div", {
-      cls: `vizardry-block${col.accent ? " vzd-raci-col--accent" : ""}`,
+  if (ed) {
+    createAddControl(root, {
+      label: t("raci.addTask"),
+      cls: "vzd-raci-add-task",
+      alwaysVisible: rows.length === 0,
+      onAdd: () => failed(appendRACITask(ed.app, ed.ctx, ed.container, t("raci.newTask"))),
     });
-    // A custom property, not an inline grid-area, so the carousel and capture
-    // rules can override the placement (see renderCanvas()).
-    block.style.setProperty("--vzd-area", col.key);
-
-    // Label row — identical structure to renderCanvas()
-    const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
-    labelRow.createEl("span", { cls: "vizardry-block-label", text: col.label });
-
-    // Body — mirrors vizardry-block-body; override white-space for item list
-    const body = block.createEl("div", { cls: "vizardry-block-body vzd-raci-body" });
-
-    if (rows.length === 0) {
-      // Initial state: show definition as faint italic placeholder (same ::before CSS as other canvases)
-      body.addClass("vizardry-block-empty");
-      body.setAttribute("data-placeholder", RACI_DEFINITIONS[col.key]);
-      return;
-    }
-
-    rows.forEach((row, rowIdx) => {
-      const raw = col.key === "task" ? row.task : row[col.key];
-      const value = raw ?? "";
-
-      const item = body.createEl("div", {
-        cls: `vzd-raci-item${!value ? " vzd-raci-item--empty" : ""}`,
-      });
-
-      if (value) {
-        createInlineEl(item, "span", "vzd-raci-item-value", value);
-        renderHeadingLink(item, value, resolver, navigateTo, app, ctx?.sourcePath);
-      }
-
-      if (isEditMode) {
-        item.addClass("vzd-raci-item--editable");
-        item.addEventListener("click", () => {
-          activateItemEdit(item, col.key, rowIdx, value, app!, ctx!, container);
-        });
-      }
-    });
-  });
-
-  // One column at a time on mobile and when pinned, like the other grids. The
-  // shared carousel CSS always stacked these columns; without the carousel
-  // none was ever shown, so RACI rendered blank on a phone.
-  setupSlideCarousel(container, ".vizardry-block", "vizardry-block-active", getCols().length);
+  }
+  renderLegend(root);
 }

@@ -10,6 +10,9 @@ export const VPC: FrameworkDefinition = {
   `,
   gridColumns: "repeat(2, 1fr)",
   gridRows: "repeat(3, 1fr)",
+  // Left: what you offer; right: who you offer it to. Each row pairs up
+  // (pain relievers answer pains, gain creators answer gains).
+  axes: { columns: ["Value map", "Customer profile"] },
   blocks: [
     { label: "Products & Services", area: "ps", placeholder: "Everything you offer — every product, service, or feature." },
     { label: "Pain Relievers",      area: "pr", placeholder: "How does your offer reduce specific customer pains?" },

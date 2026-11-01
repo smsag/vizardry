@@ -15,20 +15,29 @@ import { ownerWindow } from "./lifecycle";
  *
  * getComputedStyle() always resolves color-mix()/CSS variables down to a
  * concrete rgb color, but the serialisation format varies: legacy comma
- * syntax `rgb(r, g, b)` / `rgba(r, g, b, a)`, or the newer CSS Color 4
- * space syntax `rgb(r g b)` / `rgb(r g b / a)` that recent Chromium
- * versions use for color-mix() results. The alpha component (if present)
+ * syntax `rgb(r, g, b)` / `rgba(r, g, b, a)`, the newer CSS Color 4
+ * space syntax `rgb(r g b)` / `rgb(r g b / a)`, or the `color(srgb r g b)`
+ * form (channels 0–1) that Chromium — and so Obsidian — serialises a
+ * `color-mix(in srgb, …)` result as. The alpha component (if present)
  * is intentionally ignored — these are opaque theme header backgrounds,
  * not overlays composited against an unknown color underneath.
  */
 function luminanceFromRgb(css: string): number | null {
-  const m = css.match(/rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:\s*[,/]\s*[\d.%]+)?\s*\)/);
-  if (!m) return null;
-  const linearise = (n: number): number => {
-    const s = n / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * linearise(+m[1]) + 0.7152 * linearise(+m[2]) + 0.0722 * linearise(+m[3]);
+  const channels = parseSrgbChannels(css);
+  if (!channels) return null;
+  const linearise = (s: number): number =>
+    s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  const [r, g, b] = channels.map(linearise);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** The three sRGB channels of a computed colour, each 0–1, or `null`. */
+function parseSrgbChannels(css: string): [number, number, number] | null {
+  const rgb = css.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:\s*[,/]\s*[\d.%]+)?\s*\)/);
+  if (rgb) return [+rgb[1] / 255, +rgb[2] / 255, +rgb[3] / 255];
+  const srgb = css.match(/color\(\s*srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*[\d.%]+)?\s*\)/);
+  if (srgb) return [+srgb[1], +srgb[2], +srgb[3]];
+  return null;
 }
 
 /** WCAG contrast ratio between two relative luminance values. */

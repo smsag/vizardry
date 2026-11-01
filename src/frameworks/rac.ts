@@ -17,6 +17,6 @@ export const RAC: FrameworkDefinition = {
     { label: "MVP",                      area: "mv", placeholder: "What is the minimum you need to build to test the riskiest assumption?" },
     { label: "Competition",              area: "co", placeholder: "What are customers using today — why will they switch to you?" },
     { label: "Sales Channels",           area: "sc", placeholder: "How will you reach customers — and at what cost?" },
-    { label: "Top Riskiest Assumptions", area: "tr", placeholder: "Which assumptions, if wrong, would kill this venture?" },
+    { label: "Top Riskiest Assumptions", area: "tr", tone: "caution", placeholder: "Which assumptions, if wrong, would kill this venture?" },
   ],
 };

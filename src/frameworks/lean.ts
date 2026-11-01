@@ -13,7 +13,7 @@ export const LEAN: FrameworkDefinition = {
   blocks: [
     { label: "Problem",                  area: "pr",  placeholder: "What are the top 1–3 problems your early adopters have?" },
     { label: "Solution",                 area: "so",  placeholder: "What is the simplest version of your solution?" },
-    { label: "Unique Value Proposition", area: "uvp", placeholder: "Why should someone choose you — one clear sentence?" },
+    { label: "Unique Value Proposition", area: "uvp", tone: "accent", placeholder: "Why should someone choose you — one clear sentence?" },
     { label: "Unfair Advantage",         area: "ua",  placeholder: "What do you have that cannot be easily copied or bought?" },
     { label: "Customer Segments",        area: "cs",  placeholder: "Who are the early adopters — specific people, not everyone?" },
     { label: "Key Metrics",              area: "km",  placeholder: "What one number tells you this is working?" },

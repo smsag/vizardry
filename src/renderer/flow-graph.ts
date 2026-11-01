@@ -22,11 +22,12 @@ import { createSvgEl } from "../shared/svg";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
 import { rectBoundary } from "../shared/geometry";
 import { createInlineEl, setInline, stripInline } from "../shared/inline-markdown";
+import { watchOverflowHint } from "../shared/overflow-hint";
 
 // ── Layout constants (SVG user units) ────────────────────────────────────────
 const PAD = 24;
 const CARD_W = 208;
-const COL_GAP = 72;
+const COL_GAP = 56;
 const CARD_GAP = 18;
 const CARD_PAD_X = 13;
 const CARD_PAD_TOP = 11;
@@ -288,6 +289,9 @@ export function renderFlowGraph(wrap: HTMLElement, spec: FlowSpec, rc: RenderCon
     height: String(h),
     class: "vzd-flow-svg",
   });
+  // The natural width, for the CSS that lets the graph shrink to the canvas
+  // (down to a readable floor) before it has to scroll.
+  svg.style.setProperty("--vzd-flow-w", `${width}px`);
   renderMarker(svg);
   for (const edge of spec.edges) {
     const from = byId.get(edge.from), to = byId.get(edge.to);
@@ -296,4 +300,5 @@ export function renderFlowGraph(wrap: HTMLElement, spec: FlowSpec, rc: RenderCon
   for (const node of placed) renderCard(svg, node, rc, spec.edit);
   if (spec.edit) renderAddButtons(svg, placed, spec);
   wrap.appendChild(svg);
+  watchOverflowHint(wrap);
 }

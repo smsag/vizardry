@@ -1,8 +1,9 @@
-## 0.76.0
+## Unreleased
 
-New: Scribble, a freehand sketch canvas for iPad and Apple Pencil. Mind Map,
-Fishbone, Venn and Customer Journey Map are gone. Obsidian draws the same
-diagrams itself in a ` ```mermaid ` block.
+New: Scribble, a freehand sketch canvas for iPad and Apple Pencil. And a
+design pass across the canvases: RACI becomes a real matrix, grid canvases
+show what their framework means, and titles, small text and header colours
+read better in light, dark and exports.
 
 - **New: Scribble (`type: scribble`).** Insert it, switch to Live Preview,
   tap **Draw** and sketch with Apple Pencil on an endless canvas. The pencil
@@ -13,11 +14,92 @@ diagrams itself in a ` ```mermaid ` block.
   theme colours, undo / redo and clear. Hold still at the end of a stroke to
   turn it into a straight line. The lasso selects strokes — circle them or
   tap one — to move, recolour or delete them. Paper can be blank, dotted,
-  grid or lined. Outside draw mode the
-  note shows the whole drawing, fitted to the frame. The drawing is saved
-  into the note itself, a moment after each stroke, so it syncs with the
-  note, shows up in Git one line per stroke, and renders in the browser
-  extension. On a device without a pen, turn on finger drawing.
+  grid or lined. Outside draw mode the note shows the whole drawing, fitted
+  to the frame. The drawing is saved into the note itself, a moment after
+  each stroke, so it syncs with the note, shows up in Git one line per
+  stroke, and renders in the browser extension. On a device without a pen,
+  turn on finger drawing.
+- **RACI is a real matrix.** Tasks run down the side, people across the top,
+  and each cell shows the role that person plays on that task: **A** filled,
+  **R** tinted, **C** outlined, **I** a soft disc. It reads in black and white
+  too. Before, the five role columns were separate lists, so a row only lined
+  up while every list had the same length, and you couldn't read one person's
+  share. Rows missing an accountable person or a responsible one, or with
+  more than one accountable, say so in the row. A workload row totals what
+  each person does (R) and owns (A), and a legend explains the letters. In
+  Live Preview, click a cell to pick a role, click a task or a person to
+  rename them (a person is renamed in every task), and use the + controls to
+  add a task or a person. On a phone the table scrolls sideways with the task
+  column fixed.
+- **Grid canvases show their framework's meaning.** SWOT marks Strengths and
+  Opportunities as helpful and Weaknesses and Threats as harmful, and labels
+  its internal / external and helpful / harmful axes. ERRC labels its two
+  columns lower cost / lift value and colours Eliminate, Reduce, Raise and
+  Create apart. The Value Proposition Canvas labels value map / customer
+  profile, and 4Ls colours its four Ls. The block a canvas is built around
+  (Business Model Canvas's Value Propositions, Lean Canvas's Unique Value
+  Proposition, Jobs Canvas's Main Job, and so on) is highlighted in your
+  accent colour. Colour only backs up the label, so nothing depends on
+  seeing it.
+- **SCQA grid labels its levels.** Each row is named (Situation,
+  Complication, Question, Answer; Resolution for SCR) in the same colours as
+  the tree view. Answers are no longer drawn dashed and greyed out, which
+  made the conclusions look like placeholders.
+- **Wardley labels keep clear of the lines.** Each component's label now
+  takes the free spot around its node instead of always the same corner, so
+  a name no longer prints across a link, an evolution arrow or a pipeline's
+  sub-labels. The visibility axis is marked Visible at the top and
+  Invisible at the bottom.
+- **Circle of Influence lists its items beside the rings.** Items used to
+  sit in the rings as chips, and a chip is wider than a ring is deep, so at
+  the sides of the circle they straddled the line between two rings — the
+  one thing this canvas must keep clear. The rings now show how many items
+  each holds, and the items are listed next to them, one group per ring,
+  Control first.
+- **Matrix: free-placed items read as points.** An item placed by
+  coordinates (`[0.28, 0.24]`) shows a dot at its exact spot with its label
+  beside it, instead of a label centred on the spot that seemed to sit in
+  whichever cell it covered most. The matrix no longer runs a few pixels
+  past the canvas and clips its right edge.
+- **Flow diagrams fit the note.** The SIPOC flow and the Problem flow
+  shrink to the width of the note (down to 80%, so the text stays
+  readable) before they scroll. Before, the SIPOC flow's Customer column
+  was cut off at the edge. When a flow, the SIPOC table or the RACI matrix
+  still runs past the edge, that edge fades so you can tell there is more
+  to scroll to. Exports and the presentation view are never faded.
+- **Graph details.** In the Node Map, a coloured link's arrowhead now
+  matches its line. Link labels on the Node Map and Concept Map are a size
+  larger. A concept map marks its central concept, the one with clearly
+  the most links.
+- **Odyssey plans no longer look good, bad and neutral.** Each plan's colour
+  now comes from a narrow band around your accent. From Obsidian's default
+  indigo, the three plans used to be indigo, red and green, which read as
+  a verdict next to the red-to-green score meters. Year and plan badges are
+  a shade darker, so their white letters stay readable.
+- **Whole Person: every dimension's colour shows.** The dots and card
+  borders are mixed toward the text colour, so a light hue (the yellow
+  Heart from an indigo accent) still reads on a white page.
+- **Calmer blocks.** Block labels lose the rule under them, items get a dot
+  instead of a "›" chevron (Pace Layers too), and an empty block is shorter,
+  so an empty nine-block canvas no longer fills the screen.
+- **Titles as you wrote them.** Canvas titles are no longer forced into
+  spaced-out capitals, which made them louder than the note's own headings.
+- **Small text is readable.** Card subtitles on Story Map and Roadmap,
+  tree node sub-labels and small caps labels used to shrink to
+  about 9.5px. They now stay at 10–11px or larger.
+- **Fix: pale Roadmap and SIPOC headers had white text.** Obsidian reports
+  those tinted headers' colours in a format Vizardry didn't parse, so it
+  fell back to white text, which was barely visible on the Next and Later
+  columns. The text colour is now chosen by actual contrast again.
+- **Clearer connectors.** Tree branches and flow arrows (Impact Map,
+  OST, Problem, SIPOC flow) are drawn in a darker, dedicated line colour
+  instead of the card-border grey, which almost vanished on white.
+
+## 0.76.0
+
+Mind Map, Fishbone, Venn and Customer Journey Map are gone. Obsidian draws
+the same diagrams itself in a ` ```mermaid ` block.
+
 - **Removed: Mind Map (`mindmap`), Fishbone (`fishbone` and its 6M, 4S and
   7P presets), Venn (`venn`) and Customer Journey Map (`journey`, including
   the Service Blueprint, `journey, blueprint`).** Their insert commands and

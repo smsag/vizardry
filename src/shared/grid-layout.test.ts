@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { collapseGridLayout, expandTracks, parseTemplate, type GridLayout } from "./grid-layout";
+import { collapseGridLayout, expandTracks, parseTemplate, withAxes, type GridLayout } from "./grid-layout";
 import { ALL_FRAMEWORKS } from "../frameworks-registry";
 
 const SWOT: GridLayout = { template: '"sw wk" "op th"', columns: "repeat(2, 1fr)", rows: "repeat(2, 1fr)" };
@@ -103,6 +103,48 @@ describe("collapseGridLayout — every grid framework", () => {
       expect(expandTracks(out.rows)!.length).toBe(grid.length);
       for (const a of areas) expect(grid.flat().includes(a)).toBe(kept.includes(a));
       expect(grid.flat(), `${f.id} keeping ${kept.join(",")} leaves a hole: ${out.template}`).not.toContain(".");
+    }
+  });
+});
+
+describe("withAxes", () => {
+  const swot: GridLayout = { template: `"sw wk" "op th"`, columns: "repeat(2, 1fr)", rows: "repeat(2, 1fr)" };
+
+  it("adds a label row above and a label column to the left", () => {
+    const out = withAxes(swot, { columns: ["Helpful", "Harmful"], rows: ["Internal", "External"] })!;
+    expect(parseTemplate(out.layout.template)).toEqual([
+      [".", "vzd-axc0", "vzd-axc1"],
+      ["vzd-axr0", "sw", "wk"],
+      ["vzd-axr1", "op", "th"],
+    ]);
+    expect(out.layout.columns).toBe("auto 1fr 1fr");
+    expect(out.layout.rows).toBe("auto 1fr 1fr");
+    expect(out.cells.map(c => [c.area, c.label, c.orient])).toEqual([
+      ["vzd-axr0", "Internal", "row"],
+      ["vzd-axr1", "External", "row"],
+      ["vzd-axc0", "Helpful", "column"],
+      ["vzd-axc1", "Harmful", "column"],
+    ]);
+  });
+
+  it("adds only the axis that is given", () => {
+    const out = withAxes(swot, { columns: ["Lower cost", "Lift value"] })!;
+    expect(parseTemplate(out.layout.template)).toEqual([["vzd-axc0", "vzd-axc1"], ["sw", "wk"], ["op", "th"]]);
+    expect(out.layout.columns).toBe("1fr 1fr");
+    expect(out.layout.rows).toBe("auto 1fr 1fr");
+  });
+
+  it("ignores labels whose count does not match the grid, and returns null if none fit", () => {
+    expect(withAxes(swot, { columns: ["Only one"] })).toBeNull();
+    const out = withAxes(swot, { columns: ["a", "b", "c"], rows: ["Internal", "External"] })!;
+    expect(out.cells.every(c => c.orient === "row")).toBe(true);
+  });
+
+  it("fits every framework that declares axes", () => {
+    for (const fw of ALL_FRAMEWORKS.filter(f => f.axes)) {
+      const out = withAxes({ template: fw.gridTemplate, columns: fw.gridColumns, rows: fw.gridRows }, fw.axes!);
+      const expected = (fw.axes!.columns?.length ?? 0) + (fw.axes!.rows?.length ?? 0);
+      expect(out?.cells.length, fw.id).toBe(expected);
     }
   });
 });

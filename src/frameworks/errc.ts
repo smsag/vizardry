@@ -16,10 +16,11 @@ export const ERRC: FrameworkDefinition = {
   `,
   gridColumns: "repeat(2, 1fr)",
   gridRows: "repeat(2, 1fr)",
+  axes: { columns: ["Lower cost", "Lift value"] },
   blocks: [
-    { label: "Eliminate", area: "el", placeholder: "Which factors the industry takes for granted should be eliminated?" },
-    { label: "Raise",     area: "ra", placeholder: "Which factors should be raised well above the industry standard?" },
-    { label: "Reduce",    area: "re", placeholder: "Which factors should be reduced well below the industry standard?" },
-    { label: "Create",    area: "cr", placeholder: "Which factors should be created that the industry has never offered?" },
+    { label: "Eliminate", area: "el", tone: "negative", placeholder: "Which factors the industry takes for granted should be eliminated?" },
+    { label: "Raise",     area: "ra", tone: "info", placeholder: "Which factors should be raised well above the industry standard?" },
+    { label: "Reduce",    area: "re", tone: "caution", placeholder: "Which factors should be reduced well below the industry standard?" },
+    { label: "Create",    area: "cr", tone: "positive", placeholder: "Which factors should be created that the industry has never offered?" },
   ],
 };

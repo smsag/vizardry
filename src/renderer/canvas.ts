@@ -14,7 +14,7 @@ import { renderHeaderChip } from "./header-chip";
 import { renderLinearKeyBadge } from "../shared/linear-enrichment";
 import { renderUpvotyKeyBadge } from "../shared/upvoty-enrichment";
 import type { FrameworkDefinition } from "../types";
-import { collapseGridLayout } from "../shared/grid-layout";
+import { collapseGridLayout, withAxes } from "../shared/grid-layout";
 
 // ── Relink registry ───────────────────────────────────────────────────────────
 // Keeps track of rendered canvas blocks that need their link buttons refreshed
@@ -172,14 +172,23 @@ export function renderCanvas(
   const declared = framework.blocks.filter(b => Object.prototype.hasOwnProperty.call(data, b.label.toLowerCase()));
   const visibleBlocks = declared.length > 0 ? declared : framework.blocks;
   const fullLayout = { template: framework.gridTemplate, columns: framework.gridColumns, rows: framework.gridRows };
-  const layout = visibleBlocks.length === framework.blocks.length
-    ? fullLayout
+  const complete = visibleBlocks.length === framework.blocks.length;
+  // Axis labels name the full grid's rows and columns, so a collapsed grid
+  // (blocks left out) goes without them rather than mislabelling.
+  const axes = complete && framework.axes ? withAxes(fullLayout, framework.axes) : null;
+  const layout = axes ? axes.layout
+    : complete ? fullLayout
     : collapseGridLayout(fullLayout, new Set(visibleBlocks.map(b => b.area)));
 
   const grid = container.createEl("div", { cls: "vizardry-grid" });
   grid.style.setProperty("--vzd-template", layout.template);
   grid.style.setProperty("--vzd-columns", layout.columns);
   grid.style.setProperty("--vzd-rows", layout.rows);
+  for (const cell of axes?.cells ?? []) {
+    const axis = grid.createEl("div", { cls: `vzd-grid-axis vzd-grid-axis--${cell.orient}` });
+    axis.style.setProperty("--vzd-area", cell.area);
+    axis.createEl("span", { cls: "vzd-grid-axis-label", text: cell.label });
+  }
 
   // Two passes: the first creates every block's DOM (label, link button,
   // body element) and figures out which ones are card-mode; the second
@@ -198,6 +207,7 @@ export function renderCanvas(
     // specificity rather than fighting an inline style with !important.
     block.style.setProperty("--vzd-area", blockDef.area);
     block.setAttribute("data-area", blockDef.area);
+    if (blockDef.tone) block.setAttribute("data-vzd-tone", blockDef.tone);
 
     const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
     labelRow.createEl("span", { text: blockDef.label, cls: "vizardry-block-label" });

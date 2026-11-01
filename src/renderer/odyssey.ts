@@ -5,7 +5,7 @@ import { setupSlideCarousel } from "./grid-carousel";
 import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import { createSvgEl } from "../shared/svg";
-import { accentHueExpr } from "../shared/accent-colors";
+import { analogousHueExpr } from "../shared/accent-colors";
 import { t } from "../i18n";
 import { createInlineEl } from "../shared/inline-markdown";
 
@@ -60,8 +60,10 @@ function renderGauge(host: HTMLElement, gauge: OdysseyGauge): void {
 function renderPlan(grid: HTMLElement, plan: OdysseyPlan, index: number, count: number): void {
   const col = grid.createEl("div", { cls: "vzd-odyssey-plan" });
   col.dataset.planIndex = String(index);
-  // Each plan takes an accent-harmonised hue (plan 1 is the accent itself).
-  col.style.setProperty("--vzd-odyssey-hue", accentHueExpr(index, count));
+  // Each plan takes a hue close to the accent (plan 1 is the accent itself):
+  // the plans are equal alternatives, so none may read as the red or green
+  // their score meters use for bad and good.
+  col.style.setProperty("--vzd-odyssey-hue", analogousHueExpr(index, count));
 
   const header = col.createEl("div", { cls: "vzd-odyssey-plan-header" });
   header.createEl("span", { cls: "vzd-odyssey-plan-label", text: plan.label });

@@ -22,6 +22,20 @@ export function accentHueExpr(index: number, count: number): string {
   return offset === 0 ? "var(--accent-h)" : `calc(var(--accent-h) + ${offset})`;
 }
 
+/**
+ * CSS hue token for item `index` of `count` drawn from a narrow band around
+ * the accent (index 0 is the accent, then alternating +/- steps within
+ * ±`spread` degrees). For equal alternatives — Odyssey's plans — where an even
+ * rotation would land on red and green (it does from Obsidian's default
+ * indigo) and read as bad and good next to the plans' red→green score meters.
+ */
+export function analogousHueExpr(index: number, count: number, spread = 40): string {
+  if (index === 0) return "var(--accent-h)";
+  const step = spread / Math.max(1, Math.ceil((count - 1) / 2));
+  const offset = Math.round(Math.ceil(index / 2) * step * (index % 2 === 1 ? 1 : -1));
+  return `calc(var(--accent-h) + ${offset})`;
+}
+
 /** A full `hsl(...)` colour harmonised with the accent (rotated hue, accent S/L). */
 export function harmonizedAccentColor(index: number, count: number): string {
   return `hsl(${accentHueExpr(index, count)} var(--accent-s) var(--accent-l))`;
