@@ -217,7 +217,7 @@ function renderLinks(
       const px = -dy / len, py = dx / len;
       const lx = mx + px * LABEL_OFFSET, ly = my + py * LABEL_OFFSET;
       const label = stripInline(link.label);
-      const labelW = Math.ceil(label.length * 6.2 + 12);
+      const labelW = Math.ceil(label.length * 6.8 + 12);
       linkG.appendChild(createSvgEl("rect", {
         x: String(lx - labelW / 2), y: String(ly - 9), width: String(labelW), height: "16", rx: "3",
         class: "vzd-nodemap-link-label-bg",

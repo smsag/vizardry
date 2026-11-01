@@ -15,6 +15,7 @@ import { bestTextColor } from "../shared/color-utils";
 import type { RenderContext } from "./render-context";
 import type { FlowNode, FlowEdge, StageDef, FlowRole } from "../types/problem";
 import { renderFlowGraph } from "./flow-graph";
+import { watchOverflowHint } from "../shared/overflow-hint";
 import { Notice } from "obsidian";
 
 export function renderSIPOC(
@@ -110,6 +111,7 @@ function renderSIPOCTable(
 
   const wrap = container.createEl("div", { cls: "vzd-sipoc-wrap" });
   const table = wrap.createEl("table", { cls: "vzd-sipoc-table" });
+  watchOverflowHint(wrap);
 
   const thead = table.createEl("thead");
   const headerRow = thead.createEl("tr");

@@ -812,6 +812,8 @@ Add `view: tree` (top level) to render as a branching diagram instead of the def
 
 A free-form **directed graph**; nodes are collected automatically from the edges (no node list). These lines are the exception to the "keywords end in a colon" rule.
 
+The concept with clearly the most links (at least three, and more than any other) is drawn as the map's centre: a stronger fill and a bold label.
+
 ~~~
 ```vizardry
 type: conceptmap

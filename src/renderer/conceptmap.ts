@@ -147,6 +147,20 @@ function resolveOverlaps(positions: Vec2[], widths: number[]): void {
   }
 }
 
+/**
+ * The concept the map is about: the one with the most links, when it clearly
+ * leads (at least three, and more than any other). A concept map reads from
+ * its central idea outward, and the force layout gives no other sign of which
+ * box that is. Returns -1 when no concept stands out.
+ */
+export function hubIndex(n: number, edges: { from: number; to: number }[]): number {
+  const degree = new Array<number>(n).fill(0);
+  for (const e of edges) { degree[e.from]!++; degree[e.to]!++; }
+  const max = Math.max(0, ...degree);
+  if (max < 3 || degree.filter(d => d === max).length > 1) return -1;
+  return degree.indexOf(max);
+}
+
 export function renderConceptMap(
   data: ConceptMap,
   container: HTMLElement,
@@ -234,7 +248,7 @@ export function renderConceptMap(
       const lx = mx + px * LABEL_OFFSET;
       const ly = my + py * LABEL_OFFSET;
       const edgeLabel = stripInline(edge.label);
-      const labelW = Math.ceil(edgeLabel.length * 6.2 + 12);
+      const labelW = Math.ceil(edgeLabel.length * 6.8 + 12);
 
       const bgRect = createSvgEl("rect", {
         x: String(lx - labelW / 2), y: String(ly - 9),
@@ -256,6 +270,7 @@ export function renderConceptMap(
   }
 
   // ── Nodes ─────────────────────────────────────────────────────────────────
+  const hub = hubIndex(n, edgeIdxs);
   for (let i = 0; i < n; i++) {
     const { x, y } = positions[i];
     const w = widths[i];
@@ -264,13 +279,13 @@ export function renderConceptMap(
       x: String(x - w / 2), y: String(y - hh),
       width: String(w), height: String(NODE_H),
       rx: String(NODE_RX),
-      class: "vzd-cmap-node",
+      class: i === hub ? "vzd-cmap-node vzd-cmap-node--hub" : "vzd-cmap-node",
     });
     svg.appendChild(rect);
 
     const label = createSvgEl("text", {
       x: String(x), y: String(y),
-      class: "vzd-cmap-node-label",
+      class: i === hub ? "vzd-cmap-node-label vzd-cmap-node-label--hub" : "vzd-cmap-node-label",
       "text-anchor": "middle",
       "dominant-baseline": "central",
     });

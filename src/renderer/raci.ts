@@ -13,6 +13,7 @@ import { parseTitle, writeCanvasTitle } from "../shared/title-edit";
 import { isEditModeActive } from "../shared/editor";
 import type { RenderContext } from "./render-context";
 import { createInlineEl, setInline } from "../shared/inline-markdown";
+import { watchOverflowHint } from "../shared/overflow-hint";
 
 /**
  * RACI Matrix — a real matrix: one row per task, one column per person, and
@@ -256,6 +257,7 @@ export function renderRACIMatrix(
   const root = container.createEl("div", { cls: "vzd-raci" });
   const wrap = root.createEl("div", { cls: "vzd-raci-wrap" });
   renderTable(wrap, rows, raciPeople(rows), rc, ed);
+  watchOverflowHint(wrap);
 
   if (ed) {
     createAddControl(root, {
