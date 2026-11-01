@@ -1,3 +1,47 @@
+## Unreleased
+
+A design pass across the canvases: RACI becomes a real matrix, grid canvases
+show what their framework means, and titles, small text and header colours
+read better in light, dark and exports.
+
+- **RACI is a real matrix.** Tasks run down the side, people across the top,
+  and each cell shows the role that person plays on that task: **A** filled,
+  **R** tinted, **C** outlined, **I** a soft disc. It reads in black and white
+  too. Before, the five role columns were separate lists, so a row only lined
+  up while every list had the same length, and you couldn't read one person's
+  share. Rows missing an accountable person or a responsible one, or with
+  more than one accountable, say so in the row. A workload row totals what
+  each person does (R) and owns (A), and a legend explains the letters. In
+  Live Preview, click a cell to pick a role, click a task or a person to
+  rename them (a person is renamed in every task), and use the + controls to
+  add a task or a person. On a phone the table scrolls sideways with the task
+  column fixed.
+- **Grid canvases show their framework's meaning.** SWOT marks Strengths and
+  Opportunities as helpful and Weaknesses and Threats as harmful, and labels
+  its internal / external and helpful / harmful axes. ERRC labels its two
+  columns lower cost / lift value and colours Eliminate, Reduce, Raise and
+  Create apart. The Value Proposition Canvas labels value map / customer
+  profile, and 4Ls colours its four Ls. The block a canvas is built around
+  (Business Model Canvas's Value Propositions, Lean Canvas's Unique Value
+  Proposition, Jobs Canvas's Main Job, and so on) is highlighted in your
+  accent colour. Colour only backs up the label, so nothing depends on
+  seeing it.
+- **Calmer blocks.** Block labels lose the rule under them, items get a dot
+  instead of a "›" chevron (Pace Layers too), and an empty block is shorter,
+  so an empty nine-block canvas no longer fills the screen.
+- **Titles as you wrote them.** Canvas titles are no longer forced into
+  spaced-out capitals, which made them louder than the note's own headings.
+- **Small text is readable.** Card subtitles on Story Map, Journey and
+  Roadmap, tree node sub-labels and small caps labels used to shrink to
+  about 9.5px. They now stay at 10–11px or larger.
+- **Fix: pale Roadmap and SIPOC headers had white text.** Obsidian reports
+  those tinted headers' colours in a format Vizardry didn't parse, so it
+  fell back to white text, which was barely visible on the Next and Later
+  columns. The text colour is now chosen by actual contrast again.
+- **Clearer connectors.** Tree branches and flow arrows (Mind Map, Impact
+  Map, Problem, SIPOC flow) are drawn in a darker, dedicated line colour
+  instead of the card-border grey, which almost vanished on white.
+
 ## 0.75.2
 
 Hotfix: sketch-mode canvases no longer freeze Obsidian on an iPhone.
