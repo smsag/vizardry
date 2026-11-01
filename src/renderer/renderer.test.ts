@@ -156,6 +156,30 @@ describe("renderCanvas", () => {
     expect(blocks).toHaveLength(4);
   });
 
+  it("marks toned blocks and draws the framework's axis labels on a complete grid", () => {
+    const toned: FrameworkDefinition = {
+      ...swot,
+      axes: { columns: ["Helpful", "Harmful"], rows: ["Internal", "External"] },
+      blocks: swot.blocks.map((b, i) => ({ ...b, tone: i % 2 === 0 ? "positive" as const : "negative" as const })),
+    };
+    const el = container();
+    renderCanvas(toned, { strengths: "a", weaknesses: "", opportunities: "", threats: "" },
+      new Set(), el, NULL_RESOLVER, vi.fn());
+    expect([...el.querySelectorAll(".vizardry-block")].map(b => b.getAttribute("data-vzd-tone")))
+      .toEqual(["positive", "negative", "positive", "negative"]);
+    expect([...el.querySelectorAll(".vzd-grid-axis-label")].map(a => a.textContent))
+      .toEqual(["Internal", "External", "Helpful", "Harmful"]);
+    const grid = el.querySelector<HTMLElement>(".vizardry-grid")!;
+    expect(grid.style.getPropertyValue("--vzd-columns")).toBe("auto 1fr 1fr");
+  });
+
+  it("leaves the axis labels off when blocks are left out, since they would mislabel", () => {
+    const toned: FrameworkDefinition = { ...swot, axes: { columns: ["Helpful", "Harmful"] } };
+    const el = container();
+    renderCanvas(toned, { strengths: "a", weaknesses: "" }, new Set(), el, NULL_RESOLVER, vi.fn());
+    expect(el.querySelector(".vzd-grid-axis")).toBeNull();
+  });
+
   // WHEN a SWOT canvas leaves out the Opportunities and Threats blocks
   // THEN it still renders, with just the two declared blocks.
   it("renders only the declared blocks when some are left out", () => {

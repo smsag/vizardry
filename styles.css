@@ -568,13 +568,48 @@ button.vzd-pin-bar-btn {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.8rem 0.75rem;
   display: flex;
   flex-direction: column;
   align-content: start;
-  gap: 0.35rem;
-  min-height: 180px;
+  gap: 0.45rem;
+  /* Room to write into, without an empty nine-block canvas running to
+     three screens: the grid's own row tracks still stretch filled blocks. */
+  min-height: 8.5rem;
 }
+
+/* A block whose framework gives it a meaning (data-vzd-tone, see the shared
+   tokens): a coloured top edge and label, a barely-there tint, and bullets
+   in the same hue. The label carries the meaning, so colour only reinforces. */
+.vizardry-block[data-vzd-tone] {
+  border-top: 3px solid color-mix(in srgb, var(--vzd-tone) 70%, var(--background-primary));
+  background: color-mix(in srgb, var(--vzd-tone) 4%, var(--background-primary));
+}
+.vizardry-block[data-vzd-tone] .vizardry-block-label { color: var(--vzd-tone-ink); }
+.vizardry-block[data-vzd-tone] .vzd-block-line::before { background: var(--vzd-tone-line); }
+
+/* Axis labels around the grid (FrameworkDefinition.axes). */
+.vzd-grid-axis {
+  grid-area: var(--vzd-area);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--vzd-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.vzd-grid-axis--column { padding: 0 0 0.1rem; }
+.vzd-grid-axis--row { padding: 0 0.1rem 0 0; }
+.vzd-grid-axis--row .vzd-grid-axis-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+/* One block at a time on a phone: the axes have nothing to sit beside. */
+.vzd-carousel .vzd-grid-axis { display: none; }
+.vizardry-capturing .vzd-grid-axis,
+.vzd-presentation-wrap .vzd-grid-axis { display: flex !important; }
 
 .vizardry-block:hover {
   border-color: var(--background-modifier-border);
@@ -584,9 +619,7 @@ button.vzd-pin-bar-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.1rem;
+  min-height: 1.5em;
 }
 
 /* Increased size and contrast vs original 0.65rem / --text-muted:
@@ -594,8 +627,8 @@ button.vzd-pin-bar-btn {
    No-wrap prevents long labels (e.g. UNIQUE VALUE PROPOSITION) from
    breaking the block header height across the row. */
 .vizardry-block-label {
-  font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.85);
-  font-weight: 700;
+  font-size: var(--vzd-fs-sm);
+  font-weight: 650;
   color: var(--text-normal);
   white-space: nowrap;
   overflow: hidden;
@@ -626,23 +659,27 @@ button.vzd-pin-bar-btn {
 }
 
 .vzd-block-line {
-  padding-left: 0.9em;
-  text-indent: -0.9em;
+  position: relative;
+  padding-left: 0.95em;
 }
 
-/* Arrow marker (›) — sits in the hanging-indent space so wrapped lines
-   remain clearly subordinate to their parent item. */
+/* Dot marker in the hanging-indent space, centred on the first line, so
+   wrapped lines stay clearly subordinate to their item. (A "›" glyph sat on
+   the baseline and read as a stray character.) */
 .vzd-block-line::before {
-  content: "›";
-  color: var(--text-faint);
-  margin-right: 0.2em;
-  font-size: 0.95em;
-  line-height: 1;
+  content: "";
+  position: absolute;
+  left: 0.1em;
+  top: calc(0.725em - 0.17em);
+  width: 0.34em;
+  height: 0.34em;
+  border-radius: 50%;
+  background: var(--text-faint);
 }
 
-/* Minimal gap between items — enough to separate, not enough to feel like a blank line */
+/* Enough to separate items, not enough to read as a blank line. */
 .vzd-block-line + .vzd-block-line {
-  margin-top: 0.22em;
+  margin-top: 0.3em;
 }
 
 /* ── Inline highlight (==text==, ==🔴text== …) ──

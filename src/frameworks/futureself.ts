@@ -17,7 +17,7 @@ export const FUTURE_SELF: FrameworkDefinition = {
   periodField: true,
   blocks: [
     { label: "As-Is",   area: "asis",    cardBlock: true, placeholder: "Where you are now — a few honest bullets" },
-    { label: "To-Be",   area: "tobe",    cardBlock: true, placeholder: "Where you want to be by the end of the period" },
+    { label: "To-Be",   area: "tobe", tone: "accent",    cardBlock: true, placeholder: "Where you want to be by the end of the period" },
     { label: "Actions", area: "actions", cardBlock: true, placeholder: "1–5 main points that bridge the gap" },
   ],
 };

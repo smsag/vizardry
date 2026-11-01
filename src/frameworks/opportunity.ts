@@ -10,7 +10,7 @@ export const OPPORTUNITY: FrameworkDefinition = {
   gridColumns: "repeat(5, 1fr)",
   gridRows: "1fr 1fr",
   blocks: [
-    { label: "Problem / Opportunity", area: "po", placeholder: "What problem does this solve — or what opportunity does it capture?" },
+    { label: "Problem / Opportunity", area: "po", tone: "accent", placeholder: "What problem does this solve — or what opportunity does it capture?" },
     { label: "Solution Ideas",        area: "si", placeholder: "What approaches might work — brainstorm before narrowing?" },
     { label: "Target Users",          area: "tu", placeholder: "Who would benefit — and what are they doing today?" },
     { label: "User Outcomes",         area: "uo", placeholder: "What will users do differently if this works?" },
