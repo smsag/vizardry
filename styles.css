@@ -3438,7 +3438,8 @@ button.vzd-item-menu::after {
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Darkened a step so the white letters hold contrast on every hue. */
+  background: color-mix(in srgb, hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 82%, #000);
   color: var(--text-on-accent, #fff);
   font-weight: 700;
   font-size: calc(var(--vzd-base, var(--font-ui-small)) * 0.9);
@@ -3493,7 +3494,8 @@ button.vzd-item-menu::after {
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Darkened a step so the white letters hold contrast on every hue. */
+  background: color-mix(in srgb, hsl(var(--vzd-odyssey-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 82%, #000);
   color: var(--text-on-accent, #fff);
   font-size: calc(var(--vzd-base, var(--font-ui-smaller)) * 0.95);
   font-weight: 700;
@@ -3784,7 +3786,9 @@ button.vzd-item-menu::after {
 
 .vzd-wp-card {
   border: 1px solid var(--background-modifier-border);
-  border-left: 3px solid hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  /* Mixed toward the text colour so a light hue (the yellow from an indigo
+     accent) still shows as a line on white; the wheel keeps the pure hue. */
+  border-left: 3px solid color-mix(in srgb, hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 78%, var(--text-normal));
   border-radius: var(--radius-m);
   padding: 0.5rem 0.6rem;
   background: var(--background-secondary);
@@ -3800,7 +3804,7 @@ button.vzd-item-menu::after {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l));
+  background: color-mix(in srgb, hsl(var(--vzd-wp-hue, var(--accent-h)) var(--accent-s) var(--accent-l)) 78%, var(--text-normal));
   flex: 0 0 auto;
 }
 
