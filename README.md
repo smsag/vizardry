@@ -85,6 +85,26 @@ Three ways to insert a fully structured empty template at your cursor:
 
 On **mobile**, add any Vizardry command to the editor toolbar via Settings → Mobile → Edit toolbar for one-tap access above the keyboard.
 
+### New-canvas links (for playbooks)
+
+A link can create a **new note** holding an empty canvas and open it in a new tab — handy in a playbook that walks through one framework per step:
+
+```markdown
+1. Map the business: [New Business Model Canvas](obsidian://vizardry-new?canvas=bmc)
+2. Prioritise pains: [New Pain Point Matrix](obsidian://vizardry-new?canvas=pain-matrix)
+```
+
+Every click creates a fresh note; an existing note is never overwritten (`Business Model Canvas 2`, `… 3`, …). Run **Insert link that creates a new canvas note…** from the command palette to pick a canvas and insert a ready-made link.
+
+| Parameter | | |
+|---|---|---|
+| `canvas` | required | Any `type:` value from the table above, or a [preset alias](#preset-aliases) such as `pain-matrix` |
+| `name` | optional | Note name — defaults to the canvas name. Characters a note name can't hold are dropped |
+| `folder` | optional | Vault-relative folder, created if missing — defaults to your *Default location for new notes*. `..` and hidden folders are refused |
+| `vault` | optional | Handled by Obsidian: which vault to open the link in |
+
+Encode spaces as `%20`: `obsidian://vizardry-new?canvas=lean&name=Acme%20Lean%20Canvas&folder=Clients/Acme`. Obsidian plugins can't register a scheme of their own, so these links start with `obsidian://`, not `vizardry://`.
+
 ### Preset aliases
 
 Some canvases are reached through a variant of another `type:` rather than an

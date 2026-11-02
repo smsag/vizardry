@@ -18,11 +18,18 @@ import { VizardrySideleafView } from "./sideleaf/view";
 import { setPluginVersion } from "./shared/version";
 import { ensureSketchDefs, removeSketchDefs } from "./shared/sketch-defs";
 import { CanvasInsertModal } from "./modal";
+import type { FrameworkOption } from "./modal";
 import { createApi, VIZARDRY_NO_ENRICH_CLASS } from "./renderer/export-api";
 import type { VizardryApi } from "./renderer/export-api";
 import { getInsertOptions } from "./catalog";
 import { dispatchVizardry } from "./vizardry-dispatch";
 import { insertTemplateAtCursor } from "./shared/editor";
+import {
+  NEW_CANVAS_ACTION,
+  buildNewCanvasMarkdownLink,
+  createCanvasNote,
+  resolveNewCanvasRequest,
+} from "./new-canvas-link";
 import { VizardryHeadingSuggest } from "./heading-suggest";
 import { updatePersistedData } from "./shared/persisted-data";
 import { t } from "./i18n";
@@ -206,7 +213,7 @@ export default class VizardryPlugin extends Plugin {
     // The plugin's own mark, registered above; the same one the sideleaf tab
     // and the entry commands carry, so every way in looks like Vizardry.
     this.addRibbonIcon(VIZARDRY_ICON_ID, t("commands.insertVizardryCanvas"), () => {
-      withActiveMarkdownEditor((editor) => new CanvasInsertModal(this.app, editor, frameworkOptions).open());
+      withActiveMarkdownEditor((editor) => this.openInsertPicker(editor, frameworkOptions));
     });
 
     // ── Command: fuzzy modal ───────────────────────────────────────────
@@ -214,8 +221,27 @@ export default class VizardryPlugin extends Plugin {
       id: "insert-canvas",
       name: t("commands.insertCanvas"),
       icon: VIZARDRY_ICON_ID,
+      callback: () => withActiveMarkdownEditor((editor) => this.openInsertPicker(editor, frameworkOptions)),
+    });
+
+    // ── New-canvas links ───────────────────────────────────────────────
+    // `obsidian://vizardry-new?canvas=bmc` creates a note holding an empty
+    // canvas and opens it — for playbooks that link one canvas per step.
+    // See new-canvas-link.ts for the parameters.
+    this.registerObsidianProtocolHandler(NEW_CANVAS_ACTION, (params) => {
+      void this.handleNewCanvasLink(params, frameworkOptions);
+    });
+
+    // Writing such a link by hand means knowing the ids; this picks the
+    // canvas and inserts a ready-made `[New Business Model Canvas](…)` link.
+    this.addCommand({
+      id: "insert-new-canvas-link",
+      name: t("commands.insertNewCanvasLink"),
+      icon: VIZARDRY_ICON_ID,
       callback: () => withActiveMarkdownEditor((editor) => {
-        new CanvasInsertModal(this.app, editor, frameworkOptions).open();
+        new CanvasInsertModal(this.app, frameworkOptions, (option) => {
+          editor.replaceSelection(buildNewCanvasMarkdownLink(option, t("newCanvas.linkText", { label: option.label })));
+        }).open();
       }),
     });
 
@@ -228,6 +254,41 @@ export default class VizardryPlugin extends Plugin {
           insertTemplateAtCursor(editor, option.template);
         }),
       });
+    }
+  }
+
+  private openInsertPicker(editor: Editor, options: FrameworkOption[]): void {
+    new CanvasInsertModal(this.app, options, (option) => insertTemplateAtCursor(editor, option.template)).open();
+  }
+
+  /**
+   * Handle `obsidian://vizardry-new?…`: validate the link, create the note,
+   * open it in a new tab (so the playbook the link sits in stays open). Every
+   * failure says why in a Notice — a link that silently does nothing reads as
+   * a broken plugin.
+   */
+  private async handleNewCanvasLink(params: Record<string, string | undefined>, options: FrameworkOption[]): Promise<void> {
+    const request = resolveNewCanvasRequest(params, options);
+    if (!request.ok) {
+      if (request.reason === "missingCanvas") new Notice(t("newCanvas.missingCanvas"));
+      else if (request.reason === "unknownCanvas") new Notice(t("newCanvas.unknownCanvas", { canvas: request.canvas }));
+      else new Notice(t("newCanvas.invalidFolder", { folder: request.folder }));
+      return;
+    }
+    let file;
+    try {
+      file = await createCanvasNote(this.app, request);
+    } catch (err) {
+      console.error("Vizardry: could not create a note from a new-canvas link", err);
+      new Notice(t("newCanvas.createFailed"));
+      return;
+    }
+    try {
+      await this.app.workspace.getLeaf("tab").openFile(file);
+    } catch (err) {
+      // The note exists; only opening it failed. Say where it is.
+      console.error("Vizardry: created a canvas note but could not open it", err);
+      new Notice(t("newCanvas.openFailed", { path: file.path }));
     }
   }
 

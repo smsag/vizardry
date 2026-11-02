@@ -1,6 +1,5 @@
-import type { App, Editor} from "obsidian";
+import type { App } from "obsidian";
 import { SuggestModal } from "obsidian";
-import { insertTemplateAtCursor } from "./shared/editor";
 import { t } from "./i18n";
 
 export interface FrameworkOption {
@@ -10,14 +9,18 @@ export interface FrameworkOption {
   description: string;
 }
 
+/**
+ * Fuzzy framework picker. What a choice does is the caller's: insert the
+ * template at the cursor, or insert a link that creates a new canvas note.
+ */
 export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
-  private editor: Editor;
   private options: FrameworkOption[];
+  private onChoose: (option: FrameworkOption) => void;
 
-  constructor(app: App, editor: Editor, options: FrameworkOption[]) {
+  constructor(app: App, options: FrameworkOption[], onChoose: (option: FrameworkOption) => void) {
     super(app);
-    this.editor = editor;
     this.options = options;
+    this.onChoose = onChoose;
     this.setPlaceholder(t("commands.searchFrameworks"));
   }
 
@@ -36,6 +39,6 @@ export class CanvasInsertModal extends SuggestModal<FrameworkOption> {
   }
 
   onChooseSuggestion(option: FrameworkOption): void {
-    insertTemplateAtCursor(this.editor, option.template);
+    this.onChoose(option);
   }
 }

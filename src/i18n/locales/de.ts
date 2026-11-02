@@ -135,6 +135,7 @@ export const de: Partial<Record<TranslationKey, string>> = {
   "commands.insertCanvas":         "Canvas einfügen…",
   "commands.insertVizardryCanvas": "Vizardry-Canvas einfügen…",
   "commands.insertFramework":      "{{label}} einfügen",
+  "commands.insertNewCanvasLink":  "Link einfügen, der eine neue Canvas-Notiz anlegt…",
 
   // ── Druck-/PDF-Export-Dialog ─────────────────────────────────────────────────
 
@@ -258,6 +259,14 @@ export const de: Partial<Record<TranslationKey, string>> = {
 
   // ── Notices ─────────────────────────────────────────────────────────────────
   "notices.openMarkdownNote": "Öffne eine Markdown-Notiz im Bearbeitungsmodus, um diesen Befehl zu verwenden.",
+
+  // ── Neue-Canvas-Links (obsidian://vizardry-new?canvas=…) ───────────────────
+  "newCanvas.linkText":      "Neu: {{label}}",
+  "newCanvas.missingCanvas": "Vizardry: Dieser Link sagt nicht, welches Canvas angelegt werden soll. Ergänze ?canvas=<id>, z. B. obsidian://vizardry-new?canvas=bmc.",
+  "newCanvas.unknownCanvas": "Vizardry: Es gibt kein Canvas namens „{{canvas}}“. Mit „Link einfügen, der eine neue Canvas-Notiz anlegt…“ entsteht ein funktionierender Link.",
+  "newCanvas.invalidFolder": "Vizardry: Der Ordner „{{folder}}“ im Link ist nicht erlaubt. Nutze einen Ordner im Vault, ohne „..“ oder versteckte Ordner.",
+  "newCanvas.createFailed":  "Vizardry konnte die Notiz nicht anlegen — ist der Vault beschreibbar? Details in der Entwicklerkonsole.",
+  "newCanvas.openFailed":    "Vizardry hat {{path}} angelegt, konnte die Notiz aber nicht öffnen.",
   "notices.settingsSaveFailed": "Vizardry konnte seine Einstellungen nicht speichern – prüfe, ob der Vault beschreibbar ist. Details in der Entwicklerkonsole.",
   "commands.searchFrameworks": "Frameworks durchsuchen…",
 
