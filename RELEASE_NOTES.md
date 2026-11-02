@@ -1,10 +1,21 @@
-## Unreleased
+## 0.76.0
 
-New: Scribble, a freehand sketch canvas for iPad and Apple Pencil. And a
-design pass across the canvases: RACI becomes a real matrix, grid canvases
-show what their framework means, and titles, small text and header colours
-read better in light, dark and exports.
+New: Scribble, a freehand sketch canvas for iPad and Apple Pencil, and links
+that create a canvas note from a playbook. A design pass across the
+canvases: RACI becomes a real matrix, grid canvases show what their
+framework means, and titles, small text and header colours read better in
+light, dark and exports. Mind Map, Fishbone, Venn and Customer Journey Map
+are removed — Obsidian draws them itself in a ` ```mermaid ` block.
 
+- **Removed: Mind Map (`mindmap`), Fishbone (`fishbone` and its 6M, 4S and
+  7P presets), Venn (`venn`) and Customer Journey Map (`journey`, including
+  the Service Blueprint, `journey, blueprint`).** Their insert commands and
+  picker entries are gone too. A note that still has one of these blocks
+  shows `Unknown type "…"` in its place; the block's text stays in the note
+  untouched. To keep the drawing, rewrite the block as a ` ```mermaid ` block:
+  `mindmap`, `ishikawa-beta` for a fishbone, `venn-beta`, or `journey`.
+  Mermaid's journey is a satisfaction curve per step; it has no lanes for
+  touchpoints, pain points or a service blueprint.
 - **New: links that create a canvas note.** Put
   `[New Business Model Canvas](obsidian://vizardry-new?canvas=bmc)` in a
   playbook, and each click creates a new note holding an empty Business Model
@@ -104,21 +115,6 @@ read better in light, dark and exports.
 - **Clearer connectors.** Tree branches and flow arrows (Impact Map,
   OST, Problem, SIPOC flow) are drawn in a darker, dedicated line colour
   instead of the card-border grey, which almost vanished on white.
-
-## 0.76.0
-
-Mind Map, Fishbone, Venn and Customer Journey Map are gone. Obsidian draws
-the same diagrams itself in a ` ```mermaid ` block.
-
-- **Removed: Mind Map (`mindmap`), Fishbone (`fishbone` and its 6M, 4S and
-  7P presets), Venn (`venn`) and Customer Journey Map (`journey`, including
-  the Service Blueprint, `journey, blueprint`).** Their insert commands and
-  picker entries are gone too. A note that still has one of these blocks
-  shows `Unknown type "…"` in its place; the block's text stays in the note
-  untouched. To keep the drawing, rewrite the block as a ` ```mermaid ` block:
-  `mindmap`, `ishikawa-beta` for a fishbone, `venn-beta`, or `journey`.
-  Mermaid's journey is a satisfaction curve per step; it has no lanes for
-  touchpoints, pain points or a service blueprint.
 - **Fix: the strategy canvas clipped its last factor.** The label under the
   rightmost point was centred on it, so half of it hung over the edge of the
   canvas ("Reporti"). The first and last labels now lean inward and stay
