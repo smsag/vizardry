@@ -5,6 +5,15 @@ design pass across the canvases: RACI becomes a real matrix, grid canvases
 show what their framework means, and titles, small text and header colours
 read better in light, dark and exports.
 
+- **New: links that create a canvas note.** Put
+  `[New Business Model Canvas](obsidian://vizardry-new?canvas=bmc)` in a
+  playbook, and each click creates a new note holding an empty Business Model
+  Canvas and opens it in a new tab. `canvas` takes any `type:` value or preset
+  alias; optional `name` and `folder` set where the note goes (by default your
+  "Default location for new notes", named after the canvas, never
+  overwriting an existing note). **Insert link that creates a new canvas
+  note…** in the command palette picks the canvas and inserts the link for
+  you.
 - **New: Scribble (`type: scribble`).** Insert it, switch to Live Preview,
   tap **Draw** and sketch with Apple Pencil on an endless canvas. The pencil
   draws, one finger pans, two fingers pinch to zoom, and a palm resting while

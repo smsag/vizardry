@@ -144,6 +144,7 @@ export const en = {
   "commands.insertCanvas":           "Insert canvas…",
   "commands.insertVizardryCanvas":   "Insert Vizardry canvas…",
   "commands.insertFramework":        "Insert {{label}}",
+  "commands.insertNewCanvasLink":    "Insert link that creates a new canvas note…",
 
   // ── RACI Matrix column labels ─────────────────────────────────────────────
   "raci.col.task":        "Task",
@@ -274,6 +275,14 @@ export const en = {
   "notices.openMarkdownNote": "Open a Markdown note in editing mode to use this command.",
   "notices.settingsSaveFailed": "Vizardry could not save its settings — check that the vault is writable. See the developer console for details.",
   "commands.searchFrameworks": "Search frameworks…",
+
+  // ── New-canvas links (obsidian://vizardry-new?canvas=…) ─────────────────────
+  "newCanvas.linkText":      "New {{label}}",
+  "newCanvas.missingCanvas": "Vizardry: this link doesn't say which canvas to create. Add ?canvas=<id>, e.g. obsidian://vizardry-new?canvas=bmc.",
+  "newCanvas.unknownCanvas": "Vizardry: there is no canvas called “{{canvas}}”. Use “Insert link that creates a new canvas note…” to make a working link.",
+  "newCanvas.invalidFolder": "Vizardry: the link's folder “{{folder}}” isn't allowed. Use a folder inside the vault, without “..” or hidden folders.",
+  "newCanvas.createFailed":  "Vizardry could not create the note — check that the vault is writable. See the developer console for details.",
+  "newCanvas.openFailed":    "Vizardry created {{path}} but could not open it.",
 
   // ── Settings: secret picker + secret row ────────────────────────────────────
   "settings.secretPicker.title":         "Select secret",
