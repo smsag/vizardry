@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "html-to-image": "^1.11.13",
-    "marked": "^18.1.2",
+    "marked": "^18.2.1",
     "perfect-freehand": "1.2.3"
   }
 }
