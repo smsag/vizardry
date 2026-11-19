@@ -256,6 +256,7 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
   let currentCell: PaceLayerCell = {};
   // Track the last sub-key we parsed so continuation lines can append to it
   let lastKey: keyof PaceLayerCell | null = null;
+  let lastKeyIndent = -1;
 
   const commitLayer = (): void => {
     if (currentLayer !== null) {
@@ -333,13 +334,17 @@ export function parsePaceLayers(source: string, typeOverride?: string): PaceLaye
 
     const innerTrimmed = trimmed.trim();
 
-    // Check if this is a sub-key line
-    const subKeyMatch = innerTrimmed.match(/^(obs|feed|idea|note):\s*(.*)/i);
+    // Check if this is a sub-key line; one deeper than the last sub-key is a
+    // continuation even if it reads `idea: …`.
+    const subKeyMatch = lastKey !== null && indent > lastKeyIndent
+      ? null
+      : innerTrimmed.match(/^(obs|feed|idea|note):\s*(.*)/i);
     if (subKeyMatch) {
       const key = subKeyMatch[1].toLowerCase() as keyof PaceLayerCell;
       const val = subKeyMatch[2];
       currentCell[key] = val;
       lastKey = key;
+      lastKeyIndent = indent;
       continue;
     }
 

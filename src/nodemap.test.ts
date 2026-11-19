@@ -223,4 +223,17 @@ describe("parseNodeMap", () => {
     if (result.ok) return;
     expect(result.error).toMatch(/limit is 50/i);
   });
+
+  it("takes the first direction token, so an arrow in the label is just text", () => {
+    const src = "box: Client\nbox: Server\nbox: A\nbox: B\n"
+      + "link: Client -> Server : request <-> response\nlink: A -- B : uses -> thing\nlink: A -> B : see --> docs";
+    const result = parseNodeMap(src);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.links.map(l => [l.from, l.direction, l.to, l.label])).toEqual([
+      ["Client", "directed", "Server", "request <-> response"],
+      ["A", "undirected", "B", "uses -> thing"],
+      ["A", "directed", "B", "see --> docs"],
+    ]);
+  });
 });

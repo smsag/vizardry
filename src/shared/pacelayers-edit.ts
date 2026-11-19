@@ -1,5 +1,6 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
-import { resolveEditor } from "./editor";
+import { hasFenceLine, resolveEditor } from "./editor";
+import { indentOf } from "./indent";
 import { editorWrite } from "./tree-editor-access";
 import { LAYER_LABELS } from "../pacelayers";
 import type { PaceLayerName, PaceLayerType } from "../types";
@@ -121,18 +122,27 @@ function findLayerBodyEnd(editor: Editor, layerHeaderLine: number, totalLines: n
 /** Finds the `<cellKey>: value` sub-key line within [layerHeaderLine+1, layerBodyEnd]. Returns -1 if absent. */
 function findCellLine(editor: Editor, layerHeaderLine: number, layerBodyEnd: number, cellKey: string): number {
   const targetPrefix = `${cellKey.toLowerCase()}:`;
+  let keyIndent = -1;
   for (let ln = layerHeaderLine + 1; ln <= layerBodyEnd; ln++) {
-    if (editor.getLine(ln).trim().toLowerCase().startsWith(targetPrefix)) return ln;
+    const raw = editor.getLine(ln);
+    const indent = indentOf(raw);
+    // Deeper than the previous sub-key: a continuation line, even if it reads `idea: …`.
+    if (indent === -1 || (keyIndent !== -1 && indent > keyIndent)) continue;
+    const t = raw.trim().toLowerCase();
+    if (/^(obs|feed|idea|note):/.test(t)) keyIndent = indent;
+    if (t.startsWith(targetPrefix)) return ln;
   }
   return -1;
 }
 
 /**
  * Finds the last line belonging to an existing cell's value: indented
- * continuation lines, plus any orphaned zero-indent fragments left by a
- * previous bad write (included so the replace range overwrites them too).
+ * continuation lines (anything deeper than the sub-key, or a same-level line
+ * that is not another sub-key), plus any orphaned zero-indent fragments left
+ * by a previous bad write (included so the replace range overwrites them too).
  */
 function findLastValueLine(editor: Editor, cellLine: number, layerBodyEnd: number): number {
+  const keyIndent = indentOf(editor.getLine(cellLine));
   let lastValueLine = cellLine;
   for (let ln = cellLine + 1; ln <= layerBodyEnd; ln++) {
     const nextRaw = editor.getLine(ln);
@@ -140,10 +150,9 @@ function findLastValueLine(editor: Editor, cellLine: number, layerBodyEnd: numbe
 
     if (nextTrimmed === "") break; // Blank line ends the value
 
-    // Indented line that is not the start of another sub-key
     if (
       (nextRaw.startsWith(" ") || nextRaw.startsWith("\t")) &&
-      !/^(obs|feed|idea|note):/i.test(nextTrimmed)
+      (indentOf(nextRaw) > keyIndent || !/^(obs|feed|idea|note):/i.test(nextTrimmed))
     ) {
       lastValueLine = ln;
       continue;
@@ -176,10 +185,12 @@ function findInsertionLine(editor: Editor, layerHeaderLine: number, layerBodyEnd
  * zero-indent-orphan corruption that motivated isOrphanedFragment() above.
  */
 function buildFormattedValue(cellKey: string, newValue: string, indent: string): string {
-  const lines = newValue.split("\n");
+  // No blank lines: a blank ends the value, so anything after it was never shown.
+  const lines = newValue.split("\n").filter(l => l.trim() !== "");
   return [
     `${indent}${cellKey}: ${lines[0] ?? ""}`,
-    ...lines.slice(1).map(l => `${indent}${l}`),
+    // One level deeper: at the key's own indent a line like "Idea: …" reads as another cell.
+    ...lines.slice(1).map(l => `${indent}  ${l}`),
   ].join("\n");
 }
 
@@ -214,6 +225,7 @@ function _writePaceLayerCell(
     return false;
   }
 
+  if (hasFenceLine(newValue)) return false; // a ``` line would close the canvas fence
   const resolved = resolveEditor(app, ctx, el, "_writePaceLayerCell");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;

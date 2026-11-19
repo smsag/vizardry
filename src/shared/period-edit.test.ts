@@ -14,3 +14,9 @@ describe("parsePeriod", () => {
     expect(parsePeriod("title: Future Self\nblock: As-Is")).toBe("");
   });
 });
+
+describe("parsePeriod — indented lines", () => {
+  it("ignores an indented `period:` body line", () => {
+    expect(parsePeriod("block: Plan\n  Period: two sprints")).toBe("");
+  });
+});

@@ -128,7 +128,7 @@ export function renameKeywordTreeNode(
   if (!match) return false;
 
   const raw = editor.getLine(match.line);
-  const indentStr = raw.slice(0, match.indent);
+  const indentStr = raw.slice(0, raw.length - raw.trimStart().length); // match.indent is columns (tab = 4), not characters
   editorWrite(() => editor.replaceRange(
     `${indentStr}${keyword}: ${newText}`,
     { line: match.line, ch: 0 }, { line: match.line, ch: raw.length },

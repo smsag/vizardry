@@ -45,9 +45,11 @@ class UpvotyService {
   readonly cache: UpvotyCache;
   private inflightSummary = new Map<string, Promise<{ post: UpvotyPost; summary: string } | { error: string } | null>>();
   private inflightPost = new Map<string, Promise<UpvotyPost>>();
+  private generation = 0;
 
   /** See LinearService.reset: drops cache and in-flight requests together. */
   async reset(): Promise<void> {
+    this.generation++; // requests already running skip their cache writes
     this.inflightSummary.clear();
     this.inflightPost.clear();
     await this.cache.clearAndPersist();
@@ -101,8 +103,9 @@ class UpvotyService {
     if (cached) return Promise.resolve(cached);
 
     return dedupe(this.inflightPost, key, async () => {
+      const gen = this.generation;
       const post = await fetchUpvotyPost(postId, this.plugin.settings.upvotyBaseUrl, apiKey);
-      this.cache.setStatus(key, post);
+      if (gen === this.generation) this.cache.setStatus(key, post);
       return post;
     });
   }
@@ -131,6 +134,7 @@ class UpvotyService {
     if (!this.isEnabled()) return null;
 
     return dedupe(this.inflightSummary, this.cacheKey(postId), async () => {
+      const gen = this.generation;
       let upvotyApiKey: string | null;
       let llmApiKey: string | null;
       try {
@@ -160,11 +164,13 @@ class UpvotyService {
         const summary = await summarizePost(post, comments, llmApiKey, llmProvider, llmModel);
 
         // Not awaited — see the matching note in LinearService.getSummary.
-        this.cache.cacheSummary(key, {
-          summary,
-          postUpdatedAt: post.updated_at,
-          summarizedAt: Date.now(),
-        });
+        if (gen === this.generation) {
+          this.cache.cacheSummary(key, {
+            summary,
+            postUpdatedAt: post.updated_at,
+            summarizedAt: Date.now(),
+          });
+        }
 
         return { post, summary };
       } catch (err) {

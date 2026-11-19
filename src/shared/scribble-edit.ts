@@ -3,6 +3,7 @@ import { MarkdownView } from "obsidian";
 import { findCodeFenceBySource, lineOfElement, linesOf, resolveEditor } from "./editor";
 import type { LineSource } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { decodeStroke } from "./ink-codec";
 
 /**
  * Source write-back for the Scribble canvas. A save rewrites the block's
@@ -39,6 +40,13 @@ function lineKey(line: string): string | null {
   return colon === -1 ? null : trimmed.slice(0, colon).trim().toLowerCase();
 }
 
+/** True when the parser draws this stroke line. A line it skips never reaches
+ *  `strokeLines`, so the writer keeps it in place instead of deleting it. */
+function isReadableStroke(line: string, key: string): boolean {
+  const value = line.trim().slice(line.trim().indexOf(":") + 1);
+  return typeof decodeStroke(value, key === "stroke" ? "pen" : "highlight") !== "string";
+}
+
 /**
  * The block body with the update applied. Other lines keep their place. The
  * strokes go where the first stroke line was (or after the last content line
@@ -59,7 +67,7 @@ export function rewriteScribbleBody(body: string[], update: ScribbleUpdate): str
 
   for (const line of body) {
     const key = lineKey(line);
-    if (key !== null && STROKE_LINE_KEYS.has(key)) {
+    if (key !== null && STROKE_LINE_KEYS.has(key) && isReadableStroke(line, key)) {
       if (strokeAt === -1) strokeAt = out.length;
       continue;
     }
@@ -171,7 +179,7 @@ export async function writeScribbleToFile(
     const body = doc.lines.slice(range.lineStart + 1, range.lineEnd);
     const next = rewriteScribbleBody(body, update);
     written = next.join("\n");
-    return [...doc.lines.slice(0, range.lineStart + 1), ...next, ...doc.lines.slice(range.lineEnd)].join("\n");
+    return [...doc.lines.slice(0, range.lineStart + 1), ...next, ...doc.lines.slice(range.lineEnd)].join(doc.eol);
   });
   return written;
 }

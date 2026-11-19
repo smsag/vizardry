@@ -7,6 +7,7 @@ import { isEditModeActive } from "../shared/editor";
 import { createSvgEl, markFlatShape } from "../shared/svg";
 import { onDisconnected } from "../shared/lifecycle";
 import { rectBoundary, type Vec2 } from "../shared/geometry";
+import { clientToSvg } from "./wardley-geometry";
 import { estimateCharsPerLine, wrappedLineCount } from "../shared/svg-box";
 import { setInline, stripInline } from "../shared/inline-markdown";
 const NODEMAP_PALETTE: Record<string, string> = {
@@ -104,27 +105,6 @@ export function placeAutoBoxes(boxes: MeasuredBox[]): void {
     x += box.width + AUTO_GAP;
     rowH = Math.max(rowH, box.height);
   }
-}
-
-/** Convert client (screen) coordinates to the SVG's own coordinate space,
- *  reading the SVG's current (dynamically-sized) viewBox for the fallback
- *  path used in environments without DOMPoint.matrixTransform (e.g. tests). */
-function clientToSvg(svg: SVGSVGElement, clientX: number, clientY: number): Vec2 {
-  const ctm = svg.getScreenCTM();
-  if (ctm && typeof DOMPoint !== "undefined") {
-    const point = new DOMPoint(clientX, clientY) as DOMPoint & { matrixTransform?: (m: DOMMatrix) => DOMPoint };
-    if (typeof point.matrixTransform === "function") {
-      const pt = point.matrixTransform(ctm.inverse());
-      return { x: pt.x, y: pt.y };
-    }
-  }
-  const rect = svg.getBoundingClientRect();
-  const vb = svg.viewBox.baseVal;
-  if (rect.width <= 0 || rect.height <= 0 || !vb) return { x: 0, y: 0 };
-  return {
-    x: vb.x + ((clientX - rect.left) / rect.width) * vb.width,
-    y: vb.y + ((clientY - rect.top) / rect.height) * vb.height,
-  };
 }
 
 type DragState = {
@@ -314,6 +294,8 @@ function attachDragBehavior(
   ctx: MarkdownPostProcessorContext,
   wrap: HTMLElement,
   onMove: (ref: BoxRef) => void,
+  /** Renders any move still waiting for its frame. */
+  flush: () => void,
 ): void {
   const doc = svg.ownerDocument;
 
@@ -334,7 +316,8 @@ function attachDragBehavior(
     // A press that never passed the threshold is a click (or half of a
     // double-click to edit), not a move: nothing to write.
     if (!d.moved) return;
-    if (!commit) { placeBox(d.ref, d.originX, d.originY); onMove(d.ref); return; }
+    if (!commit) { placeBox(d.ref, d.originX, d.originY); onMove(d.ref); flush(); return; }
+    flush();
     if (!writeNodeMapBoxPosition(app, ctx, wrap, d.ref.box.name, d.ref.box.x, d.ref.box.y)) showWriteFailedNotice(wrap);
   };
 
@@ -805,11 +788,28 @@ export function renderNodeMap(
   let placeHandle: (ref: BoxRef) => void = () => {};
   let placeControls: (ref: BoxRef) => void = () => {};
   /** Redraws what hangs off the given boxes after they move or resize. */
-  const follow = (moved: BoxRef[]): void => {
+  // Coalesced to one run per frame: pointermove fires faster than the screen
+  // refreshes and each run rebuilds every link.
+  const win = container.ownerDocument.defaultView ?? window;
+  const pendingMoved = new Set<BoxRef>();
+  let followFrame: number | null = null;
+  const flushFollow = (): void => {
+    if (followFrame !== null) { win.cancelAnimationFrame(followFrame); followFrame = null; }
+    if (pendingMoved.size === 0) return;
+    const moved = [...pendingMoved];
+    pendingMoved.clear();
     linksLayer.replaceChildren();
     renderLinks(linksLayer, data, boxByName, isEditMode, app, ctx, wrap);
     for (const ref of moved) { placeHandle(ref); placeControls(ref); }
   };
+  const follow = (moved: BoxRef[]): void => {
+    for (const ref of moved) pendingMoved.add(ref);
+    if (followFrame === null) followFrame = win.requestAnimationFrame(() => { followFrame = null; flushFollow(); });
+  };
+  onDisconnected(wrap, () => {
+    if (followFrame !== null) win.cancelAnimationFrame(followFrame);
+    followFrame = null;
+  });
 
   if (isEditMode) {
     const ix: NodeMapIxState = { drag: null, linkDraw: null, activeEdit: null };
@@ -818,7 +818,7 @@ export function renderNodeMap(
     placeControls = attachBoxControls(refs, app!, ctx!, wrap);
     // Everything attached to a box follows it while it is dragged; the
     // document rewrite on drop re-renders from the new coordinates anyway.
-    attachDragBehavior(svg, refs, ix, app!, ctx!, wrap, (ref) => follow([ref]));
+    attachDragBehavior(svg, refs, ix, app!, ctx!, wrap, (ref) => follow([ref]), flushFollow);
     attachAddBoxOnEmptySpace(svg, ix, app!, ctx!, wrap);
   }
 

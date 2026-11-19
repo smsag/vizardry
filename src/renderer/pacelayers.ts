@@ -10,6 +10,7 @@ import type { RenderContext } from "./render-context";
 import { t } from "../i18n";
 import { createInlineEl } from "../shared/inline-markdown";
 import { isEditModeActive } from "../shared/editor";
+import { editorWrite } from "../shared/tree-editor-access";
 
 export function renderPaceLayers(
   data: ParsedPaceLayers,
@@ -69,18 +70,7 @@ export function renderPaceLayers(
       editingClass: 'vzd-pl-editing',
       trimValue: false,
       onTab: 'indent',
-      // CM6's replaceRange dispatches a transaction that scrolls the editor
-      // to keep the changed line in view, causing the viewport to jump.
-      // Capture the CM scroller position before the write and restore it on
-      // the next animation frame, after CM has processed the change.
-      wrapCommit: (write) => {
-        const scroller = container.closest<HTMLElement>('.cm-scroller');
-        const savedScrollTop = scroller?.scrollTop;
-        write();
-        if (scroller && savedScrollTop !== undefined) {
-          requestAnimationFrame(() => { scroller.scrollTop = savedScrollTop; });
-        }
-      },
+      wrapCommit: (write) => editorWrite(write, container),
       renderDisplay: (host, value) => renderCellContent(host, value.trim(), placeholder),
     });
   }

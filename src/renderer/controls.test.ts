@@ -22,6 +22,9 @@ const { mockGetLinearService, mockGetUpvotyService } = vi.hoisted(() => ({
 vi.mock("../linear", () => ({ getLinearService: mockGetLinearService }));
 vi.mock("../upvoty", () => ({ getUpvotyService: mockGetUpvotyService }));
 
+const mockAttachPreview = vi.hoisted(() => vi.fn());
+vi.mock("./section-preview", () => ({ attachSectionPreview: mockAttachPreview }));
+
 import { initCanvas, renderHeadingLink, navigateToCanvas, expandForCapture, revealForCapture } from "./controls";
 import { Notice } from "obsidian";
 
@@ -507,5 +510,43 @@ describe("download / export", () => {
     clickSpy.mockRestore();
     delete (window.navigator as any).share;
     delete (window.navigator as any).canShare;
+  });
+});
+
+describe("presentation overlay swipe-down", () => {
+  function swipe(overlay: HTMLElement, scrollTop: number): void {
+    overlay.querySelector<HTMLElement>(".vzd-presentation-wrap")!.scrollTop = scrollTop;
+    const touch = (y: number) => ({ clientY: y }) as Touch;
+    overlay.dispatchEvent(Object.assign(new Event("touchstart"), { touches: [touch(100)] }));
+    overlay.dispatchEvent(Object.assign(new Event("touchend"), { changedTouches: [touch(300)] }));
+  }
+
+  it("dismisses only when the content was scrolled to the top", () => {
+    const el = container();
+    initCanvas(el, "test", "T", undefined, "source", undefined, undefined);
+    el.querySelector<HTMLElement>(".vizardry-present-btn")!.click();
+    const overlay = document.querySelector<HTMLElement>(".vzd-presentation-overlay")!;
+
+    swipe(overlay, 200);
+    expect(document.querySelector(".vzd-presentation-overlay")).toBeTruthy();
+
+    swipe(overlay, 0);
+    expect(document.querySelector(".vzd-presentation-overlay")).toBeNull();
+  });
+});
+
+describe("renderHeadingLink — section preview target", () => {
+  const resolver = { resolve: () => "Heading" } as never;
+
+  it("attaches the preview to the card by default, to the link button when previewOnButton", () => {
+    mockAttachPreview.mockClear();
+    const card = container();
+    renderHeadingLink(card, "x", resolver, () => {}, {} as never, "n.md");
+    expect(mockAttachPreview.mock.calls[0][1]).toBe(card);
+
+    mockAttachPreview.mockClear();
+    const editable = container();
+    renderHeadingLink(editable, "x", resolver, () => {}, {} as never, "n.md", true);
+    expect(mockAttachPreview.mock.calls[0][1]).toBe(editable.querySelector(".vzd-card-link-btn"));
   });
 });

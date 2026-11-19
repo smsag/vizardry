@@ -49,9 +49,10 @@ export function writeWardleyComponent(
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (targetRe.test(raw.trim())) {
+      // The coordinates are the last bracket (a name may hold one too), before any `// comment`.
       const newLine = raw.replace(
-        /\[[^\]]+\]/,
-        `[${visibility.toFixed(2)}, ${evolution.toFixed(2)}]`,
+        /\[[^\]]+\](\s*(?:\/\/.*)?)$/,
+        (_m, tail: string) => `[${visibility.toFixed(2)}, ${evolution.toFixed(2)}]${tail}`,
       );
       editorWrite(() => editor.replaceRange(newLine, { line: ln, ch: 0 }, { line: ln, ch: raw.length }), el);
       return true;
@@ -207,12 +208,14 @@ export function renameWardleyComponent(
   // evolve/pipeline use a value-start boundary (a number begins with a digit or
   // a dot) so a prefix name can't match a longer component's directive.
   const reComp   = new RegExp(`^(\\s*component:\\s*)${old}(\\s*\\[)`, "i");
-  const reAnchor = new RegExp(`^(\\s*anchor:\\s*)${old}\\s*$`, "i");
+  const reAnchor = new RegExp(`^(\\s*anchor:\\s*)${old}(\\s*(?://.*)?$)`, "i");
   const reLinkFrom = new RegExp(`^(\\s*link:\\s*)${old}(\\s*->)`, "i");
   const reLinkTo   = new RegExp(`(->[\\s]*)${old}(\\s*(?://.*)?$)`, "i");
   const reEvolve   = new RegExp(`^(\\s*evolve:\\s*)${old}(\\s+[.0-9])`, "i");
   const rePipeline = new RegExp(`^(\\s*pipeline:\\s*)${old}(\\s*\\[)`, "i");
 
+  // A function replacer, so a `$` in the new name is written literally.
+  const put = (_m: string, a: string, b: string): string => a + newName + b;
   let found = false;
 
   editorWrite(() => {
@@ -221,12 +224,12 @@ export function renameWardleyComponent(
 
       let updated: string | null = null;
       let cur = raw;
-      if (reComp.test(cur))    { cur = cur.replace(reComp,   `$1${newName}$2`); updated = cur; }
-      if (reAnchor.test(cur))  { cur = cur.replace(reAnchor, `$1${newName}`);   updated = cur; }
-      if (reLinkFrom.test(cur)) { cur = cur.replace(reLinkFrom, `$1${newName}$2`); updated = cur; }
-      if (reLinkTo.test(cur))   { cur = cur.replace(reLinkTo,   `$1${newName}$2`); updated = cur; }
-      if (reEvolve.test(cur))   { cur = cur.replace(reEvolve,   `$1${newName}$2`); updated = cur; }
-      if (rePipeline.test(cur)) { cur = cur.replace(rePipeline, `$1${newName}$2`); updated = cur; }
+      if (reComp.test(cur))    { cur = cur.replace(reComp, put); updated = cur; }
+      if (reAnchor.test(cur))  { cur = cur.replace(reAnchor, put); updated = cur; }
+      if (reLinkFrom.test(cur)) { cur = cur.replace(reLinkFrom, put); updated = cur; }
+      if (reLinkTo.test(cur))   { cur = cur.replace(reLinkTo, put); updated = cur; }
+      if (reEvolve.test(cur))   { cur = cur.replace(reEvolve, put); updated = cur; }
+      if (rePipeline.test(cur)) { cur = cur.replace(rePipeline, put); updated = cur; }
 
       if (updated !== null) {
         editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });

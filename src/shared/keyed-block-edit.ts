@@ -48,6 +48,8 @@ export function writeKeyedSubLine(
   key: string,
   newValue: string,
 ): void {
+  // One source line per cell: a raw newline would drop the rest to column 0.
+  newValue = newValue.replace(/\s*\n\s*/g, " ");
   const targetPrefix = `${key}:`;
   let cellLine = -1;
 

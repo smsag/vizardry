@@ -144,3 +144,20 @@ describe("LinearService issue caching", () => {
   });
 });
 
+
+describe("LinearService.reset", () => {
+  it("does not let a request started before reset repopulate the cache", async () => {
+    let resolve!: (i: any) => void;
+    mockedFetch.mockReturnValue(new Promise((r) => { resolve = r; }));
+    initLinearService(fakePlugin());
+    const svc = getLinearService()!;
+
+    const pending = svc.getStatus("ENG-1");
+    await vi.waitFor(() => expect(mockedFetch).toHaveBeenCalled());
+    await svc.reset();
+    resolve(makeIssue());
+
+    expect(await pending).not.toBeNull();
+    expect(svc.cache.getEntry("ENG-1")).toBeUndefined();
+  });
+});

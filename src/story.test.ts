@@ -104,4 +104,9 @@ slice: S1
     const result = parseStoryMap("activity: A\n  step: S\n    task: T\nbadkey: X");
     expect(result).toEqual({ ok: false, error: expect.stringContaining("unexpected syntax") });
   });
+
+  it("accepts a capitalised Step: under a slice", () => {
+    const result = parseStoryMap("activity: A\n  step: S\n    task: T\nslice: MVP\n  Step: S | t");
+    expect(result.ok && result.data.slices[0].cells).toEqual({ s: ["t"] });
+  });
 });

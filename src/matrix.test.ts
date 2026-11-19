@@ -153,3 +153,15 @@ describe("parseMatrix", () => {
     expect(r.data.items[0]).toMatchObject({ label: "Spec", linkHeading: "Rework" });
   });
 });
+
+describe("parseMatrix — item body", () => {
+  it("strips a tab indent as one character", () => {
+    const r = parseMatrix("x: X\ny: Y\nitem: Fix [0.2, 0.8]\n\tWallet rejected");
+    expect(r.ok && r.data.items[0].content).toBe("Wallet rejected");
+  });
+
+  it("keeps an indented comment in the body so an edit writes it back", () => {
+    const r = parseMatrix("x: X\ny: Y\nitem: Fix [0.2, 0.8]\n  // why: support tickets\n  Wallet rejected");
+    expect(r.ok && r.data.items[0].content).toBe("// why: support tickets\nWallet rejected");
+  });
+});

@@ -1,7 +1,7 @@
 import type { App , DropdownComponent} from "obsidian";
 import { Modal, Notice, PluginSettingTab, Setting } from "obsidian";
 import type VizardryPlugin from "./main";
-import { DEFAULT_SETTINGS } from "./settings-schema";
+import { DEFAULT_SETTINGS, isHttpsUrl } from "./settings-schema";
 import type { SecretLinkState } from "./shared/keychain";
 import { saveSecret, loadSecret, listSecrets, secretLinkState } from "./shared/keychain";
 import type { SecretRowKind } from "./shared/secret-picker-model";
@@ -384,7 +384,9 @@ export class VizardrySettingTab extends PluginSettingTab {
           .setPlaceholder("https://api.linear.app/graphql")
           .setValue(this.plugin.settings.linearBaseUrl)
           .onChange((value) => {
-            this.plugin.settings.linearBaseUrl = value.trim() || DEFAULT_SETTINGS.linearBaseUrl;
+            const url = value.trim();
+            if (url && !isHttpsUrl(url)) return; // https only: keep the stored value
+            this.plugin.settings.linearBaseUrl = url || DEFAULT_SETTINGS.linearBaseUrl;
             debouncedSaveAndClearLinear();
           }),
       );
@@ -539,7 +541,9 @@ export class VizardrySettingTab extends PluginSettingTab {
           .setPlaceholder("https://api.upvotyfeedback.com/v1")
           .setValue(this.plugin.settings.upvotyBaseUrl)
           .onChange((value) => {
-            this.plugin.settings.upvotyBaseUrl = value.trim() || DEFAULT_SETTINGS.upvotyBaseUrl;
+            const url = value.trim();
+            if (url && !isHttpsUrl(url)) return; // https only: keep the stored value
+            this.plugin.settings.upvotyBaseUrl = url || DEFAULT_SETTINGS.upvotyBaseUrl;
             debouncedSaveAndClearUpvoty();
           }),
       );
@@ -552,7 +556,9 @@ export class VizardrySettingTab extends PluginSettingTab {
           .setPlaceholder("https://app.upvoty.com/feedback")
           .setValue(this.plugin.settings.upvotyAppUrl)
           .onChange((value) => {
-            this.plugin.settings.upvotyAppUrl = value.trim() || DEFAULT_SETTINGS.upvotyAppUrl;
+            const url = value.trim();
+            if (url && !isHttpsUrl(url)) return; // https only: keep the stored value
+            this.plugin.settings.upvotyAppUrl = url || DEFAULT_SETTINGS.upvotyAppUrl;
             debouncedSave();
           }),
       );

@@ -33,7 +33,7 @@ function clamp01(n: number): number {
  */
 export function parseWardleyMap(source: string): WardleyResult {
   const lines = source.split("\n");
-  const components = new Map<string, WardleyComponent>();
+  const components = new Map<string, WardleyComponent>(); // keyed by lower-cased name, like every other lookup
   const explicitComponents = new Set<string>(); // has an explicit component: line
   const explicitLower = new Set<string>();       // lower-cased, for duplicate detection
   const links: { from: string; to: string; line: number }[] = [];
@@ -59,8 +59,8 @@ export function parseWardleyMap(source: string): WardleyResult {
       const name = trimmed.slice("anchor:".length).trim();
       if (!name) { warnings.push(`Line ${i + 1}: anchor has no name — ignored`); continue; }
       anchor = name;
-      if (!components.has(name)) {
-        components.set(name, { name, visibility: 1, evolution: 0 });
+      if (!components.has(name.toLowerCase())) {
+        components.set(name.toLowerCase(), { name, visibility: 1, evolution: 0 });
       }
       continue;
     }
@@ -155,15 +155,15 @@ export function parseWardleyMap(source: string): WardleyResult {
         evolution = clamp01(evolution);
       }
 
-      if (components.has(name)) {
-        // anchor declared the component already — update coords
-        const existing = components.get(name)!;
+      const existing = components.get(name.toLowerCase());
+      if (existing) {
+        // anchor declared the component already — update coords, keep its spelling
         existing.visibility = visibility;
         existing.evolution = evolution;
       } else {
-        components.set(name, { name, visibility, evolution });
+        components.set(name.toLowerCase(), { name, visibility, evolution });
       }
-      explicitComponents.add(name);
+      explicitComponents.add(existing?.name ?? name);
       explicitLower.add(name.toLowerCase());
       continue;
     }
@@ -297,7 +297,7 @@ export function parseWardleyMap(source: string): WardleyResult {
     if (!canon) { warnings.push(`Line ${e.line}: evolve references unknown component "${e.name}" — skipped`); continue; }
     if (evolved.has(canon)) { warnings.push(`Line ${e.line}: duplicate evolve for "${canon}" — ignored`); continue; }
     evolved.add(canon);
-    components.get(canon)!.evolveTo = e.evolveTo;
+    components.get(canon.toLowerCase())!.evolveTo = e.evolveTo;
   }
 
   // Resolve pipeline components case-insensitively; reject unknowns & duplicates.

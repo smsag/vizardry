@@ -1,6 +1,8 @@
 interface DisconnectRegistration {
   el: HTMLElement;
   cleanup: () => void;
+  /** Set once `el` has been connected; a never-attached element is not cleaned. */
+  seen: boolean;
 }
 
 interface DisconnectRegistry {
@@ -10,14 +12,10 @@ interface DisconnectRegistry {
   sweepPending: boolean;
 }
 
-// One MutationObserver per watched ancestor, shared across every element
-// watched under it — not one per element. A note with dozens/hundreds of
-// enriched Linear/Upvoty keys previously created that many independent
-// observers all watching the same .workspace-leaf-content, each re-running
-// on every DOM mutation of that ancestor. Keyed by the resolved ancestor, not
-// `el`, so unrelated onDisconnected() calls under the same ancestor share
-// the cost of detecting mutations; each still gets its own independent
-// cleanup callback and dispose handle.
+// One MutationObserver per document body (pop-out windows have their own),
+// shared across every element watched in it — not one per element. A note with
+// hundreds of enriched keys would otherwise create that many observers all
+// re-running on every DOM mutation.
 const registries = new WeakMap<Element, DisconnectRegistry>();
 
 /**
@@ -27,26 +25,28 @@ const registries = new WeakMap<Element, DisconnectRegistry>();
  * when setting up a replacement observer on a new container). Without
  * calling dispose, the watch stays live until `el` actually disconnects.
  *
- * Observes the nearest .workspace-leaf-content ancestor (not document.body)
- * with `subtree: true`: a canvas sits many levels below the leaf root, and
- * the mutation that removes it — a re-render of the preview section, a
- * different note opening in the same leaf — never touches the leaf's direct
- * children. Watching only `childList` on the root meant cleanups practically
- * never fired and every registration leaked. The subtree observer sees far
- * more mutations (every keystroke in the editor), so sweeps are coalesced
- * to one per burst via a microtask and each is a cheap `isConnected` scan.
+ * Renderers register while `el` is still detached (Obsidian attaches the
+ * rendered block later), so no ancestor can be resolved at registration time.
+ * Instead the document body is observed with `subtree: true`, and a
+ * registration only becomes eligible once `el` has been seen connected. Sweeps
+ * are coalesced to one per burst via a microtask and each is a cheap
+ * `isConnected` scan.
+ *
+ * shortcut: an element that is registered but never attached stays registered
+ * until the document's registry empties; dispose it if that can happen.
  */
 export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void {
-  const parent = el.closest(".workspace-leaf-content") ?? el.parentElement ?? document.body;
+  const body = el.ownerDocument.body;
 
-  let registry = registries.get(parent);
+  let registry = registries.get(body);
   if (!registry) {
     const regs = new Set<DisconnectRegistration>();
     const created: DisconnectRegistry = { mo: null as unknown as MutationObserver, regs, sweepPending: false };
     const sweep = (): void => {
       created.sweepPending = false;
       for (const reg of Array.from(regs)) {
-        if (reg.el.isConnected) continue;
+        if (reg.el.isConnected) { reg.seen = true; continue; }
+        if (!reg.seen) continue;
         regs.delete(reg);
         try {
           reg.cleanup();
@@ -57,7 +57,7 @@ export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void
       }
       if (regs.size === 0) {
         created.mo.disconnect();
-        if (registries.get(parent) === created) registries.delete(parent);
+        if (registries.get(body) === created) registries.delete(body);
       }
     };
     created.mo = new MutationObserver(() => {
@@ -65,13 +65,13 @@ export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void
       created.sweepPending = true;
       queueMicrotask(sweep);
     });
-    created.mo.observe(parent, { childList: true, subtree: true });
+    created.mo.observe(body, { childList: true, subtree: true });
     registry = created;
-    registries.set(parent, registry);
+    registries.set(body, registry);
   }
 
   const owner = registry;
-  const reg: DisconnectRegistration = { el, cleanup };
+  const reg: DisconnectRegistration = { el, cleanup, seen: el.isConnected };
   owner.regs.add(reg);
 
   return () => {
@@ -79,8 +79,8 @@ export function onDisconnected(el: HTMLElement, cleanup: () => void): () => void
     if (owner.regs.size === 0) {
       owner.mo.disconnect();
       // Only drop the map entry if it is still ours: a stale dispose must not
-      // orphan a newer registry (and its live observer) under the same parent.
-      if (registries.get(parent) === owner) registries.delete(parent);
+      // orphan a newer registry (and its live observer) under the same body.
+      if (registries.get(body) === owner) registries.delete(body);
     }
   };
 }

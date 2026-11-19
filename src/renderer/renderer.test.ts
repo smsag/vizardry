@@ -595,6 +595,32 @@ describe("renderTree", () => {
     expect(input).toBeTruthy();
     expect(host!.contains(input!)).toBe(true);
   });
+
+  it("double-click on a linked, editable node renames without navigating", () => {
+    vi.useFakeTimers();
+    try {
+      const el = container();
+      const root = makeNode("Root", 0, [makeNode("Child", 1)]);
+      const navigateTo = vi.fn();
+      const resolver = { resolve: (k: string) => (k === "Root" ? "Heading" : undefined) } as any;
+      renderTree({ root }, CLASSIC_OPTS, el, resolver, navigateTo,
+        { onRename: vi.fn(), onAddChild: vi.fn(), onDelete: vi.fn() });
+      const g = el.querySelector<SVGGElement>(".vzd-tree-node--linked")!;
+
+      g.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      g.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      g.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+      vi.advanceTimersByTime(500);
+      expect(navigateTo).not.toHaveBeenCalled();
+      expect(el.querySelector("input.vzd-rename-input")).toBeTruthy();
+
+      g.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      vi.advanceTimersByTime(500);
+      expect(navigateTo).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 // ── renderOST ─────────────────────────────────────────────────────────────────
@@ -966,6 +992,27 @@ describe("renderWardleyMap", () => {
     const editEl = container();
     renderWardleyMap(evolveMap, editEl, { app: editModeApp, ctx: {} as any, source: "type: wardley" });
     expect(editEl.querySelector(".vzd-wardley-evolve-node--draggable")).toBeTruthy();
+  });
+
+  it("writes evolve only after the marker actually moved, not on a plain click", () => {
+    const evolveMap: WardleyMap = {
+      ...map,
+      components: [{ name: "Auth", visibility: 0.6, evolution: 0.4, evolveTo: 0.85 }],
+    };
+    const el = container();
+    renderWardleyMap(evolveMap, el, { app: editModeApp, ctx: {} as any, source: "type: wardley" });
+    const marker = el.querySelector(".vzd-wardley-evolve-node") as SVGCircleElement;
+    const writeSpy = vi.spyOn(wardleyEdit, "writeWardleyEvolve").mockReturnValue(true);
+
+    marker.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 300, clientY: 100 }));
+    document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 300, clientY: 100 }));
+    expect(writeSpy).not.toHaveBeenCalled();
+
+    marker.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 300, clientY: 100 }));
+    document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 320, clientY: 100 }));
+    document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 320, clientY: 100 }));
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    writeSpy.mockRestore();
   });
 
   it("draws a pipeline box with one square per sub-component", () => {

@@ -222,6 +222,9 @@ export function getFileHeadings(app: App, ctx: MarkdownPostProcessorContext): st
   return getHeadingsForFile(app, file);
 }
 
+// Own-property check: labels are user text, so "constructor" must not hit Object.prototype.
+const has = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+
 /**
  * Creates a LinkResolver that combines inline annotations and auto-detected
  * headings.
@@ -251,15 +254,17 @@ export function createLinkResolver(
   return {
     resolve(label: string): string | undefined {
       const key = label.toLowerCase().trim();
-      if (key in inlineLinks) return inlineLinks[key];
+      if (has(inlineLinks, key)) return inlineLinks[key];
       const plain = stripInline(key).trim();
       return normalised.find(h => h.raw === key || h.plain === plain)?.heading;
     },
     resolveTicket(label: string): TicketMatch | undefined {
-      return inlineTicketLinks[label.toLowerCase().trim()];
+      const key = label.toLowerCase().trim();
+      return has(inlineTicketLinks, key) ? inlineTicketLinks[key] : undefined;
     },
     resolveCanvas(label: string): string | undefined {
-      return inlineCanvasLinks[label.toLowerCase().trim()];
+      const key = label.toLowerCase().trim();
+      return has(inlineCanvasLinks, key) ? inlineCanvasLinks[key] : undefined;
     },
   };
 }

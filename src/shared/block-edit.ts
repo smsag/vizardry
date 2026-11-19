@@ -1,5 +1,5 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
-import { resolveEditor } from "./editor";
+import { hasFenceLine, resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import { indentOf } from "./indent";
 
@@ -98,6 +98,8 @@ export function writeBlockContent(
   blockLabel: string,
   newValue: string,
 ): boolean {
+  // A ``` line would close the canvas fence and spill the rest into the note.
+  if (hasFenceLine(newValue)) return false;
   const resolved = resolveEditor(app, ctx, el, "writeBlockContent");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
@@ -136,6 +138,7 @@ export function moveCardBetweenBlocks(
   source: { label: string; newContent: string },
   dest: { label: string; newContent: string },
 ): boolean {
+  if (hasFenceLine(source.newContent) || hasFenceLine(dest.newContent)) return false;
   const resolved = resolveEditor(app, ctx, el, "moveCardBetweenBlocks");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;
@@ -256,7 +259,8 @@ export function patchFenceFlag(
 
     if (bodyLines.join("\n").trim() === normalised) {
       const flagIdx = bodyLines.findIndex(
-        l => l.trimStart().toLowerCase().startsWith(prefix)
+        // Config flags live at indent 0; an indented `sticky:` is content.
+        l => indentOf(l) === 0 && l.trimStart().toLowerCase().startsWith(prefix)
       );
       const newBodyLines = [...bodyLines];
       if (enabled && flagIdx === -1) {

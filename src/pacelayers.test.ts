@@ -189,3 +189,10 @@ describe("parsePaceLayers", () => {
     expect(result.data.type).toBe("shearing");
   });
 });
+
+describe("parsePaceLayers — deeper continuation lines", () => {
+  it("reads a line deeper than its sub-key as continuation, even if it looks like a sub-key", () => {
+    const r = parsePaceLayers("layer: Culture\n  obs: saw churn\n    Idea: try interviews\n  feed: f");
+    expect(r.ok && r.data.layers.Culture).toEqual({ obs: "saw churn\nIdea: try interviews", feed: "f" });
+  });
+});

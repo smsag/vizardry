@@ -100,3 +100,19 @@ describe("writeItemContent", () => {
     );
   });
 });
+
+describe("findItem — exact label", () => {
+  it("does not move `A [draft]` when item `A` is dragged", () => {
+    const lines = ["```vizardry", "item: A [draft] [0.2, 0.3]", "item: A [0.5, 0.5]", "```"];
+    const editor = makeMockEditor(lines);
+    writeItemPosition(makeApp("note.md", editor) as any, makeCtx("note.md", 0, 3) as any, document.createElement("div"), "A", 0.9, 0.9);
+    expect(editor.replaceRange).toHaveBeenCalledWith("item: A [0.9, 0.9]", { line: 2, ch: 0 }, { line: 2, ch: lines[2].length });
+  });
+
+  it("refuses a body containing a fence line", () => {
+    const editor = makeMockEditor([...FENCE]);
+    const ok = writeItemContent(makeApp("note.md", editor) as any, makeCtx("note.md", 0, 5) as any, document.createElement("div"), "Fix checkout", "a\n```\nb");
+    expect(ok).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+});

@@ -196,6 +196,11 @@ function renderItems(
 
 /** Builds a compact pill: the title (with its heading/ticket link) and a marker
  *  when it has a description to reveal. */
+/** True when an item body has something to show: `//` comment lines are kept for edits but never drawn. */
+function hasVisibleContent(content: string): boolean {
+  return content.split("\n").some(l => l.trim() !== "" && !l.trimStart().startsWith("//"));
+}
+
 function buildPill(
   item: MatrixItem,
   resolver?: LinkResolver,
@@ -211,7 +216,7 @@ function buildPill(
   // Link the label to a heading/ticket: explicit annotation on the item line,
   // or a heading whose name matches the label (auto-detect via the shared resolver).
   renderHeadingLink(labelEl, item.label, itemLinkResolver(item, resolver), navigateTo, app, ctx?.sourcePath);
-  if (item.content.trim()) pill.classList.add("vzd-mx-pill--has-details");
+  if (hasVisibleContent(item.content)) pill.classList.add("vzd-mx-pill--has-details");
   return pill;
 }
 
@@ -354,7 +359,7 @@ function makePopover(area: HTMLElement): Popover {
       editPopoverBody(body, item, container, app, ctx, resolver, navigateTo);
     } else {
       renderBlockBody(body, item.content, resolver, navigateTo, app, ctx?.sourcePath);
-      if (!item.content.trim()) body.remove(); // read-only + empty → title-only card
+      if (!hasVisibleContent(item.content)) body.remove(); // read-only + empty → title-only card
     }
 
     positionPopover(pop, pill, area);

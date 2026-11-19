@@ -17,13 +17,15 @@ export function renderBlockBody(
   body.empty();
   // Keep dataset in sync so the click handler always has the latest content.
   body.dataset.blockContent = content;
-  if (content.trim() === "") {
+  // `//` comment lines stay in the content (so edits keep them) but are never drawn.
+  const lines = content.split("\n").filter(l => !l.trimStart().startsWith("//"));
+  if (lines.join("").trim() === "") {
     body.addClass("vizardry-block-empty");
     body.removeClass("vzd-block-body--filled");
   } else {
     body.removeClass("vizardry-block-empty");
     body.addClass("vzd-block-body--filled");
-    content.split("\n").forEach(line => {
+    lines.forEach(line => {
       const lineEl = body.createEl("div", { cls: "vzd-block-line" });
       renderInline(lineEl, line);
       renderHeadingLink(lineEl, line, resolver, navigateTo, app, sourcePath);

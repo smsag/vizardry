@@ -255,7 +255,8 @@ export function renderStoryMap(
     if (task.subtitle) {
       createInlineEl(card, "div", "vzd-story-task-subtitle", task.subtitle);
     }
-    renderHeadingLink(card, task.name, resolver, navigateTo, app, ctx?.sourcePath);
+    // Editable cards long-press into the actions menu, so the preview moves to the link button.
+    renderHeadingLink(card, task.name, resolver, navigateTo, app, ctx?.sourcePath, isEditMode);
     if (isEditMode && app && ctx) {
       card.dataset.taskName = task.name;
       card.dataset.stepName = cell.dataset.stepName ?? "";

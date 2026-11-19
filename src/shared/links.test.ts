@@ -224,3 +224,12 @@ describe("createLinkResolver — resolve with inline formatting", () => {
     expect(resolver.resolve("==Goals==")).toBeUndefined();
   });
 });
+
+describe("createLinkResolver prototype keys", () => {
+  it("does not resolve Object.prototype names", () => {
+    const r = createLinkResolver({}, []);
+    expect(r.resolve("Constructor")).toBeUndefined();
+    expect(r.resolveTicket?.("constructor")).toBeUndefined();
+    expect(r.resolveCanvas?.("constructor")).toBeUndefined();
+  });
+});

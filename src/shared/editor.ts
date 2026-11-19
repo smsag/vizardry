@@ -7,10 +7,12 @@ export interface LineSource {
   getLine(line: number): string;
 }
 
-/** A LineSource over the lines of a file's text (for writes made without an editor). */
-export function linesOf(text: string): LineSource & { lines: string[] } {
-  const lines = text.split("\n");
-  return { lines, lineCount: () => lines.length, getLine: (n) => lines[n] ?? "" };
+/** A LineSource over the lines of a file's text (for writes made without an editor).
+ *  CRLF is split off like LF; `eol` is the file's own ending, for writing it back. */
+export function linesOf(text: string): LineSource & { lines: string[]; eol: string } {
+  const lines = text.split(/\r?\n/);
+  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+  return { lines, eol, lineCount: () => lines.length, getLine: (n) => lines[n] ?? "" };
 }
 
 /**
@@ -27,6 +29,16 @@ export function lineOfElement(editor: MarkdownView["editor"], el: HTMLElement): 
     // posAtDOM throws for a node CodeMirror no longer maps; the caller falls back.
     return null;
   }
+}
+
+/**
+ * True when any line of `text` would read as a code-fence delimiter. Written
+ * into a canvas body, such a line closes the ```vizardry block early: the
+ * rest spills into the note and no later edit can find the fence again.
+ * Body writers refuse the write instead.
+ */
+export function hasFenceLine(text: string): boolean {
+  return text.split("\n").some(line => line.trimStart().startsWith("```"));
 }
 
 export type ResolvedEditor = {

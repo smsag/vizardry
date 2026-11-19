@@ -10,6 +10,7 @@ import { wireRenameInputKeys, createBlurGuard } from "./inline-edit";
 import { createTextMeasurer, wrapText, type TextMeasurer } from "../shared/text-wrap";
 import { stripInline } from "../shared/inline-markdown";
 import { t } from "../i18n";
+import { ownerWindow } from "../shared/lifecycle";
 import { attachSvgItemMenu } from "../shared/item-menu";
 import type { LinkResolver } from "../shared/links";
 
@@ -395,6 +396,20 @@ function svgTextLines(
   return text;
 }
 
+/** Click-to-navigate on `target`. When the node is also renamed by double-click
+ *  (`editable`), navigation waits briefly so the dblclick can cancel it —
+ *  otherwise the two clicks of a double-click navigate twice before the rename opens. */
+function wireNavigateClick(target: Element, editable: boolean, navigate: () => void): void {
+  let timer: number | undefined;
+  target.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!editable) { navigate(); return; }
+    ownerWindow(target).clearTimeout(timer);
+    timer = ownerWindow(target).setTimeout(navigate, 250);
+  });
+  if (editable) target.addEventListener("dblclick", () => ownerWindow(target).clearTimeout(timer));
+}
+
 /** Opens a transient text input over an SVG region for rename / bullet edits.
  *  The foreignObject is appended to the SVG ROOT with absolute coordinates —
  *  never inside a transformed <g> — so iOS WebKit positions it correctly
@@ -480,7 +495,7 @@ function renderLaneNode(
   const heading = resolver?.resolve(node.text);
   if (heading && navigateTo) {
     labelText.classList.add("vzd-lane-label--linked");
-    labelText.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+    wireNavigateClick(labelText, !!editHandlers, () => navigateTo(heading));
   }
   if (editHandlers) {
     labelText.addEventListener("dblclick", (e) => {
@@ -642,10 +657,7 @@ function renderTreeNodes(
   if (heading && navigateTo) {
     group.setAttribute("data-linked", "true");
     group.classList.add("vzd-tree-node--linked");
-    group.addEventListener("click", (e) => {
-      e.stopPropagation();
-      navigateTo(heading);
-    });
+    wireNavigateClick(group, !!editHandlers, () => navigateTo(heading));
 
     // Chain-link icon: right-aligned, vertically centred in the node
     const iconG = createSvgEl("g", {
@@ -672,45 +684,14 @@ function renderTreeNodes(
     // Double-click to rename: show inline foreignObject input over the node
     group.addEventListener("dblclick", (e) => {
       e.stopPropagation();
-      closeRename();
-
-      const fo = createSvgEl("foreignObject", {
-        x: String(node.x),
-        y: String(node.y),
-        width: String(opts.nodeW),
-        height: String(opts.nodeH),
-        class: "vzd-tree-rename-fo",
-      }) as SVGForeignObjectElement;
-
-      const host = document.createElement("div");
-      host.className = "vzd-tree-rename-host";
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = node.text;
-      input.className = "vzd-rename-input vzd-tree-rename-input";
       // Match the node's own label colour — the input has a transparent
       // background, so on accent-filled nodes (e.g. root) it must use
       // text-on-accent rather than the default text colour to stay legible.
-      input.style.color = style.textVar;
-      host.appendChild(input);
-      fo.appendChild(host);
-      svg.appendChild(fo);
-      renameState.fo = fo;
-
-      input.focus({ preventScroll: true });
-      input.select();
-
-      // Same CM6/Live Preview focus-steal guard as activateInlineEdit —
-      // this input is mounted the same way (SVG foreignObject overlay,
-      // .focus() called right after insertion).
-      const blurGuard = createBlurGuard();
-      wireRenameInputKeys(input, (commit) => {
-        blurGuard.dispose();
-        closeRename();
-        const newText = input.value.trim();
-        if (commit && newText && newText !== node.text) editHandlers.onRename(node, newText);
-      }, { stopPropagation: true, ignoreBlur: blurGuard.ignoreBlur });
+      openLaneInput(
+        svg, renameState, closeRename,
+        node.x, node.y, opts.nodeW, opts.nodeH, node.text, style.textVar,
+        (v) => { if (v && v !== node.text) editHandlers.onRename(node, v); },
+      );
     });
   }
 

@@ -18,7 +18,8 @@ export function renderDocument(
   app: ViewerApp,
   ctx: ViewerContext,
 ): void {
-  const tokens = Lexer.lex(markdown);
+  // A leading YAML frontmatter block is metadata, not a rule plus a heading.
+  const tokens = Lexer.lex(markdown.replace(/^---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/, ""));
   // Reference-style links ([text][ref] … [ref]: url) live on the token list,
   // not on the tokens: each prose slice must carry them or the links resolve
   // to nothing.
@@ -36,7 +37,8 @@ export function renderDocument(
   };
 
   for (const token of tokens) {
-    if (token.type === "code" && token.lang === VIZARDRY_LANG) {
+    // Info string may carry extra words ("vizardry foo"); only the first names the language.
+    if (token.type === "code" && token.lang?.trim().split(/\s+/)[0] === VIZARDRY_LANG) {
       flushProse();
       const host = container.createEl("div", { cls: "vzd-ext-canvas-host" });
       try {

@@ -11,6 +11,35 @@ beforeEach(() => {
 });
 
 describe("onDisconnected", () => {
+  it("registered while detached: cleans once after attach then ancestor removal", async () => {
+    const el = document.createElement("span");
+    const cleanup = vi.fn();
+    onDisconnected(el, cleanup);
+
+    const leaf = document.body.appendChild(document.createElement("div"));
+    leaf.className = "workspace-leaf-content";
+    const wrap = leaf.appendChild(document.createElement("div"));
+    wrap.appendChild(el);
+    await flush();
+    expect(cleanup).not.toHaveBeenCalled();
+
+    leaf.removeChild(wrap);
+    await flush();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a still-detached element alone on unrelated body mutations", async () => {
+    const el = document.createElement("span");
+    const cleanup = vi.fn();
+    const dispose = onDisconnected(el, cleanup);
+
+    document.body.appendChild(document.createElement("div"));
+    await flush();
+
+    expect(cleanup).not.toHaveBeenCalled();
+    dispose(); // the registry is shared; don't leak into other tests
+  });
+
   it("calls cleanup once when the element is removed from the DOM", async () => {
     const parent = document.body.appendChild(document.createElement("div"));
     const el = parent.appendChild(document.createElement("span"));

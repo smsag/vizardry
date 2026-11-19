@@ -1,10 +1,11 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
-import { resolveEditor } from "./editor";
+import { hasFenceLine, resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import type { NodeMapColor, NodeMapLineStyle, NodeMapLinkDirection } from "../types";
 import { escRe } from "./regex";
 import { uniqueName } from "./unique-name";
 import { indentOf } from "./indent";
+import { findLinkToken } from "../nodemap";
 
 /** Escapes a string for use inside a RegExp. */
 function findBoxLine(
@@ -100,23 +101,12 @@ interface ParsedLinkLine {
  *  accepted, since this only round-trips already-valid source. */
 function parseLinkLine(rest: string): ParsedLinkLine | null {
   const trimmedRest = rest.trim();
-  // Same token order as the parser (nodemap.ts): "-->" before "->", or
-  // `link: A --> B` split at the second dash and every edit missed the link.
-  const biIdx = trimmedRest.indexOf("<->");
-  const dblArrowIdx = trimmedRest.indexOf("-->");
-  const dirIdx = trimmedRest.indexOf("->");
-  const undirIdx = trimmedRest.indexOf("--");
-  let direction: NodeMapLinkDirection;
-  let tokenIdx: number;
-  let tokenLen: number;
-  if (biIdx !== -1) { direction = "bidirectional"; tokenIdx = biIdx; tokenLen = 3; }
-  else if (dblArrowIdx !== -1) { direction = "directed"; tokenIdx = dblArrowIdx; tokenLen = 3; }
-  else if (dirIdx !== -1) { direction = "directed"; tokenIdx = dirIdx; tokenLen = 2; }
-  else if (undirIdx !== -1) { direction = "undirected"; tokenIdx = undirIdx; tokenLen = 2; }
-  else return null;
+  const token = findLinkToken(trimmedRest); // same token pick as the parser
+  if (!token) return null;
+  const { direction } = token;
 
-  const from = trimmedRest.slice(0, tokenIdx).trim();
-  let tail = trimmedRest.slice(tokenIdx + tokenLen).trim();
+  const from = trimmedRest.slice(0, token.index).trim();
+  let tail = trimmedRest.slice(token.index + token.length).trim();
   if (!from) return null;
 
   let color: NodeMapColor | undefined;
@@ -245,6 +235,8 @@ export function renameNodeMapBox(
   newName: string,
 ): boolean {
   if (!newName.trim() || newName === oldName) return false;
+  // The parser rejects these in a box name, which would fail the whole canvas.
+  if (/[:[\]]/.test(newName)) return false;
 
   const resolved = resolveEditor(app, ctx, el, "renameNodeMapBox");
   if (!resolved) return false;
@@ -261,9 +253,11 @@ export function renameNodeMapBox(
       const raw = editor.getLine(ln);
       let updated = raw;
       let changed = false;
-      if (reBox.test(updated)) { updated = updated.replace(reBox, `$1${newName}`); changed = true; }
-      if (reLinkFrom.test(updated)) { updated = updated.replace(reLinkFrom, `$1${newName}`); changed = true; }
-      if (reLinkTo.test(updated)) { updated = updated.replace(reLinkTo, `$1${newName}`); changed = true; }
+      const put = (_m: string, head: string): string => head + newName; // `$` in the name stays literal
+      const isLink = /^\s*link:/i.test(raw); // body text may hold "-> Name" too
+      if (reBox.test(updated)) { updated = updated.replace(reBox, put); changed = true; }
+      if (reLinkFrom.test(updated)) { updated = updated.replace(reLinkFrom, put); changed = true; }
+      if (isLink && reLinkTo.test(updated)) { updated = updated.replace(reLinkTo, put); changed = true; }
       if (changed) {
         editor.replaceRange(updated, { line: ln, ch: 0 }, { line: ln, ch: raw.length });
         found = true;
@@ -285,6 +279,7 @@ export function writeNodeMapBoxBody(
   boxName: string,
   newBody: string,
 ): boolean {
+  if (hasFenceLine(newBody)) return false; // a ``` line would close the code block early
   const resolved = resolveEditor(app, ctx, el, "writeNodeMapBoxBody");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;

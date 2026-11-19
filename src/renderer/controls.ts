@@ -499,6 +499,9 @@ export function renderHeadingLink(
   navigateTo: ((heading: string) => void) | undefined,
   app?: App,
   sourcePath?: string,
+  /** Attach the section preview to the link button instead of the whole card —
+   *  for cards whose long-press already opens the actions menu. */
+  previewOnButton = false,
 ): void {
   // Explicit `[text](canvas:Title)` — jump to another canvas in the same note.
   // Checked before heading auto-detect so an explicit canvas link isn't stolen
@@ -525,7 +528,7 @@ export function renderHeadingLink(
 
     // Cmd/Ctrl-hover (desktop) or long-press (mobile) shows a clipped preview of
     // the linked section on the whole box/card.
-    if (app && sourcePath) attachSectionPreview(app, parent, heading, sourcePath);
+    if (app && sourcePath) attachSectionPreview(app, previewOnButton ? linkBtn : parent, heading, sourcePath);
     return;
   }
 
@@ -1038,9 +1041,14 @@ function openPresentation(sourceContainer: HTMLElement, title: string): void {
   });
 
   let touchStartY = 0;
-  overlay.addEventListener("touchstart", (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+  let startedAtTop = false;
+  overlay.addEventListener("touchstart", (e) => {
+    touchStartY = e.touches[0].clientY;
+    // A downward drag while scrolled down is the user scrolling back up, not dismissing.
+    startedAtTop = wrap.scrollTop === 0;
+  }, { passive: true });
   overlay.addEventListener("touchend", (e) => {
-    if (e.changedTouches[0].clientY - touchStartY > 80) dismiss();
+    if (startedAtTop && e.changedTouches[0].clientY - touchStartY > 80) dismiss();
   }, { passive: true });
 }
 

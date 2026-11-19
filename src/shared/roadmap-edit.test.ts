@@ -112,3 +112,19 @@ describe("addRoadmapItem / renameRoadmapItem", () => {
     expect(editor._state[1].trim()).toBe("item: Renamed | k1");
   });
 });
+
+describe("roadmap edits — parser agreement", () => {
+  it("writes a $ in the new title literally", () => {
+    const editor = makeMockEditor(["now:", "  item: A | KEY-1"]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(renameRoadmapItem(app, ctx, el, "now", "A", "Pay $20 $&")).toBe(true);
+    expect(editor._state[1]).toBe("  item: Pay $20 $& | KEY-1");
+  });
+
+  it("reads a repeated column header as one column, like the parser", () => {
+    const editor = makeMockEditor(["now:", "  item: A", "next:", "  item: X", "now:", "  item: B"]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(moveRoadmapItem(app, ctx, el, "now", 0, "next", 1)).toBe(true);
+    expect(editor._state.map(l => l.trim())).toEqual(["now:", "next:", "item: X", "item: A", "now:", "item: B"]);
+  });
+});

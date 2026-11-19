@@ -608,3 +608,65 @@ describe("task edits scoped to a step", () => {
   });
 });
 
+// ── edits whose line numbers shift ───────────────────────────────────────────
+
+/** A mock whose inserts and deletes renumber the lines below, as a real editor's do. */
+function makeLineShiftingEditor(lines: string[]) {
+  let doc = [...lines];
+  const offset = (p: { line: number; ch: number }) =>
+    doc.slice(0, p.line).reduce((n, l) => n + l.length + 1, 0) + p.ch;
+  const replaceRange = vi.fn((text: string, from: { line: number; ch: number }, to?: { line: number; ch: number }) => {
+    const all = doc.join("\n");
+    doc = (all.slice(0, offset(from)) + text + all.slice(offset(to ?? from))).split("\n");
+  });
+  return { getLine: (n: number) => doc[n] ?? "", lineCount: () => doc.length, replaceRange, text: () => doc.join("\n") };
+}
+
+describe("renames with $ in the new name", () => {
+  it("writes the step name literally", () => {
+    const editor = makeMockEditor(makeSource());
+    const app = makeApp(PATH, editor) as any;
+    expect(renameStoryStep(app, makeCtx(PATH, 0, 21) as any, el, "Checkout", "Pay $20 $&")).toBe(true);
+    expect(editor._state[10]).toBe("  step: Pay $20 $&");
+    expect(editor._state[16]).toBe("  step: Pay $20 $& | add to cart");
+  });
+
+  it("writes the task name literally", () => {
+    const editor = makeMockEditor(makeSource());
+    const app = makeApp(PATH, editor) as any;
+    expect(renameStoryTask(app, makeCtx(PATH, 0, 21) as any, el, "Pay", "Tip $& more")).toBe(true);
+    expect(editor._state[12]).toBe("    task: Tip $& more");
+  });
+});
+
+describe("moveStoryTaskCrossColumn with a slice above the activities", () => {
+  it("moves the task without touching the step headers", () => {
+    const editor = makeLineShiftingEditor([
+      "```story-map",
+      "slice: MVP",
+      "  step: Login | enter email",
+      "activity: Onboard",
+      "  step: Login",
+      "    task: Enter email",
+      "    task: Reset",
+      "  step: Profile",
+      "    task: Avatar",
+      "```",
+    ]);
+    const app = makeApp(PATH, editor as any) as any;
+    expect(moveStoryTaskCrossColumn(app, makeCtx(PATH, 0, 9) as any, el, "Enter email", "Login", "Profile", "MVP")).toBe(true);
+    expect(editor.text()).toBe([
+      "```story-map",
+      "slice: MVP",
+      "  step: Login",
+      "  step: Profile | enter email",
+      "activity: Onboard",
+      "  step: Login",
+      "    task: Reset",
+      "  step: Profile",
+      "    task: Avatar",
+      "    task: Enter email",
+      "```",
+    ].join("\n"));
+  });
+});

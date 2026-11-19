@@ -288,3 +288,27 @@ describe("removeWardleyLink", () => {
     expect(editor.replaceRange).not.toHaveBeenCalled();
   });
 });
+
+describe("wardley edits — names with brackets, comments and $", () => {
+  const run = (lines: string[], act: (app: any, ctx: any, el: HTMLElement) => boolean) => {
+    const editor = makeMockEditor(lines);
+    const ok = act(makeApp("note.md", editor) as any, makeCtx("note.md", 0, lines.length - 1) as any, document.createElement("div"));
+    return { ok, texts: editor.replaceRange.mock.calls.map(c => c[0] as string) };
+  };
+
+  it("drag rewrites the coordinates, not a bracket in the name", () => {
+    const { ok, texts } = run(["component: API [v2] [0.50, 0.50] // edge"], (a, c, e) => writeWardleyComponent(a, c, e, "API [v2]", 0.6, 0.4));
+    expect(ok).toBe(true);
+    expect(texts).toEqual(["component: API [v2] [0.60, 0.40] // edge"]);
+  });
+
+  it("renames an anchor with a trailing comment, keeping the comment", () => {
+    const { texts } = run(["anchor: Customer // the user", "component: Customer [0.9, 0.1]"], (a, c, e) => renameWardleyComponent(a, c, e, "Customer", "Buyer"));
+    expect(texts).toEqual(["anchor: Buyer // the user", "component: Buyer [0.9, 0.1]"]);
+  });
+
+  it("writes a $ in the new name literally", () => {
+    const { texts } = run(["component: API [0.5, 0.5]", "link: API -> DB"], (a, c, e) => renameWardleyComponent(a, c, e, "API", "Pay $20 $&"));
+    expect(texts).toEqual(["component: Pay $20 $& [0.5, 0.5]", "link: Pay $20 $& -> DB"]);
+  });
+});

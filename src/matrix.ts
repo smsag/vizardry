@@ -1,6 +1,7 @@
 import type { Heat, MatrixAxis, MatrixItem, MatrixPreset, MatrixResult } from "./types";
 import { PRESETS, resolveCells } from "./matrix-presets";
 import { indentOf } from "./shared/indent";
+import { reindent } from "./parser";
 
 const HEAT_LEVELS: readonly Heat[] = ["very-high", "high", "medium", "low"];
 const PRESET_NAMES: readonly MatrixPreset[] = ["pain", "opportunity", "impact", "assumption", "scenario"];
@@ -104,15 +105,20 @@ function parseItem(lines: string[], headerIdx: number): { item: MatrixItem | nul
   let indent = -1;
   for (; i < lines.length; i++) {
     const raw = lines[i];
-    if (raw.trim() === "" || raw.trim().startsWith("//")) {
+    const lineIndent = indentOf(raw);
+    if (raw.trim() === "" || (raw.trim().startsWith("//") && lineIndent === 0)) {
       if (indent !== -1) body.push("");
       continue;
     }
-    const lineIndent = indentOf(raw);
+    // Indented comments stay in the body so an edit writes them back.
+    if (raw.trim().startsWith("//")) {
+      body.push(reindent(raw, lineIndent, indent === -1 ? lineIndent : indent));
+      continue;
+    }
     if (lineIndent <= 0) break;
     if (indent === -1) indent = lineIndent;
     if (lineIndent < indent) break;
-    body.push(raw.slice(indent));
+    body.push(reindent(raw, lineIndent, indent));
   }
   while (body.length > 0 && body[body.length - 1].trim() === "") body.pop();
 

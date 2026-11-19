@@ -342,3 +342,34 @@ describe("boxes declared without coordinates", () => {
     expect(ok).toBe("New Box 2");
   });
 });
+
+describe("nodemap edits — input the parser would reject", () => {
+  const run = (lines: string[], act: (app: any, ctx: any, el: HTMLElement) => boolean) => {
+    const editor = makeMockEditor(lines);
+    const ok = act(makeApp("note.md", editor) as any, makeCtx("note.md", 0, lines.length - 1) as any, document.createElement("div"));
+    return { ok, texts: editor.replaceRange.mock.calls.map(c => c[0] as string) };
+  };
+
+  it("rejects a box name with a colon or bracket", () => {
+    const lines = ["box: API", "link: Client -> API"];
+    for (const bad of ["Gateway: v2", "Gate [x]", "a]b"]) {
+      expect(run(lines, (a, c, e) => renameNodeMapBox(a, c, e, "API", bad))).toEqual({ ok: false, texts: [] });
+    }
+  });
+
+  it("leaves box body text alone and writes $ literally", () => {
+    const { texts } = run(["box: API", "box: Client", "  talks -> API", "link: Client -> API : $1"],
+      (a, c, e) => renameNodeMapBox(a, c, e, "API", "Pay $20 $&"));
+    expect(texts).toEqual(["box: Pay $20 $&", "link: Client -> Pay $20 $& : $1"]);
+  });
+
+  it("refuses a body with a code-fence line", () => {
+    expect(run(["box: A", "```"], (a, c, e) => writeNodeMapBoxBody(a, c, e, "A", "x\n```\ny"))).toEqual({ ok: false, texts: [] });
+  });
+
+  it("finds a link whose label holds an arrow", () => {
+    const { ok, texts } = run(["box: A", "box: B", "link: A -- B : uses -> thing"], (a, c, e) => removeNodeMapLink(a, c, e, "A", "B"));
+    expect(ok).toBe(true);
+    expect(texts).toEqual([""]);
+  });
+});

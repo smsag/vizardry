@@ -14,17 +14,15 @@ export type ViewerContext = MarkdownPostProcessorContext;
 
 const appStub = {
   workspace: {
-    getActiveViewOfType: () => ({ getMode: () => "preview" }),
+    getActiveViewOfType: () => null,
     getLeavesOfType: () => [],
     openLinkText: () => {},
   },
   metadataCache: {
     getFileCache: () => ({ headings: [] }),
-    getFirstLinkpathDest: () => null,
   },
   vault: {
     getFileByPath: () => null,
-    getResourcePath: () => "",
     cachedRead: async () => "",
   },
 };
@@ -32,9 +30,6 @@ const appStub = {
 export const app: ViewerApp = appStub as unknown as ViewerApp;
 
 export const ctx: ViewerContext = {
-  docId: "viewer",
   sourcePath: "viewer.md",
-  frontmatter: null,
-  addChild: () => {},
   getSectionInfo: () => null,
 } as unknown as ViewerContext;

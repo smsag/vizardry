@@ -62,6 +62,7 @@ class LinearService {
   readonly cache: LinearCache;
   private inflightIssue = new Map<string, Promise<LinearIssue>>();
   private inflightSummary = new Map<string, Promise<LinearSummary | { error: string } | null>>();
+  private generation = 0;
 
   /**
    * Forgets everything fetched so far: the persisted cache *and* the requests
@@ -69,6 +70,7 @@ class LinearService {
    * started against the old workspace must not land in the cleared cache.
    */
   async reset(): Promise<void> {
+    this.generation++; // requests already running skip their cache writes
     this.inflightIssue.clear();
     this.inflightSummary.clear();
     await this.cache.clearAndPersist();
@@ -108,9 +110,12 @@ class LinearService {
     if (cached) return Promise.resolve(cached);
 
     return dedupe(this.inflightIssue, issueKey, async () => {
+      const gen = this.generation;
       const issue = await fetchLinearIssue(issueKey, apiKey, this.plugin.settings.linearBaseUrl);
-      this.cache.setStatus(issueKey, issue);
-      this.rememberIssueVersion(issueKey, issue);
+      if (gen === this.generation) {
+        this.cache.setStatus(issueKey, issue);
+        this.rememberIssueVersion(issueKey, issue);
+      }
       return issue;
     });
   }
@@ -152,6 +157,7 @@ class LinearService {
     if (!this.isEnabled()) return null;
 
     return dedupe(this.inflightSummary, issueKey, async () => {
+      const gen = this.generation;
       let linearApiKey: string | null;
       let llmApiKey: string | null;
       try {
@@ -183,12 +189,14 @@ class LinearService {
         // Not awaited: the summary is already in memory for this and every
         // other badge on the page, and the popover should not sit on a
         // loading state waiting for a disk write.
-        this.cache.cacheSummary(issueKey, {
-          state: issue.state,
-          summary,
-          issueUpdatedAt: issue.updatedAt,
-          summarizedAt: Date.now(),
-        });
+        if (gen === this.generation) {
+          this.cache.cacheSummary(issueKey, {
+            state: issue.state,
+            summary,
+            issueUpdatedAt: issue.updatedAt,
+            summarizedAt: Date.now(),
+          });
+        }
 
         return { ...base, summary };
       } catch (err) {
