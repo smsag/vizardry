@@ -16,7 +16,7 @@ These are the rules that most often get broken. Follow all of them:
 2. **`type:` is required** and must be the framework id, optionally `id, variant` (one comma), e.g. `type: bmc` or `type: matrix, pain`. If it's missing you get `Missing required "type:" line`. An unknown id gives `Unknown type "<id>"`.
 3. **Indentation is structural.** Child lines are indented under their parent with a **consistent** unit (2 spaces recommended). Mixing indent widths inside one block causes an "unexpected indentation" error. Use spaces, not tabs, to be safe.
 4. **Keywords end with a colon** (`block:`, `item:`, `component:`, `axis:`, …) except the free-graph lines in `conceptmap` and the bullet/indent-only lines in `ost`.
-5. **Full-line comments only.** A line whose first non-space characters are `//` is ignored, in every framework. Inline trailing `// …` comments are only stripped in `wardley` and `pacelayers` — do **not** rely on them elsewhere; put comments on their own line.
+5. **Full-line comments only.** A line whose first non-space characters are `//` is ignored, in every framework. Inline trailing `// …` comments are only stripped in `wardley` and `pacelayers` — do **not** rely on them elsewhere; put comments on their own line. An indented comment inside a `block:` or under a matrix `item:` is not drawn, but it stays in place when that block is edited on the canvas.
 6. **Blank lines are always ignored** — use them freely for readability.
 7. **Grid block labels must match the framework's list exactly** (case-insensitive). A typo'd label isn't drawn (a block left out of the source isn't drawn either); a ⚠ chip in the canvas header names it and lists the framework's blocks.
 8. **Don't quote values.** Write `title: My Map`, not `title: "My Map"`. No YAML, no JSON — this is a line-based mini-language.
@@ -869,7 +869,7 @@ link: Order Service -> Payment Gateway : charges card [color: green]
 | `link: A -> B : label` | Add a label (note the spaces around `:`) |
 | `link: A -> B [color: red, style: dashed]` | Modifiers: `color` (palette/`#hex`), `style` (`solid`/`dashed`) |
 
-Palette colours: `red` `orange` `yellow` `green` `teal` `blue` `purple` `pink` `gray` (or any `#rgb`/`#rrggbb`). Link box names are case-insensitive; self-links are not allowed.
+Palette colours: `red` `orange` `yellow` `green` `teal` `blue` `purple` `pink` `gray` (or any `#rgb`/`#rrggbb`). Link box names are case-insensitive; self-links are not allowed. A box name cannot contain `:`, `[` or `]`. The first arrow on a `link:` line is the direction, so a label may hold arrows of its own (`link: A -> B : request <-> response`).
 
 ---
 
@@ -984,6 +984,8 @@ layer: Nature
 | `obs:` | Observation (what we see) |
 | `feed:` | Feedback / signal |
 | `idea:` | Action idea or hypothesis |
+
+A value can run over several lines: indent the following lines **deeper than the sub-key** (the canvas writes them that way). A deeper line is always part of the value above it, even if it reads like `Idea: …`.
 
 **Canonical key → display label per variant** (write either):
 

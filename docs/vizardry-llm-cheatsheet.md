@@ -270,7 +270,7 @@ layer: Infrastructure
 ```
 ~~~
 
-Sub-keys: `note:`, `obs:` (observation), `feed:` (feedback/signal), `idea:`. Layer names also accept their variant display labels as aliases.
+Sub-keys: `note:`, `obs:` (observation), `feed:` (feedback/signal), `idea:`. Layer names also accept their variant display labels as aliases. Continue a value on lines indented deeper than its sub-key.
 
 ## RACI (`raci`)
 

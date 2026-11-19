@@ -1596,7 +1596,7 @@ layer: Nature
 ```
 ~~~
 
-Six layers from fastest (Fashion) to slowest (Nature). Outer layers take a free-text `note:`; the middle working layers take `obs:` (observation), `feed:` (feedback signal), and `idea:` (action). Variants (`shearing` · `product` · `retro`) relabel the layers for different lenses.
+Six layers from fastest (Fashion) to slowest (Nature). Outer layers take a free-text `note:`; the middle working layers take `obs:` (observation), `feed:` (feedback signal), and `idea:` (action). A value can continue on the following lines, indented deeper than its sub-key. Variants (`shearing` · `product` · `retro`) relabel the layers for different lenses.
 
 ---
 

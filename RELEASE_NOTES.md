@@ -1,3 +1,60 @@
+## Unreleased
+
+Fixes from a full code audit. Most of them are about one thing: an edit made
+on a canvas could damage the text it writes back into the note.
+
+- **Tab-indented text keeps its first letters.** A block or matrix item
+  indented with tabs lost the start of each line (`Hello world` showed as
+  `lo world`), and the next edit saved it that way.
+- **A `$` in a name is written as typed.** Renaming a story step or task, a
+  roadmap item, a Wardley component or a Node Map box to something like
+  `Pay $20` used to garble the line.
+- **Setting a title, period, pin or collapse no longer touches content.** A
+  body line that happened to start with `Title:`, `Period:`, `Sticky:` or
+  `Collapsed:` could be replaced or deleted.
+- **Story Map:** dragging a task to another column no longer deletes a step
+  header when a `slice:` is written above the `activity:`. `Step:` with a
+  capital letter is accepted under a slice.
+- **SIPOC and RACI:** pressing Enter in a cell no longer breaks the canvas;
+  the lines are joined into one.
+- **Comments survive edits.** An indented `// comment` inside a block or under
+  a matrix item used to disappear when you edited that block. It is still not
+  drawn; the editor now shows it.
+- **Pace Layers:** a value with several lines is written with the following
+  lines indented deeper than its key, so a line like `Idea: …` inside an
+  observation stays part of the observation. Notes written the old way still
+  read the same.
+- **Scribble:** strokes are saved in notes with Windows line endings, and a
+  stroke line the parser could not read is left in place.
+- **Wardley:** dragging a component with brackets in its name (`API [v2]`)
+  moves it, renaming an anchor keeps its trailing comment, and an anchor and a
+  component that differ only in case are one component. A plain click on an
+  evolve marker no longer changes its value.
+- **Node Map:** a link label can hold arrows (`A -> B : request <-> response`),
+  renaming a box no longer rewrites body text, and a name with `:`, `[` or `]`
+  is refused. Dragging a box on a large map is smoother.
+- **Three backticks in a canvas text field are refused**, because they would
+  end the code block early.
+- **Matrix, SCQA, Roadmap:** an item whose label is the start of another
+  label, a drag past bullet lines, and a repeated column header now address
+  the right line.
+- **Trees:** double-clicking a node that links to a heading renames it without
+  jumping to the heading first. A single click on such a node jumps after a
+  short delay in Live Preview.
+- **Presentation mode on touch:** scrolling back up no longer closes it.
+- **Fewer leftovers after re-renders:** cleanup now runs when a canvas is
+  redrawn or its tab closes.
+- **Linear and Upvoty:** the address fields only accept `https://`. Changing
+  the key or address no longer lets a request that was already running fill
+  the cache with the old workspace's data. A ticket link in the side panel
+  opens only if it is a web address.
+- **Labels such as `Constructor`** no longer get a bogus heading link, and
+  `type: constructor` reports an unknown type.
+- **Browser extension:** note properties at the top of a file are no longer
+  shown as a heading, ` ```vizardry ` with extra words after it renders, an
+  empty file says so, and the "Edit source" button, which could only fail
+  there, is hidden.
+
 ## 0.76.0
 
 New: Scribble, a freehand sketch canvas for iPad and Apple Pencil, and links
