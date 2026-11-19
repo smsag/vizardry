@@ -42,7 +42,8 @@ function parseColBlocks(
       const lower = trimmed.toLowerCase();
       if (lower === "now:" || lower === "next:" || lower === "later:") {
         const colId = lower.slice(0, -1);
-        current = { headerLine: ln, items: [], indent: -1 };
+        // A repeated header continues its column, as the parser reads it.
+        current = result.get(colId) ?? { headerLine: ln, items: [], indent: -1 };
         result.set(colId, current);
         blockIndent = -1;
       } else {
@@ -128,7 +129,7 @@ export function renameRoadmapItem(
   const raw = editor.getLine(item.titleLine);
   // Regex matches `item: <oldTitle>` and preserves any trailing ` | <key>` suffix.
   const re = new RegExp(`^(\\s*item:\\s*)${escRe(oldTitle)}(\\s*(?:\\|.*)?$)`, "i");
-  const newLine = raw.replace(re, `$1${newTitle.trim()}$2`);
+  const newLine = raw.replace(re, (_m, pre: string, post: string) => pre + newTitle.trim() + post);
   editorWrite(() => editor.replaceRange(newLine, { line: item.titleLine, ch: 0 }, { line: item.titleLine, ch: raw.length }), el);
   return true;
 }

@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 import { indentOf } from "./indent";
+import { writeFieldLine } from "./field-line";
 
 export const TITLE_MAX_LENGTH = 80;
 
@@ -41,32 +42,15 @@ export function writeCanvasTitle(
   const { editor, lineStart, lineEnd } = resolved;
   const isDefault = newTitle.trim() === defaultTitle.trim();
 
-  // Find existing title line inside the code block
-  let titleLine = -1;
-  for (let ln = lineStart + 1; ln < lineEnd; ln++) {
-    if (editor.getLine(ln).trim().toLowerCase().startsWith("title:")) {
-      titleLine = ln;
-      break;
-    }
+  // First top-level title line (what parseTitle reads); an indented one is content.
+  const titleLines: number[] = [];
+  for (let ln = lineStart + 1; ln < lineEnd && titleLines.length === 0; ln++) {
+    const line = editor.getLine(ln);
+    if (indentOf(line) === 0 && line.trim().toLowerCase().startsWith("title:")) titleLines.push(ln);
   }
 
-  editorWrite(() => {
-    if (isDefault) {
-      // Remove the title line if it exists
-      if (titleLine !== -1) {
-        editor.replaceRange("", { line: titleLine, ch: 0 }, { line: titleLine + 1, ch: 0 });
-      }
-    } else {
-      const titleLineText = `title: ${newTitle.trim().slice(0, TITLE_MAX_LENGTH)}`;
-      if (titleLine !== -1) {
-        editor.replaceRange(titleLineText, { line: titleLine, ch: 0 }, { line: titleLine, ch: editor.getLine(titleLine).length });
-      } else {
-        // Insert after the opening fence line
-        const afterFence = lineStart + 1;
-        editor.replaceRange(titleLineText + "\n", { line: afterFence, ch: 0 });
-      }
-    }
-  }, el);
+  const value = isDefault ? "" : newTitle.trim().slice(0, TITLE_MAX_LENGTH);
+  editorWrite(() => writeFieldLine(editor, titleLines, "title", value, lineStart), el);
 
   return true;
 }

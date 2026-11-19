@@ -101,3 +101,20 @@ describe("UpvotyService post caching", () => {
     await expect(getUpvotyService()!.getSummary(SLUG)).resolves.toBeNull();
   });
 });
+
+describe("UpvotyService.reset", () => {
+  it("does not let a request started before reset repopulate the cache", async () => {
+    let resolve!: (p: any) => void;
+    mockedFetch.mockReturnValue(new Promise((r) => { resolve = r; }));
+    initUpvotyService(fakePlugin());
+    const svc = getUpvotyService()!;
+
+    const pending = svc.getPost(SLUG);
+    await vi.waitFor(() => expect(mockedFetch).toHaveBeenCalled());
+    await svc.reset();
+    resolve(POST);
+
+    expect(await pending).toMatchObject({ id: "p1" });
+    expect(svc.cache.getStatus((svc as any).cacheKey(SLUG), 5)).toBeFalsy();
+  });
+});

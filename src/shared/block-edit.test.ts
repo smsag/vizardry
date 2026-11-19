@@ -443,3 +443,18 @@ describe("patchFenceFlag — line-ending round-trip", () => {
     expect(patchFenceFlag(build("\r\n"), "type: swot\nother", "sticky", true)).toBeNull();
   });
 });
+
+describe("indented config keys and fence lines", () => {
+  it("patchFenceFlag leaves an indented `sticky:` body line alone", () => {
+    const body = "block: Notes\n  sticky: notes are yellow";
+    const r = patchFenceFlag("```vizardry\n" + body + "\n```", body, "sticky", true);
+    expect(r?.newSource).toBe("sticky: true\n" + body);
+  });
+
+  it("writeBlockContent refuses a value containing a fence line", () => {
+    const editor = makeMockEditor(["```swot", "block: Strengths", "  old", "```"]);
+    const ok = writeBlockContent(makeApp("note.md", editor) as any, makeCtx("note.md", 0, 3) as any, document.createElement("div"), "Strengths", "a\n```\nb");
+    expect(ok).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+});

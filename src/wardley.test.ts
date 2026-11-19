@@ -28,6 +28,14 @@ link: User -> Feature
     expect(anchor!.evolution).toBe(0);
   });
 
+  it("an anchor and a component that differ only in case are one component", () => {
+    const result = parseWardleyMap(`anchor: Customer\ncomponent: customer [0.9, 0.5]`);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.components).toEqual([{ name: "Customer", visibility: 0.9, evolution: 0.5 }]);
+    expect(result.data.explicitComponents.has("Customer")).toBe(true);
+  });
+
   it("component declaration overrides anchor defaults", () => {
     const src = `anchor: Customer\ncomponent: Customer [0.95, 0.6]`;
     const result = parseWardleyMap(src);

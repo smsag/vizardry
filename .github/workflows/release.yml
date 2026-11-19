@@ -26,6 +26,8 @@ jobs:
   # Gate: run the full CI verification before publishing anything, via the same
   # composite action ci.yml uses — no separate pipeline to keep in sync.
   verify:
+    # Manual runs release only main; a branch dispatch would publish that branch.
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -37,6 +39,7 @@ jobs:
 
   release:
     needs: verify
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

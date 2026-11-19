@@ -97,3 +97,12 @@ describe("parseProContra", () => {
     expect(parse("title: Empty").options).toEqual([]);
   });
 });
+
+describe("parseProContra inherited keys", () => {
+  it("warns about `constructor:` instead of counting it as an argument", () => {
+    const d = parse("option: A\nconstructor: boom");
+    expect(d.options[0].pros).toHaveLength(0);
+    expect(d.options[0].cons).toHaveLength(0);
+    expect(d.warnings).toEqual(['Line 2: unknown field "constructor" — ignored']);
+  });
+});

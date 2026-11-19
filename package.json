@@ -15,7 +15,7 @@
     "coverage": "vitest run --coverage",
     "test:visual": "node visual/build.mjs && playwright test",
     "test:visual:update": "node visual/build.mjs && playwright test --update-snapshots",
-    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "version": "node version-bump.mjs && git add manifest.json versions.json extension/manifest.json",
     "ext:dev": "node extension/build.mjs",
     "ext:build": "node extension/build.mjs production"
   },

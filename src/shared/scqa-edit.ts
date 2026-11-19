@@ -92,8 +92,10 @@ export function deleteSCQABullet(
 
 /** Strips a leading level keyword (`complication:` etc.) if present, so node
  *  matching works for both the keyword form and legacy bare-indent lines. */
+const KEYWORD_RE = /^(situation|complication|question|answer|resolution):\s*/i;
+
 function nodeValue(trimmed: string): string {
-  const m = /^(situation|complication|question|answer|resolution):\s*/i.exec(trimmed);
+  const m = KEYWORD_RE.exec(trimmed);
   return m ? trimmed.slice(m[0].length) : trimmed;
 }
 
@@ -139,14 +141,18 @@ export function reorderSCQAInterior(
     return columnOf(s);
   };
 
-  // Locate the dragged node (skip the situation root at indent 0).
+  // Locate the dragged node (skip the situation root at indent 0). A keyword
+  // line wins over a bullet with the same text; legacy bare lines are the fallback.
+  const isKeyword = (i: number): boolean => KEYWORD_RE.test(lines[i].trim());
   let nodeLine = -1;
   for (let i = 0; i < lines.length; i++) {
     const ind = indentOf(lines[i]);
     if (ind <= 0) continue;
-    if (nodeValue(lines[i].trim()) === nodeText) { nodeLine = i; break; }
+    if (nodeValue(lines[i].trim()) === nodeText && (nodeLine === -1 || isKeyword(i) && !isKeyword(nodeLine))) nodeLine = i;
   }
   if (nodeLine === -1) return null;
+  // Keyword form: bullets at the same indent are notes on the parent, not siblings.
+  const keywordForm = isKeyword(nodeLine);
 
   const nodeIndent = indentOf(lines[nodeLine]);
 
@@ -172,7 +178,7 @@ export function reorderSCQAInterior(
     const ind = indentOf(lines[i]);
     if (ind === -1) continue;
     if (ind < nodeIndent) break;
-    if (ind === nodeIndent) siblings.push(i);
+    if (ind === nodeIndent && (!keywordForm || isKeyword(i))) siblings.push(i);
   }
 
   const currentIndex = siblings.indexOf(nodeLine);

@@ -51,6 +51,45 @@ export function triggerRelink(filePath: string): void {
 }
 
 /**
+ * Sets up a block label's heading link button — or, when no heading matches,
+ * its ticket badge — replacing any previous ones, so it serves both the first
+ * render and a relink. The ticket badge must be removed too: if a heading is
+ * later added that matches this label, the heading link must win, not sit next
+ * to a stale badge.
+ */
+function renderBlockLink(
+  labelRow: HTMLElement,
+  labelKey: string,
+  resolver: LinkResolver,
+  navigateTo: (heading: string) => void,
+  app?: App,
+  ctx?: MarkdownPostProcessorContext,
+): void {
+  labelRow.querySelector(".vizardry-block-link-btn")?.remove();
+  labelRow.querySelector(".vzd-linear-key, .vzd-upvoty-key")?.remove();
+
+  const heading = resolver.resolve(labelKey);
+  if (heading) {
+    const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
+    setIcon(linkBtn, "link");
+    linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
+    linkBtn.dataset.heading = heading;
+    markInteractive(linkBtn);
+    linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
+    // On the button, not the block: a relink replaces the button, and a preview
+    // attached to the block would keep the old heading forever while each
+    // relink stacked another set of listeners on top.
+    if (app && ctx) attachSectionPreview(app, linkBtn, heading, ctx.sourcePath);
+  } else {
+    const ticket = resolver.resolveTicket?.(labelKey);
+    if (ticket) {
+      if (ticket.service === "linear") renderLinearKeyBadge(labelRow, ticket.key);
+      else renderUpvotyKeyBadge(labelRow, ticket.key);
+    }
+  }
+}
+
+/**
  * Updates only the link buttons in an already-rendered canvas when the
  * set of available headings has changed. Avoids a full re-render.
  */
@@ -68,34 +107,7 @@ export function relinkCanvas(
     const labelRow = block.querySelector<HTMLElement>(".vizardry-block-label-row");
     if (!labelRow) continue;
 
-    // Remove stale link button / ticket badge (if any) before re-evaluating.
-    // The ticket badge must go too: if a heading is later added that matches
-    // this block's label, the heading link must win, not sit next to a stale
-    // ticket badge from before.
-    labelRow.querySelector(".vizardry-block-link-btn")?.remove();
-    labelRow.querySelector(".vzd-linear-key, .vzd-upvoty-key")?.remove();
-
-    const labelKey = blockDef.label.toLowerCase();
-    const heading = resolver.resolve(labelKey);
-    if (heading) {
-      const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
-      setIcon(linkBtn, "link");
-      linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
-      linkBtn.dataset.heading = heading;
-      markInteractive(linkBtn);
-      linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
-      // Mirror renderCanvas's clipped-section preview. Attached to the freshly
-      // created button (not the persistent block) so a later relink — which
-      // removes and recreates this button — can't stack duplicate listeners:
-      // the old button's listeners die with it when it leaves the DOM.
-      if (app && ctx) attachSectionPreview(app, linkBtn, heading, ctx.sourcePath);
-    } else {
-      const ticket = resolver.resolveTicket?.(labelKey);
-      if (ticket) {
-        if (ticket.service === "linear") renderLinearKeyBadge(labelRow, ticket.key);
-        else renderUpvotyKeyBadge(labelRow, ticket.key);
-      }
-    }
+    renderBlockLink(labelRow, blockDef.label.toLowerCase(), resolver, navigateTo, app, ctx);
   }
 }
 
@@ -212,25 +224,7 @@ export function renderCanvas(
     const labelRow = block.createEl("div", { cls: "vizardry-block-label-row" });
     labelRow.createEl("span", { text: blockDef.label, cls: "vizardry-block-label" });
 
-    const heading = resolver.resolve(labelKey);
-    if (heading) {
-      const linkBtn = labelRow.createEl("button", { cls: "vizardry-block-link-btn vzd-btn" });
-      setIcon(linkBtn, "link");
-      linkBtn.setAttribute("aria-label", t("nav.jumpTo", { heading }));
-      linkBtn.dataset.heading = heading;
-      markInteractive(linkBtn);
-      linkBtn.addEventListener("click", (e) => { e.stopPropagation(); navigateTo(heading); });
-      // On the button, not the block: a relink replaces the button, and a
-      // preview attached to the block would keep the old heading forever
-      // while each relink stacked another set on top.
-      if (app && ctx) attachSectionPreview(app, linkBtn, heading, ctx.sourcePath);
-    } else {
-      const ticket = resolver.resolveTicket?.(labelKey);
-      if (ticket) {
-        if (ticket.service === "linear") renderLinearKeyBadge(labelRow, ticket.key);
-        else renderUpvotyKeyBadge(labelRow, ticket.key);
-      }
-    }
+    renderBlockLink(labelRow, labelKey, resolver, navigateTo, app, ctx);
 
     const content = data[labelKey] ?? "";
     const body = block.createEl("div", { cls: "vizardry-block-body" });

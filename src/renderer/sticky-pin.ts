@@ -173,6 +173,9 @@ class StickyController {
   }
 
   private update(): void {
+    // Tab closed: the zero-height check below would return before any sweep,
+    // leaving the window resize listener attached forever.
+    if (!this.scroller.isConnected) { this.dispose(); return; }
     const sRect = this.scroller.getBoundingClientRect();
 
     // Pane hidden (inactive tab, collapsed split): nothing to pin. The clone

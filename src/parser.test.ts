@@ -31,9 +31,11 @@ describe("parseFrameworkSource", () => {
     expect(result.ok && result.data["goal"]).toBe("Line one\nLine two");
   });
 
-  it("ignores comment lines", () => {
-    const result = parseFrameworkSource("// top comment\nblock: Goal\n  // inner comment\n  Value");
-    expect(result.ok && result.data["goal"]).toBe("Value");
+  it("skips top-level comments and keeps a block's own, so an edit writes them back", () => {
+    const result = parseFrameworkSource("// top comment\nblock: Goal\n  // inner comment\n  Value\n  // mid\n  More");
+    expect(result.ok && result.data["goal"]).toBe("// inner comment\nValue\n// mid\nMore");
+    const only = parseFrameworkSource("block: Goal\n  // todo");
+    expect(only.ok && only.data["goal"]).toBe("// todo");
   });
 
   it("ignores a top-level period: config line without warning", () => {
@@ -136,4 +138,11 @@ describe("parseFrameworkSource", () => {
     expect(result.warnings?.some(w => /unexpected line/.test(w))).toBe(true);
   });
 
+});
+
+describe("parseFrameworkSource — tab indentation", () => {
+  it("strips a tab indent as one character, keeping deeper indentation", () => {
+    const result = parseFrameworkSource("block: A\n\tHello world\n\t\tdeeper\n\tSecond line");
+    expect(result.ok && result.data["a"]).toBe("Hello world\n    deeper\nSecond line");
+  });
 });

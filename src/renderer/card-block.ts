@@ -37,6 +37,24 @@ export function textOnlyClone(card: HTMLElement): DocumentFragment {
   return frag;
 }
 
+const blockLines = (content: string): string[] => content.split("\n").map(l => l.trim()).filter(Boolean);
+const isComment = (line: string): boolean => line.startsWith("//");
+
+/**
+ * Applies `edit` to a block's cards (its non-comment lines) and returns the new
+ * content. `//` comment lines are not cards, so they keep their slots in the
+ * source instead of being reordered or dropped.
+ * @internal exported for testing.
+ */
+export function editCards(content: string, edit: (cards: string[]) => void): string {
+  const all = blockLines(content);
+  const cards = all.filter(l => !isComment(l));
+  edit(cards);
+  let k = 0;
+  const out = all.flatMap(l => isComment(l) ? [l] : k < cards.length ? [cards[k++]] : []);
+  return [...out, ...cards.slice(k)].join("\n");
+}
+
 export function renderCardBlock(
   body: HTMLElement,
   blockLabel: string,
@@ -54,7 +72,7 @@ export function renderCardBlock(
   const doc = body.ownerDocument;
   const win = ownerWindow(body);
 
-  const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
+  const lines = blockLines(content).filter(l => !isComment(l));
   const isEditMode = !!(app && ctx && container)
     && isEditModeActive(app);
 
@@ -110,11 +128,10 @@ export function renderCardBlock(
       if (!activeDrop) {
         // Within-block reorder
         if (toIndex === fromIndex) return;
-        const currentLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
-        const reordered = [...currentLines];
-        const [moved] = reordered.splice(fromIndex, 1);
-        reordered.splice(toIndex, 0, moved);
-        const newContent = reordered.join("\n");
+        const newContent = editCards(body.dataset.blockContent ?? "", cards => {
+          const [moved] = cards.splice(fromIndex, 1);
+          cards.splice(toIndex, 0, moved);
+        });
 
         if (writeBlockContent(app, ctx, container, blockLabel, newContent)) {
           body.dataset.blockContent = newContent;
@@ -125,12 +142,15 @@ export function renderCardBlock(
         // Cross-block move — located and edited as a single atomic operation
         // (see moveCardBetweenBlocks' doc comment for why two separate
         // writeBlockContent calls are unreliable here).
-        const sourceLines = (body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
-        const [movedCard] = sourceLines.splice(fromIndex, 1);
-        const destLines = (activeDrop.body.dataset.blockContent ?? "").split("\n").map(l => l.trim()).filter(Boolean);
-        destLines.splice(toIndex, 0, movedCard);
-        const newSourceContent = sourceLines.join("\n");
-        const newDestContent = destLines.join("\n");
+        let movedCard = "";
+        let sourceCardCount = 0;
+        const newSourceContent = editCards(body.dataset.blockContent ?? "", cards => {
+          [movedCard] = cards.splice(fromIndex, 1);
+          sourceCardCount = cards.length;
+        });
+        const newDestContent = editCards(activeDrop.body.dataset.blockContent ?? "", cards => {
+          cards.splice(toIndex, 0, movedCard);
+        });
 
         const written = moveCardBetweenBlocks(
           app, ctx, container,
@@ -146,7 +166,7 @@ export function renderCardBlock(
         activeDrop.body.dataset.blockContent = newDestContent;
 
         // Update empty state immediately so the source cell doesn't look broken
-        if (sourceLines.length === 0) {
+        if (sourceCardCount === 0) {
           body.addClass("vizardry-block-empty");
           body.removeClass("vzd-card-block-body");
         }

@@ -172,6 +172,19 @@ describe("sticky-pin selection", () => {
     expect(pinnedName()).toBeNull();
   });
 
+  it("removes its window resize listener once the scroller leaves the DOM", () => {
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    const a = makeCanvas("A", 300);
+    activateSticky(a);
+    scrollTo(350);
+
+    viewContent.remove();
+    stubRect(scroller, { height: 0 });
+    scrollTo(360);
+    expect(removeSpy).toHaveBeenCalledWith("resize", expect.any(Function));
+    removeSpy.mockRestore();
+  });
+
   it("deactivateSticky removes an active clone", () => {
     const a = makeCanvas("A", 300);
     activateSticky(a);

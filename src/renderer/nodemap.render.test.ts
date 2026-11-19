@@ -93,8 +93,21 @@ describe("Node Map drag", () => {
     const before = linkY1();
     pointer(boxGroup(el, "Customer"), "pointerdown", at(60, 50));
     pointer(document, "pointermove", at(60, 250));
-    expect(linkY1()).not.toBe(before);
     pointer(document, "pointerup", at(60, 250));
+    expect(linkY1()).not.toBe(before);
+  });
+
+  it("redraws links once per frame, not per pointermove, and renders the final position on drop", () => {
+    const { el } = render(SRC);
+    const layer = el.querySelector<SVGGElement>(".vzd-nodemap-links")!;
+    const rebuild = vi.spyOn(layer, "replaceChildren");
+    pointer(boxGroup(el, "Customer"), "pointerdown", at(60, 50));
+    pointer(document, "pointermove", at(60, 150));
+    pointer(document, "pointermove", at(60, 200));
+    pointer(document, "pointermove", at(60, 250));
+    expect(rebuild).not.toHaveBeenCalled();
+    pointer(document, "pointerup", at(60, 250));
+    expect(rebuild).toHaveBeenCalledTimes(1);
   });
 
   it("treats a press that barely moves as a click: no write", () => {

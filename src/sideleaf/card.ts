@@ -62,7 +62,7 @@ export function createCard(ref: TicketRef, onClose: () => void): CardHandles {
   keyLink.addEventListener("click", (e) => {
     e.preventDefault();
     const url = keyLink.dataset.url;
-    if (url) window.open(url, "_blank", "noopener");
+    if (url && /^https?:\/\//i.test(url)) window.open(url, "_blank", "noopener");
   });
 
   const titleEl = el.createEl("div", { cls: "vzd-card-title" });

@@ -1,6 +1,8 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
+import { indentOf } from "./indent";
+import { writeFieldLine } from "./field-line";
 
 export const PERIOD_MAX_LENGTH = 60;
 
@@ -10,6 +12,7 @@ export const PERIOD_MAX_LENGTH = 60;
  */
 export function parsePeriod(source: string): string {
   for (const line of source.split("\n")) {
+    if (indentOf(line) !== 0) continue;
     const trimmed = line.trim();
     if (trimmed.toLowerCase().startsWith("period:")) {
       return trimmed.slice("period:".length).trim().slice(0, PERIOD_MAX_LENGTH);
@@ -35,29 +38,19 @@ export function writeCanvasPeriod(
   const { editor, lineStart, lineEnd } = resolved;
   const value = newPeriod.trim().slice(0, PERIOD_MAX_LENGTH);
 
+  // First top-level lines only, matching parsePeriod / parseTitle; indented ones are content.
   let periodLine = -1;
   let titleLine = -1;
   for (let ln = lineStart + 1; ln < lineEnd; ln++) {
-    const t = editor.getLine(ln).trim().toLowerCase();
+    const line = editor.getLine(ln);
+    if (indentOf(line) !== 0) continue;
+    const t = line.trim().toLowerCase();
     if (periodLine === -1 && t.startsWith("period:")) periodLine = ln;
     if (titleLine === -1 && t.startsWith("title:")) titleLine = ln;
   }
 
-  editorWrite(() => {
-    if (!value) {
-      if (periodLine !== -1) {
-        editor.replaceRange("", { line: periodLine, ch: 0 }, { line: periodLine + 1, ch: 0 });
-      }
-      return;
-    }
-
-    const text = `period: ${value}`;
-    if (periodLine !== -1) {
-      editor.replaceRange(text, { line: periodLine, ch: 0 }, { line: periodLine, ch: editor.getLine(periodLine).length });
-    } else {
-      const insertAt = (titleLine !== -1 ? titleLine : lineStart) + 1;
-      editor.replaceRange(text + "\n", { line: insertAt, ch: 0 });
-    }
-  }, el);
+  editorWrite(() => writeFieldLine(
+    editor, periodLine === -1 ? [] : [periodLine], "period", value, titleLine !== -1 ? titleLine : lineStart,
+  ), el);
   return true;
 }

@@ -61,6 +61,25 @@ function parseBoxDecl(rest: string, lineNum: number): BoxDeclResult {
   return { ok: true, value: { name, x: x ?? 0, y: y ?? 0, color, auto: x === undefined } };
 }
 
+const LINK_TOKENS: Array<[string, NodeMapLinkDirection]> = [
+  ["<->", "bidirectional"], ["-->", "directed"], ["->", "directed"], ["--", "undirected"],
+];
+
+/** The direction token of a link (text after `link:`): the first one in the
+ *  line, so an arrow inside the label can't win; the longest on a tie, so
+ *  "<->" and "-->" aren't read as "->" or "--". */
+export function findLinkToken(rest: string): { direction: NodeMapLinkDirection; index: number; length: number } | null {
+  let best: { direction: NodeMapLinkDirection; index: number; length: number } | null = null;
+  for (const [token, direction] of LINK_TOKENS) {
+    const index = rest.indexOf(token);
+    if (index === -1) continue;
+    if (!best || index < best.index || (index === best.index && token.length > best.length)) {
+      best = { direction, index, length: token.length };
+    }
+  }
+  return best;
+}
+
 /**
  * Parses Node Map syntax:
  *
@@ -128,24 +147,14 @@ export function parseNodeMap(source: string): NodeMapResult {
       const lineNum = i + 1;
       const rest = trimmed.slice("link:".length).trim();
 
-      // Longest/most-specific token first so "<->" isn't mistaken for "->".
-      let direction: NodeMapLinkDirection;
-      let tokenIdx: number;
-      let tokenLen: number;
-      const biIdx = rest.indexOf("<->");
-      const dblArrowIdx = rest.indexOf("-->");
-      const dirIdx = rest.indexOf("->");
-      const undirIdx = rest.indexOf("--");
-      if (biIdx !== -1) { direction = "bidirectional"; tokenIdx = biIdx; tokenLen = 3; }
-      else if (dblArrowIdx !== -1) { direction = "directed"; tokenIdx = dblArrowIdx; tokenLen = 3; }
-      else if (dirIdx !== -1) { direction = "directed"; tokenIdx = dirIdx; tokenLen = 2; }
-      else if (undirIdx !== -1) { direction = "undirected"; tokenIdx = undirIdx; tokenLen = 2; }
-      else {
+      const token = findLinkToken(rest);
+      if (!token) {
         return { ok: false, error: `Line ${lineNum}: link requires "->", "<->", or "--"` };
       }
+      const { direction } = token;
 
-      const from = rest.slice(0, tokenIdx).trim();
-      let tail = rest.slice(tokenIdx + tokenLen).trim();
+      const from = rest.slice(0, token.index).trim();
+      let tail = rest.slice(token.index + token.length).trim();
       if (!from) return { ok: false, error: `Line ${lineNum}: link requires two box names` };
 
       // Strip trailing bracket modifiers before splitting off the label, so a

@@ -207,7 +207,8 @@ export function attachEvolveDragBehavior(
     markFlatShape(ref.line);
   };
 
-  const onMove = (e: MouseEvent): void => { if (active) moveTo(active, e.clientX); };
+  let evolveMoved = false;
+  const onMove = (e: MouseEvent): void => { if (active) { evolveMoved = true; moveTo(active, e.clientX); } };
   const onUp = (): void => {
     if (!active) return;
     const ref = active;
@@ -218,7 +219,8 @@ export function attachEvolveDragBehavior(
     doc.removeEventListener("mouseup", onUp);
     const cx = parseFloat(ref.circle.getAttribute("cx") ?? "0");
     const evolveTo = Math.max(0, Math.min(1, (cx - PLOT_X) / PLOT_W));
-    writeWardleyEvolve(app, mppCtx, wrap, ref.comp.name, evolveTo);
+    // A press without movement is a click: don't rewrite the unchanged value.
+    if (evolveMoved) writeWardleyEvolve(app, mppCtx, wrap, ref.comp.name, evolveTo);
   };
 
   onDisconnected(wrap, () => {
@@ -229,18 +231,18 @@ export function attachEvolveDragBehavior(
 
   for (const ref of evolveRefs) {
     ref.circle.classList.add("vzd-wardley-evolve-node--draggable");
-    const start = (clientX: number): void => {
+    const start = (): void => {
       if (ix.activeRename || ix.drag || ix.linkDraw) return;
       active = ref;
+      evolveMoved = false;
       ref.circle.classList.add("vzd-wardley-evolve-node--dragging");
       svg.classList.add("vzd-wardley-svg--dragging");
-      moveTo(ref, clientX);
       doc.addEventListener("mousemove", onMove);
       doc.addEventListener("mouseup", onUp);
     };
-    ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); start(e.clientX); });
-    ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); start(e.touches[0].clientX); }, { passive: false });
-    ref.circle.addEventListener("touchmove", (e) => { if (active) { e.preventDefault(); moveTo(active, e.touches[0].clientX); } }, { passive: false });
+    ref.circle.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); start(); });
+    ref.circle.addEventListener("touchstart", (e) => { e.preventDefault(); start(); }, { passive: false });
+    ref.circle.addEventListener("touchmove", (e) => { if (active) { e.preventDefault(); evolveMoved = true; moveTo(active, e.touches[0].clientX); } }, { passive: false });
     ref.circle.addEventListener("touchend", () => onUp());
     ref.circle.addEventListener("touchcancel", () => onUp());
   }

@@ -112,7 +112,7 @@ export function parseStoryMap(source: string): StoryMapResult {
       if (indent !== blockIndent) {
         return { ok: false, error: `Line ${i + 1}: unexpected indentation in slice — "${trimmed}"` };
       }
-      if (!trimmed.startsWith("step:")) {
+      if (!trimmed.toLowerCase().startsWith("step:")) {
         return { ok: false, error: `Line ${i + 1}: expected "step: <name> | task, task" — "${trimmed}"` };
       }
       const rest = trimmed.slice("step:".length).trim();

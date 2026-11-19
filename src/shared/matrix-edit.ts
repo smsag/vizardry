@@ -1,5 +1,5 @@
 import type { App, Editor, MarkdownPostProcessorContext } from "obsidian";
-import { resolveEditor } from "./editor";
+import { hasFenceLine, resolveEditor } from "./editor";
 import { editorWrite } from "./tree-editor-access";
 
 /**
@@ -13,6 +13,8 @@ import { editorWrite } from "./tree-editor-access";
 
 const COORD_RE = /\[\s*-?\d*\.?\d+\s*,\s*-?\d*\.?\d+\s*\]/;
 const AT_RE = /\bat:\s*t\d+\b/i;
+const WIKI_LINK_RE = /\[\[#[^\]]+\]\]/;
+const MD_LINK_RE = /\[[^\]]*\]\([^)]+\)/;
 
 type ItemLocation = {
   headerLine: number;
@@ -22,20 +24,19 @@ type ItemLocation = {
 };
 
 function findItem(editor: Editor, lineStart: number, lineEnd: number, itemLabel: string): ItemLocation | null {
-  const targetPrefix = `item: ${itemLabel.toLowerCase()}`;
+  const target = itemLabel.trim().toLowerCase();
   let headerLine = -1;
   let labelText = itemLabel;
 
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const trimmed = editor.getLine(ln).trim();
-    const normalised = trimmed.toLowerCase();
-    if (normalised.startsWith(targetPrefix)) {
-      const after = normalised.slice(targetPrefix.length).trimStart();
-      if (after === "" || after.startsWith("[") || after.startsWith("at:")) {
-        headerLine = ln;
-        labelText = trimmed.slice("item:".length).replace(COORD_RE, "").replace(AT_RE, "").trim();
-        break;
-      }
+    if (!trimmed.toLowerCase().startsWith("item:")) continue;
+    const text = trimmed.slice("item:".length).replace(COORD_RE, "").replace(AT_RE, "").trim();
+    // Whole label as the parser reads it (link annotation dropped): `A` must not match `A [draft]`.
+    if (text.replace(WIKI_LINK_RE, "").replace(MD_LINK_RE, "").trim().toLowerCase() === target) {
+      headerLine = ln;
+      labelText = text;
+      break;
     }
   }
   if (headerLine === -1) return null;
@@ -88,6 +89,7 @@ export function writeItemContent(
   itemLabel: string,
   newValue: string,
 ): boolean {
+  if (hasFenceLine(newValue)) return false; // a ``` line would close the canvas fence
   const resolved = resolveEditor(app, ctx, el, "writeItemContent");
   if (!resolved) return false;
   const { editor, lineStart, lineEnd } = resolved;

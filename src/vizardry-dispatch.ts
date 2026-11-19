@@ -116,8 +116,9 @@ function renderSingleCanvas(
   // flag itself is read from the full source in initCanvas.
   const parseSource = blankStickyLines(found.parseSource);
 
-  const definition = FRAMEWORKS_BY_ID[id];
-  const custom = CUSTOM_RENDERERS_BY_ID[id];
+  const own = (o: object): boolean => Object.prototype.hasOwnProperty.call(o, id);
+  const definition = own(FRAMEWORKS_BY_ID) ? FRAMEWORKS_BY_ID[id] : undefined;
+  const custom = own(CUSTOM_RENDERERS_BY_ID) ? CUSTOM_RENDERERS_BY_ID[id] : undefined;
   if (!definition && !custom) {
     renderError(`Unknown type "${id}"`, el);
     return;

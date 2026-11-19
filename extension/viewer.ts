@@ -79,6 +79,10 @@ function readFile(file: File): void {
   const reader = new FileReader();
   reader.onload = () => {
     const text = typeof reader.result === "string" ? reader.result : "";
+    if (!text.trim()) {
+      showStatus(`"${file.name}" is empty`);
+      return;
+    }
     textarea.value = text;
     render(text);
   };

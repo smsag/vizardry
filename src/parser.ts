@@ -1,6 +1,12 @@
 import type { ParseResult } from "./types";
 import { indentOf } from "./shared/indent";
 
+/** Strips a body line's real leading whitespace (a tab is one character but
+ *  four columns), keeping any indentation deeper than the body's own. */
+export function reindent(raw: string, lineIndent: number, baseIndent: number): string {
+  return " ".repeat(Math.max(0, lineIndent - baseIndent)) + raw.trimStart();
+}
+
 /**
  * Parses the `block: Label\n  content` syntax used by all grid frameworks.
  *
@@ -86,25 +92,40 @@ export function parseFrameworkSource(source: string): ParseResult {
       const contentLines: string[] = [];
       i++;
       let blockIndent = -1;
+      const leadingComments: string[] = [];
 
       while (i < lines.length) {
         const blockRaw = lines[i];
         const blockTrimmed = blockRaw.trim();
 
+        const lineIndent = indentOf(blockRaw);
+        // An indented comment stays in the content so an edit writes it back;
+        // renderers skip it. Before the first content line the body indent is
+        // not known yet, so it waits in `leadingComments`.
+        if (blockTrimmed.startsWith("//") && lineIndent > 0) {
+          if (blockIndent === -1) leadingComments.push(blockTrimmed);
+          else contentLines.push(reindent(blockRaw, lineIndent, blockIndent));
+          i++;
+          continue;
+        }
         if (blockTrimmed === "" || blockTrimmed.startsWith("//")) {
           if (blockIndent !== -1) contentLines.push("");
           i++;
           continue;
         }
 
-        const lineIndent = indentOf(blockRaw);
         if (lineIndent === 0) break; // back to root level
-        if (blockIndent === -1) blockIndent = lineIndent;
+        if (blockIndent === -1) {
+          blockIndent = lineIndent;
+          contentLines.push(...leadingComments);
+          leadingComments.length = 0;
+        }
         if (lineIndent < blockIndent) break;
-        contentLines.push(blockRaw.slice(blockIndent));
+        contentLines.push(reindent(blockRaw, lineIndent, blockIndent));
         i++;
       }
 
+      contentLines.push(...leadingComments); // a block holding only comments
       // Strip trailing blank lines
       while (contentLines.length > 0 && contentLines[contentLines.length - 1].trim() === "") {
         contentLines.pop();

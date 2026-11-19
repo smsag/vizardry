@@ -157,14 +157,11 @@ export function attachKeyTrigger(
   // Only the registration is released when the badge goes: the card it opened
   // is the user's to close, and must survive the note being re-rendered or
   // closed entirely.
-  //
-  // Deferred a microtask: the badge is built before it is inserted, and the
-  // watcher resolves its ancestor at registration time — registered now it
-  // would fall back to document.body and never see the leaf's re-renders.
-  // By the microtask the synchronous insertion has happened; a badge that was
-  // never inserted at all is simply unregistered.
+  // A badge that is never inserted would otherwise stay registered (the
+  // watcher ignores never-attached elements), so unregister it once the
+  // synchronous insertion window has passed.
+  const dispose = onDisconnected(btn, () => unregisterKeyBadge(id, btn));
   queueMicrotask(() => {
-    if (!btn.isConnected) { unregisterKeyBadge(id, btn); return; }
-    onDisconnected(btn, () => unregisterKeyBadge(id, btn));
+    if (!btn.isConnected) { dispose(); unregisterKeyBadge(id, btn); }
   });
 }

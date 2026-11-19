@@ -70,12 +70,15 @@ export function clientToSvg(svg: SVGSVGElement, clientX: number, clientY: number
   }
 
   // Fallback for environments (for example happy-dom tests) where DOMPoint
-  // does not implement matrixTransform.
+  // does not implement matrixTransform. Reads the SVG's current viewBox (a
+  // dynamically-sized one, as in nodemap), else the wardley W x H.
   const rect = svg.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+  const vb = svg.viewBox?.baseVal;
+  const box = vb && vb.width > 0 && vb.height > 0 ? vb : { x: 0, y: 0, width: W, height: H };
   return {
-    x: ((clientX - rect.left) / rect.width) * W,
-    y: ((clientY - rect.top) / rect.height) * H,
+    x: box.x + ((clientX - rect.left) / rect.width) * box.width,
+    y: box.y + ((clientY - rect.top) / rect.height) * box.height,
   };
 }
 

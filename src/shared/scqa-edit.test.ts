@@ -233,3 +233,12 @@ describe("SCQA bullets", () => {
     ]);
   });
 });
+
+describe("reorderSCQAInterior — bullets under the parent", () => {
+  it("counts only keyword children as siblings, not the parent's bullet lines", () => {
+    const lines = ["situation: S", "  a note", "  complication: C1", "  complication: C2", "  complication: C3"];
+    expect(reorderSCQAInterior(lines, "C1", 2)).toEqual(
+      ["situation: S", "  a note", "  complication: C2", "  complication: C1", "  complication: C3"],
+    );
+  });
+});

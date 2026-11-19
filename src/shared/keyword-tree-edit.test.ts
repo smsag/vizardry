@@ -226,3 +226,12 @@ describe("deleteKeywordTreeNode", () => {
     expect(editor._state).toHaveLength(5);
   });
 });
+
+describe("renameKeywordTreeNode — tab indentation", () => {
+  it("keeps a tab indent instead of slicing the keyword by column count", () => {
+    const editor = makeMockEditor(["effect: E", "\tcategory: C1"]);
+    const { app, ctx, el } = fakeCtx(editor);
+    expect(renameKeywordTreeNode(app, ctx, el, CONFIG, 1, "C1", "C2")).toBe(true);
+    expect(editor._state[1]).toBe("\tcategory: C2");
+  });
+});

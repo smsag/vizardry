@@ -124,6 +124,11 @@ export function addStoryTask(
   return true;
 }
 
+/** Matches a `task: <name>` line (optional `| subtitle`), capturing the parts around the name. */
+function taskLineRe(name: string): RegExp {
+  return new RegExp(`^(\\s*task:\\s*)${escRe(name)}(\\s*(?:\\|.*)?$)`, "i");
+}
+
 /** The `task:` lines of a step block, in source order. */
 function stepTaskLines(
   editor: { getLine: (n: number) => string },
@@ -192,7 +197,7 @@ export function deleteStoryTask(
   }
 
   const taskKey = taskName.toLowerCase().trim();
-  const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(taskName)}(\\s*(?:\\|.*)?$)`, "i");
+  const taskRe = taskLineRe(taskName);
 
   type Edit = { line: number; newText: string | null }; // null = delete line
   const edits: Edit[] = [];
@@ -361,7 +366,7 @@ export function renameStoryStep(
   for (let ln = lineStart; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     if (re.test(raw)) {
-      edits.push({ line: ln, newText: raw.replace(re, `$1${newName}$2`) });
+      edits.push({ line: ln, newText: raw.replace(re, (_m, a: string, b: string) => a + newName + b) });
     }
   }
 
@@ -415,11 +420,11 @@ export function renameStoryTask(
   const edits: Edit[] = [];
 
   // Phase A — task declaration line, within the step when one is named
-  const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(oldName)}(\\s*(?:\\|.*)?$)`, "i");
+  const taskRe = taskLineRe(oldName);
   for (let ln = scope.from; ln <= scope.to; ln++) {
     const raw = editor.getLine(ln);
     if (taskRe.test(raw)) {
-      edits.push({ line: ln, newText: raw.replace(taskRe, `$1${newName}$2`) });
+      edits.push({ line: ln, newText: raw.replace(taskRe, (_m, a: string, b: string) => a + newName + b) });
       break; // task names are unique per step; first match in the step is correct
     }
   }
@@ -504,6 +509,36 @@ function parseSlices(
   return slices;
 }
 
+/** A line edit: replace the line with `text`, delete it (`text: null`), or insert `text` as a new line after it. */
+type LineEdit = { line: number; text: string | null; insert?: boolean };
+
+/** Adds `taskKey` to a slice cell, merging with a pending edit of the same line. */
+function appendKeyToCell(edits: LineEdit[], cell: SliceInfo["cells"][number], stepName: string, taskKey: string): void {
+  if (cell.taskKeys.includes(taskKey)) return;
+  const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${[...cell.taskKeys, taskKey].join(", ")}`;
+  const existing = edits.find(e => e.line === cell.line && !e.insert);
+  if (existing) { existing.text = newLine; }
+  else { edits.push({ line: cell.line, text: newLine }); }
+}
+
+/** A new `step: <stepName> | <taskKey>` cell at the end of the slice. */
+function newCellEdit(slice: SliceInfo, stepName: string, taskKey: string): LineEdit {
+  const indentStr = slice.cells.length > 0 ? " ".repeat(slice.cells[0].indent) : "  ";
+  const line = slice.cells.length > 0 ? slice.cells[slice.cells.length - 1].line : slice.headerLine;
+  return { line, text: `${indentStr}step: ${stepName} | ${taskKey}`, insert: true };
+}
+
+/** Applies edits bottom-up so no edit shifts the line of one still pending; on a shared line the replace goes before the insert. */
+function applyLineEdits(editor: { getLine: (n: number) => string; replaceRange: (t: string, from: { line: number; ch: number }, to?: { line: number; ch: number }) => void }, edits: LineEdit[]): void {
+  edits.sort((a, b) => b.line - a.line || Number(a.insert ?? false) - Number(b.insert ?? false));
+  for (const edit of edits) {
+    const raw = editor.getLine(edit.line);
+    if (edit.text === null) editor.replaceRange("", { line: edit.line, ch: 0 }, { line: edit.line + 1, ch: 0 });
+    else if (edit.insert) editor.replaceRange(`\n${edit.text}`, { line: edit.line, ch: raw.length });
+    else editor.replaceRange(edit.text, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
+  }
+}
+
 /**
  * Moves a task from one slice band to another within the same step column.
  */
@@ -526,8 +561,7 @@ export function moveStoryTaskSlice(
   const stepKey = stepName.toLowerCase().trim();
   const slices = parseSlices(editor, lineStart, lineEnd);
 
-  type Edit = { line: number; newText: string };
-  const edits: Edit[] = [];
+  const edits: LineEdit[] = [];
 
   if (fromSliceName !== null) {
     const fromSlice = slices.find(s => s.sliceName === fromSliceName);
@@ -538,7 +572,7 @@ export function moveStoryTaskSlice(
         const newLine = newKeys.length > 0
           ? `${" ".repeat(cell.indent)}step: ${stepName} | ${newKeys.join(", ")}`
           : `${" ".repeat(cell.indent)}step: ${stepName}`;
-        edits.push({ line: cell.line, newText: newLine });
+        edits.push({ line: cell.line, text: newLine });
       }
     }
   }
@@ -547,27 +581,8 @@ export function moveStoryTaskSlice(
     const toSlice = slices.find(s => s.sliceName === toSliceName);
     if (toSlice) {
       const cell = toSlice.cells.find(c => c.stepKey === stepKey);
-      if (cell) {
-        if (!cell.taskKeys.includes(taskKey)) {
-          const newKeys = [...cell.taskKeys, taskKey];
-          const newLine = `${" ".repeat(cell.indent)}step: ${stepName} | ${newKeys.join(", ")}`;
-          const existing = edits.find(e => e.line === cell.line);
-          if (existing) { existing.newText = newLine; }
-          else { edits.push({ line: cell.line, newText: newLine }); }
-        }
-      } else {
-        const indentStr = toSlice.cells.length > 0
-          ? " ".repeat(toSlice.cells[0].indent)
-          : "  ";
-        const insertAfterLine = toSlice.cells.length > 0
-          ? toSlice.cells[toSlice.cells.length - 1].line
-          : toSlice.headerLine;
-        const afterText = editor.getLine(insertAfterLine);
-        edits.push({
-          line: insertAfterLine,
-          newText: afterText + `\n${indentStr}step: ${stepName} | ${taskKey}`,
-        });
-      }
+      if (cell) appendKeyToCell(edits, cell, stepName, taskKey);
+      else edits.push(newCellEdit(toSlice, stepName, taskKey));
     } else {
       new Notice(`Vizardry: target slice "${toSliceName}" not found.`, 4000);
       return false;
@@ -576,13 +591,7 @@ export function moveStoryTaskSlice(
 
   if (edits.length === 0) return true;
 
-  editorWrite(() => {
-    edits.sort((a, b) => b.line - a.line);
-    for (const edit of edits) {
-      const raw = editor.getLine(edit.line);
-      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-    }
-  }, el);
+  editorWrite(() => applyLineEdits(editor, edits), el);
   return true;
 }
 
@@ -671,7 +680,7 @@ export function moveStoryTaskCrossColumn(
 
   let taskLine = -1;
   let taskRaw = "";
-  const taskRe = new RegExp(`^(\\s*task:\\s*)${escRe(taskName)}(\\s*(?:\\|.*)?$)`, "i");
+  const taskRe = taskLineRe(taskName);
   for (let ln = fromBlock.stepLine + 1; ln <= lineEnd; ln++) {
     const raw = editor.getLine(ln);
     const trimmed = raw.trim();
@@ -701,8 +710,7 @@ export function moveStoryTaskCrossColumn(
   // Slice cell edits — collect before modifying line numbers
   const slices = parseSlices(editor, lineStart, lineEnd);
 
-  type Edit = { line: number; newText: string };
-  const sliceEdits: Edit[] = [];
+  const edits: LineEdit[] = [];
 
   for (const slice of slices) {
     const fromCell = slice.cells.find(c => c.stepKey === fromStepKey);
@@ -713,33 +721,13 @@ export function moveStoryTaskCrossColumn(
     const newFromLine = newFromKeys.length > 0
       ? `${" ".repeat(fromCell.indent)}step: ${fromStepName} | ${newFromKeys.join(", ")}`
       : `${" ".repeat(fromCell.indent)}step: ${fromStepName}`;
-    sliceEdits.push({ line: fromCell.line, newText: newFromLine });
+    edits.push({ line: fromCell.line, text: newFromLine });
 
     // Add to new step key only in the target slice (if specified)
     if (toSliceName !== null && slice.sliceName === toSliceName) {
       const toCell = slice.cells.find(c => c.stepKey === toStepKey);
-      if (toCell) {
-        if (!toCell.taskKeys.includes(taskKey)) {
-          const newToKeys = [...toCell.taskKeys, taskKey];
-          const newToLine = `${" ".repeat(toCell.indent)}step: ${toStepName} | ${newToKeys.join(", ")}`;
-          const existing = sliceEdits.find(e => e.line === toCell.line);
-          if (existing) { existing.newText = newToLine; }
-          else { sliceEdits.push({ line: toCell.line, newText: newToLine }); }
-        }
-      } else {
-        // Insert new cell for toStep in this slice
-        const indentStr = slice.cells.length > 0
-          ? " ".repeat(slice.cells[0].indent)
-          : "  ";
-        const insertAfter = slice.cells.length > 0
-          ? slice.cells[slice.cells.length - 1].line
-          : slice.headerLine;
-        const afterText = editor.getLine(insertAfter);
-        sliceEdits.push({
-          line: insertAfter,
-          newText: afterText + `\n${indentStr}step: ${toStepName} | ${taskKey}`,
-        });
-      }
+      if (toCell) appendKeyToCell(edits, toCell, toStepName, taskKey);
+      else edits.push(newCellEdit(slice, toStepName, taskKey));
     }
   }
 
@@ -748,74 +736,18 @@ export function moveStoryTaskCrossColumn(
   if (toSliceName !== null) {
     const targetSlice = slices.find(s => s.sliceName === toSliceName);
     if (targetSlice) {
-      const toCell = targetSlice.cells.find(c => c.stepKey === toStepKey);
-      const alreadyAdded = sliceEdits.some(e => {
-        // Check if we already have an edit adding the task to toCell or inserting a new cell
-        if (toCell) return e.line === toCell.line && e.newText.toLowerCase().includes(taskKey);
-        return false;
-      });
-      if (!alreadyAdded) {
-        const fromCellInTarget = targetSlice.cells.find(c => c.stepKey === fromStepKey);
-        if (!fromCellInTarget || !fromCellInTarget.taskKeys.includes(taskKey)) {
-          // Task was not in this slice under fromStep, add it under toStep
-          if (toCell) {
-            if (!toCell.taskKeys.includes(taskKey)) {
-              const newToKeys = [...toCell.taskKeys, taskKey];
-              const newToLine = `${" ".repeat(toCell.indent)}step: ${toStepName} | ${newToKeys.join(", ")}`;
-              const existing = sliceEdits.find(e => e.line === toCell.line);
-              if (existing) { existing.newText = newToLine; }
-              else { sliceEdits.push({ line: toCell.line, newText: newToLine }); }
-            }
-          } else {
-            const indentStr = targetSlice.cells.length > 0
-              ? " ".repeat(targetSlice.cells[0].indent)
-              : "  ";
-            const insertAfter = targetSlice.cells.length > 0
-              ? targetSlice.cells[targetSlice.cells.length - 1].line
-              : targetSlice.headerLine;
-            const afterText = editor.getLine(insertAfter);
-            sliceEdits.push({
-              line: insertAfter,
-              newText: afterText + `\n${indentStr}step: ${toStepName} | ${taskKey}`,
-            });
-          }
-        }
+      const fromCellInTarget = targetSlice.cells.find(c => c.stepKey === fromStepKey);
+      if (!fromCellInTarget || !fromCellInTarget.taskKeys.includes(taskKey)) {
+        const toCell = targetSlice.cells.find(c => c.stepKey === toStepKey);
+        if (toCell) appendKeyToCell(edits, toCell, toStepName, taskKey);
+        else edits.push(newCellEdit(targetSlice, toStepName, taskKey));
       }
     }
   }
 
-  // Apply all edits bottom-up.
-  // Slice edits are always below activity edits in the source.
-  // Within activity edits: apply the higher line first.
-  editorWrite(() => {
-    sliceEdits.sort((a, b) => b.line - a.line);
-    for (const edit of sliceEdits) {
-      const raw = editor.getLine(edit.line);
-      editor.replaceRange(edit.newText, { line: edit.line, ch: 0 }, { line: edit.line, ch: raw.length });
-    }
-
-    // Now apply the task line move (in the activities section).
-    // Apply delete then insert or insert then delete, always higher line first.
-    if (taskLine > insertAfterLine) {
-      // Delete first (higher), then insert (lower)
-      editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
-      const afterText = editor.getLine(insertAfterLine);
-      editor.replaceRange(
-        `\n${newTaskLine}`,
-        { line: insertAfterLine, ch: afterText.length },
-      );
-    } else {
-      // taskLine < insertAfterLine: insert at the lower position first, then
-      // delete the original line. The insertion is BELOW taskLine so taskLine
-      // does NOT shift — delete it as-is (no +1 adjustment).
-      const afterText = editor.getLine(insertAfterLine);
-      editor.replaceRange(
-        `\n${newTaskLine}`,
-        { line: insertAfterLine, ch: afterText.length },
-      );
-      editor.replaceRange("", { line: taskLine, ch: 0 }, { line: taskLine + 1, ch: 0 });
-    }
-  }, el);
+  // The task move joins the slice edits: a slice may sit above the activities.
+  edits.push({ line: taskLine, text: null }, { line: insertAfterLine, text: newTaskLine, insert: true });
+  editorWrite(() => applyLineEdits(editor, edits), el);
 
   return true;
 }

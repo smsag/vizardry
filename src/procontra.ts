@@ -75,7 +75,7 @@ export function scanProContraLines(lines: string[]): ProContraLine[] {
     } else if (key === "option") {
       if (value) out.push({ kind: "option", line: i, name: value });
       else out.push({ kind: "invalid", line: i, message: `"option:" has no name — ignored` });
-    } else if (key in SIDE_KEYS) {
+    } else if (Object.prototype.hasOwnProperty.call(SIDE_KEYS, key)) {
       const { text, weight, clamped } = splitWeight(value);
       if (text) out.push({ kind: "arg", line: i, side: SIDE_KEYS[key], text, weight, clamped });
       else out.push({ kind: "invalid", line: i, message: `"${key}:" has no text — ignored` });

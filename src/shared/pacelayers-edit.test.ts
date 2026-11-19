@@ -183,7 +183,7 @@ describe("writePaceLayerCell", () => {
 
     expect(editor.replaceRange).toHaveBeenCalledOnce();
     const [text, from, to] = editor.replaceRange.mock.calls[0];
-    expect(text).toBe("  obs: first line\n  second line");
+    expect(text).toBe("  obs: first line\n    second line");
     // Replaces only the obs line — feed: must NOT be included in `to`
     expect(from).toEqual({ line: 21, ch: 0 });
     expect(to).toEqual({ line: 21, ch: "  obs: first line".length });
@@ -208,7 +208,7 @@ describe("writePaceLayerCell", () => {
 
     expect(editor.replaceRange).toHaveBeenCalledOnce();
     const [text, from, to] = editor.replaceRange.mock.calls[0];
-    expect(text).toBe("  obs: first line\n  second line\n  third line");
+    expect(text).toBe("  obs: first line\n    second line\n    third line");
     // `from` = start of obs line (21)
     expect(from).toEqual({ line: 21, ch: 0 });
     // `to` = end of continuation "  second line" (22)
@@ -339,7 +339,7 @@ describe("writePaceLayerCell", () => {
     expect(editor.replaceRange).toHaveBeenCalledOnce();
     const [text, from, to] = editor.replaceRange.mock.calls[0];
     // New value should be properly indented
-    expect(text).toBe("  obs: first line\n  second line");
+    expect(text).toBe("  obs: first line\n    second line");
     // Range must extend to cover the orphaned fragment at line 4
     expect(from).toEqual({ line: 3, ch: 0 });
     expect(to).toEqual({ line: 4, ch: "second line".length });
@@ -388,7 +388,7 @@ describe("writePaceLayerCell", () => {
     writePaceLayerCell(app, ctx, el, "Fashion", "note", "first\nsecond");
 
     const [text] = editor.replaceRange.mock.calls[0];
-    expect(text).toBe("  note: first\n  second");
+    expect(text).toBe("  note: first\n    second");
   });
 
   // ── Type-specific alias in the source ───────────────────────────────────
@@ -423,6 +423,26 @@ describe("writePaceLayerCell", () => {
     const written = writePaceLayerCell(app, ctx, el, "Fashion", "note", "shipped fast");
 
     expect(written).toBe(false);
+    expect(editor.replaceRange).not.toHaveBeenCalled();
+  });
+
+  it("rewrites a deeper continuation that reads like a sub-key, and drops blank lines", () => {
+    const lines = [...TEMPLATE_LINES];
+    lines[21] = "  obs: saw churn";
+    lines.splice(22, 0, "    Idea: try interviews");
+    const editor = makeMockEditor(lines);
+    const app = makeApp("note.md", editor) as any;
+    writePaceLayerCell(app, makeCtx("note.md", 0, lines.length - 1) as any, makeEl(), "Culture", "obs", "saw churn\n\nthird para");
+    const [text, from, to] = editor.replaceRange.mock.calls[0];
+    expect(text).toBe("  obs: saw churn\n    third para");
+    expect(from).toEqual({ line: 21, ch: 0 });
+    expect(to).toEqual({ line: 22, ch: "    Idea: try interviews".length });
+  });
+
+  it("refuses a value containing a fence line", () => {
+    const editor = makeMockEditor([...TEMPLATE_LINES]);
+    const app = makeApp("note.md", editor) as any;
+    expect(writePaceLayerCell(app, makeCtx("note.md", 0, 27) as any, makeEl(), "Culture", "obs", "a\n```\nb")).toBe(false);
     expect(editor.replaceRange).not.toHaveBeenCalled();
   });
 });

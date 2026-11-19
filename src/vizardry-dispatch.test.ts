@@ -146,6 +146,12 @@ describe("dispatchVizardry", () => {
     expect(el.querySelector(".vizardry-error-message")?.textContent).toContain('"type:"');
   });
 
+  it("reports an inherited object key as an unknown type", () => {
+    const el = container();
+    dispatchVizardry("type: constructor\nblock: Goal\n  X", el, fakeCtx(), fakeApp());
+    expect(el.querySelector(".vizardry-error-message")?.textContent).toContain('Unknown type "constructor"');
+  });
+
   it("shows an error banner for an unknown type id", () => {
     const el = container();
     dispatchVizardry("type: nonsense\nblock: Goal\n  X", el, fakeCtx(), fakeApp());
