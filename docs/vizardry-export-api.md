@@ -17,6 +17,8 @@ if (api && api.version >= 1) {
 
 A missing `api` means Vizardry is absent, disabled, or too old. Callers keep their own fallback capture; Vizardry never throws at load time.
 
+Outside Obsidian, the library build (`extension/dist/vizardry.js`, see the README) exposes the same three functions on the global `Vizardry`, next to `Vizardry.render(source, el)`.
+
 ## Compatibility
 
 `version` is `1`. The contract is additive within a version: members are added, never removed or narrowed. A breaking change bumps `version` and is called out in `RELEASE_NOTES.md`.
