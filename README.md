@@ -1842,6 +1842,27 @@ It's a global toggle that applies live to all rendered canvases — no re-render
 
 ---
 
+## Using Vizardry outside Obsidian (library build)
+
+`npm run ext:build` also writes a self-contained browser library to `extension/dist/`: `vizardry.js` (global `Vizardry`) and `vizardry.css` (the styles plus the theme variables Obsidian would provide). Any page or app web view can draw a ` ```vizardry ` block's content with it, offline:
+
+```html
+<link rel="stylesheet" href="vizardry.css">
+<script src="vizardry.js"></script>
+<div id="host"></div>
+<script>
+  const host = document.getElementById("host");
+  const { error } = Vizardry.render("type: swot\nblock: Strengths\n  Fast", host);
+  // error: why nothing was drawn (no type: line, an unknown type, …)
+  Vizardry.whenSettled(host).then(async () => {
+    const [canvas] = Vizardry.getCanvases(host);
+    const { blob, width, height } = await Vizardry.exportCanvas(canvas, { scale: 3 });
+  });
+</script>
+```
+
+The canvases are read-only (no vault: links stay unresolved, nothing is written back). For the dark theme, put `theme-dark` on `<html>`. `getCanvases`, `whenSettled` and `exportCanvas` are the [export API](docs/vizardry-export-api.md); `Vizardry.version` names the release the script was built from.
+
 ## Syntax reference
 
 ### Grid canvases (type: adkar, bmc, errc, experiment, fourls, futureself, jobs, kata, lean, leanux, opportunity, ptw, rac, swot, vpc)
