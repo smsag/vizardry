@@ -4,9 +4,17 @@ import type { TicketRef } from "../sideleaf/types";
 
 // Linear issue keys like CORE-1234, PSS2-105, D-8: the pattern of the shared
 // Mermaid/Linear contract with Nimbus (Contracts/MERMAID-LINEAR.md § 1, in the
-// Nimbus repository), so both apps see the same keys. Group 1 is the whole key.
-// Not inside a word, a path (…/issue/CORE-1) or a longer key; no leading zero.
-export const LINEAR_KEY_RE = /(?<![A-Za-z0-9_/-])([A-Z][A-Z0-9]{0,9}-[1-9][0-9]{0,6})(?![A-Za-z0-9_-])/g;
+// Nimbus repository), so both apps see the same keys. Not inside a word, a path
+// (…/issue/CORE-1) or a longer key; no leading zero.
+// The contract writes the "not after" part as a lookbehind. Safari before 16.4
+// (Obsidian mobile still supports iOS 15) cannot parse one, and a regex literal
+// it cannot parse stops the whole plugin from loading, so here the character
+// before the key is matched instead (non-capturing). Same keys; group 1 is the
+// key, and it starts at `index + [0].length - [1].length`, not at `index`.
+export const LINEAR_KEY_RE = /(?:^|[^A-Za-z0-9_/-])([A-Z][A-Z0-9]{0,9}-[1-9][0-9]{0,6})(?![A-Za-z0-9_-])/g;
+// What every key contains, without the neighbour checks: enrichKeys' quick
+// "any key in here?" test runs over text joined across elements.
+const LINEAR_KEY_HINT = /[A-Z][A-Z0-9]{0,9}-[1-9]/;
 
 const CLS = "vzd-linear-key";
 const ref = (key: string): TicketRef => ({ service: "linear", key });
@@ -23,7 +31,7 @@ function badge(doc: Document, key: string): HTMLElement {
  * enriched keys are skipped.
  */
 export function enrichLinearKeys(container: HTMLElement): void {
-  enrichKeys(container, LINEAR_KEY_RE, CLS, badge);
+  enrichKeys(container, LINEAR_KEY_RE, CLS, badge, LINEAR_KEY_HINT);
 }
 
 /**
@@ -40,45 +48,80 @@ export function renderLinearKeyBadge(parent: HTMLElement, key: string): void {
   parent.appendChild(badge(parent.ownerDocument, key));
 }
 
+/** The first key in `el`'s text, looking at each text node on its own (lines of a label are separate nodes). */
+function firstKey(el: Element): string | null {
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    LINEAR_KEY_RE.lastIndex = 0;
+    const m = LINEAR_KEY_RE.exec(n.nodeValue ?? "");
+    LINEAR_KEY_RE.lastIndex = 0;
+    if (m) return m[1];
+  }
+  return null;
+}
+
+// Flowcharts only (contract § 2): Mermaid.js marks them with an
+// aria-roledescription, Obsidian's own renderer (Pele, Obsidian 1.15+) with a class.
+const FLOWCHART = "svg[aria-roledescription^='flowchart'], svg.pele-flowchart";
+// Node labels as HTML (Mermaid.js's default, in a foreignObject).
+const HTML_LABELS = "g.node foreignObject > div";
+// Node labels as SVG text: Mermaid.js with htmlLabels off, and every Pele label.
+const SVG_LABELS = "g.node text, g.pele-node text.pele-label";
+const MERMAID_TEXT_CLS = "vzd-mermaid-linear-key";
+
 /**
- * Badges the Linear keys in the node labels of a drawn Mermaid diagram.
- * Edge labels (`g.edgeLabel`) and subgraph titles (`g.cluster`) are not inside
- * a `g.node`, so they stay plain. HTML labels (Mermaid's default, in a
- * `foreignObject`) get the usual badge; the text after a key — Nimbus's status —
- * stays plain text. An SVG `<text>` label cannot hold a `<button>`, so there the
- * whole label opens its first key instead, and the drawing stays valid SVG.
+ * Badges the Linear keys in the node labels of a drawn Mermaid flowchart.
+ * Edge labels and subgraph titles are not inside a node group, so they stay
+ * plain. HTML labels get the usual badge; the text after a key — Nimbus's status
+ * — stays plain text. An SVG `<text>` label cannot hold a `<button>`, so there
+ * the label itself becomes the button for its first key, and the drawing stays
+ * valid SVG. A node that is a link (Mermaid `click … href`, Obsidian's
+ * `internal-link`) keeps its link: no key in it is enriched.
  */
 export function enrichMermaidLinearKeys(svg: Element): void {
-  svg.querySelectorAll<HTMLElement>("g.node foreignObject > div").forEach(enrichLinearKeys);
-  svg.querySelectorAll<SVGTextElement>("g.node text").forEach((text) => {
-    if (text.classList.contains(MERMAID_TEXT_CLS)) return;
-    LINEAR_KEY_RE.lastIndex = 0;
-    const m = LINEAR_KEY_RE.exec(text.textContent ?? "");
-    if (!m) return;
+  if (!svg.matches(FLOWCHART)) return;
+  svg.querySelectorAll<HTMLElement>(HTML_LABELS).forEach((label) => {
+    if (!label.closest("a")) enrichLinearKeys(label);
+  });
+  svg.querySelectorAll<SVGTextElement>(SVG_LABELS).forEach((text) => {
+    if (text.classList.contains(MERMAID_TEXT_CLS) || text.closest("a")) return;
+    const key = firstKey(text);
+    if (!key) return;
     text.classList.add(MERMAID_TEXT_CLS);
-    attachKeyTrigger(text as unknown as HTMLElement, ref(m[1]), isEnabled);
+    text.setAttribute("role", "button");
+    text.setAttribute("tabindex", "0");
+    // The button's name replaces the label's text for screen readers, so it
+    // keeps that text; lines are separate text nodes, joined with spaces.
+    const walker = text.ownerDocument.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    const lines: string[] = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) lines.push(n.nodeValue ?? "");
+    text.setAttribute("aria-label", `${lines.join(" ").replace(/\s+/g, " ").trim()} (Linear: ${key})`);
+    // Pele captures the pointer on its host while zoomed in (the click would go
+    // to the host, not here) and zooms on a double-click.
+    for (const type of ["pointerdown", "dblclick"]) text.addEventListener(type, (e) => e.stopPropagation());
+    text.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      text.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    attachKeyTrigger(text as unknown as HTMLElement, ref(key), isEnabled);
   });
 }
 
-const MERMAID_TEXT_CLS = "vzd-mermaid-linear-key";
-// Longest a Mermaid diagram may take to draw before we stop watching for it.
-const MERMAID_WAIT_MS = 30_000;
-
 /**
- * Mermaid draws after Markdown post-processors run, so its labels are not there
- * yet when the global Linear post-processor scans `el`. If `el` holds a Mermaid
- * block, watch it until the SVG is in and badge its labels then.
+ * Mermaid may draw after Markdown post-processors run, a section can hold more
+ * than one diagram drawn at different times, and Obsidian's renderer redraws a
+ * diagram (a new SVG) when its width changes. So `el` is watched for as long as
+ * it exists, and every drawn flowchart in it is (re-)enriched; enriching is
+ * idempotent. The observer goes with `el` once nothing references it.
  */
 export function enrichMermaidWhenDrawn(el: HTMLElement): void {
   if (!el.querySelector(".mermaid, code.language-mermaid") && !el.classList.contains("mermaid")) return;
-  const run = (): boolean => {
-    const svgs = el.querySelectorAll(".mermaid svg, svg[id^='mermaid']");
-    svgs.forEach(enrichMermaidLinearKeys);
-    return svgs.length > 0;
+  const run = (): void => {
+    if (!isEnabled()) { observer.disconnect(); return; }
+    el.querySelectorAll(".mermaid svg").forEach(enrichMermaidLinearKeys);
   };
-  if (run()) return;
-  const observer = new MutationObserver(() => { if (run()) stop(); });
-  const timer = setTimeout(() => stop(), MERMAID_WAIT_MS);
-  const stop = (): void => { observer.disconnect(); clearTimeout(timer); };
+  const observer = new MutationObserver(run);
+  run();
   observer.observe(el, { childList: true, subtree: true });
 }

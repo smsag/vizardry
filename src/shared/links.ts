@@ -46,7 +46,10 @@ export const NULL_RESOLVER: LinkResolver = { resolve: () => undefined };
 export function classifyTicketTarget(target: string): TicketMatch | null {
   LINEAR_KEY_RE.lastIndex = 0;
   const linearMatch = LINEAR_KEY_RE.exec(target);
-  if (linearMatch && linearMatch[0] === target) {
+  LINEAR_KEY_RE.lastIndex = 0;
+  // Group 1, not [0]: the pattern also matches the character before a key, so
+  // "@CORE-1" would otherwise count as a whole-target key.
+  if (linearMatch && linearMatch[1] === target) {
     return { service: "linear", key: target };
   }
 

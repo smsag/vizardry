@@ -72,33 +72,45 @@ export function enrichKeys(
   re: RegExp,
   enrichedClass: string,
   makeBadge: (doc: Document, key: string) => HTMLElement,
+  hint: RegExp = re,
 ): void {
   // Fast path for the common case — this runs on every rendered note when an
   // integration is enabled, most of which contain no keys. A single native
   // regex test over the concatenated text skips the recursive JS tree walk and
-  // its allocations. A key can't match a text node without also matching here
-  // (a node's text is a substring of `textContent`), so there are no false
-  // negatives; the rare cross-node false positive just falls through to a no-op
-  // walk. `test` advances lastIndex on a global regex, so reset it after.
-  re.lastIndex = 0;
-  if (!re.test(container.textContent ?? "")) return;
-  re.lastIndex = 0;
+  // its allocations. `textContent` joins text across elements with nothing in
+  // between ("Backfill<br>PSS2-105" reads "BackfillPSS2-105"), so a pattern that
+  // looks at its neighbours can miss a key here that its own text node holds;
+  // such a pattern passes a `hint` without the neighbour checks. `test`
+  // advances lastIndex on a global regex, so reset it after.
+  hint.lastIndex = 0;
+  if (!hint.test(container.textContent ?? "")) return;
+  hint.lastIndex = 0;
 
   const nodes: Text[] = [];
   collectTextNodes(container, re, enrichedClass, nodes);
   for (const node of nodes) wrapTextNode(node, re, makeBadge);
 }
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 function collectTextNodes(node: Node, re: RegExp, enrichedClass: string, out: Text[]): void {
   if (node.nodeType === Node.TEXT_NODE) {
+    // SVG draws no HTML inside <text>/<tspan>: a badge there would erase the key
+    // from the drawing (Vizardry's own SVG canvases, Obsidian's diagrams). HTML
+    // inside a <foreignObject> is HTML again and is enriched as usual.
+    if (node.parentElement?.namespaceURI === SVG_NS) return;
     re.lastIndex = 0;
     if (re.test(node.textContent ?? "")) out.push(node as Text);
     return;
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return;
   const el = node as HTMLElement;
-  if (SKIP_TAGS.has(el.tagName)) return;
+  // An SVG <a> reports its tagName in lower case.
+  if (SKIP_TAGS.has(el.tagName.toUpperCase())) return;
   if (el.classList.contains(enrichedClass)) return;
+  // Mermaid diagrams have their own pass (enrichMermaidLinearKeys), which tells
+  // node labels from edge labels and subgraph titles.
+  if (el.classList.contains("mermaid")) return;
   for (const child of Array.from(el.childNodes)) collectTextNodes(child, re, enrichedClass, out);
 }
 
@@ -114,11 +126,15 @@ function wrapTextNode(node: Text, re: RegExp, makeBadge: (doc: Document, key: st
   let match: RegExpExecArray | null;
 
   while ((match = re.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      frag.appendChild(doc.createTextNode(text.slice(lastIndex, match.index)));
+    // Group 1 is the key; a pattern may match a character before it (the Linear
+    // pattern does, in place of a lookbehind), which stays plain text.
+    const end = match.index + match[0].length;
+    const start = end - match[1].length;
+    if (start > lastIndex) {
+      frag.appendChild(doc.createTextNode(text.slice(lastIndex, start)));
     }
     frag.appendChild(makeBadge(doc, match[1]));
-    lastIndex = match.index + match[0].length;
+    lastIndex = end;
   }
 
   if (lastIndex === 0) return;
