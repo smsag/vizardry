@@ -1,3 +1,15 @@
+## Unreleased
+
+- **Linear keys in Mermaid diagrams.** A key in a node label of a drawn
+  ` ```mermaid ` flowchart (`PSS2-105`) is now a Linear badge that opens the
+  issue's card in the sideleaf, once Mermaid has drawn. The badge keeps the
+  label's font and size, so the diagram's layout does not move; status text
+  after the key (` · In Review`, written by Nimbus) stays plain text. Edge
+  labels and subgraph titles stay plain.
+- **Linear keys with digits in the team key, and one-letter teams.**
+  `PSS2-105` and `D-8` are now recognised as keys everywhere; `L-04` (leading
+  zero) and keys inside a URL path or a word are not.
+
 ## 0.76.0
 
 New: Scribble, a freehand sketch canvas for iPad and Apple Pencil, and links
