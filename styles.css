@@ -2542,6 +2542,18 @@ code:has(.vzd-upvoty-key) {
   text-decoration: underline dotted;
 }
 
+/* On mobile Obsidian adds .mobile-tap to a hovered or touched button, and its
+   `button:not(.clickable-icon).mobile-tap` (0-2-1) background and shadow would
+   beat every rule above; at that moment the badge should look hovered. */
+.mermaid button.vzd-linear-key.mobile-tap {
+  background: var(--vzd-pill-bg);
+  box-shadow: none;
+}
+
+.mermaid button.vzd-linear-key.mobile-tap.vzd-key--open {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vzd-pill-hue) 22%, transparent);
+}
+
 /* SVG-text labels can't hold a button; the label itself is the button for its
    first key (role, tabindex and keys set in enrichMermaidLinearKeys). Its fill
    comes from the diagram, so the states underline it instead of recolouring. */

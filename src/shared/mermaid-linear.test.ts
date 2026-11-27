@@ -103,6 +103,8 @@ describe("LINEAR_KEY_RE (contract § 1)", () => {
     expect(classifyTicketTarget("D-8")).toEqual({ service: "linear", key: "D-8" });
     expect(classifyTicketTarget("L-04")).toBeNull();
     expect(classifyTicketTarget("xCORE-1")).toBeNull();
+    expect(classifyTicketTarget("@CORE-1")).toBeNull();
+    expect(classifyTicketTarget("(CORE-1")).toBeNull();
     expect(LINEAR_KEY_RE.lastIndex).toBe(0);
   });
 });
@@ -184,7 +186,9 @@ describe("enrichMermaidLinearKeys (contract § 6)", () => {
     enrichMermaidLinearKeys(host.querySelector("svg")!);
     const buttons = Array.from(host.querySelectorAll(".vzd-mermaid-linear-key"));
     expect(buttons.map(t => t.getAttribute("aria-label"))).toEqual([
-      "Linear: PSS2-105", "Linear: PSC-327", "Linear: PSS2-7",
+      "Country backfill + data lake (PSS2-105 · In Review) (Linear: PSS2-105)",
+      "PSC-327 · Todo · bulk recalculation (Linear: PSC-327)",
+      "Backfill PSS2-7 · Done (Linear: PSS2-7)",
     ]);
     for (const t of buttons) {
       expect(t.getAttribute("role")).toBe("button");
@@ -209,6 +213,12 @@ describe("enrichMermaidLinearKeys (contract § 6)", () => {
     label.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
     label.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
     expect(openTicketCard).toHaveBeenCalledTimes(3);
+    const host2 = vi.fn();
+    host.addEventListener("pointerdown", host2);
+    host.addEventListener("dblclick", host2);
+    label.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    label.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    expect(host2).not.toHaveBeenCalled();
     expect(openTicketCard).toHaveBeenCalledWith({ service: "linear", key: "PSS2-105" });
   });
 });

@@ -90,7 +90,15 @@ export function enrichMermaidLinearKeys(svg: Element): void {
     text.classList.add(MERMAID_TEXT_CLS);
     text.setAttribute("role", "button");
     text.setAttribute("tabindex", "0");
-    text.setAttribute("aria-label", `Linear: ${key}`);
+    // The button's name replaces the label's text for screen readers, so it
+    // keeps that text; lines are separate text nodes, joined with spaces.
+    const walker = text.ownerDocument.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    const lines: string[] = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) lines.push(n.nodeValue ?? "");
+    text.setAttribute("aria-label", `${lines.join(" ").replace(/\s+/g, " ").trim()} (Linear: ${key})`);
+    // Pele captures the pointer on its host while zoomed in (the click would go
+    // to the host, not here) and zooms on a double-click.
+    for (const type of ["pointerdown", "dblclick"]) text.addEventListener(type, (e) => e.stopPropagation());
     text.addEventListener("keydown", (e) => {
       if (e.key !== "Enter" && e.key !== " ") return;
       e.preventDefault();
