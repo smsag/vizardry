@@ -46,6 +46,7 @@ export const NULL_RESOLVER: LinkResolver = { resolve: () => undefined };
 export function classifyTicketTarget(target: string): TicketMatch | null {
   LINEAR_KEY_RE.lastIndex = 0;
   const linearMatch = LINEAR_KEY_RE.exec(target);
+  LINEAR_KEY_RE.lastIndex = 0;
   if (linearMatch && linearMatch[0] === target) {
     return { service: "linear", key: target };
   }

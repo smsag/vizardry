@@ -1,14 +1,29 @@
 ## Unreleased
 
-- **Linear keys in Mermaid diagrams.** A key in a node label of a drawn
-  ` ```mermaid ` flowchart (`PSS2-105`) is now a Linear badge that opens the
-  issue's card in the sideleaf, once Mermaid has drawn. The badge keeps the
-  label's font and size, so the diagram's layout does not move; status text
-  after the key (` · In Review`, written by Nimbus) stays plain text. Edge
-  labels and subgraph titles stay plain.
+- **Linear keys in Mermaid diagrams.** In Reading view, a key in a node label
+  of a drawn ` ```mermaid ` flowchart (`PSS2-105`) opens the issue's card in
+  the sideleaf, by click or keyboard (Tab, then Enter or Space). This works
+  with Obsidian 1.15's own diagram renderer, where the label itself becomes
+  the button and the drawing is left as it is, and with the Mermaid renderer
+  of earlier Obsidian versions, where the key becomes a badge in the label's
+  own font and size. Status text after the key (` · In Review`, written by
+  Nimbus) stays plain text. Edge labels, subgraph titles, nodes that are
+  links, and diagrams other than flowcharts stay as they are. A diagram that
+  is redrawn (for example when the pane gets narrower) keeps its keys.
+- **Fixed: keys disappeared from drawn diagrams and SVG canvases.** A Linear
+  key in SVG text (a diagram label, or a label in a canvas such as the
+  Opportunity Solution Tree or Concept Map) was replaced by a badge that SVG
+  cannot draw, so the key vanished from the drawing. SVG text is now left
+  alone.
 - **Linear keys with digits in the team key, and one-letter teams.**
   `PSS2-105` and `D-8` are now recognised as keys everywhere; `L-04` (leading
-  zero) and keys inside a URL path or a word are not.
+  zero) and keys inside a URL path or a word are not. A key joined to a word
+  by a dash or a slash is no longer a key either: `PSC-327-Ticket`,
+  `feature/CORE-12-fix`, and the second key in `CORE-12/CORE-13`. A key right
+  after a line break is now found.
+- **Known limit:** anything shaped like a key now counts as one, also when it
+  is not a Linear issue: `F-35`, `Q3-2025` or `FY24-25` get a badge like
+  `ISO-9001` already did, and the card for it says the issue was not found.
 
 ## 0.76.0
 
