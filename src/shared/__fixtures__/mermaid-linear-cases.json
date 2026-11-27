@@ -1,0 +1,156 @@
+{
+  "comment": "Examples for MERMAID-LINEAR.md that Nimbus (writer) and Vizardry (badges) test against. 'keys': a text and the keys in it by the pattern of § 1, in order. 'labels': the text of a drawn node label and the keys that become badges, with the text left after them (§ 6). 'rewrites': a Mermaid block's lines (without the fences), the watched teams, the known states by key ({name, kind}: Linear's state name and type) and the block as Nimbus writes it; 'result' null means nothing changes.",
+  "keys": [
+    { "text": "Country backfill + data lake (PSS2-105)", "keys": ["PSS2-105"] },
+    { "text": "PSC-327 bulk recalculation", "keys": ["PSC-327"] },
+    { "text": "ÖSW check (D-8)", "keys": ["D-8"] },
+    { "text": "Precision marker vs. never-overwrite rule (L-06)", "keys": [] },
+    { "text": "Map drawing fix (S-01, S-02)", "keys": [] },
+    { "text": "OR across location fields now (idea 16)", "keys": [] },
+    { "text": "see https://linear.app/x/issue/CORE-12 and CORE-12a", "keys": [] },
+    { "text": "CORE-12, CORE-123 and CORE-12", "keys": ["CORE-12", "CORE-123", "CORE-12"] },
+    { "text": "core-12 or X_CORE-12", "keys": [] }
+  ],
+  "labels": [
+    { "label": "Country backfill + data lake (PSS2-105 · In Review)", "badges": ["PSS2-105"], "text": "Country backfill + data lake ( · In Review)" },
+    { "label": "PSC-327 · Todo · bulk recalculation", "badges": ["PSC-327"], "text": " · Todo · bulk recalculation" },
+    { "label": "Ticket A: country default (L-04)", "badges": [], "text": "Ticket A: country default (L-04)" }
+  ],
+  "rewrites": [
+    {
+      "name": "status text and colour are added",
+      "lines": [
+        "flowchart LR",
+        "  n1[\"Country backfill + data lake (PSS2-105)\"]",
+        "  n2[\"PSC-327 bulk recalculation\"]",
+        "  n3[\"Ticket A (L-04)\"]",
+        "  n3 --> n1"
+      ],
+      "teams": ["PSS2", "PSC"],
+      "states": {
+        "PSS2-105": { "name": "In Review", "kind": "started" },
+        "PSC-327": { "name": "Todo", "kind": "unstarted" }
+      },
+      "result": [
+        "flowchart LR",
+        "  n1[\"Country backfill + data lake (PSS2-105 · In Review)\"]",
+        "  n2[\"PSC-327 · Todo · bulk recalculation\"]",
+        "  n3[\"Ticket A (L-04)\"]",
+        "  n3 --> n1",
+        "",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_unstarted fill:#f3f3f1,stroke:#8a8f98,color:#1f1f1f",
+        "classDef linear_started fill:#fdf3d0,stroke:#e2b93b,color:#1f1f1f",
+        "class n2 linear_unstarted",
+        "class n1 linear_started"
+      ]
+    },
+    {
+      "name": "a changed status replaces the old one and its colour",
+      "lines": [
+        "%% nimbus: 3f2a",
+        "flowchart LR",
+        "  n1[\"Backfill (PSS2-105 · In Review)\"] --> n2(Done before: PSC-327 · Todo)",
+        "",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_started fill:#fdf3d0,stroke:#e2b93b,color:#1f1f1f",
+        "class n1,n2 linear_started"
+      ],
+      "teams": ["PSS2", "PSC"],
+      "states": {
+        "PSS2-105": { "name": "Done", "kind": "completed" },
+        "PSC-327": { "name": "In Progress", "kind": "started" }
+      },
+      "result": [
+        "%% nimbus: 3f2a",
+        "flowchart LR",
+        "  n1[\"Backfill (PSS2-105 · Done)\"] --> n2(Done before: PSC-327 · In Progress)",
+        "",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_started fill:#fdf3d0,stroke:#e2b93b,color:#1f1f1f",
+        "classDef linear_completed fill:#e4f2e7,stroke:#4cb782,color:#1f1f1f",
+        "class n2 linear_started",
+        "class n1 linear_completed"
+      ]
+    },
+    {
+      "name": "nothing changes when all is up to date",
+      "lines": [
+        "flowchart LR",
+        "  n1[\"Backfill (PSS2-105 · Done)\"]",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_completed fill:#e4f2e7,stroke:#4cb782,color:#1f1f1f",
+        "class n1 linear_completed"
+      ],
+      "teams": ["PSS2"],
+      "states": { "PSS2-105": { "name": "Done", "kind": "completed" } },
+      "result": null
+    },
+    {
+      "name": "keys of teams not watched, in edge texts and of unknown state are left alone",
+      "lines": [
+        "graph TD",
+        "  a[CORE-9 audit] -- PSS2-105 --> b{{PSS2-7 · Old}}",
+        "  c[PSS2-105 first]"
+      ],
+      "teams": ["PSS2"],
+      "states": {
+        "PSS2-105": { "name": "In Progress", "kind": "started" },
+        "CORE-9": { "name": "Done", "kind": "completed" }
+      },
+      "result": [
+        "graph TD",
+        "  a[CORE-9 audit] -- PSS2-105 --> b{{PSS2-7 · Old}}",
+        "  c[PSS2-105 · In Progress · first]",
+        "",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_started fill:#fdf3d0,stroke:#e2b93b,color:#1f1f1f",
+        "class c linear_started"
+      ]
+    },
+    {
+      "name": "the colour block goes when no node is coloured; status text stays",
+      "lines": [
+        "flowchart LR",
+        "  n1[\"Backfill (PSS2-105 · Done)\"]",
+        "",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_completed fill:#e4f2e7,stroke:#4cb782,color:#1f1f1f",
+        "class n1 linear_completed"
+      ],
+      "teams": ["PSC"],
+      "states": {},
+      "result": [
+        "flowchart LR",
+        "  n1[\"Backfill (PSS2-105 · Done)\"]"
+      ]
+    },
+    {
+      "name": "a state name with Mermaid syntax is made safe",
+      "lines": [
+        "flowchart LR",
+        "  n1[\"Fix (PSC-1)\"]"
+      ],
+      "teams": ["PSC"],
+      "states": { "PSC-1": { "name": "Blocked (vendor); #2", "kind": "started" } },
+      "result": [
+        "flowchart LR",
+        "  n1[\"Fix (PSC-1 · Blocked vendor 2)\"]",
+        "",
+        "%% linear: written by Nimbus from Linear, rewritten on every sync",
+        "classDef linear_started fill:#fdf3d0,stroke:#e2b93b,color:#1f1f1f",
+        "class n1 linear_started"
+      ]
+    },
+    {
+      "name": "not a flowchart: untouched",
+      "lines": [
+        "sequenceDiagram",
+        "  A->>B: PSC-1"
+      ],
+      "teams": ["PSC"],
+      "states": { "PSC-1": { "name": "Done", "kind": "completed" } },
+      "result": null
+    }
+  ]
+}

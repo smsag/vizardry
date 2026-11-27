@@ -2519,6 +2519,26 @@ code:has(.vzd-upvoty-key) {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--vzd-pill-hue) 22%, transparent);
 }
 
+/* A key in a drawn Mermaid node label keeps the label's own font and box:
+   Mermaid sized the node for plain text, so a pill would overflow it. The
+   badge shows itself by a dotted underline and the usual hover colour. */
+.mermaid .vzd-linear-key {
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: inherit;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline dotted;
+}
+
+/* SVG-text labels can't hold a button; the label itself opens the key. */
+.vzd-mermaid-linear-key {
+  cursor: pointer;
+}
+
 /* `all: unset` drops the default focus ring too, so keyboard users get one
    back explicitly — the colour recovery alone is not a focus indicator. */
 .vzd-linear-key:focus-visible,

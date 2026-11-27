@@ -4,7 +4,7 @@ import { VizardrySettingTab } from "./settings";
 import { normalizeSettings, serializeSettings } from "./settings-schema";
 import type { PluginSettings } from "./settings-schema";
 import { initLinearService, getLinearService, destroyLinearService } from "./linear";
-import { enrichLinearKeys } from "./shared/linear-enrichment";
+import { enrichLinearKeys, enrichMermaidWhenDrawn } from "./shared/linear-enrichment";
 import { initUpvotyService, getUpvotyService, destroyUpvotyService } from "./upvoty";
 import { enrichUpvotyKeys } from "./shared/upvoty-enrichment";
 import { triggerRelink } from "./renderer/canvas";
@@ -174,7 +174,9 @@ export default class VizardryPlugin extends Plugin {
       // network calls. This is the only point at which that can be decided — by
       // the time a canvas is exported, the requests would already have been made.
       if (el.closest(`.${VIZARDRY_NO_ENRICH_CLASS}`)) return;
-      if (getLinearService()?.isEnabled()) enrichLinearKeys(el);
+      if (!getLinearService()?.isEnabled()) return;
+      enrichLinearKeys(el);
+      enrichMermaidWhenDrawn(el);
     }, 1000);
 
     // ── Global Upvoty key enrichment ───────────────────────────────────
